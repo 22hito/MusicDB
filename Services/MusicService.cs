@@ -13,14 +13,24 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
     // рядків, щоб гарантовано уникати дублікатів типу "hardrock"/"hard rock".
     public async Task<List<int>> ResolveGenresAsync(IEnumerable<string> names)
     {
+        // Клієнт (сайт, мобільний застосунок чи будь-хто інший, хто звертається
+        // до API напряму) міг надіслати одне "поєднане" значення жанру через
+        // слеш — найчастіше це трапляється, коли жанр підтягнувся з підказки
+        // iTunes (там жанри вроду "Hip-Hop/Rap" чи "R&B/Soul" — це ОДНЕ поле в
+        // самому iTunes) і людина просто натиснула "Надіслати", не розділивши
+        // його комою вручну. Тому тут додатково розбиваємо кожне вхідне
+        // значення і на "/", і на "," — незалежно від того, як його передав
+        // клієнт — щоб два різних жанри ніколи не злипались в один рядок бази.
+        var flatNames = names
+            .SelectMany(raw => raw.Split(['/', ','], StringSplitOptions.RemoveEmptyEntries))
+            .Select(n => n.Trim())
+            .Where(n => n.Length > 0);
+
         var allExisting = await db.Genres.Select(g => g.GenreName).ToListAsync();
         var ids = new List<int>();
 
-        foreach (var raw in names)
+        foreach (var name in flatNames)
         {
-            var name = raw.Trim();
-            if (string.IsNullOrEmpty(name)) continue;
-
             var normalized = await genreNormalizer.NormalizeGenreAsync(name, allExisting);
 
             var genre = await db.Genres.FirstOrDefaultAsync(g => g.GenreName.Trim().ToLower() == normalized.ToLower())
