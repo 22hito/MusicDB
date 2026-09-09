@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">MusicDB — База даних музичних композицій</title>
+<script>
+  // Застосовуємо збережену тему одразу, до відмальовки сторінки, щоб не було "блимання" темою.
+  (function(){
+    var saved = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://www.youtube.com/iframe_api"></script>
+<style>
+:root {
+  --bg: #0d0d0f;
+  --surface: #141416;
+  --surface2: #1c1c1f;
+  --border: #2a2a2e;
+  --accent: #c8a96e;
+  --accent2: #7c6fcd;
+  --text: #e8e8e0;
+  --muted: #6b6b72;
+  --green: #4caf7d;
+  --red: #e05c5c;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'DM Mono', monospace;
+  --player-h: 88px;
+}
+/* Світла тема: перемикається атрибутом data-theme на <html>, значення зберігається в localStorage */
+html[data-theme="light"] {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface2: #f0eee6;
+  --border: #ddd8cb;
+  --accent: #a97f3a;
+  --accent2: #6a5acd;
+  --text: #1c1c1e;
+  --muted: #75757c;
+  --green: #2f9e6a;
+  --red: #d6455a;
+}
+.theme-toggle-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; transition:border-color 0.2s, color 0.2s; }
+.theme-toggle-btn:hover { border-color:var(--accent); color:var(--accent); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-mono); min-height: 100vh; font-size: 14px; }
+body.player-open { padding-bottom: var(--player-h); }
+
+/* NAV */
+nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; height: 56px; position: sticky; top: 0; z-index: 100; }
+.nav-brand { font-family: var(--font-serif); font-size: 1.2rem; color: var(--accent); font-weight: 700; letter-spacing: 0.02em; margin-right: 2rem; text-decoration: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+.nav-brand img { height: 30px; width: auto; display: block; }
+/* Лого — темний силует на прозорому фоні. У темній темі інвертуємо, щоб він був видимий на темному навбарі. */
+html[data-theme="dark"] .nav-brand img { filter: invert(1) brightness(1.15); }
+.nav-tabs { display: flex; gap: 0; list-style: none; flex: 1; }
+.nav-tabs li button { background: none; border: none; cursor: pointer; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 1.2rem; height: 56px; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; }
+.nav-tabs li button:hover { color: var(--text); }
+.nav-tabs li button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.container { max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem; }
+.page { display: none; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+h2 { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 1.5rem; }
+h2 span.hl { color: var(--accent); }
+.lang-toggle-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; height:32px; padding:0 0.6rem; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-family: var(--font-mono); letter-spacing:0.05em; cursor:pointer; transition:border-color 0.2s, color 0.2s; }
+.lang-toggle-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+/* Власний вертикальний скрол таблиці (≈25-30 рядків видно одразу), а не скрол усієї сторінки. */
+.table-wrap.scroll-table { overflow-y: auto; max-height: 1100px; }
+.table-wrap.scroll-table thead th { position: sticky; top: 0; z-index: 2; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: var(--surface2); }
+thead th { padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody tr.playing-row { background: rgba(200,169,110,0.07); }
+tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
+.badge { display: inline-block; background: rgba(124,111,205,0.15); color: var(--accent2); border: 1px solid rgba(124,111,205,0.3); padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; margin: 1px; white-space: nowrap; }
+.badge.album { background: rgba(200,169,110,0.12); color: var(--accent); border-color: rgba(200,169,110,0.3); white-space: normal; word-break: normal; overflow-wrap: break-word; max-width: 260px; display: inline-block; line-height: 1.4; }
+.num-col { color: var(--muted); font-size: 0.75rem; }
+.duration-col { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* STATS */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; }
+.stat-card .label { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+.stat-card .value { font-family: var(--font-serif); font-size: 2rem; font-weight: 700; color: var(--accent); }
+
+/* FORM */
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 2rem; max-width: 600px; }
+.ext-search-panel-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+.ext-search-panel-box .es-panel-title { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+.ext-search-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.ext-search-item:hover { border-color: var(--accent); background: rgba(200,169,110,0.06); }
+.ext-search-item .es-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ext-search-item .es-main strong { color: var(--text); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext-search-item .es-main span { color: var(--muted); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext-search-item .es-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.ext-search-item .es-year { color: var(--muted); font-size: 0.72rem; }
+.ext-search-item .es-genre-badge { background: rgba(124,111,205,0.15); color: var(--accent2); border-radius: 4px; padding: 2px 7px; font-size: 0.68rem; white-space: nowrap; }
+.ext-search-empty { color: var(--muted); font-size: 0.8rem; text-align: center; padding: 1.5rem 0; }
+.form-group { margin-bottom: 1.25rem; }
+.form-group label { display: block; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+.form-group input, .form-group select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: 0.85rem; padding: 0.6rem 0.85rem; outline: none; transition: border-color 0.2s; }
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group input::placeholder { color: var(--muted); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
+.btn { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.55rem 1.25rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: var(--accent); color: #0d0d0f; border-color: var(--accent); }
+.btn-primary:hover { background: #d4b87e; }
+.btn-success { background: var(--green); color: #0d0d0f; border-color: var(--green); font-size: 0.7rem; padding: 0.35rem 0.9rem; }
+.btn-success:hover { background: #5cbf8d; }
+.btn-danger { background: var(--red); color: #fff; border-color: var(--red); font-size: 0.7rem; padding: 0.35rem 0.9rem; }
+.btn-danger:hover { background: #ea6c6c; }
+.btn-icon-danger { background: transparent; border: 1px solid var(--border); color: var(--red); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.btn-icon-danger:hover { border-color: var(--red); background: rgba(224,92,92,0.1); }
+.btn-icon-danger svg { width: 16px; height: 16px; }
+.btn-icon-edit { background: transparent; border: 1px solid var(--border); color: var(--accent); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.btn-icon-edit:hover { border-color: var(--accent); background: rgba(200,169,110,0.1); }
+.btn-icon-edit svg { width: 16px; height: 16px; }
+.btn-icon-fav { background: transparent; border: 1px solid var(--border); color: var(--muted); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+.btn-icon-fav:hover { border-color: var(--accent2); color: var(--accent2); }
+.btn-icon-fav.active { color: var(--red); border-color: var(--red); }
+.btn-icon-fav svg { width: 16px; height: 16px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; width: 320px; max-width: 90vw; }
+.modal-icon-circle { width: 38px; height: 38px; border-radius: 50%; background: rgba(224,92,92,0.12); display: flex; align-items: center; justify-content: center; color: var(--red); flex-shrink: 0; }
+.modal-icon-circle svg { width: 18px; height: 18px; }
+.modal-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.modal-title-row span { color: var(--text); font-size: 0.95rem; font-weight: 500; }
+.modal-body-text { color: var(--muted); font-size: 0.82rem; line-height: 1.5; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+.modal-btn-cancel:hover { border-color: var(--muted); }
+.modal-btn-confirm { background: var(--red); border: none; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem; font-weight: 500; cursor: pointer; }
+.modal-btn-confirm:hover { background: #ea6c6c; }
+.btn-outline { background: none; border-color: var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-outline.active { border-color: var(--accent); color: var(--accent); background: rgba(200,169,110,0.1); }
+.alert { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 1rem; display: none; }
+.alert.show { display: block; }
+.alert-success { background: rgba(76,175,125,0.15); border: 1px solid rgba(76,175,125,0.3); color: var(--green); }
+.empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.85rem; }
+.empty .icon { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+.actions-td { display: flex; gap: 0.4rem; align-items: center; }
+.filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
+.filter-bar input { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; padding: 0.5rem 0.9rem; outline: none; width: 240px; transition: border-color 0.2s; }
+.filter-bar input:focus { border-color: var(--accent); }
+.filter-bar select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; padding: 0.5rem 0.9rem; outline: none; }
+
+/* PLAY BTN IN ROW */
+.play-row-btn { background: none; border: none; cursor: pointer; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: color 0.2s, background 0.2s; }
+.play-row-btn:hover { color: var(--accent); background: rgba(200,169,110,0.12); }
+.play-row-btn.is-playing { color: var(--accent); }
+
+/* ================================================================
+   GENIUS-STYLE PLAYER BAR
+   ================================================================ */
+#player-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--player-h);
+  background: #0f0f11;
+  border-top: 1px solid #222226;
+  z-index: 200;
+  display: none;
+  align-items: stretch;
+}
+#player-bar.visible { display: flex; }
+
+/* SEEKBAR at very top */
+#player-seek-wrap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: #1e1e22;
+  cursor: pointer;
+  z-index: 10;
+}
+#player-seek-wrap:hover { height: 5px; top: -1px; }
+#player-seek-filled {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  pointer-events: none;
+}
+#player-seek-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: transform 0.12s;
+  pointer-events: none;
+}
+#player-seek-wrap:hover #player-seek-thumb { transform: translate(-50%, -50%) scale(1); }
+
+/* LEFT */
+.player-left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0 1.5rem 0 1.25rem;
+  min-width: 250px;
+  max-width: 310px;
+  flex: 0 0 auto;
+}
+#player-cover {
+  width: 56px; height: 56px;
+  border-radius: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+#player-cover-img { width:100%; height:100%; object-fit:cover; display:none; }
+#player-cover-ph { font-size: 1.4rem; opacity: 0.35; }
+#player-cover-eq {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  padding-bottom: 10px;
+}
+#player-cover-eq.on { display: flex; }
+#player-cover-eq span {
+  display: block;
+  width: 4px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  transform-origin: bottom;
+  animation: eq 0.7s ease-in-out infinite alternate;
+}
+#player-cover-eq span:nth-child(1){height:14px;animation-delay:0s;}
+#player-cover-eq span:nth-child(2){height:22px;animation-delay:0.18s;}
+#player-cover-eq span:nth-child(3){height:9px;animation-delay:0.35s;}
+#player-cover-eq span:nth-child(4){height:18px;animation-delay:0.08s;}
+@keyframes eq { from{transform:scaleY(0.25);} to{transform:scaleY(1);} }
+
+.player-meta { min-width: 0; flex: 1; }
+#p-title { font-family: var(--font-serif); font-size: 0.92rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+#p-artist { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+#p-album { font-size: 0.67rem; color: rgba(200,169,110,0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.yt-badge { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.yt-pill { background: #ff0000; color: #fff; font-size: 0.55rem; font-weight: 700; padding: 1px 4px; border-radius: 2px; }
+.yt-lbl { font-size: 0.62rem; color: #444448; }
+
+/* CENTER */
+.player-center {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 5px;
+  padding: 0 1rem;
+}
+.ctrl-row { display: flex; align-items: center; gap: 2px; }
+
+.pc-icon-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted);
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.pc-icon-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.pc-icon-btn.lit { color: var(--accent); }
+
+.pc-main {
+  background: var(--accent); color: #0d0d0f;
+  width: 40px; height: 40px;
+  border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+  margin: 0 4px;
+}
+.pc-main:hover { background: #d4b87e; }
+.pc-main:active { transform: scale(0.93); }
+
+.time-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.68rem; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+#p-cur { min-width: 30px; text-align: right; }
+#p-dur { min-width: 30px; }
+.loading-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ldot 1s ease-in-out infinite;
+}
+@keyframes ldot { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.2;transform:scale(0.5);} }
+
+/* RIGHT */
+.player-right {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0 1.5rem 0 0.5rem;
+  min-width: 180px;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+.vol-row { display: flex; align-items: center; gap: 7px; }
+.vol-row svg { color: var(--muted); flex-shrink: 0; }
+#vol-slider {
+  -webkit-appearance: none; appearance: none;
+  width: 80px; height: 3px;
+  border-radius: 2px;
+  background: #2a2a2e;
+  outline: none; cursor: pointer;
+}
+#vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--text);
+  cursor: pointer;
+}
+#vol-slider::-webkit-slider-thumb:hover { background: var(--accent); }
+
+.close-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.close-btn:hover { color: var(--red); background: rgba(224,92,92,0.1); }
+
+
+/* ================================================================
+   VIDEO POPUP
+   ================================================================ */
+#video-popup {
+  position: fixed;
+  bottom: calc(var(--player-h) + 12px);
+  right: 16px;
+  width: 320px;
+  background: #0f0f11;
+  border: 1px solid #2a2a2e;
+  border-radius: 10px;
+  overflow: visible;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+}
+#video-popup.open { display: flex; }
+#video-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #1e1e22;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+#video-popup-header span { color: var(--accent); }
+#video-popup-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: color 0.15s, background 0.15s;
+}
+#video-popup-close:hover { color: var(--red); background: rgba(224,92,92,0.1); }
+/* Відео-область попапу — тут буде переміщено #yt-wrap */
+#video-popup-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+}
+#video-popup-frame iframe,
+#video-popup-frame > div {
+  position: absolute; inset: 0;
+  width: 100% !important; height: 100% !important;
+  border: none;
+}
+#video-popup-loading {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+  color: var(--muted); font-size: 0.75rem; font-family: var(--font-mono);
+  gap: 8px;
+}
+.pc-icon-btn.video-btn { color: var(--muted); }
+.pc-icon-btn.video-btn.active { color: var(--accent); background: rgba(200,169,110,0.1); }
+
+/* Hidden YT */
+#yt-wrap { position:fixed; bottom:-9999px; left:-9999px; width:1px; height:1px; overflow:hidden; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand" onclick="showPage('home')"><img src="/images/logo.png" alt="MusicDB logo">MusicDB</span>
+  <ul class="nav-tabs">
+    <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
+    <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
+    <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
+    <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
+    <li id="nav-add" style="display:none"><button id="tab-add" onclick="showPage('add')" data-i18n="nav.add">Додати пісню</button></li>
+  </ul>
+  <button id="lang-toggle" class="lang-toggle-btn" onclick="toggleLang()" title="Change language" style="margin-left:auto;">UA</button>
+  <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" data-i18n-title="theme.toggle" style="margin-left:0.5rem;margin-right:1rem;">☀️</button>
+  <div id="auth-area" style="margin-right:1rem;display:flex;align-items:center;gap:0.7rem;">
+    <!-- filled by initAuth() -->
+  </div>
+</nav>
+
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="container">
+    <div class="stats-row">
+      <div class="stat-card"><div class="label" data-i18n="stat.songs">Композицій</div><div class="value" id="stat-songs">0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="stat.genres">Жанрів</div><div class="value" id="stat-genres">0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="stat.albums">Альбомів</div><div class="value" id="stat-albums">0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="stat.singles">Сінглів</div><div class="value" id="stat-singles">0</div></div>
+    </div>
+    <div id="admin-tools-row" style="display:none;margin-bottom:1.5rem;">
+      <button class="btn btn-outline" onclick="normalizeGenres()" id="normalize-genres-btn" data-i18n="admin.normalizeGenresBtn">🧹 Об'єднати дублікати жанрів</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
+      <h2><span data-i18n="home.heading.pre">Опубліковані</span> <span class="hl" data-i18n="home.heading.accent">пісні</span></h2>
+      <button class="btn btn-outline" onclick="openRequestPage()" data-i18n="home.addRequestBtn">+ Надіслати запит</button>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою або виконавцем…" oninput="renderSongs()">
+      <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
+      <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn" data-i18n="table.shuffle">🔀 Перемішати</button>
+    </div>
+    <div class="table-wrap scroll-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px"></th>
+            <th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th>
+            <th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th style="width:280px" data-i18n="table.album">Альбом</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
+          </tr>
+        </thead>
+        <tbody id="songs-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- REQUEST -->
+<div id="page-request" class="page">
+  <div class="container">
+    <h2><span data-i18n="request.heading.pre">Запит на</span> <span class="hl" data-i18n="request.heading.accent">додавання пісні</span></h2>
+    <div id="req-alert" class="alert alert-success" data-i18n="request.successAlert">✓ Запит успішно надіслано! Очікуйте підтвердження адміністратора.</div>
+    <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;">
+      <div class="form-card" style="flex:1 1 380px;">
+        <div class="form-row">
+          <div class="form-group"><label data-i18n="form.artist">Виконавець *</label><input type="text" id="req-artist" data-i18n-placeholder="form.artist.placeholder" placeholder="Ім'я артиста" oninput="onRequestSearchInput()"></div>
+          <div class="form-group"><label data-i18n="form.title">Назва пісні *</label><input type="text" id="req-title" data-i18n-placeholder="form.title.placeholder" placeholder="Назва композиції" oninput="onRequestSearchInput()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label data-i18n="form.release">Дата релізу *</label><input type="date" id="req-release"></div>
+          <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="req-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
+        </div>
+        <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="req-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу"></div>
+        <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="req-genres" data-i18n-placeholder="form.genres.placeholder" placeholder="Рок, Поп, Джаз"><div class="hint" id="req-genres-hint" data-i18n="form.genres.hint">Через кому</div></div>
+        <button class="btn btn-primary" onclick="submitRequest()" data-i18n="request.submitBtn">Надіслати запит</button>
+      </div>
+
+      <!-- Панель результатів зовнішнього пошуку (iTunes) для автозаповнення форми. -->
+      <div id="ext-search-panel" class="ext-search-panel-box" style="flex:1 1 320px;max-width:380px;display:none;">
+        <div class="es-panel-title" data-i18n="extsearch.title">Схожі пісні (натисніть, щоб заповнити форму)</div>
+        <div id="ext-search-results" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="page-admin" class="page">
+  <div class="container">
+    <h2><span data-i18n="admin.heading.pre">Запити</span> <span class="hl" data-i18n="admin.heading.accent">користувачів</span></h2>
+    <div id="requests-empty" class="empty" style="display:none;"><span class="icon">📭</span><span data-i18n="admin.empty">Немає нових запитів</span></div>
+    <div class="table-wrap" id="requests-table-wrap">
+      <table>
+        <thead><tr><th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th data-i18n="table.album">Альбом</th><th data-i18n="table.action">Дія</th></tr></thead>
+        <tbody id="requests-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ADD -->
+<div id="page-add" class="page">
+  <div class="container">
+    <h2><span data-i18n="add.heading.pre">Додати</span> <span class="hl" data-i18n="add.heading.accent">нову композицію</span></h2>
+    <div id="add-alert" class="alert alert-success" data-i18n="add.successAlert">✓ Композицію успішно додано до бази даних!</div>
+    <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;">
+      <div class="form-card" style="flex:1 1 380px;">
+        <div class="form-row">
+          <div class="form-group"><label data-i18n="form.artist">Виконавець *</label><input type="text" id="add-artist" data-i18n-placeholder="form.artist.placeholder" placeholder="Ім'я артиста" oninput="onAddSearchInput()"></div>
+          <div class="form-group"><label data-i18n="form.title">Назва пісні *</label><input type="text" id="add-title" data-i18n-placeholder="form.title.placeholder" placeholder="Назва композиції" oninput="onAddSearchInput()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label data-i18n="form.release">Дата релізу *</label><input type="date" id="add-release"></div>
+          <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="add-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
+        </div>
+        <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="add-genres" data-i18n-placeholder="form.genres.placeholder" placeholder="Рок, Поп, Джаз"><div class="hint" id="add-genres-hint" data-i18n="form.genres.hint">Через кому</div></div>
+        <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="add-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу"></div>
+        <button class="btn btn-primary" onclick="addSong()" data-i18n="add.submitBtn">Додати до бази</button>
+      </div>
+
+      <!-- Панель результатів зовнішнього пошуку (iTunes) для автозаповнення форми. -->
+      <div id="add-ext-search-panel" class="ext-search-panel-box" style="flex:1 1 320px;max-width:380px;display:none;">
+        <div class="es-panel-title" data-i18n="extsearch.title">Схожі пісні (натисніть, щоб заповнити форму)</div>
+        <div id="add-ext-search-results" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="page-profile" class="page">
+  <div class="container">
+    <h2><span data-i18n="profile.heading.pre">Мій</span> <span class="hl" data-i18n="profile.heading.accent">профіль</span></h2>
+
+    <div class="form-card" style="max-width:600px;margin-bottom:2rem;">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <img id="profile-picture" src="" style="width:56px;height:56px;border-radius:50%;border:1px solid var(--border);object-fit:cover;display:none;">
+        <div>
+          <div id="profile-name" style="color:var(--text);font-size:1.1rem;font-weight:600;"></div>
+          <div id="profile-email" style="color:var(--muted);font-size:0.8rem;"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="profile.avatar">Аватарка</label>
+        <input type="file" id="profile-avatar-file" accept="image/*" onchange="onAvatarFileSelected(event)">
+        <div class="hint">
+          <span data-i18n="profile.avatarHint">Оберіть зображення з пристрою</span> —
+          <a href="#" onclick="removeAvatar();return false;" style="color:var(--accent);" data-i18n="profile.avatarRemove">прибрати й повернути фото з Google</a>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="profile.displayName">Нікнейм (відображається замість імені Google)</label>
+        <input type="text" id="profile-display-name" data-i18n-placeholder="profile.displayName.placeholder" placeholder="Наприклад, MusicLover228">
+      </div>
+      <button class="btn btn-primary" onclick="saveProfile()" data-i18n="profile.saveBtn">Зберегти</button>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:2rem;">
+      <div class="stat-card"><div class="label" data-i18n="profile.totalListened">Прослухано</div><div class="value" id="profile-stat-listened">0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="profile.favoritesCount">Улюблених</div><div class="value" id="profile-stat-favorites">0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="profile.playlistsCount">Плейлистів</div><div class="value" id="profile-stat-playlists">0</div></div>
+    </div>
+    <div id="profile-top-genres-wrap" style="margin-bottom:2rem;display:none;">
+      <div style="color:var(--muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem;" data-i18n="profile.topGenres">Улюблені жанри</div>
+      <div id="profile-top-genres"></div>
+    </div>
+
+    <h2 style="font-size:1.3rem;" data-i18n="profile.favoritesTitle">Улюблені пісні</h2>
+    <div id="profile-favorites-empty" class="empty" style="display:none;"><span class="icon">💔</span><span data-i18n="profile.favoritesEmpty">Ще немає улюблених пісень</span></div>
+    <div class="table-wrap" style="margin-bottom:2rem;">
+      <table>
+        <thead><tr><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
+        <tbody id="profile-favorites-body"></tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h2 style="font-size:1.3rem;margin-bottom:0;" data-i18n="profile.playlistsTitle">Мої плейлисти</h2>
+      <button class="btn btn-outline" onclick="createPlaylist()" data-i18n="profile.newPlaylistBtn">+ Новий плейлист</button>
+    </div>
+    <div id="profile-playlists-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.playlistsEmpty">Ще немає плейлистів</span></div>
+    <div id="profile-playlists-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+  </div>
+</div>
+
+<!-- PLAYLIST DETAIL -->
+<div id="page-playlist" class="page">
+  <div class="container">
+    <button class="btn btn-outline" onclick="showPage('profile')" style="margin-bottom:1rem;" data-i18n="profile.backToProfile">← До профілю</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h2 id="playlist-detail-title" style="margin-bottom:0;"></h2>
+      <button class="btn btn-primary" id="playlist-play-all-btn" onclick="playPlaylistFromStart()" data-i18n="profile.playAllBtn">▶ Слухати весь плейлист</button>
+    </div>
+    <div id="playlist-detail-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.playlistEmpty">У цьому плейлисті ще немає пісень</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
+        <tbody id="playlist-detail-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div id="page-recommendations" class="page">
+  <div class="container">
+    <h2><span data-i18n="rec.heading.pre">Рекомендовано</span> <span class="hl" data-i18n="rec.heading.accent">для вас</span></h2>
+    <div id="rec-loading" style="color:var(--muted);font-size:0.85rem;display:none;" data-i18n="rec.loading">Підбираємо рекомендації…</div>
+    <div id="rec-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="rec.empty">Послухайте кілька пісень, щоб отримати персональні рекомендації</span></div>
+    <div id="rec-list" style="display:flex;flex-direction:column;gap:0.8rem;"></div>
+  </div>
+</div>
+
+<!-- PLAYER BAR -->
+<div id="player-bar">
+  <div id="player-seek-wrap" onmousedown="seekStart(event)" ontouchstart="seekStart(event)">
+    <div id="player-seek-filled"></div>
+    <div id="player-seek-thumb"></div>
+  </div>
+
+  <div class="player-left">
+    <div id="player-cover">
+      <img id="player-cover-img" src="" alt="">
+      <span id="player-cover-ph">♪</span>
+      <div id="player-cover-eq">
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+    <div class="player-meta">
+      <div id="p-title">—</div>
+      <div id="p-artist"></div>
+      <div id="p-album"></div>
+    </div>
+  </div>
+
+  <div class="player-center">
+    <div class="ctrl-row">
+      <!-- Shuffle -->
+      <button class="pc-icon-btn" id="btn-shuffle" onclick="toggleShuffle()" title="Перемішати" data-i18n-title="player.shuffle">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 3 21 3 21 8"/><polyline points="3 21 8 21 8 16"/>
+          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+          <polyline points="3 3 8 8"/><polyline points="16 21 21 21 21 16"/><line x1="21" y1="21" x2="14" y2="14"/>
+        </svg>
+      </button>
+      <!-- Prev -->
+      <button class="pc-icon-btn" onclick="playerPrev()" title="Попередня" data-i18n-title="player.prev">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      </button>
+      <!-- Play/Pause -->
+      <button class="pc-main" id="btn-pp" onclick="playerToggle()">
+        <svg id="ico-play" width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="ico-pause" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+      <!-- Next -->
+      <button class="pc-icon-btn" onclick="playerNext()" title="Наступна" data-i18n-title="player.next">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14 5.5 3.86L8 17.14V9.86zM16 6h2v12h-2z"/></svg>
+      </button>
+      <!-- Repeat -->
+      <button class="pc-icon-btn" id="btn-repeat" onclick="toggleRepeat()" title="Повтор" data-i18n-title="player.repeat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+      </button>
+    </div>
+    <div class="time-row">
+      <span id="p-cur">0:00</span>
+      <span id="p-loading" style="display:none"><span class="loading-dot"></span></span>
+      <span style="color:#2a2a2e">—</span>
+      <span id="p-dur">0:00</span>
+    </div>
+  </div>
+
+  <div class="player-right">
+    <button class="pc-icon-btn video-btn" id="btn-video" onclick="toggleVideoPopup()" title="Відкрити відео" data-i18n-title="player.video">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="15" height="10" rx="2"/>
+        <path d="M17 9.5l5-3v11l-5-3v-5z"/>
+      </svg>
+    </button>
+    <div class="vol-row">
+      <svg id="vol-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path id="vw1" d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        <path id="vw2" d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      </svg>
+      <input type="range" id="vol-slider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+    </div>
+    <button class="close-btn" onclick="playerClose()" title="Закрити" data-i18n-title="player.close">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+
+<!-- VIDEO POPUP -->
+<div id="video-popup">
+  <div id="video-popup-header">
+    <span data-i18n="videoPopup.title">▶ Відео</span>
+    <button id="video-popup-close" onclick="closeVideoPopup()" title="Закрити" data-i18n-title="player.close">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div id="video-popup-frame">
+    <div id="video-popup-loading">
+      <span class="loading-dot"></span> <span data-i18n="videoPopup.loading">Завантаження…</span>
+    </div>
+  </div>
+</div>
+
+<div id="yt-wrap"><div id="yt-iframe"></div></div>
+
+<!-- Модальне вікно підтвердження видалення пісні (замінює браузерний confirm()) -->
+<div class="modal-overlay" id="delete-modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title-row">
+      <div class="modal-icon-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+      </div>
+      <span data-i18n="modal.deleteTitle">Видалити пісню?</span>
+    </div>
+    <div class="modal-body-text" id="delete-modal-text"></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeDeleteModal()" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" id="delete-modal-confirm" data-i18n="modal.confirmDelete">Видалити</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно редагування заявки адміном (перед підтвердженням) -->
+<div class="modal-overlay" id="edit-request-modal-overlay">
+  <div class="modal-box" style="width:400px;">
+    <div class="modal-title-row">
+      <span data-i18n="admin.editTitle">Редагувати заявку</span>
+    </div>
+    <div class="form-group"><label data-i18n="form.artist">Виконавець *</label><input type="text" id="edit-req-artist"></div>
+    <div class="form-group"><label data-i18n="form.title">Назва пісні *</label><input type="text" id="edit-req-title"></div>
+    <div class="form-group"><label data-i18n="form.release">Дата релізу *</label><input type="date" id="edit-req-release"></div>
+    <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="edit-req-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
+    <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="edit-req-album"></div>
+    <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="edit-req-genres"><div class="hint" data-i18n="form.genres.hint">Через кому</div></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeEditRequestModal()" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" id="edit-request-save-btn" style="background:var(--accent);" data-i18n="admin.saveBtn">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно редагування вже опублікованої пісні в головній таблиці -->
+<div class="modal-overlay" id="edit-song-modal-overlay">
+  <div class="modal-box" style="width:400px;">
+    <div class="modal-title-row">
+      <span data-i18n="admin.editSongTitle">Редагувати пісню</span>
+    </div>
+    <div class="form-group"><label data-i18n="form.artist">Виконавець *</label><input type="text" id="edit-song-artist"></div>
+    <div class="form-group"><label data-i18n="form.title">Назва пісні *</label><input type="text" id="edit-song-title"></div>
+    <div class="form-group"><label data-i18n="form.release">Дата релізу *</label><input type="date" id="edit-song-release"></div>
+    <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="edit-song-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
+    <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="edit-song-album"></div>
+    <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="edit-song-genres"><div class="hint" data-i18n="form.genres.hint">Через кому</div></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeEditSongModal()" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" id="edit-song-save-btn" style="background:var(--accent);" data-i18n="admin.saveBtn">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно "додати пісню в плейлист" -->
+<div class="modal-overlay" id="add-to-playlist-modal-overlay">
+  <div class="modal-box" style="width:360px;">
+    <div class="modal-title-row">
+      <span data-i18n="profile.addToPlaylistTitle">Додати в плейлист</span>
+    </div>
+    <div id="add-to-playlist-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;max-height:240px;overflow-y:auto;"></div>
+    <div id="add-to-playlist-empty" style="color:var(--muted);font-size:0.8rem;margin-bottom:1rem;display:none;" data-i18n="profile.playlistsEmpty">Ще немає плейлистів</div>
+    <div class="form-group" style="margin-bottom:0.75rem;">
+      <input type="text" id="add-to-playlist-new-name" data-i18n-placeholder="profile.newPlaylistPlaceholder" placeholder="Назва нового плейлиста">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeAddToPlaylistModal()" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" style="background:var(--accent);" onclick="createPlaylistAndAdd()" data-i18n="profile.createAndAddBtn">Створити й додати</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// DATA
+// ================================================================
+// ================================================================
+// I18N (українська / англійська)
+// ================================================================
+const I18N = {
+  uk: {
+    'nav.home': 'Головна',
+    'nav.request': 'Надіслати запит',
+    'nav.admin': 'Адмін — Запити',
+    'nav.add': 'Додати пісню',
+    'theme.toggle': 'Змінити тему',
+    'stat.songs': 'Композицій',
+    'stat.genres': 'Жанрів',
+    'stat.albums': 'Альбомів',
+    'stat.singles': 'Сінглів',
+    'home.heading.pre': 'Опубліковані',
+    'home.heading.accent': 'пісні',
+    'home.addRequestBtn': '+ Надіслати запит',
+    'search.placeholder': 'Пошук за назвою або виконавцем…',
+    'filter.allGenres': 'Усі жанри',
+    'table.shuffle': '🔀 Перемішати',
+    'table.number': '№',
+    'table.artist': 'Виконавець',
+    'table.title': 'Назва',
+    'table.release': 'Дата релізу',
+    'table.duration': 'Тривалість',
+    'table.genres': 'Жанри',
+    'table.album': 'Альбом',
+    'table.action': 'Дія',
+    'table.empty': 'Нічого не знайдено',
+    'table.single': 'Сінгл',
+    'request.heading.pre': 'Запит на',
+    'request.heading.accent': 'додавання пісні',
+    'request.successAlert': '✓ Запит успішно надіслано! Очікуйте підтвердження адміністратора.',
+    'request.submitBtn': 'Надіслати запит',
+    'extsearch.title': 'Схожі пісні (натисніть, щоб заповнити форму)',
+    'extsearch.analyzingGenres': 'Аналізуємо жанри…',
+    'form.artist': 'Виконавець *',
+    'form.artist.placeholder': "Ім'я артиста",
+    'form.title': 'Назва пісні *',
+    'form.title.placeholder': 'Назва композиції',
+    'form.release': 'Дата релізу *',
+    'form.duration': 'Тривалість *',
+    'form.duration.hint': 'Додатково: 31 (сек), 211 = 3:31 (хв:сек)',
+    'form.album': "Альбом (необов'язково)",
+    'form.album.placeholder': 'Назва альбому або залиште порожнім для сінглу',
+    'form.genres': 'Жанри *',
+    'form.genres.placeholder': 'Рок, Поп, Джаз',
+    'form.genres.hint': 'Через кому',
+    'admin.heading.pre': 'Запити',
+    'admin.heading.accent': 'користувачів',
+    'admin.empty': 'Немає нових запитів',
+    'admin.approveBtn': 'Підтвердити',
+    'admin.rejectBtn': 'Відмовити',
+    'admin.editBtn': 'Редагувати',
+    'admin.editTitle': 'Редагувати заявку',
+    'admin.saveBtn': 'Зберегти',
+    'msg.errorEditRequest': 'Помилка при збереженні змін',
+    'admin.editSongTitle': 'Редагувати пісню',
+    'admin.normalizeGenresBtn': "🧹 Об'єднати дублікати жанрів",
+    'admin.normalizeGenresRunning': 'Перевірка триває…',
+    'admin.normalizeGenresNone': 'Дублікатів не знайдено — усі жанри унікальні.',
+    'admin.normalizeGenresError': "Не вдалося звернутись до ШІ (перевірте ключ Gemini):",
+    'admin.normalizeGenresDone': "Об'єднано груп: {count}",
+    'msg.errorNormalizeGenres': "Помилка при об'єднанні жанрів",
+    'msg.errorEditSong': 'Помилка при збереженні пісні',
+    'add.heading.pre': 'Додати',
+    'add.heading.accent': 'нову композицію',
+    'add.successAlert': '✓ Композицію успішно додано до бази даних!',
+    'add.submitBtn': 'Додати до бази',
+    'page.title': 'MusicDB — База даних музичних композицій',
+    'player.shuffle': 'Перемішати',
+    'player.prev': 'Попередня',
+    'player.next': 'Наступна',
+    'player.repeat': 'Повтор',
+    'player.video': 'Відкрити відео',
+    'player.close': 'Закрити',
+    'videoPopup.title': '▶ Відео',
+    'videoPopup.loading': 'Завантаження…',
+    'video.notFoundSuffix': ' — відео не знайдено',
+    'modal.deleteTitle': 'Видалити пісню?',
+    'modal.deleteBodyTemplate': 'Композицію «{label}» буде видалено з бази без можливості відновлення.',
+    'modal.deleteDefaultLabel': 'цю пісню',
+    'modal.cancel': 'Скасувати',
+    'modal.confirmDelete': 'Видалити',
+    'auth.logout': 'Вийти',
+    'auth.loginBtn': 'Увійти через Google',
+    'msg.confirmLoginForRequest': 'Щоб надіслати запит, потрібно увійти через Google. Перейти до входу?',
+    'msg.confirmLoginGeneric': 'Щоб продовжити, потрібно увійти через Google. Перейти до входу?',
+    'nav.recommendations': 'Рекомендовано для вас',
+    'nav.profile': 'Профіль',
+    'profile.heading.pre': 'Мій',
+    'profile.heading.accent': 'профіль',
+    'profile.displayName': 'Нікнейм',
+    'profile.avatar': 'Зображення профілю',
+    'profile.avatarHint': 'Оберіть зображення з пристрою',
+    'profile.avatarRemove': 'прибрати й повернути фото з Google',
+    'profile.displayName.placeholder': 'Наприклад, MusicLover',
+    'profile.saveBtn': 'Зберегти',
+    'profile.totalListened': 'Прослухано',
+    'profile.favoritesCount': 'Улюблених',
+    'profile.playlistsCount': 'Плейлистів',
+    'profile.topGenres': 'Улюблені жанри',
+    'profile.favoritesTitle': 'Улюблені пісні',
+    'profile.favoritesEmpty': 'Ще немає улюблених пісень',
+    'profile.playlistsTitle': 'Мої плейлисти',
+    'profile.newPlaylistBtn': '+ Новий плейлист',
+    'profile.playlistsEmpty': 'Ще немає плейлистів',
+    'profile.backToProfile': '← До профілю',
+    'profile.playlistEmpty': 'У цьому плейлисті ще немає пісень',
+    'profile.playBtn': 'Відтворити',
+    'profile.playAllBtn': '▶ Слухати весь плейлист',
+    'profile.favToggle': 'Улюблене',
+    'profile.songsWord': 'пісень',
+    'profile.newPlaylistPrompt': 'Назва нового плейлиста:',
+    'profile.addToPlaylist': 'Додати в плейлист',
+    'profile.addToPlaylistTitle': 'Додати в плейлист',
+    'profile.newPlaylistPlaceholder': 'Назва нового плейлиста',
+    'profile.createAndAddBtn': 'Створити й додати',
+    'rec.heading.pre': 'Рекомендовано',
+    'rec.heading.accent': 'для вас',
+    'rec.loading': 'Підбираємо рекомендації…',
+    'rec.empty': 'Послухайте кілька пісень, щоб отримати персональні рекомендації',
+    'msg.needLoginForRequest': 'Для надсилання запиту потрібно увійти через Google.',
+    'msg.fillRequiredFields': "Будь ласка, заповніть усі обов'язкові поля (*)",
+    'msg.needLoginGeneric': 'Потрібно увійти через Google',
+    'msg.errorSubmittingRequest': 'Помилка при надсиланні запиту',
+    'msg.connectionError': "Помилка з'єднання з сервером",
+    'msg.errorApprove': 'Помилка при підтвердженні',
+    'msg.approveMerged': 'Така пісня вже є в базі — нові жанри додано до наявного запису.',
+    'msg.needLoginAdmin': 'Потрібно увійти як адмін',
+    'msg.errorDelete': 'Помилка видалення',
+    'msg.errorReject': 'Помилка відхилення',
+    'msg.needAdminRights': 'Потрібні права адміна',
+    'msg.errorAddSong': 'Помилка додавання пісні'
+  },
+  en: {
+    'nav.home': 'Home',
+    'nav.request': 'Submit request',
+    'nav.admin': 'Admin — Requests',
+    'nav.add': 'Add song',
+    'theme.toggle': 'Switch theme',
+    'stat.songs': 'Songs',
+    'stat.genres': 'Genres',
+    'stat.albums': 'Albums',
+    'stat.singles': 'Singles',
+    'home.heading.pre': 'Published',
+    'home.heading.accent': 'songs',
+    'home.addRequestBtn': '+ Submit request',
+    'search.placeholder': 'Search by title or artist…',
+    'filter.allGenres': 'All genres',
+    'table.shuffle': '🔀 Shuffle',
+    'table.number': '#',
+    'table.artist': 'Artist',
+    'table.title': 'Title',
+    'table.release': 'Release date',
+    'table.duration': 'Duration',
+    'table.genres': 'Genres',
+    'table.album': 'Album',
+    'table.action': 'Action',
+    'table.empty': 'Nothing found',
+    'table.single': 'Single',
+    'request.heading.pre': 'Request to',
+    'request.heading.accent': 'add a song',
+    'request.successAlert': '✓ Request sent successfully! Wait for admin approval.',
+    'request.submitBtn': 'Submit request',
+    'extsearch.title': 'Similar songs (click to fill the form)',
+    'extsearch.analyzingGenres': 'Analyzing genres…',
+    'form.artist': 'Artist *',
+    'form.artist.placeholder': 'Artist name',
+    'form.title': 'Song title *',
+    'form.title.placeholder': 'Song title',
+    'form.release': 'Release date *',
+    'form.duration': 'Duration *',
+    'form.duration.hint': 'Additionally: 31 (sec), 211 = 3:31 (min:sec)',
+    'form.album': 'Album (optional)',
+    'form.album.placeholder': 'Album name, or leave empty for a single',
+    'form.genres': 'Genres *',
+    'form.genres.placeholder': 'Rock, Pop, Jazz',
+    'form.genres.hint': 'Comma-separated',
+    'admin.heading.pre': 'Requests',
+    'admin.heading.accent': 'from users',
+    'admin.empty': 'No new requests',
+    'admin.approveBtn': 'Approve',
+    'admin.rejectBtn': 'Reject',
+    'admin.editBtn': 'Edit',
+    'admin.editTitle': 'Edit request',
+    'admin.saveBtn': 'Save',
+    'msg.errorEditRequest': 'Error saving changes',
+    'admin.editSongTitle': 'Edit song',
+    'admin.normalizeGenresBtn': '🧹 Merge duplicate genres',
+    'admin.normalizeGenresRunning': 'Checking…',
+    'admin.normalizeGenresNone': 'No duplicates found — all genres are unique.',
+    'admin.normalizeGenresError': 'Could not reach the AI (check your Gemini key):',
+    'admin.normalizeGenresDone': 'Groups merged: {count}',
+    'msg.errorNormalizeGenres': 'Error merging genres',
+    'msg.errorEditSong': 'Error saving song',
+    'add.heading.pre': 'Add a',
+    'add.heading.accent': 'new song',
+    'add.successAlert': '✓ Song successfully added to the database!',
+    'add.submitBtn': 'Add to database',
+    'page.title': 'MusicDB — Music database',
+    'player.shuffle': 'Shuffle',
+    'player.prev': 'Previous',
+    'player.next': 'Next',
+    'player.repeat': 'Repeat',
+    'player.video': 'Open video',
+    'player.close': 'Close',
+    'videoPopup.title': '▶ Video',
+    'videoPopup.loading': 'Loading…',
+    'video.notFoundSuffix': ' — video not found',
+    'modal.deleteTitle': 'Delete song?',
+    'modal.deleteBodyTemplate': 'The song "{label}" will be permanently deleted from the database.',
+    'modal.deleteDefaultLabel': 'this song',
+    'modal.cancel': 'Cancel',
+    'modal.confirmDelete': 'Delete',
+    'auth.logout': 'Log out',
+    'auth.loginBtn': 'Sign in with Google',
+    'msg.confirmLoginForRequest': 'You need to sign in with Google to submit a request. Go to login?',
+    'msg.confirmLoginGeneric': 'You need to sign in with Google to continue. Go to login?',
+    'nav.recommendations': 'Recommended for you',
+    'nav.profile': 'Profile',
+    'profile.heading.pre': 'My',
+    'profile.heading.accent': 'profile',
+    'profile.displayName': 'Nickname',
+    'profile.avatar': 'Profile image',
+    'profile.avatarHint': 'Choose an image from your device',
+    'profile.avatarRemove': 'remove and restore Google photo',
+    'profile.displayName.placeholder': 'e.g. MusicLover',
+    'profile.saveBtn': 'Save',
+    'profile.totalListened': 'Listened',
+    'profile.favoritesCount': 'Favorites',
+    'profile.playlistsCount': 'Playlists',
+    'profile.topGenres': 'Favorite genres',
+    'profile.favoritesTitle': 'Favorite songs',
+    'profile.favoritesEmpty': 'No favorite songs yet',
+    'profile.playlistsTitle': 'My playlists',
+    'profile.newPlaylistBtn': '+ New playlist',
+    'profile.playlistsEmpty': 'No playlists yet',
+    'profile.backToProfile': '← Back to profile',
+    'profile.playlistEmpty': 'This playlist has no songs yet',
+    'profile.playBtn': 'Play',
+    'profile.playAllBtn': '▶ Play playlist',
+    'profile.favToggle': 'Favorite',
+    'profile.songsWord': 'songs',
+    'profile.newPlaylistPrompt': 'New playlist name:',
+    'profile.addToPlaylist': 'Add to playlist',
+    'profile.addToPlaylistTitle': 'Add to playlist',
+    'profile.newPlaylistPlaceholder': 'New playlist name',
+    'profile.createAndAddBtn': 'Create & add',
+    'rec.heading.pre': 'Recommended',
+    'rec.heading.accent': 'for you',
+    'rec.loading': 'Finding recommendations…',
+    'rec.empty': 'Listen to a few songs to get personal recommendations',
+    'msg.needLoginForRequest': 'You need to sign in with Google to submit a request.',
+    'msg.fillRequiredFields': 'Please fill in all required fields (*)',
+    'msg.needLoginGeneric': 'You need to sign in with Google',
+    'msg.errorSubmittingRequest': 'Error submitting the request',
+    'msg.connectionError': 'Server connection error',
+    'msg.errorApprove': 'Error approving the request',
+    'msg.approveMerged': 'This song already exists — new genres were added to the existing entry.',
+    'msg.needLoginAdmin': 'You need to sign in as admin',
+    'msg.errorDelete': 'Deletion error',
+    'msg.errorReject': 'Rejection error',
+    'msg.needAdminRights': 'Admin rights required',
+    'msg.errorAddSong': 'Error adding the song'
+  }
+};
+let currentLang = localStorage.getItem('lang') || 'uk';
+function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || key; }
+function applyLang(lang){
+  currentLang = lang;
+  localStorage.setItem('lang', lang);
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title = t(el.getAttribute('data-i18n-title')); });
+  const btn = document.getElementById('lang-toggle');
+  if(btn) btn.textContent = lang === 'uk' ? 'UA' : 'EN';
+  document.title = t('page.title');
+  // Динамічний контент, який генерується в JS, потрібно перемалювати наново.
+  renderSongs();
+  updateStats();
+  renderAuthArea();
+  if(currentUser?.isAdmin) renderRequests();
+  // Рекомендації генеруються ШІ мовою, яку передає фронтенд — якщо людина
+  // саме зараз дивиться цю сторінку, перезапитуємо їх новою мовою.
+  if(document.getElementById('page-recommendations')?.classList.contains('active')) loadRecommendationsPage();
+}
+function toggleLang(){
+  applyLang(currentLang === 'uk' ? 'en' : 'uk');
+}
+
+let songs = [];
+let requests = [];
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  const tab = document.getElementById('tab-'+n);
+  if(tab) tab.classList.add('active');
+  if(n==='home'){renderSongs();updateStats().catch(console.error);}
+  if(n==='admin') renderRequests();
+  if(n==='profile') loadProfilePage();
+  if(n==='recommendations') loadRecommendationsPage();
+}
+
+// ================================================================
+// RENDER SONGS
+// ================================================================
+let shuffleActive = false;
+let shuffleOrderMap = new Map();
+// ================================================================
+// АДМІН: ШІ-об'єднання дублікатів жанрів (POST /api/genres/normalize)
+// ================================================================
+function normalizeGenres(){
+  const btn = document.getElementById('normalize-genres-btn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t('admin.normalizeGenresRunning');
+
+  fetch('/api/genres/normalize', { method: 'POST' })
+    .then(r=>{
+      if(!r.ok){ alert(t('msg.errorNormalizeGenres')); return null; }
+      return r.json();
+    })
+    .then(data=>{
+      if(!data) return;
+      if(data.error){
+        alert(t('admin.normalizeGenresError') + '\n\n' + data.error);
+      } else if(data.mergedCount === 0){
+        alert(t('admin.normalizeGenresNone'));
+      } else {
+        alert(t('admin.normalizeGenresDone').replace('{count}', data.mergedCount) + '\n\n' + data.mergedPairs.join('\n'));
+      }
+      loadSongs().then(()=>{renderSongs();updateStats();});
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); })
+    .finally(()=>{ btn.disabled = false; btn.textContent = originalText; });
+}
+
+// ================================================================
+// FAVORITES (улюблені пісні) — доступно будь-якому авторизованому
+// ================================================================
+let favoriteIds = new Set();
+function loadFavoriteIds(){
+  fetch('/api/favorites').then(r=>r.ok?r.json():[]).then(list=>{
+    favoriteIds = new Set(list.map(s=>s.id));
+    renderSongs();
+  }).catch(()=>{});
+}
+function toggleFavorite(musicId, btn){
+  const isFav = favoriteIds.has(musicId);
+  const method = isFav ? 'DELETE' : 'POST';
+  fetch(`/api/favorites/${musicId}`, { method })
+    .then(r=>{
+      if(!r.ok) return;
+      if(isFav) favoriteIds.delete(musicId); else favoriteIds.add(musicId);
+      if(btn){
+        btn.classList.toggle('active', !isFav);
+        const svg = btn.querySelector('svg');
+        if(svg) svg.setAttribute('fill', !isFav ? 'currentColor' : 'none');
+      }
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+// ================================================================
+// PROFILE (профіль, улюблені, плейлисти)
+// ================================================================
+function openProfilePage(){
+  if(!currentUser?.authenticated){
+    if(confirm(t('msg.confirmLoginGeneric'))) login();
+    return;
+  }
+  showPage('profile');
+}
+let profileAvatarValue = null;   // поточне значення аватарки, яке буде надіслано при збереженні
+let profileGooglePicture = null; // фото з Google-акаунту (фолбек, якщо своєї аватарки нема)
+function loadProfilePage(){
+  fetch('/api/profile').then(r=>r.json()).then(p=>{
+    document.getElementById('profile-name').textContent = p.displayName || p.name || p.email;
+    document.getElementById('profile-email').textContent = p.email;
+    document.getElementById('profile-display-name').value = p.displayName || '';
+    profileAvatarValue = p.avatarUrl || null;
+    profileGooglePicture = p.picture || null;
+    const pic = document.getElementById('profile-picture');
+    const shown = p.avatarUrl || p.picture;
+    if(shown){ pic.src = shown; pic.style.display = 'block'; } else pic.style.display = 'none';
+    document.getElementById('profile-stat-listened').textContent = p.totalListened;
+    document.getElementById('profile-stat-favorites').textContent = p.favoritesCount;
+    document.getElementById('profile-stat-playlists').textContent = p.playlistsCount;
+
+    const genresWrap = document.getElementById('profile-top-genres-wrap');
+    if(p.topGenres && p.topGenres.length){
+      document.getElementById('profile-top-genres').innerHTML = p.topGenres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('');
+      genresWrap.style.display = 'block';
+    } else genresWrap.style.display = 'none';
+  }).catch(()=>{});
+
+  loadProfileFavorites();
+  loadProfilePlaylists();
+}
+// Вибір нового файлу аватарки — конвертуємо в base64 (data URL) і показуємо
+// одразу в прев'ю; фактично надсилається на сервер лише при натисканні "Зберегти".
+function onAvatarFileSelected(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    profileAvatarValue = reader.result;
+    const pic = document.getElementById('profile-picture');
+    pic.src = profileAvatarValue;
+    pic.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+function removeAvatar(){
+  profileAvatarValue = null;
+  document.getElementById('profile-avatar-file').value = '';
+  const pic = document.getElementById('profile-picture');
+  if(profileGooglePicture){ pic.src = profileGooglePicture; pic.style.display = 'block'; }
+  else pic.style.display = 'none';
+}
+function saveProfile(){
+  const displayName = document.getElementById('profile-display-name').value.trim();
+  fetch('/api/profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ displayName: displayName || null, avatarUrl: profileAvatarValue }) })
+    .then(r=>{
+      if(!r.ok){ alert(t('msg.connectionError')); return; }
+      if(currentUser){ currentUser.displayName = displayName || null; currentUser.avatarUrl = profileAvatarValue; }
+      loadProfilePage();
+      renderAuthArea();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function loadProfileFavorites(){
+  fetch('/api/favorites').then(r=>r.json()).then(list=>{
+    const tbody = document.getElementById('profile-favorites-body');
+    document.getElementById('profile-favorites-empty').style.display = list.length ? 'none' : '';
+    tbody.innerHTML = list.map(s=>`
+      <tr>
+        <td><strong>${esc(s.artist)}</strong></td>
+        <td>${esc(s.title)}</td>
+        <td>${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+        <td><button class="btn-icon-fav active" onclick="removeFavoriteFromProfile(${s.id})" title="${t('profile.favToggle')}"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button></td>
+      </tr>`).join('');
+  }).catch(()=>{});
+}
+function removeFavoriteFromProfile(musicId){
+  fetch(`/api/favorites/${musicId}`, { method:'DELETE' }).then(()=>{
+    favoriteIds.delete(musicId);
+    loadProfileFavorites();
+    loadProfilePage();
+  }).catch(()=>{});
+}
+function loadProfilePlaylists(){
+  fetch('/api/playlists').then(r=>r.json()).then(list=>{
+    document.getElementById('profile-playlists-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('profile-playlists-list').innerHTML = list.map(p=>`
+      <div class="ext-search-item" onclick="openPlaylist(${p.id})">
+        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+        <button class="btn-icon-danger" onclick="event.stopPropagation();deletePlaylist(${p.id})" title="${t('modal.confirmDelete')}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+        </button>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+function createPlaylist(){
+  const name = prompt(t('profile.newPlaylistPrompt'));
+  if(!name || !name.trim()) return;
+  fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: name.trim() }) })
+    .then(r=>{ if(r.ok) loadProfilePlaylists(); else alert(t('msg.connectionError')); })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function deletePlaylist(id){
+  fetch(`/api/playlists/${id}`, { method:'DELETE' }).then(()=>loadProfilePlaylists()).catch(()=>{});
+}
+
+// ================================================================
+// ADD TO PLAYLIST (з головної таблиці — кнопка "➕")
+// ================================================================
+let addToPlaylistMusicId = null;
+function openAddToPlaylistModal(musicId){
+  addToPlaylistMusicId = musicId;
+  document.getElementById('add-to-playlist-new-name').value = '';
+  fetch('/api/playlists').then(r=>r.json()).then(list=>{
+    const wrap = document.getElementById('add-to-playlist-list');
+    document.getElementById('add-to-playlist-empty').style.display = list.length ? 'none' : '';
+    wrap.innerHTML = list.map(p=>`
+      <div class="ext-search-item" onclick="addSongToExistingPlaylist(${p.id})">
+        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+      </div>`).join('');
+    document.getElementById('add-to-playlist-modal-overlay').classList.add('open');
+  }).catch(()=>{ alert(t('msg.connectionError')); });
+}
+function closeAddToPlaylistModal(){
+  document.getElementById('add-to-playlist-modal-overlay').classList.remove('open');
+  addToPlaylistMusicId = null;
+}
+document.getElementById('add-to-playlist-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeAddToPlaylistModal();
+});
+function addSongToExistingPlaylist(playlistId){
+  if(!addToPlaylistMusicId) return;
+  fetch(`/api/playlists/${playlistId}/songs/${addToPlaylistMusicId}`, { method:'POST' })
+    .then(r=>{
+      if(!r.ok){ alert(t('msg.connectionError')); return; }
+      closeAddToPlaylistModal();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function createPlaylistAndAdd(){
+  const name = document.getElementById('add-to-playlist-new-name').value.trim();
+  if(!name){ alert(t('msg.fillRequiredFields')); return; }
+  fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) })
+    .then(r=>r.ok?r.json():null)
+    .then(playlist=>{
+      if(!playlist){ alert(t('msg.connectionError')); return; }
+      return addSongToExistingPlaylist(playlist.id);
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+let currentPlaylistId = null;
+function openPlaylist(id){
+  currentPlaylistId = id;
+  fetch(`/api/playlists/${id}`).then(r=>r.json()).then(p=>{
+    currentPlaylistSongs = p.songs;
+    document.getElementById('playlist-detail-title').textContent = p.name;
+    const tbody = document.getElementById('playlist-detail-body');
+    document.getElementById('playlist-detail-empty').style.display = p.songs.length ? 'none' : '';
+    document.getElementById('playlist-play-all-btn').style.display = p.songs.length ? '' : 'none';
+    tbody.innerHTML = p.songs.map(s=>`
+      <tr>
+        <td><button class="btn-icon-fav" onclick="playFromPlaylist(${s.id})" title="${t('profile.playBtn')}">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+        </button></td>
+        <td><strong>${esc(s.artist)}</strong></td>
+        <td>${esc(s.title)}</td>
+        <td>${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+        <td><button class="btn-icon-danger" onclick="removeSongFromPlaylist(${id},${s.id})" title="${t('modal.confirmDelete')}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+        </button></td>
+      </tr>`).join('');
+    showPage('playlist');
+  }).catch(()=>{});
+}
+function removeSongFromPlaylist(playlistId, musicId){
+  fetch(`/api/playlists/${playlistId}/songs/${musicId}`, { method:'DELETE' }).then(()=>openPlaylist(playlistId)).catch(()=>{});
+}
+
+// ================================================================
+// RECOMMENDATIONS
+// ================================================================
+function openRecommendationsPage(){
+  if(!currentUser?.authenticated){
+    if(confirm(t('msg.confirmLoginGeneric'))) login();
+    return;
+  }
+  showPage('recommendations');
+}
+function loadRecommendationsPage(){
+  document.getElementById('rec-loading').style.display = 'block';
+  document.getElementById('rec-empty').style.display = 'none';
+  document.getElementById('rec-list').innerHTML = '';
+
+  fetch(`/api/recommendations?lang=${encodeURIComponent(currentLang)}`).then(r=>r.json()).then(list=>{
+    document.getElementById('rec-loading').style.display = 'none';
+    if(!list.length){ document.getElementById('rec-empty').style.display = ''; return; }
+    document.getElementById('rec-list').innerHTML = list.map(item=>{
+      const s = item.song;
+      return `
+      <div class="ext-search-item" onclick="playSong(${s.id})" style="cursor:pointer;">
+        <div class="es-main">
+          <strong>${esc(s.artist)}</strong>
+          <span>${esc(s.title)}</span>
+          ${item.reason?`<span style="color:var(--accent2);">${esc(item.reason)}</span>`:''}
+        </div>
+        <div class="es-meta">
+          ${s.genres.map(g=>`<span class="es-genre-badge">${esc(abbrGenre(g))}</span>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }).catch(()=>{
+    document.getElementById('rec-loading').style.display = 'none';
+  });
+}
+
+function toggleShuffleTable(){
+  shuffleActive = !shuffleActive;
+  const btn = document.getElementById('shuffle-table-btn');
+  if(shuffleActive){
+    const ids = songs.map(s=>s.id);
+    for(let i=ids.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    shuffleOrderMap = new Map(ids.map((id,idx)=>[id, idx]));
+    btn.classList.add('active');
+  } else {
+    shuffleOrderMap = new Map();
+    btn.classList.remove('active');
+  }
+  renderSongs();
+}
+function renderSongs(){
+  const srch=document.getElementById('search').value.toLowerCase();
+  const gf=document.getElementById('filter-genre').value;
+  const filtered=songs.filter(s=>{
+    const mt=!srch||s.artist.toLowerCase().includes(srch)||s.title.toLowerCase().includes(srch);
+    const mg=!gf||s.genres.includes(gf);
+    return mt&&mg;
+  });
+  const ordered = shuffleActive
+    ? [...filtered].sort((a,b)=>(shuffleOrderMap.get(a.id) ?? Infinity) - (shuffleOrderMap.get(b.id) ?? Infinity))
+    : filtered;
+  const tbody=document.getElementById('songs-body');
+  if(!ordered.length){
+    tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><span class="icon">🎵</span>${t('table.empty')}</div></td></tr>`;
+    return;
+  }
+  const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
+  tbody.innerHTML=ordered.map((s,i)=>{
+    const isPlay=s.id===curId;
+    const btnIcon=isPlay&&isPlaying()
+      ?`<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
+      :`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+    return `<tr class="${isPlay?'playing-row':''}">
+      <td style="padding:0.7rem 0.5rem 0.7rem 1rem;">
+        <button class="play-row-btn${isPlay?' is-playing':''}" onclick="playSong(${s.id})">${btnIcon}</button>
+      </td>
+      <td class="num-col">${i+1}</td>
+      <td><strong>${esc(s.artist)}</strong></td>
+      <td>${esc(s.title)}</td>
+      <td class="duration-col">${fmtDate(s.release)}</td>
+      <td class="duration-col">${s.duration}</td>
+      <td>${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+      <td>${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+      ${currentUser?.authenticated?`<td><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
+      ${currentUser?.isAdmin?`<td><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
+    </tr>`;
+  }).join('');
+}
+
+function isPlaying(){
+  try{return ytPlayer&&ytReady&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING;}catch(e){return false;}
+}
+
+// ================================================================
+// STATS
+// ================================================================
+async function updateStats(){
+  const ag=new Set(songs.flatMap(s=>s.genres));
+  const sel=document.getElementById('filter-genre');
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">${t('filter.allGenres')}</option>`+[...ag].sort().map(g=>`<option value="${esc(g)}"${g===cur?' selected':''}>${esc(abbrGenre(g))}</option>`).join('');
+  try {
+    const st = await fetch('/api/stats').then(r=>r.json());
+    document.getElementById('stat-songs').textContent=st.totalSongs;
+    document.getElementById('stat-genres').textContent=st.totalGenres;
+    document.getElementById('stat-albums').textContent=st.totalAlbums;
+    document.getElementById('stat-singles').textContent=st.singles;
+  } catch {
+    const aa=new Set(songs.filter(s=>s.album).map(s=>s.album));
+    document.getElementById('stat-songs').textContent=songs.length;
+    document.getElementById('stat-genres').textContent=ag.size;
+    document.getElementById('stat-albums').textContent=aa.size;
+    document.getElementById('stat-singles').textContent=songs.filter(s=>!s.album).length;
+  }
+}
+
+// ================================================================
+// FORMS
+// ================================================================
+// Перед відкриттям форми заявки перевіряємо, чи користувач увійшов через Google.
+// Якщо ні — пропонуємо спочатку увійти, і лише потім показуємо форму.
+function openRequestPage(){
+  if(!currentUser?.authenticated){
+    if(confirm(t('msg.confirmLoginForRequest'))) login();
+    return;
+  }
+  showPage('request');
+}
+// ================================================================
+// EXTERNAL SEARCH (iTunes) — автозаповнення форми запиту/додавання
+// ================================================================
+let extSearchTimer = null;
+function onRequestSearchInput(){
+  clearTimeout(extSearchTimer);
+  extSearchTimer = setTimeout(()=>runExternalSearch('req'), 450);
+}
+let addExtSearchTimer = null;
+function onAddSearchInput(){
+  clearTimeout(addExtSearchTimer);
+  addExtSearchTimer = setTimeout(()=>runExternalSearch('add'), 450);
+}
+function renderExtSearchItem(it, idx, prefix){
+  const genreBadges = (it.genre||'').split(',').map(g=>g.trim()).filter(Boolean)
+    .map(g=>`<span class="es-genre-badge">${esc(g)}</span>`).join('');
+  return `
+    <div class="ext-search-item" onclick="applyExternalResult('${prefix}',${idx})">
+      <div class="es-main">
+        <strong>${esc(it.artist)}</strong>
+        <span>${esc(it.title)}</span>
+        ${it.album?`<span>💿 ${esc(it.album)}</span>`:''}
+      </div>
+      <div class="es-meta">
+        ${it.release?`<span class="es-year">${esc(it.release.slice(0,4))}</span>`:''}
+        ${genreBadges}
+        ${it.duration?`<span class="es-year">${esc(it.duration)}</span>`:''}
+      </div>
+    </div>`;
+}
+function runExternalSearch(prefix){
+  const artistId = prefix==='add' ? 'add-artist' : 'req-artist';
+  const titleId = prefix==='add' ? 'add-title' : 'req-title';
+  const panelId = prefix==='add' ? 'add-ext-search-panel' : 'ext-search-panel';
+  const resultsId = prefix==='add' ? 'add-ext-search-results' : 'ext-search-results';
+  const cacheKey = prefix==='add' ? '_addExtSearchCache' : '_extSearchCache';
+
+  const artist = document.getElementById(artistId).value.trim();
+  const title = document.getElementById(titleId).value.trim();
+  const query = `${artist} ${title}`.trim();
+  const panel = document.getElementById(panelId);
+  const results = document.getElementById(resultsId);
+
+  if(query.length < 2){
+    panel.style.display = 'none';
+    results.innerHTML = '';
+    return;
+  }
+
+  fetch(`/api/external-search?q=${encodeURIComponent(query)}`)
+    .then(r=>r.ok?r.json():[])
+    .then(items=>{
+      if(!items.length){ panel.style.display='none'; results.innerHTML=''; return; }
+      results.innerHTML = items.map((it,idx)=>renderExtSearchItem(it, idx, prefix)).join('');
+      window[cacheKey] = items;
+      panel.style.display = 'block';
+    })
+    .catch(()=>{ panel.style.display='none'; });
+}
+function applyExternalResult(prefix, idx){
+  const cacheKey = prefix==='add' ? '_addExtSearchCache' : '_extSearchCache';
+  const it = (window[cacheKey]||[])[idx];
+  if(!it) return;
+  document.getElementById(`${prefix}-artist`).value = it.artist || '';
+  document.getElementById(`${prefix}-title`).value = it.title || '';
+  if(it.release) document.getElementById(`${prefix}-release`).value = it.release;
+  if(it.duration) document.getElementById(`${prefix}-duration`).value = it.duration;
+  // Альбом заповнюємо, лише якщо він справді є (бекенд уже відфільтрував
+  // фейкові "альбоми" синглів на кшталт "Назва - Single").
+  document.getElementById(`${prefix}-album`).value = it.album || '';
+  document.getElementById(prefix==='add' ? 'add-ext-search-panel' : 'ext-search-panel').style.display = 'none';
+
+  // iTunes віддає лише ОДИН загальний жанр — просимо ШІ проаналізувати
+  // САМЕ цю обрану пісню (не весь список підказок — щоб не витрачати
+  // даремно обмежену квоту безкоштовного тарифу Gemini).
+  const genresField = document.getElementById(`${prefix}-genres`);
+  const genresHint = document.getElementById(`${prefix}-genres-hint`);
+  genresField.value = it.genre || '';
+  const originalHint = genresHint.textContent;
+  genresHint.textContent = t('extsearch.analyzingGenres');
+  genresHint.style.color = 'var(--accent2)';
+  const params = new URLSearchParams({ artist: it.artist||'', title: it.title||'', hint: it.genre||'' });
+  fetch(`/api/external-search/genres?${params.toString()}`)
+    .then(r=>r.ok?r.json():null)
+    .then(genreStr=>{
+      if(genreStr) genresField.value = genreStr;
+    })
+    .catch(()=>{})
+    .finally(()=>{ genresHint.textContent = originalHint; genresHint.style.color = ''; });
+}
+
+function submitRequest(){
+  if(!currentUser?.authenticated){alert(t('msg.needLoginForRequest'));login();return;}
+  const a=document.getElementById('req-artist').value.trim();
+  const t2=document.getElementById('req-title').value.trim();
+  const r=document.getElementById('req-release').value;
+  const d=document.getElementById('req-duration').value.trim();
+  const al=document.getElementById('req-album').value.trim();
+  const gr=document.getElementById('req-genres').value.trim();
+  if(!a||!t2||!r||!d||!gr){alert(t('msg.fillRequiredFields'));return;}
+  const body={artist:a,title:t2,release:r,duration:d,genres:gr.split(',').map(g=>g.trim()).filter(Boolean),albumTitle:al||null};
+  const clearReq = () => {
+    ['req-artist','req-title','req-release','req-duration','req-album','req-genres'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('ext-search-panel').style.display = 'none';
+  };
+  const showReqOk = () => { const el=document.getElementById('req-alert');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500); };
+  fetch('/api/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(res=>{
+      if(res.status===401){alert(t('msg.needLoginGeneric'));login();return;}
+      if(!res.ok){alert(t('msg.errorSubmittingRequest'));return;}
+      clearReq(); showReqOk();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+function renderRequests(){
+  if(!currentUser?.isAdmin){
+    document.getElementById('requests-table-wrap').style.display='none';
+    document.getElementById('requests-empty').style.display='block';
+    return;
+  }
+  fetch('/api/requests')
+    .then(r=>{
+      if(r.status===401||r.status===403){return [];}
+      return r.json();
+    })
+    .catch(()=>[])
+    .then(data=>{
+      requests=data||[];
+      const tbody=document.getElementById('requests-body');
+      const wrap=document.getElementById('requests-table-wrap');
+      const empty=document.getElementById('requests-empty');
+      if(!requests.length){wrap.style.display='none';empty.style.display='block';return;}
+      wrap.style.display='block';empty.style.display='none';
+      tbody.innerHTML=requests.map((r,i)=>`
+        <tr><td class="num-col">${i+1}</td>
+        <td><strong>${esc(r.artist)}</strong></td><td>${esc(r.title)}</td>
+        <td class="duration-col">${fmtDate(r.release)}</td><td class="duration-col">${r.duration}</td>
+        <td>${r.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}${r.genreNamesOriginal?`<div style="color:var(--muted);font-size:0.7rem;margin-top:4px;">(${esc(r.genreNamesOriginal)})</div>`:''}</td>
+        <td>${r.albumTitle?`<span class="badge album">${esc(r.albumTitle)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+        <td><div class="actions-td">
+          <button class="btn btn-outline" onclick="openEditRequestModal(${r.id})" title="${t('admin.editBtn')}">✏️</button>
+          <button class="btn btn-success" onclick="approveRequest(${r.id})">${t('admin.approveBtn')}</button>
+          <button class="btn btn-danger" onclick="rejectRequest(${r.id})">${t('admin.rejectBtn')}</button>
+        </div></td></tr>`).join('');
+    });
+}
+function approveRequest(id){
+  fetch(`/api/requests/${id}/approve`,{method:'POST'})
+    .then(r=>{
+      if(!r.ok){alert(t('msg.errorApprove'));return;}
+      return r.json().then(data=>{
+        if(data?.merged) alert(t('msg.approveMerged'));
+        loadSongs().then(()=>{renderSongs();updateStats();});
+        renderRequests();
+      });
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function deleteSong(id){
+  if(playerQueue.length&&playerQueue[playerIndex]&&playerQueue[playerIndex].id===id) playerClose();
+  fetch(`/api/songs/${id}`,{method:'DELETE'})
+    .then(r=>{
+      if(r.status===401){alert(t('msg.needLoginAdmin'));return;}
+      if(!r.ok){alert(t('msg.errorDelete'));return;}
+      loadSongs().then(()=>{renderSongs();updateStats();});
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+// Кастомне модальне вікно підтвердження видалення (замість браузерного confirm()).
+function confirmDeleteSong(id){
+  const song = songs.find(x=>x.id===id);
+  const label = song ? `${song.artist} — ${song.title}` : t('modal.deleteDefaultLabel');
+  document.getElementById('delete-modal-text').textContent =
+    t('modal.deleteBodyTemplate').replace('{label}', label);
+  const confirmBtn = document.getElementById('delete-modal-confirm');
+  confirmBtn.onclick = function(){
+    closeDeleteModal();
+    deleteSong(id);
+  };
+  document.getElementById('delete-modal-overlay').classList.add('open');
+}
+function closeDeleteModal(){
+  document.getElementById('delete-modal-overlay').classList.remove('open');
+}
+document.getElementById('delete-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeDeleteModal();
+});
+
+function rejectRequest(id){
+  fetch(`/api/requests/${id}`,{method:'DELETE'})
+    .then(r=>{if(!r.ok)alert(t('msg.errorReject')); else renderRequests();})
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+// ================================================================
+// EDIT REQUEST (адмін редагує заявку перед підтвердженням)
+// ================================================================
+function openEditRequestModal(id){
+  const r = requests.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('edit-req-artist').value = r.artist || '';
+  document.getElementById('edit-req-title').value = r.title || '';
+  document.getElementById('edit-req-release').value = r.release || '';
+  document.getElementById('edit-req-duration').value = r.duration || '';
+  document.getElementById('edit-req-album').value = r.albumTitle || '';
+  document.getElementById('edit-req-genres').value = (r.genres||[]).join(', ');
+  document.getElementById('edit-request-save-btn').onclick = function(){ saveEditRequest(id); };
+  document.getElementById('edit-request-modal-overlay').classList.add('open');
+}
+function closeEditRequestModal(){
+  document.getElementById('edit-request-modal-overlay').classList.remove('open');
+}
+document.getElementById('edit-request-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeEditRequestModal();
+});
+function saveEditRequest(id){
+  const artist = document.getElementById('edit-req-artist').value.trim();
+  const title = document.getElementById('edit-req-title').value.trim();
+  const release = document.getElementById('edit-req-release').value;
+  const duration = document.getElementById('edit-req-duration').value.trim();
+  const album = document.getElementById('edit-req-album').value.trim();
+  const genres = document.getElementById('edit-req-genres').value.trim();
+  if(!artist||!title||!release||!duration||!genres){alert(t('msg.fillRequiredFields'));return;}
+  const body = {
+    artist, title, release, duration,
+    genres: genres.split(',').map(g=>g.trim()).filter(Boolean),
+    albumTitle: album || null
+  };
+  fetch(`/api/requests/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>{
+      if(!r.ok){alert(t('msg.errorEditRequest'));return;}
+      closeEditRequestModal();
+      renderRequests();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+// ================================================================
+// EDIT SONG (адмін редагує вже опубліковану пісню в головній таблиці)
+// ================================================================
+function openEditSongModal(id){
+  const s = songs.find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('edit-song-artist').value = s.artist || '';
+  document.getElementById('edit-song-title').value = s.title || '';
+  document.getElementById('edit-song-release').value = s.release || '';
+  document.getElementById('edit-song-duration').value = s.duration || '';
+  document.getElementById('edit-song-album').value = s.album || '';
+  document.getElementById('edit-song-genres').value = (s.genres||[]).join(', ');
+  document.getElementById('edit-song-save-btn').onclick = function(){ saveEditSong(id); };
+  document.getElementById('edit-song-modal-overlay').classList.add('open');
+}
+function closeEditSongModal(){
+  document.getElementById('edit-song-modal-overlay').classList.remove('open');
+}
+document.getElementById('edit-song-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeEditSongModal();
+});
+function saveEditSong(id){
+  const artist = document.getElementById('edit-song-artist').value.trim();
+  const title = document.getElementById('edit-song-title').value.trim();
+  const release = document.getElementById('edit-song-release').value;
+  const duration = document.getElementById('edit-song-duration').value.trim();
+  const album = document.getElementById('edit-song-album').value.trim();
+  const genres = document.getElementById('edit-song-genres').value.trim();
+  if(!artist||!title||!release||!duration||!genres){alert(t('msg.fillRequiredFields'));return;}
+  const body = {
+    artist, title, release, duration,
+    genres: genres.split(',').map(g=>g.trim()).filter(Boolean),
+    album: album || null
+  };
+  fetch(`/api/songs/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>{
+      if(!r.ok){alert(t('msg.errorEditSong'));return;}
+      closeEditSongModal();
+      loadSongs().then(()=>{renderSongs();updateStats();});
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+function addSong(){
+  const a=document.getElementById('add-artist').value.trim();
+  const t2=document.getElementById('add-title').value.trim();
+  const r=document.getElementById('add-release').value;
+  const d=document.getElementById('add-duration').value.trim();
+  const al=document.getElementById('add-album').value.trim();
+  const gr=document.getElementById('add-genres').value.trim();
+  if(!a||!t2||!r||!d||!gr){alert(t('msg.fillRequiredFields'));return;}
+  const body={artist:a,title:t2,release:r,duration:d,
+    genres:gr.split(',').map(g=>g.trim()).filter(Boolean),album:al||null};
+  const clearForm = () => {
+    ['add-artist','add-title','add-release','add-duration','add-album','add-genres'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('add-ext-search-panel').style.display = 'none';
+  };
+  const showOk = () => { const el=document.getElementById('add-alert');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500); };
+  fetch('/api/songs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(res=>{
+      if(res.status===401||res.status===403){alert(t('msg.needAdminRights'));return;}
+      if(!res.ok){alert(t('msg.errorAddSong'));return;}
+      clearForm(); showOk();
+      loadSongs().then(()=>{renderSongs();updateStats();});
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+// ================================================================
+// HELPERS
+// ================================================================
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// Скорочення довгих назв жанрів лише для відображення (у базі й фільтрах лишається повна назва).
+function abbrGenre(name){return String(name).replace(/alternative/gi,'alt');}
+
+// ================================================================
+// THEME (світла/темна)
+// ================================================================
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  const btn = document.getElementById('theme-toggle');
+  if(btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(cur === 'light' ? 'dark' : 'light');
+}
+function fmtDate(d){const[y,m,day]=d.split('-');return`${day}.${m}.${y}`;}
+function fmtSec(s){s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+
+// ================================================================
+// CONFIG & AUTH
+// ================================================================
+let currentUser = null;
+let ytApiKey = 'AIzaSyCc0I2E_03NGYQchLXv3OMNbBiReak5XP8';
+
+async function initApp() {
+  const [cfgRes, meRes] = await Promise.all([
+    fetch('/config').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    fetch('/auth/me').then(r=>r.ok?r.json():{authenticated:false}).catch(()=>({authenticated:false}))
+  ]);
+  if(cfgRes.youtubeApiKey) ytApiKey = cfgRes.youtubeApiKey;
+  currentUser = meRes;
+  if(currentUser?.authenticated){
+    try {
+      const profile = await fetch('/api/profile').then(r=>r.ok?r.json():null);
+      if(profile){ currentUser.displayName = profile.displayName; currentUser.avatarUrl = profile.avatarUrl; }
+    } catch(e) {}
+  }
+  try {
+    await loadSongs();
+  } catch(e) {
+    console.error('loadSongs error:', e);
+  }
+  renderAuthArea();
+  renderSongs();
+  await updateStats();
+}
+
+function renderAuthArea() {
+  const area = document.getElementById('auth-area');
+  const isAdmin = currentUser?.isAdmin;
+  const authed = currentUser?.authenticated;
+
+  // Show/hide admin tabs
+  document.getElementById('nav-admin').style.display = isAdmin ? '' : 'none';
+  document.getElementById('nav-add').style.display = isAdmin ? '' : 'none';
+  document.getElementById('nav-request').style.display = authed ? '' : 'none';
+  document.getElementById('nav-recommendations').style.display = authed ? '' : 'none';
+  const thAction = document.getElementById('th-action');
+  if(thAction) thAction.style.display = isAdmin ? '' : 'none';
+  const thFav = document.getElementById('th-fav');
+  if(thFav) thFav.style.display = authed ? '' : 'none';
+  const adminTools = document.getElementById('admin-tools-row');
+  if(adminTools) adminTools.style.display = isAdmin ? 'block' : 'none';
+
+  if(authed) loadFavoriteIds(); else favoriteIds = new Set();
+
+  if (authed) {
+    const avatarSrc = currentUser.avatarUrl || currentUser.picture;
+    const pic = avatarSrc
+      ? `<img src="${avatarSrc}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover;">`
+      : `<span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">👤</span>`;
+    const displayLabel = currentUser.displayName || currentUser.name || currentUser.email || '';
+    area.innerHTML = `
+      <span onclick="openProfilePage()" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;" title="${t('nav.profile')}">
+        ${pic}
+        <span style="color:var(--muted);font-size:0.78rem;font-family:var(--font-mono);">${esc(displayLabel)}</span>
+      </span>
+      ${isAdmin?'<span style="background:var(--accent);color:#0d0d0f;font-size:0.65rem;font-family:var(--font-mono);padding:0.15rem 0.5rem;border-radius:4px;font-weight:700;">ADMIN</span>':''}
+      <button onclick="logout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.72rem;font-family:var(--font-mono);cursor:pointer;">${t('auth.logout')}</button>
+    `;
+  } else {
+    area.innerHTML = `
+      <button onclick="login()" style="background:var(--accent);border:none;color:#0d0d0f;border-radius:6px;padding:0.35rem 0.9rem;font-size:0.75rem;font-family:var(--font-mono);font-weight:700;cursor:pointer;letter-spacing:0.06em;">
+        ${t('auth.loginBtn')}
+      </button>
+    `;
+  }
+}
+
+function login() { window.location.href = '/auth/login'; }
+
+async function loadSongs() {
+  const res = await fetch('/api/songs');
+  if (!res.ok) throw new Error('songs fetch failed');
+  songs = await res.json();
+}
+
+async function logout() {
+  await fetch('/auth/logout', {method:'POST'});
+  currentUser = {authenticated:false};
+  renderAuthArea();
+  // Go to home, re-render
+  showPage('home');
+}
+
+// ================================================================
+// PLAYER
+// ================================================================
+let ytPlayer=null,ytReady=false;
+let playerQueue=[],playerIndex=0;
+// Прапорець "цю пісню вже зараховано як прослухану" — скидається при
+// перемиканні на нову пісню, щоб не логувати одну й ту саму пісню повторно.
+let listenLogged=false;
+// Спільний "намір відтворення": true, якщо музика МАЄ грати (пауза не була
+// натиснута користувачем). Використовується, щоб відрізнити справжнє
+// натискання play/pause від технічних подій onStateChange, які виникають
+// під час фонової синхронізації відео-попапу (щоб пауза "не оживала" сама).
+let userIntendedPlaying=true;
+let ticker=null,pendingVid=null;
+let shuffle=false,repeat=false,seekDrag=false;
+let vol=80;
+
+function onYouTubeIframeAPIReady(){
+  ytPlayer=new YT.Player('yt-iframe',{
+    height:'1',width:'1',
+    playerVars:{autoplay:0,controls:0},
+    events:{
+      onReady:()=>{
+        ytReady=true;
+        ytPlayer.setVolume(vol);
+        if(pendingVid){_load(pendingVid);pendingVid=null;}
+      },
+      onStateChange:onState
+    }
+  });
+}
+
+function onState(e){
+  const S=YT.PlayerState;
+  if(e.data===S.PLAYING){
+    userIntendedPlaying=true;
+    setPP(true);startTick();setLoad(false);setEQ(true);
+    document.getElementById('p-dur').textContent=fmtSec(ytPlayer.getDuration());
+    renderSongs();
+    // Якщо попап відкритий, а відео там на паузі (наприклад, головний
+    // плеєр відновили не через попап) — теж відновлюємо відтворення відео.
+    if(videoPopupOpen && popupPlayer && popupReady){
+      try{ if(popupPlayer.getPlayerState()!==S.PLAYING) popupPlayer.playVideo(); }catch(ex){}
+    }
+  }else if(e.data===S.PAUSED){
+    userIntendedPlaying=false;
+    setPP(false);stopTick();setEQ(false);renderSongs();
+    // Пауза на панелі повинна ставити на паузу й відео в попапі, інакше
+    // воно продовжує грати і через кілька секунд "оживляє" звук назад.
+    if(videoPopupOpen && popupPlayer && popupReady){
+      try{ if(popupPlayer.getPlayerState()===S.PLAYING) popupPlayer.pauseVideo(); }catch(ex){}
+    }
+  }else if(e.data===S.ENDED){
+    setPP(false);stopTick();setEQ(false);
+    if(repeat){ytPlayer.seekTo(0);ytPlayer.playVideo();}
+    else playerNext();
+  }else if(e.data===S.BUFFERING){
+    setLoad(true);
+  }
+}
+
+function playSong(id){
+  playerQueue=songs.slice();
+  playerIndex=playerQueue.findIndex(s=>s.id===id);
+  if(playerIndex<0)playerIndex=0;
+  _loadCurrent();
+}
+
+// Відтворення в межах ОДНОГО плейлиста — playerQueue обмежується лише
+// піснями цього плейлиста, тож "наступна"/"попередня"/"перемішати"
+// працюють у межах плейлиста, а не всього каталогу.
+let currentPlaylistSongs = [];
+function playFromPlaylist(id){
+  if(!currentPlaylistSongs.length) return;
+  playerQueue=currentPlaylistSongs.slice();
+  playerIndex=playerQueue.findIndex(s=>s.id===id);
+  if(playerIndex<0)playerIndex=0;
+  _loadCurrent();
+}
+function playPlaylistFromStart(){
+  if(!currentPlaylistSongs.length) return;
+  playFromPlaylist(currentPlaylistSongs[0].id);
+}
+
+function _loadCurrent(){
+  const s=playerQueue[playerIndex];if(!s)return;
+  listenLogged=false;
+  userIntendedPlaying=true;
+  document.getElementById('p-title').textContent=s.title;
+  document.getElementById('p-artist').textContent=s.artist;
+  document.getElementById('p-album').textContent=s.album||t('table.single');
+  document.getElementById('player-cover-img').style.display='none';
+  document.getElementById('player-cover-ph').style.display='block';
+  document.getElementById('player-bar').classList.add('visible');
+  document.body.classList.add('player-open');
+  setLoad(true);setEQ(false);setPP(false);
+  document.getElementById('player-seek-filled').style.width='0%';
+  document.getElementById('player-seek-thumb').style.left='0%';
+  document.getElementById('p-cur').textContent='0:00';
+  document.getElementById('p-dur').textContent='0:00';
+  renderSongs();
+
+  fetchVid(s.artist,s.title).then(vid=>{
+    if(!vid){setLoad(false);document.getElementById('p-title').textContent=s.title+t('video.notFoundSuffix');return;}
+    currentVid = vid;
+    _onVidReady(vid);
+    const img=document.getElementById('player-cover-img');
+    img.src='https://img.youtube.com/vi/'+vid+'/mqdefault.jpg';
+    img.style.display='block';
+    document.getElementById('player-cover-ph').style.display='none';
+    if(ytReady)_load(vid);else pendingVid=vid;
+  });
+}
+
+async function fetchVid(artist,title){
+  if(!ytApiKey) return null;
+  // Раніше запит містив слово "audio", що часто піднімало вгору "audio only"
+  // перезаливи замість офіційного відео. Тепер шукаємо кілька кандидатів
+  // і обираємо найбільш "офіційний" за простою евристикою, а не перший-ліпший.
+  const q=encodeURIComponent(`${artist} ${title} official video`);
+  try{
+    const r=await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&q=${q}&key=${ytApiKey}`,
+      {signal:AbortSignal.timeout(8000)}
+    );
+    if(!r.ok) return null;
+    const d=await r.json();
+    const items=d.items||[];
+    if(!items.length) return null;
+
+    const artistLower=artist.toLowerCase();
+    const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up'];
+
+    function scoreItem(item){
+      const t=(item.snippet?.title||'').toLowerCase();
+      const ch=(item.snippet?.channelTitle||'').toLowerCase();
+      let s=0;
+      // Канал самого виконавця (або офіційний VEVO/Records-канал) — найсильніший сигнал.
+      if(ch.includes(artistLower)||ch.includes('vevo')) s+=3;
+      if(t.includes('official video')||t.includes('official music video')) s+=2;
+      else if(t.includes('official')) s+=1;
+      if(badWords.some(w=>t.includes(w))) s-=3;
+      return s;
+    }
+
+    const best=[...items].sort((a,b)=>scoreItem(b)-scoreItem(a))[0];
+    return best.id.videoId;
+  }catch(e){}
+  return null;
+}
+
+function _load(vid){ytPlayer.loadVideoById(vid);}
+
+function playerToggle(){
+  if(!ytPlayer||!ytReady)return;
+  const st=ytPlayer.getPlayerState();
+  if(st===YT.PlayerState.PLAYING)ytPlayer.pauseVideo();
+  else ytPlayer.playVideo();
+}
+
+function playerNext(){
+  if(!playerQueue.length)return;
+  if(shuffle)playerIndex=Math.floor(Math.random()*playerQueue.length);
+  else playerIndex=(playerIndex+1)%playerQueue.length;
+  _loadCurrent();
+}
+
+function playerPrev(){
+  if(!playerQueue.length)return;
+  try{if(ytPlayer&&ytReady&&ytPlayer.getCurrentTime()>3){ytPlayer.seekTo(0);return;}}catch(e){}
+  playerIndex=(playerIndex-1+playerQueue.length)%playerQueue.length;
+  _loadCurrent();
+}
+
+function playerClose(){
+  if(videoPopupOpen) closeVideoPopup();
+  try{if(ytPlayer&&ytReady)ytPlayer.stopVideo();}catch(e){}
+  stopTick();setEQ(false);
+  currentVid = null;
+  document.getElementById('player-bar').classList.remove('visible');
+  document.body.classList.remove('player-open');
+  playerQueue=[];renderSongs();
+}
+
+function toggleShuffle(){shuffle=!shuffle;document.getElementById('btn-shuffle').classList.toggle('lit',shuffle);}
+function toggleRepeat(){repeat=!repeat;document.getElementById('btn-repeat').classList.toggle('lit',repeat);}
+
+function setVolume(v){
+  vol=parseInt(v);
+  if(ytPlayer&&ytReady)try{ytPlayer.setVolume(vol);}catch(e){}
+  document.getElementById('vw1').style.display=vol===0?'none':'';
+  document.getElementById('vw2').style.display=vol<50?'none':'';
+}
+
+// SEEK
+function seekStart(e){
+  seekDrag=true;seekMove(e);
+  document.addEventListener('mousemove',seekMove);
+  document.addEventListener('mouseup',seekEnd);
+  document.addEventListener('touchmove',seekMove,{passive:false});
+  document.addEventListener('touchend',seekEnd);
+}
+function seekMove(e){
+  if(!seekDrag)return;
+  if(e.preventDefault)e.preventDefault();
+  const wrap=document.getElementById('player-seek-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const pct=Math.max(0,Math.min(1,(cx-rect.left)/rect.width))*100;
+  document.getElementById('player-seek-filled').style.width=pct+'%';
+  document.getElementById('player-seek-thumb').style.left=pct+'%';
+  try{if(ytPlayer&&ytReady)document.getElementById('p-cur').textContent=fmtSec(ytPlayer.getDuration()*pct/100);}catch(e){}
+}
+function seekEnd(e){
+  seekDrag=false;
+  document.removeEventListener('mousemove',seekMove);
+  document.removeEventListener('mouseup',seekEnd);
+  document.removeEventListener('touchmove',seekMove);
+  document.removeEventListener('touchend',seekEnd);
+  if(!ytPlayer||!ytReady)return;
+  const wrap=document.getElementById('player-seek-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const cx=e.changedTouches?e.changedTouches[0].clientX:(e.clientX||0);
+  const pct=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
+  try{ytPlayer.seekTo(ytPlayer.getDuration()*pct,true);}catch(ex){}
+}
+
+function startTick(){
+  stopTick();
+  ticker=setInterval(()=>{
+    if(!ytPlayer||!ytReady||seekDrag)return;
+    try{
+      const c=ytPlayer.getCurrentTime(),d=ytPlayer.getDuration();
+      if(d>0){
+        const p=(c/d*100).toFixed(2);
+        document.getElementById('player-seek-filled').style.width=p+'%';
+        document.getElementById('player-seek-thumb').style.left=p+'%';
+        document.getElementById('p-cur').textContent=fmtSec(c);
+
+        // Зараховуємо пісню як "прослухану" — якщо програло принаймні 20с
+        // АБО більше половини тривалості (що настане раніше). Один запис
+        // на прослуховування, тільки для авторизованих користувачів.
+        if(!listenLogged && currentUser?.authenticated){
+          const threshold=Math.min(20,d/2);
+          if(c>=threshold){
+            listenLogged=true;
+            const s=playerQueue[playerIndex];
+            if(s) fetch('/api/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({musicId:s.id})}).catch(()=>{});
+          }
+        }
+      }
+    }catch(e){}
+  },500);
+}
+function stopTick(){if(ticker){clearInterval(ticker);ticker=null;}}
+
+function setPP(playing){
+  document.getElementById('ico-play').style.display=playing?'none':'';
+  document.getElementById('ico-pause').style.display=playing?'':'none';
+}
+function setLoad(on){document.getElementById('p-loading').style.display=on?'inline':'none';}
+function setEQ(on){document.getElementById('player-cover-eq').classList.toggle('on',on);}
+
+
+// ================================================================
+// VIDEO POPUP
+// ================================================================
+// Підхід: два плеєри — основний ytPlayer (аудіо, прихований) і
+// окремий popupPlayer (відео у попапі). При відкритті попапу
+// popupPlayer стартує з тієї ж секунди що й ytPlayer, і далі вони
+// йдуть паралельно. При закритті попапу — popupPlayer зупиняється,
+// ytPlayer продовжує без зупинки. Користувач не чує різниці.
+let videoPopupOpen = false;
+let currentVid = null;
+let popupPlayer = null;
+let popupReady = false;
+let popupSyncTicker = null;
+
+// Ініціалізуємо прихований div для popup-плеєра (вже є #video-popup-frame)
+function _initPopupPlayer(vid, startAt) {
+  const frame = document.getElementById('video-popup-frame');
+  const loading = document.getElementById('video-popup-loading');
+  loading.style.display = 'flex';
+
+  // Знищуємо попередній якщо є
+  if (popupPlayer) {
+    try { popupPlayer.destroy(); } catch(e) {}
+    popupPlayer = null;
+    popupReady = false;
+  }
+
+  // Контейнер для нового плеєра
+  let ph = document.getElementById('popup-player-ph');
+  if (!ph) {
+    ph = document.createElement('div');
+    ph.id = 'popup-player-ph';
+    frame.appendChild(ph);
+  }
+
+  popupPlayer = new YT.Player('popup-player-ph', {
+    width: '100%',
+    height: '100%',
+    videoId: vid,
+    playerVars: {
+      autoplay: userIntendedPlaying ? 1 : 0,
+      start: Math.floor(startAt || 0),
+      controls: 1,
+      rel: 0,
+      modestbranding: 1,
+      iv_load_policy: 3
+    },
+    events: {
+      onReady: (e) => {
+        popupReady = true;
+        loading.style.display = 'none';
+        // Точне вирівнювання по секунді з основним плеєром
+        try {
+          const cur = ytPlayer.getCurrentTime();
+          e.target.seekTo(cur, true);
+          e.target.setVolume(0); // відео без звуку — звук іде з ytPlayer
+          // Якщо музика зараз на паузі — попап теж має лишитись на паузі,
+          // а не почати грати саме через autoplay.
+          if(!userIntendedPlaying) e.target.pauseVideo();
+        } catch(ex) {}
+        _startPopupSync();
+      },
+      onStateChange: (e) => {
+        // Якщо хтось натиснув паузу у відео — синхронізуємо основний плеєр
+        if (e.data === YT.PlayerState.PAUSED) {
+          userIntendedPlaying = false;
+          try { if(ytPlayer&&ytReady) ytPlayer.pauseVideo(); } catch(ex) {}
+          setPP(false); stopTick(); setEQ(false);
+        } else if (e.data === YT.PlayerState.PLAYING) {
+          if (!userIntendedPlaying) {
+            // Це не свідоме натискання play користувачем, а технічний
+            // побічний ефект seekTo() під час фонової синхронізації
+            // (YouTube emітить PLAYING навіть при перемотуванні на паузі).
+            // Повертаємо попап назад на паузу, щоб не "оживити" звук.
+            try { popupPlayer.pauseVideo(); } catch(ex) {}
+            return;
+          }
+          try { if(ytPlayer&&ytReady) {
+            ytPlayer.seekTo(popupPlayer.getCurrentTime(), true);
+            ytPlayer.playVideo();
+          }} catch(ex) {}
+          setPP(true); startTick(); setEQ(true);
+        }
+      }
+    }
+  });
+}
+
+// Кожні 5 сек вирівнюємо popup по ytPlayer (компенсує дрейф)
+function _startPopupSync() {
+  _stopPopupSync();
+  popupSyncTicker = setInterval(() => {
+    if (!popupReady || !ytReady) return;
+    try {
+      // Якщо музика на паузі — попап теж має бути на паузі. Раніше тут
+      // просто пропускався тік, тому попап продовжував грати й через
+      // деякий час "оживляв" звук назад через власний onStateChange.
+      if (!userIntendedPlaying) {
+        if (popupPlayer.getPlayerState() === YT.PlayerState.PLAYING) popupPlayer.pauseVideo();
+        return;
+      }
+      const mainTime = ytPlayer.getCurrentTime();
+      const popTime  = popupPlayer.getCurrentTime();
+      if (Math.abs(mainTime - popTime) > 1.5) {
+        popupPlayer.seekTo(mainTime, true);
+      }
+    } catch(e) {}
+  }, 5000);
+}
+
+function _stopPopupSync() {
+  if (popupSyncTicker) { clearInterval(popupSyncTicker); popupSyncTicker = null; }
+}
+
+function toggleVideoPopup() {
+  if (videoPopupOpen) closeVideoPopup();
+  else openVideoPopup();
+}
+
+function openVideoPopup() {
+  if (!currentVid) return;
+  videoPopupOpen = true;
+  document.getElementById('video-popup').classList.add('open');
+  document.getElementById('btn-video').classList.add('active');
+
+  let startAt = 0;
+  try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
+  _initPopupPlayer(currentVid, startAt);
+}
+
+function closeVideoPopup() {
+  videoPopupOpen = false;
+  document.getElementById('video-popup').classList.remove('open');
+  document.getElementById('btn-video').classList.remove('active');
+  _stopPopupSync();
+
+  // Зупиняємо popup-плеєр — основний ytPlayer НЕ чіпаємо
+  if (popupPlayer) {
+    try { popupPlayer.destroy(); } catch(e) {}
+    popupPlayer = null;
+    popupReady = false;
+  }
+
+  // Відновлюємо placeholder для наступного разу
+  const frame = document.getElementById('video-popup-frame');
+  let ph = document.getElementById('popup-player-ph');
+  if (!ph) { ph = document.createElement('div'); ph.id='popup-player-ph'; frame.appendChild(ph); }
+  document.getElementById('video-popup-loading').style.display = 'flex';
+}
+
+function _onVidReady(vid) {
+  currentVid = vid;
+  // Якщо попап відкритий — оновлюємо відео в ньому з позиції 0
+  if (videoPopupOpen) {
+    let startAt = 0;
+    try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
+    _initPopupPlayer(vid, startAt);
+  }
+}
+
+// INIT
+initApp();
+applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+applyLang(currentLang);
+</script>
+</body>
+</html>
