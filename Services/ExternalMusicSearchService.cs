@@ -31,30 +31,58 @@ public class ExternalMusicSearchService(HttpClient http)
         {
             var attrPart = string.IsNullOrWhiteSpace(attribute) ? "" : $"&attribute={attribute}";
             // Запитуємо трохи більше, ніж треба — частина відсіється
-            // нижче суворим фільтром по полю, тож без запасу могло б
-            // лишитись замало результатів.
-            var url = $"https://itunes.apple.com/search?term={Uri.EscapeDataString(query)}&entity=song{attrPart}&limit={Math.Min(limit * 2, 200)}";
+            // нижче суворим фільтром/ярусами релевантності, тож без
+            // запасу могло б лишитись замало результатів.
+            var url = $"https://itunes.apple.com/search?term={Uri.EscapeDataString(query)}&entity=song{attrPart}&limit={Math.Min(limit * 3, 200)}";
             var result = await http.GetFromJsonAsync<ITunesResponse>(url);
             if (result?.Results is null) return [];
 
             var candidates = result.Results
-                .Where(r => !string.IsNullOrWhiteSpace(r.ArtistName) && !string.IsNullOrWhiteSpace(r.TrackName));
+                .Where(r => !string.IsNullOrWhiteSpace(r.ArtistName) && !string.IsNullOrWhiteSpace(r.TrackName))
+                .ToList();
 
             // iTunes attribute=artistTerm/songTerm/albumTerm обмежує, ЯКЕ поле
             // шукати, але сам збіг усередині поля лишається нечітким
-            // (токенізованим) — тому фрази вроду "falling in reverse" у
+            // (токенізованим) — тому фрази типу "falling in reverse" у
             // назві ЧУЖОЇ пісні все ще могли проходити як "збіг" навіть при
-            // artistTerm. Тому додатково жорстко перевіряємо, що потрібне
-            // поле дійсно містить весь запит, а не просто якийсь токен.
-            candidates = attribute switch
+            // artistTerm. Тому далі поводимось по-різному залежно від того,
+            // яке саме поле шукали:
+            IEnumerable<ITunesResult> ordered;
+            switch (attribute)
             {
-                "artistTerm" => candidates.Where(r => r.ArtistName!.Contains(query, StringComparison.OrdinalIgnoreCase)),
-                "songTerm" => candidates.Where(r => r.TrackName!.Contains(query, StringComparison.OrdinalIgnoreCase)),
-                "albumTerm" => candidates.Where(r => !string.IsNullOrWhiteSpace(r.CollectionName) && r.CollectionName.Contains(query, StringComparison.OrdinalIgnoreCase)),
-                _ => candidates,
-            };
+                case "artistTerm":
+                    // Виконавець — лише точний збіг, без запасних варіантів.
+                    ordered = candidates.Where(r => r.ArtistName!.Contains(query, StringComparison.OrdinalIgnoreCase));
+                    break;
 
-            return candidates
+                case "songTerm":
+                    // Назва — лише збіг по назві; порядок лишаємо як від
+                    // iTunes (він і сам ранжує популярніші/релевантніші
+                    // треки вище — це найкраще наближення до "популярності",
+                    // яке дає безкоштовний Search API).
+                    ordered = candidates.Where(r => r.TrackName!.Contains(query, StringComparison.OrdinalIgnoreCase));
+                    break;
+
+                case "albumTerm":
+                    // Альбом — не жорсткий фільтр, а ярусна релевантність:
+                    // спочатку справжні збіги по альбому (точний, потім
+                    // частковий), далі — як запасний варіант — пісня з
+                    // такою назвою, і насамкінець виконавець з такою
+                    // назвою. Усе, що не збігається взагалі ні по чому,
+                    // відкидається.
+                    ordered = candidates
+                        .Select(r => (Item: r, Tier: AlbumRelevanceTier(r, query)))
+                        .Where(x => x.Tier is not null)
+                        .OrderBy(x => x.Tier)
+                        .Select(x => x.Item);
+                    break;
+
+                default:
+                    ordered = candidates;
+                    break;
+            }
+
+            return ordered
                 .Take(limit)
                 .Select(r => new ExternalSongResult(
                     Artist: r.ArtistName!,
@@ -72,6 +100,21 @@ public class ExternalMusicSearchService(HttpClient http)
             // користувач просто продовжує заповнювати форму вручну.
             return [];
         }
+    }
+
+    // 1 = точний збіг альбому, 2 = альбом містить запит, 3 = запасний
+    // варіант — назва пісні містить запит, 4 = останній запасний варіант —
+    // ім'я виконавця містить запит, null = не збігається взагалі ні по чому.
+    private static int? AlbumRelevanceTier(ITunesResult r, string album)
+    {
+        if (!string.IsNullOrWhiteSpace(r.CollectionName))
+        {
+            if (r.CollectionName.Equals(album, StringComparison.OrdinalIgnoreCase)) return 1;
+            if (r.CollectionName.Contains(album, StringComparison.OrdinalIgnoreCase)) return 2;
+        }
+        if (r.TrackName!.Contains(album, StringComparison.OrdinalIgnoreCase)) return 3;
+        if (r.ArtistName!.Contains(album, StringComparison.OrdinalIgnoreCase)) return 4;
+        return null;
     }
 
     // iTunes для синглів записує "альбом" як "{Назва пісні} - Single" (або
