@@ -408,6 +408,87 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 
 /* Hidden YT */
 #yt-wrap { position:fixed; bottom:-9999px; left:-9999px; width:1px; height:1px; overflow:hidden; }
+
+/* ================================================================
+   МОБІЛЬНА АДАПТАЦІЯ
+   Все нижче — лише під max-width, десктопний вигляд не чіпаємо.
+   ================================================================ */
+@media (max-width: 768px) {
+  /* NAV: вкладки не влазять в один рядок — переносимо їх у власний
+     рядок і скролимо горизонтально, замість того щоб ламати текст. */
+  nav { padding: 0 0.75rem; flex-wrap: wrap; height: auto; row-gap: 0.35rem; }
+  .nav-brand { font-size: 1.05rem; margin-right: 0.75rem; }
+  .nav-tabs { order: 10; flex: 1 1 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .nav-tabs li { flex-shrink: 0; }
+  .nav-tabs li button { height: 44px; padding: 0 0.8rem; font-size: 0.7rem; white-space: nowrap; }
+
+  .container { padding: 1.25rem 1rem; }
+  h2 { font-size: 1.45rem; }
+
+  /* STAT CARDS: фіксуємо 2 колонки, щоб не гуляло між 1 і 3 залежно від ширини */
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .stat-card { padding: 0.9rem 1rem; }
+  .stat-card .value { font-size: 1.6rem; }
+
+  /* FILTER BAR: пошук — на всю ширину, фільтр і "перемішати" — рядком під ним */
+  .filter-bar { gap: 0.5rem; }
+  .filter-bar input { flex: 1 1 100%; width: auto; }
+  .filter-bar select { flex: 1 1 auto; }
+
+  /* ФОРМИ: форма і панель "схожих пісень" завжди в один стовпчик —
+     інакше на вузькому екрані обидві колонки стискаються до нечитабельного вигляду */
+  .form-card, .ext-search-panel-box { flex: 1 1 100% !important; max-width: 100% !important; }
+  .form-card { padding: 1.25rem; }
+  .form-row { grid-template-columns: 1fr; gap: 0.75rem; }
+  .form-card .btn-primary { width: 100%; padding: 0.75rem 1rem; }
+
+  /* ТАБЛИЦІ → КАРТКИ: заголовки ховаємо, підпис значення береться
+     з data-label на <td> (стандартний прийом для адаптивних таблиць). */
+  .table-wrap.mobile-cards table, .table-wrap.mobile-cards thead, .table-wrap.mobile-cards tbody,
+  .table-wrap.mobile-cards tr, .table-wrap.mobile-cards td { display: block; width: 100%; }
+  .table-wrap.mobile-cards thead { display: none; }
+  .table-wrap.mobile-cards tbody tr { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.7rem; }
+  .table-wrap.mobile-cards tbody tr:last-child { margin-bottom: 0; }
+  .table-wrap.mobile-cards tbody td { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px dashed var(--border); text-align: right; }
+  .table-wrap.mobile-cards tbody td:last-child { border-bottom: none; }
+  .table-wrap.mobile-cards tbody td::before { content: attr(data-label); color: var(--muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; flex-shrink: 0; }
+  .table-wrap.mobile-cards tbody td[data-label=""]::before { content: none; }
+  /* Клітинки лише з іконками (без підпису бо в шапці там теж пусто) — рівняємо по краю */
+  .table-wrap.mobile-cards tbody td.td-icon-lead { justify-content: flex-start; }
+  .table-wrap.mobile-cards tbody td.td-icon-trail { justify-content: flex-end; }
+  .table-wrap.mobile-cards tbody td.td-actions > div { flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+  .table-wrap.mobile-cards .badge.album { max-width: 100%; }
+
+  /* ТАП-ЗОНИ: збільшуємо кнопки-іконки під палець (орієнтир ≥40px) */
+  .btn-icon-danger, .btn-icon-edit, .btn-icon-fav, .theme-toggle-btn { width: 40px; height: 40px; }
+  .btn-icon-danger svg, .btn-icon-edit svg, .btn-icon-fav svg { width: 18px; height: 18px; }
+  .play-row-btn { width: 36px; height: 36px; }
+  .actions-td { flex-wrap: wrap; gap: 0.5rem; }
+
+  /* МОДАЛЬНІ ВІКНА: не даємо вилізти за екран ні по ширині (деякі мають
+     інлайновий width:400px), ні по висоті; кнопки на всю ширину */
+  .modal-box { width: 92vw !important; max-height: 85vh; overflow-y: auto; padding: 1.25rem; }
+  .modal-actions { flex-direction: column-reverse; gap: 0.5rem; }
+  .modal-actions button { width: 100%; padding: 0.65rem 1rem; font-size: 0.85rem; }
+
+  /* ПЛЕЄР: ховаємо другорядні елементи (гучність, час), щоб лишити
+     місце для кнопок керування відтворенням на вузькому екрані */
+  .player-left { min-width: 0; max-width: 42%; padding: 0 0.5rem 0 0.6rem; gap: 0.6rem; }
+  #player-cover { width: 42px; height: 42px; }
+  #p-album { display: none; }
+  .player-center { padding: 0 0.3rem; min-width: 0; }
+  .time-row { display: none; }
+  .player-right { min-width: 0; padding: 0 0.6rem 0 0.3rem; gap: 0.3rem; }
+  .vol-row { display: none; }
+
+  /* Відео-попап шириною 320px не влазить у вузькі екрани — прив'язуємось до обох країв */
+  #video-popup { left: 12px; right: 12px; width: calc(100vw - 24px); }
+}
+
+@media (max-width: 420px) {
+  .container { padding: 1rem 0.75rem; }
+  .nav-tabs li button { padding: 0 0.6rem; font-size: 0.66rem; }
+}
 </style>
 </head>
 <body>
@@ -452,7 +533,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn" data-i18n="table.shuffle">🔀 Перемішати</button>
     </div>
-    <div class="table-wrap scroll-table">
+    <div class="table-wrap scroll-table mobile-cards">
       <table>
         <thead>
           <tr>
@@ -501,7 +582,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   <div class="container">
     <h2><span data-i18n="admin.heading.pre">Запити</span> <span class="hl" data-i18n="admin.heading.accent">користувачів</span></h2>
     <div id="requests-empty" class="empty" style="display:none;"><span class="icon">📭</span><span data-i18n="admin.empty">Немає нових запитів</span></div>
-    <div class="table-wrap" id="requests-table-wrap">
+    <div class="table-wrap mobile-cards" id="requests-table-wrap">
       <table>
         <thead><tr><th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th data-i18n="table.album">Альбом</th><th data-i18n="table.action">Дія</th></tr></thead>
         <tbody id="requests-body"></tbody>
@@ -579,7 +660,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 
     <h2 style="font-size:1.3rem;" data-i18n="profile.favoritesTitle">Улюблені пісні</h2>
     <div id="profile-favorites-empty" class="empty" style="display:none;"><span class="icon">💔</span><span data-i18n="profile.favoritesEmpty">Ще немає улюблених пісень</span></div>
-    <div class="table-wrap" style="margin-bottom:2rem;">
+    <div class="table-wrap mobile-cards" style="margin-bottom:2rem;">
       <table>
         <thead><tr><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
         <tbody id="profile-favorites-body"></tbody>
@@ -604,7 +685,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <button class="btn btn-primary" id="playlist-play-all-btn" onclick="playPlaylistFromStart()" data-i18n="profile.playAllBtn">▶ Слухати весь плейлист</button>
     </div>
     <div id="playlist-detail-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.playlistEmpty">У цьому плейлисті ще немає пісень</span></div>
-    <div class="table-wrap">
+    <div class="table-wrap mobile-cards">
       <table>
         <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
         <tbody id="playlist-detail-body"></tbody>
@@ -1248,10 +1329,10 @@ function loadProfileFavorites(){
     document.getElementById('profile-favorites-empty').style.display = list.length ? 'none' : '';
     tbody.innerHTML = list.map(s=>`
       <tr>
-        <td><strong>${esc(s.artist)}</strong></td>
-        <td>${esc(s.title)}</td>
-        <td>${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
-        <td><button class="btn-icon-fav active" onclick="removeFavoriteFromProfile(${s.id})" title="${t('profile.favToggle')}"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button></td>
+        <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
+        <td data-label="${t('table.title')}">${esc(s.title)}</td>
+        <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+        <td class="td-icon-trail" data-label=""><button class="btn-icon-fav active" onclick="removeFavoriteFromProfile(${s.id})" title="${t('profile.favToggle')}"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button></td>
       </tr>`).join('');
   }).catch(()=>{});
 }
@@ -1340,13 +1421,13 @@ function openPlaylist(id){
     document.getElementById('playlist-play-all-btn').style.display = p.songs.length ? '' : 'none';
     tbody.innerHTML = p.songs.map(s=>`
       <tr>
-        <td><button class="btn-icon-fav" onclick="playFromPlaylist(${s.id})" title="${t('profile.playBtn')}">
+        <td class="td-icon-lead" data-label=""><button class="btn-icon-fav" onclick="playFromPlaylist(${s.id})" title="${t('profile.playBtn')}">
           <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
         </button></td>
-        <td><strong>${esc(s.artist)}</strong></td>
-        <td>${esc(s.title)}</td>
-        <td>${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
-        <td><button class="btn-icon-danger" onclick="removeSongFromPlaylist(${id},${s.id})" title="${t('modal.confirmDelete')}">
+        <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
+        <td data-label="${t('table.title')}">${esc(s.title)}</td>
+        <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+        <td class="td-icon-trail" data-label=""><button class="btn-icon-danger" onclick="removeSongFromPlaylist(${id},${s.id})" title="${t('modal.confirmDelete')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
         </button></td>
       </tr>`).join('');
@@ -1434,18 +1515,18 @@ function renderSongs(){
       ?`<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
       :`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     return `<tr class="${isPlay?'playing-row':''}">
-      <td style="padding:0.7rem 0.5rem 0.7rem 1rem;">
+      <td class="td-icon-lead" data-label="" style="padding:0.7rem 0.5rem 0.7rem 1rem;">
         <button class="play-row-btn${isPlay?' is-playing':''}" onclick="playSong(${s.id})">${btnIcon}</button>
       </td>
-      <td class="num-col">${i+1}</td>
-      <td><strong>${esc(s.artist)}</strong></td>
-      <td>${esc(s.title)}</td>
-      <td class="duration-col">${fmtDate(s.release)}</td>
-      <td class="duration-col">${s.duration}</td>
-      <td>${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
-      <td>${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
-      ${currentUser?.authenticated?`<td><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
-      ${currentUser?.isAdmin?`<td><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
+      <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
+      <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
+      <td data-label="${t('table.title')}">${esc(s.title)}</td>
+      <td class="duration-col" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
+      <td class="duration-col" data-label="${t('table.duration')}">${s.duration}</td>
+      <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+      <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+      ${currentUser?.authenticated?`<td class="td-icon-trail" data-label=""><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
+      ${currentUser?.isAdmin?`<td class="td-actions" data-label="${t('table.action')}"><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
     </tr>`;
   }).join('');
 }
@@ -1627,12 +1708,12 @@ function renderRequests(){
       if(!requests.length){wrap.style.display='none';empty.style.display='block';return;}
       wrap.style.display='block';empty.style.display='none';
       tbody.innerHTML=requests.map((r,i)=>`
-        <tr><td class="num-col">${i+1}</td>
-        <td><strong>${esc(r.artist)}</strong></td><td>${esc(r.title)}</td>
-        <td class="duration-col">${fmtDate(r.release)}</td><td class="duration-col">${r.duration}</td>
-        <td>${r.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}${r.genreNamesOriginal?`<div style="color:var(--muted);font-size:0.7rem;margin-top:4px;">(${esc(r.genreNamesOriginal)})</div>`:''}</td>
-        <td>${r.albumTitle?`<span class="badge album">${esc(r.albumTitle)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
-        <td><div class="actions-td">
+        <tr><td class="num-col" data-label="${t('table.number')}">${i+1}</td>
+        <td data-label="${t('table.artist')}"><strong>${esc(r.artist)}</strong></td><td data-label="${t('table.title')}">${esc(r.title)}</td>
+        <td class="duration-col" data-label="${t('table.release')}">${fmtDate(r.release)}</td><td class="duration-col" data-label="${t('table.duration')}">${r.duration}</td>
+        <td data-label="${t('table.genres')}">${r.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}${r.genreNamesOriginal?`<div style="color:var(--muted);font-size:0.7rem;margin-top:4px;">(${esc(r.genreNamesOriginal)})</div>`:''}</td>
+        <td data-label="${t('table.album')}">${r.albumTitle?`<span class="badge album">${esc(r.albumTitle)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+        <td class="td-actions" data-label="${t('table.action')}"><div class="actions-td">
           <button class="btn btn-outline" onclick="openEditRequestModal(${r.id})" title="${t('admin.editBtn')}">✏️</button>
           <button class="btn btn-success" onclick="approveRequest(${r.id})">${t('admin.approveBtn')}</button>
           <button class="btn btn-danger" onclick="rejectRequest(${r.id})">${t('admin.rejectBtn')}</button>
