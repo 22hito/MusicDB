@@ -16,7 +16,7 @@ namespace MusicDB.Api.Services;
 // найчастіше (без ШІ, без пояснення).
 public class RecommendationService(MusicDbContext db, MusicService musicService, HttpClient http, IConfiguration config)
 {
-    private const int MaxRecommendations = 8;
+    private const int MaxRecommendations = 25;
     private const int HistoryLookback = 50;
 
     public async Task<List<RecommendationDto>> GetRecommendationsAsync(string userEmail, string lang = "uk")
