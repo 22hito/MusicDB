@@ -98,7 +98,18 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// no-cache: під час активної розробки браузер інакше кешує index.html
+// надовго (heuristic caching без явних заголовків) і після кожного
+// деплою користувач бачить стару версію, навіть з Ctrl+F5. no-cache
+// (не no-store) лишає ETag-валідацію — повторні візити швидкі (304),
+// але браузер завжди питає сервер, чи файл не змінився.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+    }
+});
 app.UseAuthentication();
 app.UseAuthorization();
 

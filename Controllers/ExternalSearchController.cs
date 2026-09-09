@@ -17,11 +17,55 @@ public class ExternalSearchController(
     // Доступно лише авторизованим. Список підказок повертається БЕЗ
     // збагачення жанрів — саме збагачення відбувається пізніше, лише для
     // ОБРАНОЇ пісні (див. SuggestGenres нижче).
+    //
+    // artist/title/album передаються ОКРЕМО (а не одним рядком q), щоб
+    // можна було звужувати пошук iTunes до конкретного поля:
+    //  - заповнено альбом (+ можливо виконавець) → шукаємо ВСІ пісні
+    //    цього альбому (attribute=albumTerm, коли виконавця немає —
+    //    інакше він додається в term для кращого збігу);
+    //  - заповнено лише виконавець → attribute=artistTerm (щоб не
+    //    підтягувались чужі пісні, назва яких просто збігається з
+    //    іменем артиста);
+    //  - заповнено лише назва → attribute=songTerm;
+    //  - заповнено і виконавець, і назва → звичайний загальний пошук.
+    // q лишився для сумісності зі старими клієнтами.
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ExternalSongResult>>> Search([FromQuery] string q)
+    public async Task<ActionResult<IEnumerable<ExternalSongResult>>> Search(
+        [FromQuery] string? artist, [FromQuery] string? title, [FromQuery] string? album, [FromQuery] string? q)
     {
-        var results = await searchService.SearchAsync(q);
+        artist = artist?.Trim() ?? "";
+        title = title?.Trim() ?? "";
+        album = album?.Trim() ?? "";
+
+        string query;
+        string? attribute = null;
+
+        if (!string.IsNullOrWhiteSpace(album))
+        {
+            query = string.IsNullOrWhiteSpace(artist) ? album : $"{artist} {album}";
+            attribute = string.IsNullOrWhiteSpace(artist) ? "albumTerm" : null;
+        }
+        else if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title))
+        {
+            query = $"{artist} {title}";
+        }
+        else if (!string.IsNullOrWhiteSpace(artist))
+        {
+            query = artist;
+            attribute = "artistTerm";
+        }
+        else if (!string.IsNullOrWhiteSpace(title))
+        {
+            query = title;
+            attribute = "songTerm";
+        }
+        else
+        {
+            query = q?.Trim() ?? "";
+        }
+
+        var results = await searchService.SearchAsync(query, attribute);
         return Ok(results);
     }
 
