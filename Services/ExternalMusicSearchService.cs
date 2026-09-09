@@ -16,14 +16,21 @@ public record ExternalSongResult(
 // для автозаповнення форми запиту користувача — менше вводити вручну.
 public class ExternalMusicSearchService(HttpClient http)
 {
-    public async Task<List<ExternalSongResult>> SearchAsync(string query, int limit = 20)
+    // attribute — необов'язкове звуження пошуку iTunes до конкретного поля
+    // (artistTerm / songTerm / albumTerm). Без нього iTunes шукає збіги
+    // одразу по виконавцю, назві й альбому — тому пошук лише за іменем
+    // артиста міг випадково підтягнути чужі пісні, назва яких просто
+    // збігається з цим ім'ям. albumTerm, навпаки, дозволяє знайти ВСІ
+    // пісні конкретного альбому.
+    public async Task<List<ExternalSongResult>> SearchAsync(string query, string? attribute = null, int limit = 20)
     {
         if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
             return [];
 
         try
         {
-            var url = $"https://itunes.apple.com/search?term={Uri.EscapeDataString(query)}&entity=song&limit={limit}";
+            var attrPart = string.IsNullOrWhiteSpace(attribute) ? "" : $"&attribute={attribute}";
+            var url = $"https://itunes.apple.com/search?term={Uri.EscapeDataString(query)}&entity=song{attrPart}&limit={limit}";
             var result = await http.GetFromJsonAsync<ITunesResponse>(url);
             if (result?.Results is null) return [];
 

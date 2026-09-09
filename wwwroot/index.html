@@ -482,7 +482,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
           <div class="form-group"><label data-i18n="form.release">Дата релізу *</label><input type="date" id="req-release"></div>
           <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="req-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
         </div>
-        <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="req-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу"></div>
+        <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="req-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу" oninput="onRequestSearchInput()"></div>
         <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="req-genres" data-i18n-placeholder="form.genres.placeholder" placeholder="Рок, Поп, Джаз"><div class="hint" id="req-genres-hint" data-i18n="form.genres.hint">Через кому</div></div>
         <button class="btn btn-primary" onclick="submitRequest()" data-i18n="request.submitBtn">Надіслати запит</button>
       </div>
@@ -526,7 +526,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
           <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="add-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
         </div>
         <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="add-genres" data-i18n-placeholder="form.genres.placeholder" placeholder="Рок, Поп, Джаз"><div class="hint" id="add-genres-hint" data-i18n="form.genres.hint">Через кому</div></div>
-        <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="add-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу"></div>
+        <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="add-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу" oninput="onAddSearchInput()"></div>
         <button class="btn btn-primary" onclick="addSong()" data-i18n="add.submitBtn">Додати до бази</button>
       </div>
 
@@ -1522,13 +1522,15 @@ function renderExtSearchItem(it, idx, prefix){
 function runExternalSearch(prefix){
   const artistId = prefix==='add' ? 'add-artist' : 'req-artist';
   const titleId = prefix==='add' ? 'add-title' : 'req-title';
+  const albumId = prefix==='add' ? 'add-album' : 'req-album';
   const panelId = prefix==='add' ? 'add-ext-search-panel' : 'ext-search-panel';
   const resultsId = prefix==='add' ? 'add-ext-search-results' : 'ext-search-results';
   const cacheKey = prefix==='add' ? '_addExtSearchCache' : '_extSearchCache';
 
   const artist = document.getElementById(artistId).value.trim();
   const title = document.getElementById(titleId).value.trim();
-  const query = `${artist} ${title}`.trim();
+  const album = document.getElementById(albumId).value.trim();
+  const query = `${artist} ${title} ${album}`.trim();
   const panel = document.getElementById(panelId);
   const results = document.getElementById(resultsId);
 
@@ -1538,7 +1540,8 @@ function runExternalSearch(prefix){
     return;
   }
 
-  fetch(`/api/external-search?q=${encodeURIComponent(query)}`)
+  const params = new URLSearchParams({ artist, title, album });
+  fetch(`/api/external-search?${params.toString()}`)
     .then(r=>r.ok?r.json():[])
     .then(items=>{
       if(!items.length){ panel.style.display='none'; results.innerHTML=''; return; }
