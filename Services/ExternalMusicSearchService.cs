@@ -16,7 +16,7 @@ public record ExternalSongResult(
 // для автозаповнення форми запиту користувача — менше вводити вручну.
 public class ExternalMusicSearchService(HttpClient http)
 {
-    public async Task<List<ExternalSongResult>> SearchAsync(string query, int limit = 8)
+    public async Task<List<ExternalSongResult>> SearchAsync(string query, int limit = 20)
     {
         if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
             return [];
