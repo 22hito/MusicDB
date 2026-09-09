@@ -30,12 +30,32 @@ public class ExternalMusicSearchService(HttpClient http)
         try
         {
             var attrPart = string.IsNullOrWhiteSpace(attribute) ? "" : $"&attribute={attribute}";
-            var url = $"https://itunes.apple.com/search?term={Uri.EscapeDataString(query)}&entity=song{attrPart}&limit={limit}";
+            // Запитуємо трохи більше, ніж треба — частина відсіється
+            // нижче суворим фільтром по полю, тож без запасу могло б
+            // лишитись замало результатів.
+            var url = $"https://itunes.apple.com/search?term={Uri.EscapeDataString(query)}&entity=song{attrPart}&limit={Math.Min(limit * 2, 200)}";
             var result = await http.GetFromJsonAsync<ITunesResponse>(url);
             if (result?.Results is null) return [];
 
-            return result.Results
-                .Where(r => !string.IsNullOrWhiteSpace(r.ArtistName) && !string.IsNullOrWhiteSpace(r.TrackName))
+            var candidates = result.Results
+                .Where(r => !string.IsNullOrWhiteSpace(r.ArtistName) && !string.IsNullOrWhiteSpace(r.TrackName));
+
+            // iTunes attribute=artistTerm/songTerm/albumTerm обмежує, ЯКЕ поле
+            // шукати, але сам збіг усередині поля лишається нечітким
+            // (токенізованим) — тому фрази вроду "falling in reverse" у
+            // назві ЧУЖОЇ пісні все ще могли проходити як "збіг" навіть при
+            // artistTerm. Тому додатково жорстко перевіряємо, що потрібне
+            // поле дійсно містить весь запит, а не просто якийсь токен.
+            candidates = attribute switch
+            {
+                "artistTerm" => candidates.Where(r => r.ArtistName!.Contains(query, StringComparison.OrdinalIgnoreCase)),
+                "songTerm" => candidates.Where(r => r.TrackName!.Contains(query, StringComparison.OrdinalIgnoreCase)),
+                "albumTerm" => candidates.Where(r => !string.IsNullOrWhiteSpace(r.CollectionName) && r.CollectionName.Contains(query, StringComparison.OrdinalIgnoreCase)),
+                _ => candidates,
+            };
+
+            return candidates
+                .Take(limit)
                 .Select(r => new ExternalSongResult(
                     Artist: r.ArtistName!,
                     Title: r.TrackName!,
