@@ -448,7 +448,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <button class="btn btn-outline" onclick="openRequestPage()" data-i18n="home.addRequestBtn">+ Надіслати запит</button>
     </div>
     <div class="filter-bar">
-      <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою або виконавцем…" oninput="renderSongs()">
+      <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="renderSongs()">
       <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn" data-i18n="table.shuffle">🔀 Перемішати</button>
     </div>
@@ -821,7 +821,7 @@ const I18N = {
     'home.heading.pre': 'Опубліковані',
     'home.heading.accent': 'пісні',
     'home.addRequestBtn': '+ Надіслати запит',
-    'search.placeholder': 'Пошук за назвою або виконавцем…',
+    'search.placeholder': 'Пошук за назвою, виконавцем або альбомом…',
     'filter.allGenres': 'Усі жанри',
     'table.shuffle': '🔀 Перемішати',
     'table.number': '№',
@@ -952,7 +952,7 @@ const I18N = {
     'home.heading.pre': 'Published',
     'home.heading.accent': 'songs',
     'home.addRequestBtn': '+ Submit request',
-    'search.placeholder': 'Search by title or artist…',
+    'search.placeholder': 'Search by title, artist, or album…',
     'filter.allGenres': 'All genres',
     'table.shuffle': '🔀 Shuffle',
     'table.number': '#',
@@ -1415,7 +1415,7 @@ function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
   const filtered=songs.filter(s=>{
-    const mt=!srch||s.artist.toLowerCase().includes(srch)||s.title.toLowerCase().includes(srch);
+    const mt=!srch||s.artist.toLowerCase().includes(srch)||s.title.toLowerCase().includes(srch)||(s.album&&s.album.toLowerCase().includes(srch));
     const mg=!gf||s.genres.includes(gf);
     return mt&&mg;
   });
@@ -2027,7 +2027,9 @@ async function fetchVid(artist,title){
   const q=encodeURIComponent(`${artist} ${title} official video`);
   try{
     const r=await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&q=${q}&key=${ytApiKey}`,
+      // maxResults=10 (не 6) — більший пул кандидатів, з якого відсіюємо
+      // непрофесійні перезаливи.
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${q}&key=${ytApiKey}`,
       {signal:AbortSignal.timeout(8000)}
     );
     if(!r.ok) return null;
@@ -2036,17 +2038,24 @@ async function fetchVid(artist,title){
     if(!items.length) return null;
 
     const artistLower=artist.toLowerCase();
-    const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up'];
+    const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up','unofficial','fan made','fan-made','bootleg'];
 
     function scoreItem(item){
       const t=(item.snippet?.title||'').toLowerCase();
       const ch=(item.snippet?.channelTitle||'').toLowerCase();
+      // Канал виконавця, VEVO, автогенерований YouTube-канал "Артист - Topic"
+      // (його не можна підробити випадковому користувачу) або канал з
+      // "official" у назві — надійні ознаки, що це справжнє офіційне джерело.
+      const channelLooksOfficial = ch.includes(artistLower)||ch.includes('vevo')||ch.includes(' - topic')||ch.includes('official');
       let s=0;
-      // Канал самого виконавця (або офіційний VEVO/Records-канал) — найсильніший сигнал.
-      if(ch.includes(artistLower)||ch.includes('vevo')) s+=3;
-      if(t.includes('official video')||t.includes('official music video')) s+=2;
-      else if(t.includes('official')) s+=1;
-      if(badWords.some(w=>t.includes(w))) s-=3;
+      if(channelLooksOfficial) s+=4;
+      // Напис "official video" у назві САМ ПО СОБІ нічого не гарантує — це
+      // якраз те, що пишуть у назвах неякісних перезаливів. Довіряємо йому
+      // лише коли канал і справді виглядає офіційним; інакше — це навпаки
+      // підозріло, і оцінка йде в мінус.
+      if(t.includes('official video')||t.includes('official music video')) s+=channelLooksOfficial?2:-2;
+      else if(t.includes('official')) s+=channelLooksOfficial?1:-1;
+      if(badWords.some(w=>t.includes(w))) s-=5;
       return s;
     }
 
