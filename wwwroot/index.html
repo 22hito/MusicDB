@@ -93,6 +93,14 @@ h2 span.hl { color: var(--accent); }
 
 /* TABLE */
 .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+/* Тонкий темний скролбар замість товстого системного білого — інакше він
+   "з'їдав" ширину і візуально наліз на останній стовпець таблиці. */
+.table-wrap { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-wrap::-webkit-scrollbar-track { background: transparent; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+.table-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.table-wrap::-webkit-scrollbar-corner { background: transparent; }
 /* Власний вертикальний скрол таблиці (≈25-30 рядків видно одразу), а не скрол усієї сторінки. */
 .table-wrap.scroll-table { overflow-y: auto; max-height: 1100px; }
 .table-wrap.scroll-table thead th { position: sticky; top: 0; z-index: 2; }
@@ -624,7 +632,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
           <tr>
             <th style="width:40px"></th>
             <th data-i18n="table.number">№</th><th class="sortable" data-sort-key="artist" onclick="sortSongs('artist')" data-i18n="table.artist">Виконавець</th><th class="sortable" data-sort-key="title" onclick="sortSongs('title')" data-i18n="table.title">Назва</th>
-            <th class="sortable" data-sort-key="release" onclick="sortSongs('release')" data-i18n="table.release">Дата релізу</th><th class="sortable" data-sort-key="duration" onclick="sortSongs('duration')" data-i18n="table.duration">Тривалість</th><th class="sortable" data-sort-key="genres" onclick="sortSongs('genres')" data-i18n="table.genres">Жанри</th><th class="sortable" style="width:280px" data-sort-key="album" onclick="sortSongs('album')" data-i18n="table.album">Альбом</th><th class="sortable duration-col" style="width:90px" data-sort-key="plays" onclick="sortSongs('plays')" data-i18n="table.plays">Прослух.</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
+            <th class="sortable" data-sort-key="release" onclick="sortSongs('release')" data-i18n="table.release">Дата релізу</th><th class="sortable" data-sort-key="duration" onclick="sortSongs('duration')" data-i18n="table.duration">Тривалість</th><th class="sortable" data-sort-key="genres" onclick="sortSongs('genres')" data-i18n="table.genres">Жанри</th><th class="sortable" style="width:280px" data-sort-key="album" onclick="sortSongs('album')" data-i18n="table.album">Альбом</th><th class="sortable duration-col" style="width:110px" data-sort-key="plays" onclick="sortSongs('plays')" data-i18n="table.plays">Прослух.</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
           </tr>
         </thead>
         <tbody id="songs-body"></tbody>
@@ -1384,6 +1392,7 @@ let shuffleActive = false;
 let shuffleOrderMap = new Map();
 let sortKey = null;
 let sortDir = 1;
+let displayedSongs = [];
 
 function sortSongs(key){
   if(sortKey===key){ sortDir=-sortDir; }
@@ -1719,6 +1728,10 @@ function renderSongs(){
           return 0;
         })
       : filtered;
+  // Черга відтворення (playSong/next/prev) слідує за тим, що зараз реально
+  // показано в таблиці — інакше сортування чи пошук на екрані не збігалися б
+  // з порядком, у якому насправді йдуть пісні при "наступна".
+  displayedSongs = ordered;
   const tbody=document.getElementById('songs-body');
   if(!ordered.length){
     tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><span class="icon">🎵</span>${t('table.empty')}</div></td></tr>`;
@@ -2291,7 +2304,7 @@ function onState(e){
 }
 
 function playSong(id){
-  playerQueue=songs.slice();
+  playerQueue=(displayedSongs.length?displayedSongs:songs).slice();
   playerIndex=playerQueue.findIndex(s=>s.id===id);
   if(playerIndex<0)playerIndex=0;
   _loadCurrent();
@@ -2840,6 +2853,14 @@ function toggleVideoPopupSize(){
       // який користувач не тягнув.
       if (dir.includes('w')) left = startRect.right - width;
       if (dir.includes('n')) top = startRect.bottom - height;
+
+      // Шапка попапу — єдина "ручка" для переміщення. Якщо розтягування
+      // вгору/вліво виштовхне top/left за межі екрана (в'ємні координати),
+      // шапка стане фізично недосяжною і попап застрягне без можливості
+      // повернути його назад. Тому притискаємо до 0, "з'їдаючи" різницю
+      // з відповідного виміру — протилежний край лишається на місці.
+      if (dir.includes('n') && top < 0) { height += top; top = 0; }
+      if (dir.includes('w') && left < 0) { width += left; left = 0; }
 
       popup.style.width = width + 'px';
       popup.style.height = height + 'px';
