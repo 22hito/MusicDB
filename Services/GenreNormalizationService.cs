@@ -294,6 +294,100 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
     }
 
+    // Пакетна версія NormalizeGenreAsync — ОДИН запит до Gemini на весь набір
+    // жанрів одного збереження (напр. "рок, метал" при доданні/редагуванні
+    // пісні) замість окремого виклику на кожен жанр. Порядок результату
+    // відповідає порядку candidates; при помилці/відсутності ключа так само
+    // м'яко деградує в lowercase-фолбек для КОЖНОГО елемента, як одиночна версія.
+    public async Task<List<string>> NormalizeGenresBatchAsync(List<string> candidates, IEnumerable<string> existingGenres)
+    {
+        var fallback = candidates.Select(c => c.Trim().ToLowerInvariant()).ToList();
+        if (candidates.Count == 0) return fallback;
+        if (candidates.Count == 1) return [await NormalizeGenreAsync(candidates[0], existingGenres)];
+
+        var apiKey = config["Gemini:ApiKey"];
+        var modelName = config["Gemini:Model"] ?? "gemini-3.6-flash";
+        if (string.IsNullOrWhiteSpace(apiKey)) return fallback;
+
+        var existingList = string.Join(", ", existingGenres.Select(g => g.Trim()).Distinct());
+        var candidatesList = string.Join("\n", candidates.Select((c, i) => $"{i}: \"{c}\""));
+
+        var prompt = $$"""
+            Ти — асистент нормалізації назв музичних жанрів для бази даних.
+            Уже наявні в базі жанри: [{{existingList}}]
+
+            Ось список нових/введених жанрів за індексом:
+            {{candidatesList}}
+
+            Для КОЖНОГО з них визнач, чи він — ТОЙ САМИЙ жанр, що вже є у
+            списку, просто написаний по-іншому (без пробілу, з дефісом,
+            іншим регістром, скорочено, іншою мовою тощо, наприклад
+            "hardrock" і "hard rock" — той самий жанр; "рок" і "rock" —
+            той самий жанр).
+
+            Якщо так — поверни ТОЧНО ту назву, яка вже є у списку (символ в
+            символ). Якщо це дійсно новий жанр — поверни правильно
+            відформатовану англійську назву: маленькими літерами, зі
+            звичайними пробілами між словами (без дефісів), без зайвих
+            слів на кшталт "music" чи "genre".
+
+            Відповідь дай СТРОГО у форматі JSON, без жодного іншого тексту,
+            з РІВНО {{candidates.Count}} елементами, по одному на кожен індекс:
+            {"results": [{"index": 0, "genre": "rock"}, {"index": 1, "genre": "metal"}]}
+            """;
+
+        try
+        {
+            var response = await PostWithRetryAsync(http,
+                $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}",
+                new
+                {
+                    contents = new[] { new { parts = new[] { new { text = prompt } } } },
+                    generationConfig = new { temperature = 0.0, responseMimeType = "application/json" }
+                }, maxAttempts: 2);
+
+            if (!response.IsSuccessStatusCode) return fallback;
+
+            var result = await response.Content.ReadFromJsonAsync<GeminiResponse>();
+            var text = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
+            if (string.IsNullOrWhiteSpace(text)) return fallback;
+
+            text = text.Trim().Trim('`').Trim();
+            if (text.StartsWith("json", StringComparison.OrdinalIgnoreCase))
+                text = text[4..].Trim();
+
+            var parsed = JsonSerializer.Deserialize<BatchGenreNormalizeResult>(text);
+            if (parsed?.Results is null) return fallback;
+
+            var byIndex = parsed.Results.Where(r => r.Index.HasValue).ToDictionary(r => r.Index!.Value);
+            return candidates.Select((c, i) =>
+            {
+                var genre = byIndex.TryGetValue(i, out var r) ? r.Genre?.Trim() : null;
+                return string.IsNullOrWhiteSpace(genre) ? fallback[i] : genre.ToLowerInvariant();
+            }).ToList();
+        }
+        catch
+        {
+            // Ліміт/мережева помилка — працюємо як без ШІ (фолбек для всіх елементів).
+            return fallback;
+        }
+    }
+
+    private class BatchGenreNormalizeResult
+    {
+        [JsonPropertyName("results")]
+        public List<BatchGenreNormalizeItem>? Results { get; set; }
+    }
+
+    private class BatchGenreNormalizeItem
+    {
+        [JsonPropertyName("index")]
+        public int? Index { get; set; }
+
+        [JsonPropertyName("genre")]
+        public string? Genre { get; set; }
+    }
+
     private class GeminiResponse
     {
         [JsonPropertyName("candidates")]

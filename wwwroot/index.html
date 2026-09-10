@@ -96,9 +96,13 @@ h2 span.hl { color: var(--accent); }
 /* Власний вертикальний скрол таблиці (≈25-30 рядків видно одразу), а не скрол усієї сторінки. */
 .table-wrap.scroll-table { overflow-y: auto; max-height: 1100px; }
 .table-wrap.scroll-table thead th { position: sticky; top: 0; z-index: 2; }
-table { width: 100%; border-collapse: collapse; }
+/* border-collapse:separate (замість collapse) — з collapse position:sticky на
+   thead th ненадійно працює в багатьох браузерах: рядки таблиці "пролазять"
+   крізь зафіксований заголовок при прокручуванні замість того, щоб ховатись
+   під ним. border-spacing:0 лишає той самий вигляд без видимих проміжків. */
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
 thead tr { background: var(--surface2); }
-thead th { padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; }
+thead th { padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
 tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--surface2); }
