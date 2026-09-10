@@ -52,6 +52,49 @@ public class ExternalMusicSearchServiceTests
     }
 
     [Fact]
+    public async Task SearchAsync_AlbumTerm_ArtistHintMatchesDespiteMissingYo()
+    {
+        // Реальний сценарій: користувач набирає виконавця без "ё" (як прийнято
+        // в побутовому рос. письмі), а в базі iTunes ім'я записане з "ё" —
+        // видача не повинна від цього змінюватись.
+        var json = Results(
+            Item("Кишлак", "Track A", "Эскапист"),
+            Item("Дешёвые Драмы", "Track B", "Эскапист"));
+
+        var service = CreateService(json);
+
+        var result = await service.SearchAsync("Эскапист", "albumTerm", artistHint: "Дешевые Драмы");
+
+        Assert.Equal("Дешёвые Драмы", result[0].Artist);
+        Assert.Equal("Кишлак", result[1].Artist);
+    }
+
+    [Fact]
+    public async Task SearchAsync_AlbumTerm_MatchesAlbumNameWithTypo()
+    {
+        var json = Results(Item("Кишлак", "Track A", "Эскапист"));
+        var service = CreateService(json);
+
+        // "Эскапиcт" — типова одруківка (латинська "c" замість кириличної "с")
+        var result = await service.SearchAsync("Эскапиcт", "albumTerm");
+
+        var single = Assert.Single(result);
+        Assert.Equal("Кишлак", single.Artist);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ArtistTerm_MatchesDespiteMissingYo()
+    {
+        var json = Results(Item("Дешёвые Драмы", "Track A", "Album"));
+        var service = CreateService(json);
+
+        var result = await service.SearchAsync("Дешевые Драмы", "artistTerm");
+
+        var single = Assert.Single(result);
+        Assert.Equal("Дешёвые Драмы", single.Artist);
+    }
+
+    [Fact]
     public async Task SearchAsync_AlbumTerm_ArtistHintRanksMatchingArtistFirstWithinTier()
     {
         var json = Results(
