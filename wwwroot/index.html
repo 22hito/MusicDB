@@ -558,12 +558,18 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   .modal-actions button { width: 100%; padding: 0.65rem 1rem; font-size: 0.85rem; }
 
   /* ПЛЕЄР: ховаємо другорядні елементи (гучність, час) — лишаємо місце під кнопки керування */
-  .player-left { min-width: 0; max-width: 42%; padding: 0 0.5rem 0 0.6rem; gap: 0.6rem; }
+  .player-left { min-width: 0; max-width: 42%; flex: 0 1 42%; padding: 0 0.5rem 0 0.6rem; gap: 0.6rem; }
   #player-cover { width: 42px; height: 42px; }
   #p-album { display: none; }
-  .player-center { padding: 0 0.3rem; min-width: 0; }
+  .player-center { padding: 0 0.2rem; min-width: 0; }
   .time-row { display: none; }
-  .player-right { min-width: 0; padding: 0 0.6rem 0 0.3rem; gap: 0.3rem; }
+  /* Перемішати/повтор дублюють функціонал (перемішати вже є в таблиці) — на
+     вузьких екранах прибираємо їх, бо разом з play/pause/next і кнопками
+     праворуч (відео, редагувати, закрити) вони не влазили в один рядок і
+     виштовхували закрити/наступну пісню за межі екрана без можливості
+     дотягнутись без горизонтального скролу всієї сторінки. */
+  #btn-shuffle, #btn-repeat { display: none; }
+  .player-right { min-width: 0; padding: 0 0.5rem 0 0.2rem; gap: 0.15rem; }
   .vol-row { display: none; }
 
   /* Відео-попап шириною 320px не влазить у вузькі екрани — прив'язуємось до обох країв */
@@ -573,6 +579,13 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 @media (max-width: 420px) {
   .container { padding: 1rem 0.75rem; }
   .nav-tabs li button { padding: 0 0.6rem; font-size: 0.66rem; }
+
+  /* На найменших телефонах навіть без shuffle/repeat лишається мало місця,
+     якщо адміну ще й показана кнопка редагування — стискаємо трохи сильніше. */
+  .player-left { max-width: 36%; flex-basis: 36%; padding: 0 0.4rem 0 0.5rem; gap: 0.4rem; }
+  #player-cover { width: 36px; height: 36px; }
+  .player-center .pc-icon-btn { width: 30px; height: 30px; }
+  .player-center .pc-main { width: 34px; height: 34px; }
 }
 </style>
 </head>
