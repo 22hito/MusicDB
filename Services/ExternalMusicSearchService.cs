@@ -44,14 +44,14 @@ public class ExternalMusicSearchService(HttpClient http)
             switch (attribute)
             {
                 case "artistTerm":
-                    // Виконавець — лише точний збіг, без запасних варіантів.
-                    ordered = candidates.Where(r => r.ArtistName!.Contains(query, StringComparison.OrdinalIgnoreCase));
+                    // Виконавець — лише збіг (толерантний до "ё"/"е" й одруківок), без запасних варіантів.
+                    ordered = candidates.Where(r => FuzzyText.FuzzyContains(r.ArtistName, query));
                     break;
 
                 case "songTerm":
                     // Назва — лише збіг по назві; порядок лишаємо iTunes-івський
                     // (він і так ранжує за релевантністю/популярністю).
-                    ordered = candidates.Where(r => r.TrackName!.Contains(query, StringComparison.OrdinalIgnoreCase));
+                    ordered = candidates.Where(r => FuzzyText.FuzzyContains(r.TrackName, query));
                     break;
 
                 case "albumTerm":
@@ -63,7 +63,7 @@ public class ExternalMusicSearchService(HttpClient http)
                         .Where(x => x.Tier is not null)
                         .OrderBy(x => x.Tier)
                         .ThenByDescending(x => !string.IsNullOrWhiteSpace(artistHint)
-                            && x.Item.ArtistName!.Contains(artistHint, StringComparison.OrdinalIgnoreCase))
+                            && FuzzyText.FuzzyContains(x.Item.ArtistName, artistHint))
                         .Select(x => x.Item)
                         .ToList();
 
@@ -152,15 +152,18 @@ public class ExternalMusicSearchService(HttpClient http)
 
     // 1=точний збіг альбому, 2=альбом містить запит, 3=назва пісні містить
     // запит, 4=ім'я виконавця містить запит, null=не збіглось нічого.
+    // Порівняння толерантне до "ё"/"е" й дрібних одруківок (FuzzyText) —
+    // інакше один типовий для рос. мови нюанс написання ("Дешевые" замість
+    // "Дешёвые") повністю міняв би видачу.
     private static int? AlbumRelevanceTier(ITunesResult r, string album)
     {
         if (!string.IsNullOrWhiteSpace(r.CollectionName))
         {
-            if (r.CollectionName.Equals(album, StringComparison.OrdinalIgnoreCase)) return 1;
-            if (r.CollectionName.Contains(album, StringComparison.OrdinalIgnoreCase)) return 2;
+            if (FuzzyText.FuzzyEquals(r.CollectionName, album)) return 1;
+            if (FuzzyText.FuzzyContains(r.CollectionName, album)) return 2;
         }
-        if (r.TrackName!.Contains(album, StringComparison.OrdinalIgnoreCase)) return 3;
-        if (r.ArtistName!.Contains(album, StringComparison.OrdinalIgnoreCase)) return 4;
+        if (FuzzyText.FuzzyContains(r.TrackName, album)) return 3;
+        if (FuzzyText.FuzzyContains(r.ArtistName, album)) return 4;
         return null;
     }
 
