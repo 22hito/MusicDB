@@ -374,10 +374,16 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   bottom: calc(var(--player-h) + 12px);
   right: 16px;
   width: 320px;
+  min-width: 220px;
+  max-width: min(720px, 92vw);
   background: #0f0f11;
   border: 1px solid #2a2a2e;
   border-radius: 10px;
-  overflow: visible;
+  /* overflow:hidden (замість visible) потрібен, щоб працював нативний resize —
+     хендл з'являється в правому нижньому куті, тягне за ширину, висота відео
+     сама підлаштовується через aspect-ratio на #video-popup-frame нижче. */
+  overflow: hidden;
+  resize: horizontal;
   box-shadow: 0 8px 32px rgba(0,0,0,0.7);
   z-index: 300;
   display: none;
@@ -395,14 +401,21 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   font-family: var(--font-mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  cursor: move;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
 }
-#video-popup-header span { color: var(--accent); }
-#video-popup-close {
+#video-popup-header span { color: var(--accent); pointer-events: none; }
+#video-popup-header .video-popup-btns { display: flex; gap: 2px; }
+#video-popup-expand, #video-popup-close {
   background: none; border: none; cursor: pointer;
   color: var(--muted); width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 4px; transition: color 0.15s, background 0.15s;
 }
+#video-popup-expand:hover { color: var(--accent); background: rgba(200,169,110,0.1); }
+#video-popup-expand.active { color: var(--accent); }
 #video-popup-close:hover { color: var(--red); background: rgba(224,92,92,0.1); }
 /* Відео-область попапу — тут буде переміщено #yt-wrap */
 #video-popup-frame {
@@ -844,11 +857,18 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 <div id="video-popup">
   <div id="video-popup-header">
     <span data-i18n="videoPopup.title">▶ Відео</span>
-    <button id="video-popup-close" onclick="closeVideoPopup()" title="Закрити" data-i18n-title="player.close">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
+    <div class="video-popup-btns">
+      <button id="video-popup-expand" onclick="toggleVideoPopupSize()" title="Розгорнути" data-i18n-title="videoPopup.expand">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+      <button id="video-popup-close" onclick="closeVideoPopup()" title="Закрити" data-i18n-title="player.close">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
   </div>
   <div id="video-popup-frame">
     <div id="video-popup-loading">
@@ -1022,6 +1042,7 @@ const I18N = {
     'player.close': 'Закрити',
     'videoPopup.title': '▶ Відео',
     'videoPopup.loading': 'Завантаження…',
+    'videoPopup.expand': 'Розгорнути',
     'video.notFoundSuffix': ' — відео не знайдено',
     'modal.deleteTitle': 'Видалити пісню?',
     'modal.deleteBodyTemplate': 'Композицію «{label}» буде видалено з бази без можливості відновлення.',
@@ -1161,6 +1182,7 @@ const I18N = {
     'player.close': 'Close',
     'videoPopup.title': '▶ Video',
     'videoPopup.loading': 'Loading…',
+    'videoPopup.expand': 'Expand',
     'video.notFoundSuffix': ' — video not found',
     'modal.deleteTitle': 'Delete song?',
     'modal.deleteBodyTemplate': 'The song "{label}" will be permanently deleted from the database.',
@@ -2532,6 +2554,59 @@ function toggleVideoPopup() {
   if (videoPopupOpen) closeVideoPopup();
   else openVideoPopup();
 }
+
+// ================================================================
+// VIDEO POPUP: розгортання розміру й перетягування по екрану
+// ================================================================
+let videoPopupExpanded = false;
+function toggleVideoPopupSize(){
+  videoPopupExpanded = !videoPopupExpanded;
+  const popup = document.getElementById('video-popup');
+  // Явно перезаписуємо width (а не лише клас) — інакше після ручного
+  // розтягування за нативний resize-хендл лишився б inline-стиль, який
+  // переміг би клас і кнопка нічого не зробила б.
+  popup.style.width = videoPopupExpanded ? 'min(720px, 90vw)' : '320px';
+  document.getElementById('video-popup-expand').classList.toggle('active', videoPopupExpanded);
+}
+
+(function initVideoPopupDrag(){
+  const popup = document.getElementById('video-popup');
+  const header = document.getElementById('video-popup-header');
+  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+  header.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return; // не тягнемо, якщо клік по кнопці
+    const rect = popup.getBoundingClientRect();
+    // Переходимо з bottom/right-позиціювання на top/left, щоб рахувати зсув
+    // однаково незалежно від того, звідки попап "прив'язаний" зараз.
+    popup.style.left = rect.left + 'px';
+    popup.style.top = rect.top + 'px';
+    popup.style.right = 'auto';
+    popup.style.bottom = 'auto';
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    startLeft = rect.left; startTop = rect.top;
+    header.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  header.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const rect = popup.getBoundingClientRect();
+    const margin = 40; // лишаємо хоч трохи попапу видимим за краєм екрана
+    let newLeft = startLeft + (e.clientX - startX);
+    let newTop = startTop + (e.clientY - startY);
+    newLeft = Math.max(margin - rect.width, Math.min(window.innerWidth - margin, newLeft));
+    newTop = Math.max(0, Math.min(window.innerHeight - margin, newTop));
+    popup.style.left = newLeft + 'px';
+    popup.style.top = newTop + 'px';
+  });
+  const endDrag = (e) => {
+    dragging = false;
+    try { header.releasePointerCapture(e.pointerId); } catch(ex) {}
+  };
+  header.addEventListener('pointerup', endDrag);
+  header.addEventListener('pointercancel', endDrag);
+})();
 
 function openVideoPopup() {
   if (!currentVid) return;
