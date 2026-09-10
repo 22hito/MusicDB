@@ -8,6 +8,17 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Локальний файл із РЕАЛЬНИМИ секретами (пароль БД, ключі API) — його
+// НЕМАЄ в git (додано в .gitignore), кожен розробник тримає свою копію
+// лише на своєму комп'ютері. Значення в самому appsettings.json (яке вже
+// в репозиторії) — лише порожні плейсхолдери, безпечні для публічного
+// GitHub. optional:true — якщо файлу немає (наприклад, на сервері, де
+// секрети приходять через Environment Variables), нічого не ламається.
+// Додається ПІСЛЯ appsettings.json, тож перекриває плейсхолдери, і не
+// залежить від ASPNETCORE_ENVIRONMENT (working навіть при звичайному
+// "dotnet run" без додаткових змінних середовища).
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
 // Хостинги типу Render/Railway/Fly.io самі призначають порт і передають
 // його через змінну середовища PORT — слухати треба саме на ньому.
 // Локально (де PORT не задано) далі спрацює "Urls" з appsettings.json,

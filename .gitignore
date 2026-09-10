@@ -2,3 +2,6 @@ bin/
 obj/
 .vs/
 *.user
+
+# Реальні секрети (пароль БД, API-ключі) — тільки локально, ніколи в git.
+appsettings.Local.json
