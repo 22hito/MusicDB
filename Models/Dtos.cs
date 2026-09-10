@@ -36,7 +36,13 @@ public record UpdateSongDto(
     string   Release,
     string   Duration,
     string[] Genres,
-    string?  Album
+    string?  Album,
+    // На відміну від PUT /api/songs/{id}/youtube-video (пише лише якщо
+    // порожньо), тут адмін може як очистити (null/""), так і замінити вже
+    // закешоване відео — якщо перше автопідтверджене значення виявилось
+    // невдалим (напр. авторський "Remastered"/"Reimagined" реліз замість
+    // потрібного оригіналу).
+    string?  YoutubeVideoId = null
 );
 
 // ─── Genres ───────────────────────────────────────────────────────────────────
