@@ -2782,6 +2782,19 @@ function openVideoPopup() {
 }
 
 function closeVideoPopup() {
+  const popup = document.getElementById('video-popup');
+
+  // Ховати (display:none) елемент, поки він фактично fullscreen, — заборонений
+  // для браузера стан: він "зависає" в зламаному fullscreen (лагодиться лише
+  // ручним F11), бо ми поховали сам fullscreen-елемент, не вийшовши з режиму.
+  // Тож спершу ГАРАНТОВАНО виходимо з fullscreen, і лише потім ховаємо попап.
+  if (document.fullscreenElement === popup) {
+    document.exitFullscreen?.().catch(() => {}).finally(_finishCloseVideoPopup);
+  } else {
+    _finishCloseVideoPopup();
+  }
+}
+function _finishCloseVideoPopup() {
   videoPopupOpen = false;
   document.getElementById('video-popup').classList.remove('open');
   document.getElementById('btn-video').classList.remove('active');
