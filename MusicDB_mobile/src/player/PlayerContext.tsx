@@ -44,48 +44,67 @@ interface YTSearchItem {
   snippet?: { title?: string; channelTitle?: string };
 }
 
-async function fetchVideoId(artist: string, title: string, apiKey: string): Promise<string | null> {
-  if (!apiKey) return null;
+// Пробуємо ключі по черзі (кожен зі свого GCP-проєкту — квота 10000/добу рахується
+// на проєкт, не на ключ), переходимо на наступний при 403/429. mutable-масив
+// keys, щоб caller міг запам'ятати обраний індекс між викликами (див. keyIdxRef).
+async function fetchVideoId(
+  artist: string,
+  title: string,
+  apiKeys: string[],
+  keyIdxRef: { current: number },
+): Promise<string | null> {
+  if (!apiKeys.length) return null;
   const q = encodeURIComponent(`${artist} ${title} official video`);
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(
-      // maxResults=10 (не 6) — більший пул кандидатів для відсіювання перезаливів.
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${q}&key=${apiKey}`,
-      { signal: controller.signal },
-    );
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const items: YTSearchItem[] = data.items || [];
-    if (!items.length) return null;
-    const artistLower = artist.toLowerCase();
-    const score = (item: YTSearchItem) => {
-      const t = (item.snippet?.title || '').toLowerCase();
-      const ch = (item.snippet?.channelTitle || '').toLowerCase();
-      // Канал з іменем артиста, VEVO, авто-канал "Артист - Topic" (не підробити)
-      // або "official" у назві — надійні ознаки офіційного джерела.
-      const channelLooksOfficial =
-        ch.includes(artistLower) || ch.includes('vevo') || ch.includes(' - topic') || ch.includes('official');
-      let s = 0;
-      if (channelLooksOfficial) s += 4;
-      // "official video" у назві саме по собі нічого не гарантує — так само
-      // підписують неякісні перезаливи. Довіряємо йому лише коли канал і сам
-      // виглядає офіційним, інакше — оцінка йде в мінус.
-      if (t.includes('official video') || t.includes('official music video')) {
-        s += channelLooksOfficial ? 2 : -2;
-      } else if (t.includes('official')) {
-        s += channelLooksOfficial ? 1 : -1;
+
+  for (let attempt = 0; attempt < apiKeys.length; attempt++) {
+    const apiKey = apiKeys[keyIdxRef.current];
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(
+        // maxResults=10 (не 6) — більший пул кандидатів для відсіювання перезаливів.
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${q}&key=${apiKey}`,
+        { signal: controller.signal },
+      );
+      clearTimeout(timer);
+      if (!res.ok) {
+        if ((res.status === 403 || res.status === 429) && apiKeys.length > 1) {
+          keyIdxRef.current = (keyIdxRef.current + 1) % apiKeys.length;
+          continue; // квота вичерпана на цьому ключі — пробуємо наступний
+        }
+        return null;
       }
-      if (BAD_WORDS.some((w) => t.includes(w))) s -= 5;
-      return s;
-    };
-    const best = [...items].sort((a, b) => score(b) - score(a))[0];
-    return best?.id?.videoId || null;
-  } catch {
-    return null;
+      const data = await res.json();
+      const items: YTSearchItem[] = data.items || [];
+      if (!items.length) return null;
+      const artistLower = artist.toLowerCase();
+      const score = (item: YTSearchItem) => {
+        const t = (item.snippet?.title || '').toLowerCase();
+        const ch = (item.snippet?.channelTitle || '').toLowerCase();
+        // Канал з іменем артиста, VEVO, авто-канал "Артист - Topic" (не підробити)
+        // або "official" у назві — надійні ознаки офіційного джерела.
+        const channelLooksOfficial =
+          ch.includes(artistLower) || ch.includes('vevo') || ch.includes(' - topic') || ch.includes('official');
+        let s = 0;
+        if (channelLooksOfficial) s += 4;
+        // "official video" у назві саме по собі нічого не гарантує — так само
+        // підписують неякісні перезаливи. Довіряємо йому лише коли канал і сам
+        // виглядає офіційним, інакше — оцінка йде в мінус.
+        if (t.includes('official video') || t.includes('official music video')) {
+          s += channelLooksOfficial ? 2 : -2;
+        } else if (t.includes('official')) {
+          s += channelLooksOfficial ? 1 : -1;
+        }
+        if (BAD_WORDS.some((w) => t.includes(w))) s -= 5;
+        return s;
+      };
+      const best = [...items].sort((a, b) => score(b) - score(a))[0];
+      return best?.id?.videoId || null;
+    } catch {
+      return null;
+    }
   }
+  return null; // усі ключі вичерпали квоту
 }
 
 type PlayState = 'idle' | 'loading' | 'buffering' | 'playing' | 'paused' | 'ended';
@@ -125,12 +144,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const api = useMusicApi();
   const engineRef = useRef<any>(null);
 
-  const [ytApiKey, setYtApiKey] = useState(FALLBACK_YT_KEY);
+  const [ytApiKeys, setYtApiKeys] = useState<string[]>([FALLBACK_YT_KEY]);
+  const ytKeyIdxRef = useRef(0);
   useEffect(() => {
     api
       .getConfig()
       .then((cfg) => {
-        if (cfg?.youtubeApiKey) setYtApiKey(cfg.youtubeApiKey);
+        if (cfg?.youtubeApiKeys?.length) setYtApiKeys(cfg.youtubeApiKeys);
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -169,7 +189,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setState('loading');
       setCurrentTime(0);
       setDuration(0);
-      const vid = await fetchVideoId(song.artist, song.title, ytApiKey);
+      // Закешований раніше videoId (уже підтверджений — будь-яким клієнтом)
+      // рятує від нового звернення до YouTube Search API (100 одиниць квоти).
+      let vid = song.youtubeVideoId;
+      if (!vid) {
+        vid = await fetchVideoId(song.artist, song.title, ytApiKeys, ytKeyIdxRef);
+        if (vid) api.setYoutubeVideo(song.id, vid).catch(() => {});
+      }
       if (mySeq !== requestSeqRef.current) return; // користувач уже перемкнув пісню
       if (!vid) {
         setVideoNotFound(true);
@@ -179,7 +205,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setVideoId(vid);
       postCommand({ cmd: 'load', videoId: vid, autoplay: true });
     },
-    [ytApiKey, postCommand],
+    [ytApiKeys, api, postCommand],
   );
 
   useEffect(() => {

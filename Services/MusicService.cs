@@ -91,7 +91,7 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             return new SongDto(m.Id, m.Artist, m.Title,
                 m.Release.ToString("yyyy-MM-dd"),
                 m.Duration.ToString(@"hh\:mm\:ss"),
-                genres, albumName, playCounts.GetValueOrDefault(m.Id, 0));
+                genres, albumName, playCounts.GetValueOrDefault(m.Id, 0), m.YoutubeVideoId);
         }).ToList();
     }
 

@@ -24,7 +24,7 @@ public class StatsController(MusicDbContext db, MusicService musicService) : Con
     // Топ-N найпрослуханіших пісень — за кількістю унікальних слухачів
     // (кожен користувач рахується один раз на пісню, див. HistoryController).
     [HttpGet("top-songs")]
-    public async Task<IEnumerable<Models.SongDto>> GetTopSongs([FromQuery] int limit = 10)
+    public async Task<IEnumerable<Models.SongDto>> GetTopSongs([FromQuery] int limit = 100)
     {
         var topIds = await db.ListeningHistory
             .GroupBy(h => h.MusicId)

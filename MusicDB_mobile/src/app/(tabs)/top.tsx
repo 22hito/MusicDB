@@ -31,7 +31,7 @@ export default function TopSongsScreen() {
   const load = useCallback(() => {
     setLoading(true);
     api
-      .getTopSongs(10)
+      .getTopSongs(100)
       .then(setSongs)
       .catch(() => setSongs([]))
       .finally(() => setLoading(false));
