@@ -2445,10 +2445,17 @@ function _initPopupPlayer(vid, startAt) {
     width: '100%',
     height: '100%',
     videoId: vid,
+    // controls:0 — попап лише показує відео, звук завжди йде з ytPlayer (нижче).
+    // Нативний YouTube-повзунок гучності розглушував popupPlayer в обхід нашого
+    // mute()/setVolume(0) (звідси й переперевірка мута кожні 5с у _startPopupSync) —
+    // прибираємо саму можливість його торкнутись, а не боремось з наслідками.
+    // Керування (play/pause/перемотування) лишається через плеєр-бар застосунку —
+    // єдине джерело правди для гучності й відтворення, як у Spotify.
     playerVars: {
       autoplay: userIntendedPlaying ? 1 : 0,
       start: Math.floor(startAt || 0),
-      controls: 1,
+      controls: 0,
+      disablekb: 1,
       rel: 0,
       modestbranding: 1,
       iv_load_policy: 3
