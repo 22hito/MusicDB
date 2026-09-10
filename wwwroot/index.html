@@ -375,7 +375,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   right: 16px;
   width: 320px;
   min-width: 220px;
-  max-width: min(720px, 92vw);
+  max-width: 98vw;
   background: #0f0f11;
   border: 1px solid #2a2a2e;
   border-radius: 10px;
@@ -390,6 +390,23 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   flex-direction: column;
 }
 #video-popup.open { display: flex; }
+/* Справжній повноекранний режим через Fullscreen API (кнопка ⛶) — попап
+   заповнює весь екран, висота відео більше не прив'язана до aspect-ratio
+   фіксованої ширини, а розтягується на весь доступний простір під шапкою. */
+#video-popup:fullscreen {
+  /* !important — перебиває inline style.width, який могли виставити кнопка
+     "розгорнути" чи ручний resize ДО переходу в fullscreen. */
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw;
+  border-radius: 0;
+  resize: none;
+}
+#video-popup:fullscreen #video-popup-frame {
+  flex: 1;
+  aspect-ratio: unset;
+  height: auto;
+}
 #video-popup-header {
   display: flex;
   align-items: center;
@@ -408,14 +425,14 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 }
 #video-popup-header span { color: var(--accent); pointer-events: none; }
 #video-popup-header .video-popup-btns { display: flex; gap: 2px; }
-#video-popup-expand, #video-popup-close {
+#video-popup-fullscreen, #video-popup-expand, #video-popup-close {
   background: none; border: none; cursor: pointer;
   color: var(--muted); width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 4px; transition: color 0.15s, background 0.15s;
 }
-#video-popup-expand:hover { color: var(--accent); background: rgba(200,169,110,0.1); }
-#video-popup-expand.active { color: var(--accent); }
+#video-popup-fullscreen:hover, #video-popup-expand:hover { color: var(--accent); background: rgba(200,169,110,0.1); }
+#video-popup-fullscreen.active, #video-popup-expand.active { color: var(--accent); }
 #video-popup-close:hover { color: var(--red); background: rgba(224,92,92,0.1); }
 /* Відео-область попапу — тут буде переміщено #yt-wrap */
 #video-popup-frame {
@@ -858,6 +875,11 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   <div id="video-popup-header">
     <span data-i18n="videoPopup.title">▶ Відео</span>
     <div class="video-popup-btns">
+      <button id="video-popup-fullscreen" onclick="toggleVideoPopupFullscreen()" title="На весь екран" data-i18n-title="videoPopup.fullscreen">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+        </svg>
+      </button>
       <button id="video-popup-expand" onclick="toggleVideoPopupSize()" title="Розгорнути" data-i18n-title="videoPopup.expand">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
@@ -1043,6 +1065,7 @@ const I18N = {
     'videoPopup.title': '▶ Відео',
     'videoPopup.loading': 'Завантаження…',
     'videoPopup.expand': 'Розгорнути',
+    'videoPopup.fullscreen': 'На весь екран',
     'video.notFoundSuffix': ' — відео не знайдено',
     'modal.deleteTitle': 'Видалити пісню?',
     'modal.deleteBodyTemplate': 'Композицію «{label}» буде видалено з бази без можливості відновлення.',
@@ -1183,6 +1206,7 @@ const I18N = {
     'videoPopup.title': '▶ Video',
     'videoPopup.loading': 'Loading…',
     'videoPopup.expand': 'Expand',
+    'videoPopup.fullscreen': 'Fullscreen',
     'video.notFoundSuffix': ' — video not found',
     'modal.deleteTitle': 'Delete song?',
     'modal.deleteBodyTemplate': 'The song "{label}" will be permanently deleted from the database.',
@@ -2576,6 +2600,21 @@ function toggleVideoPopup() {
 // ================================================================
 // VIDEO POPUP: розгортання розміру й перетягування по екрану
 // ================================================================
+function toggleVideoPopupFullscreen(){
+  const popup = document.getElementById('video-popup');
+  if (!document.fullscreenElement) {
+    popup.requestFullscreen?.().catch(() => {});
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+// Esc чи системний вихід з fullscreen минають наш onclick — синхронізуємось
+// через подію, а не покладаємось лише на виклик функції вище.
+document.addEventListener('fullscreenchange', () => {
+  const isFs = document.fullscreenElement === document.getElementById('video-popup');
+  document.getElementById('video-popup-fullscreen').classList.toggle('active', isFs);
+});
+
 let videoPopupExpanded = false;
 function toggleVideoPopupSize(){
   videoPopupExpanded = !videoPopupExpanded;
