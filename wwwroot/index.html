@@ -85,6 +85,11 @@ html[data-theme="dark"] .nav-brand img { filter: invert(1) brightness(1.15); }
 .nav-tabs li button.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 .container { max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem; }
+/* Адмінська таблиця має додатковий стовпець "Дія" (+ "Улюблене") — на типових
+   широких моніторах даємо контейнеру більше простору, щоб дії влазили без
+   горизонтального скролу таблиці. На вузьких екранах max-width все одно не
+   змушує сторінку розтягуватись понад viewport. */
+body.admin-mode .container { max-width: 1600px; }
 .page { display: none; animation: fadeIn 0.25s ease; }
 .page.active { display: block; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
@@ -2191,6 +2196,7 @@ function renderAuthArea() {
   const area = document.getElementById('auth-area');
   const isAdmin = currentUser?.isAdmin;
   const authed = currentUser?.authenticated;
+  document.body.classList.toggle('admin-mode', !!isAdmin);
 
   // Show/hide admin tabs
   document.getElementById('nav-admin').style.display = isAdmin ? '' : 'none';
