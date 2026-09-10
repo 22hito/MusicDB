@@ -2630,11 +2630,19 @@ function toggleVideoPopupFullscreen(){
     document.exitFullscreen?.();
   }
 }
-// Esc чи системний вихід з fullscreen минають наш onclick — синхронізуємось
-// через подію, а не покладаємось лише на виклик функції вище.
+// Fullscreen API ховає геть усе, що НЕ є нащадком fullscreen-елемента —
+// плеєр-бар лежить окремо в DOM, тож у fullscreen він би просто зникав і
+// натиснути play/pause/перемотати стало б неможливо. Тому на час fullscreen
+// фізично переносимо сам вузол плеєр-бару всередину попапу (це той самий
+// DOM-елемент з усіма обробниками — просто змінюємо йому батька), а після
+// виходу повертаємо назад.
 document.addEventListener('fullscreenchange', () => {
-  const isFs = document.fullscreenElement === document.getElementById('video-popup');
+  const popup = document.getElementById('video-popup');
+  const playerBar = document.getElementById('player-bar');
+  const isFs = document.fullscreenElement === popup;
   document.getElementById('video-popup-fullscreen').classList.toggle('active', isFs);
+  if (isFs) popup.appendChild(playerBar);
+  else document.body.appendChild(playerBar);
 });
 
 let videoPopupExpanded = false;
