@@ -26,8 +26,13 @@ jobs:
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
+      - name: Run tests
+        run: dotnet test Tests/MusicDB.Api.Tests/MusicDB.Api.Tests.csproj --configuration Release --no-build
+
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        # Публікуємо лише веб-проєкт (не всю .sln) — інакше в пакет деплою
+        # потрапляють ще й тестові збірки (xunit тощо).
+        run: dotnet publish MusicDB.Api.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
