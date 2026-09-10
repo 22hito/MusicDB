@@ -2223,42 +2223,70 @@ function _loadCurrent(){
   });
 }
 
+// Нормалізація для звірки релевантності: без регістру, діакритики й пунктуації.
+function _normForMatch(s){
+  return (s||'').toLowerCase()
+    .normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]','g'),'')
+    .replace(new RegExp('[^a-z0-9\\u0400-\\u04FF\\s]','g'),' ')
+    .replace(/\s+/g,' ').trim();
+}
+function _significantWords(s){
+  return _normForMatch(s).split(' ').filter(w=>w.length>2);
+}
+// Відео справді про ЦЮ пісню, а не випадковий інший збіг з пошуку YouTube —
+// вимагаємо, щоб більшість значущих слів із назви пісні реально були в назві відео.
+// Без цього для рідкісних/непопулярних пісень видача YouTube могла підсунути
+// найбільш "офіційно виглядаючий" канал з геть іншою піснею чи виконавцем.
+function _isRelevantVideo(item,title){
+  const nItem=_normForMatch(item.snippet?.title);
+  const titleWords=_significantWords(title);
+  if(!titleWords.length) return true;
+  const matched=titleWords.filter(w=>nItem.includes(w)).length;
+  return (matched/titleWords.length) >= 0.6;
+}
+async function _searchYoutube(q){
+  const r=await fetch(
+    // maxResults=10 — більший пул кандидатів для відсіювання перезаливів.
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(q)}&key=${ytApiKey}`,
+    {signal:AbortSignal.timeout(8000)}
+  );
+  if(!r.ok) return [];
+  const d=await r.json();
+  return d.items||[];
+}
 async function fetchVid(artist,title){
   if(!ytApiKey) return null;
-  // "audio" у запиті піднімало "audio only" перезаливи замість офіційного відео —
-  // тепер беремо кілька кандидатів і обираємо найбільш "офіційний" за евристикою.
-  const q=encodeURIComponent(`${artist} ${title} official video`);
+  const artistLower=artist.toLowerCase();
+  const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up','unofficial','fan made','fan-made','bootleg'];
+
+  function scoreItem(item){
+    const t=(item.snippet?.title||'').toLowerCase();
+    const ch=(item.snippet?.channelTitle||'').toLowerCase();
+    // Канал артиста, VEVO, авто-канал "Artist - Topic" (його не підробити) або "official" в назві —
+    // надійні ознаки офіційного джерела.
+    const channelLooksOfficial = ch.includes(artistLower)||ch.includes('vevo')||ch.includes(' - topic')||ch.includes('official');
+    let s=0;
+    if(channelLooksOfficial) s+=4;
+    // "official video" у назві саме по собі нічого не гарантує (типова фраза в перезаливах) —
+    // довіряємо лише коли канал і справді офіційний, інакше це підозріло і йде в мінус.
+    if(t.includes('official video')||t.includes('official music video')) s+=channelLooksOfficial?2:-2;
+    else if(t.includes('official')) s+=channelLooksOfficial?1:-1;
+    if(badWords.some(w=>t.includes(w))) s-=5;
+    return s;
+  }
+
   try{
-    const r=await fetch(
-      // maxResults=10 — більший пул кандидатів для відсіювання перезаливів.
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${q}&key=${ytApiKey}`,
-      {signal:AbortSignal.timeout(8000)}
-    );
-    if(!r.ok) return null;
-    const d=await r.json();
-    const items=d.items||[];
-    if(!items.length) return null;
-
-    const artistLower=artist.toLowerCase();
-    const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up','unofficial','fan made','fan-made','bootleg'];
-
-    function scoreItem(item){
-      const t=(item.snippet?.title||'').toLowerCase();
-      const ch=(item.snippet?.channelTitle||'').toLowerCase();
-      // Канал артиста, VEVO, авто-канал "Artist - Topic" (його не підробити) або "official" в назві —
-      // надійні ознаки офіційного джерела.
-      const channelLooksOfficial = ch.includes(artistLower)||ch.includes('vevo')||ch.includes(' - topic')||ch.includes('official');
-      let s=0;
-      if(channelLooksOfficial) s+=4;
-      // "official video" у назві саме по собі нічого не гарантує (типова фраза в перезаливах) —
-      // довіряємо лише коли канал і справді офіційний, інакше це підозріло і йде в мінус.
-      if(t.includes('official video')||t.includes('official music video')) s+=channelLooksOfficial?2:-2;
-      else if(t.includes('official')) s+=channelLooksOfficial?1:-1;
-      if(badWords.some(w=>t.includes(w))) s-=5;
-      return s;
+    let items=await _searchYoutube(`${artist} ${title} official video`);
+    let relevant=items.filter(it=>_isRelevantVideo(it,title));
+    if(!relevant.length){
+      // Друга спроба без "official video" — деякі маленькі канали не використовують
+      // цю фразу в назві, і вона ж могла відсунути релевантні відео нижче в видачі.
+      items=await _searchYoutube(`${artist} ${title}`);
+      relevant=items.filter(it=>_isRelevantVideo(it,title));
     }
+    if(!relevant.length) return null; // краще "відео не знайдено", ніж програти не ту пісню
 
-    const best=[...items].sort((a,b)=>scoreItem(b)-scoreItem(a))[0];
+    const best=relevant.sort((a,b)=>scoreItem(b)-scoreItem(a))[0];
     return best.id.videoId;
   }catch(e){}
   return null;
