@@ -8,21 +8,13 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Локальний файл із РЕАЛЬНИМИ секретами (пароль БД, ключі API) — його
-// НЕМАЄ в git (додано в .gitignore), кожен розробник тримає свою копію
-// лише на своєму комп'ютері. Значення в самому appsettings.json (яке вже
-// в репозиторії) — лише порожні плейсхолдери, безпечні для публічного
-// GitHub. optional:true — якщо файлу немає (наприклад, на сервері, де
-// секрети приходять через Environment Variables), нічого не ламається.
-// Додається ПІСЛЯ appsettings.json, тож перекриває плейсхолдери, і не
-// залежить від ASPNETCORE_ENVIRONMENT (working навіть при звичайному
-// "dotnet run" без додаткових змінних середовища).
+// Реальні секрети (пароль БД, API-ключі) — файл у .gitignore, у appsettings.json
+// лише порожні плейсхолдери. optional:true — на сервері секрети йдуть через
+// env vars, файлу нема. Додається після appsettings.json, тож перекриває плейсхолдери.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-// Хостинги типу Render/Railway/Fly.io самі призначають порт і передають
-// його через змінну середовища PORT — слухати треба саме на ньому.
-// Локально (де PORT не задано) далі спрацює "Urls" з appsettings.json,
-// як і раніше.
+// Render/Railway/Fly.io призначають порт через env PORT — слухаємо на ньому.
+// Локально PORT не задано, тож використовується "Urls" з appsettings.json.
 var renderPort = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrEmpty(renderPort))
 {
@@ -109,11 +101,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseDefaultFiles();
-// no-cache: під час активної розробки браузер інакше кешує index.html
-// надовго (heuristic caching без явних заголовків) і після кожного
-// деплою користувач бачить стару версію, навіть з Ctrl+F5. no-cache
-// (не no-store) лишає ETag-валідацію — повторні візити швидкі (304),
-// але браузер завжди питає сервер, чи файл не змінився.
+// no-cache (не no-store): без явних заголовків браузер кешує index.html
+// надовго і показує стару версію після деплою навіть при Ctrl+F5.
+// ETag-валідація лишається — повторні візити швидкі (304).
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>

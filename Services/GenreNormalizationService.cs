@@ -4,21 +4,15 @@ using System.Text.Json.Serialization;
 
 namespace MusicDB.Api.Services;
 
-// Використовує безкоштовний Google Gemini API, щоб перевірити, чи введений
-// жанр насправді той самий, що вже є в базі (написаний по-іншому: без
-// пробілу, з дефісом, іншим регістром тощо), і повернути єдину канонічну
-// форму. Мета — щоб жоден жанр не існував у базі одразу в кількох варіантах
-// написання ("hardrock" / "hard rock" / "Hard-Rock").
+// Нормалізує написання жанру через Gemini, щоб уникнути дублів типу
+// "hardrock" / "hard rock" / "Hard-Rock".
 //
-// Ключ береться з appsettings.json -> Gemini:ApiKey. Отримати безкоштовно:
-// https://aistudio.google.com/apikey (без прив'язки картки).
-// Якщо ключ не вказано, або сервіс недоступний — просто повертається
-// оригінальний текст без змін (запит ніколи не валиться через це).
+// Ключ — appsettings.json → Gemini:ApiKey, безкоштовно на
+// https://aistudio.google.com/apikey. Без ключа чи при недоступності
+// сервісу повертається оригінальний текст без змін.
 public class GenreNormalizationService(HttpClient http, IConfiguration config, ILogger<GenreNormalizationService> logger)
 {
-    // Google Gemini інколи повертає 503 (сервери тимчасово перевантажені) —
-    // це не помилка коду чи ключа, а тимчасовий стан. Пробуємо ще раз
-    // через невелику паузу, перш ніж здаватись.
+    // Gemini інколи повертає 503 (тимчасове перевантаження) — ретраїмо з паузою.
     internal static async Task<HttpResponseMessage> PostWithRetryAsync(HttpClient http, string url, object body, int maxAttempts = 3)
     {
         HttpResponseMessage? response = null;
@@ -32,12 +26,9 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
     }
 
 
-    // Збагачує ВЕСЬ список результатів зовнішнього пошуку (наприклад, з
-    // iTunes) кількома точнішими жанрами замість одного загального —
-    // ОДНИМ запитом до ШІ на весь список, а не окремим запитом на кожен
-    // елемент (щоб не витрачати даремно ліміт запитів). Якщо ШІ недоступний
-    // або не налаштований — кожен елемент лишається з тим одним жанром,
-    // що вже був (нічого не ламається).
+    // Збагачує весь список результатів пошуку точнішими жанрами одним
+    // запитом до ШІ (а не окремим на кожен елемент, щоб не палити ліміт).
+    // Якщо ШІ недоступний — елементи лишаються з тим жанром, що вже був.
     public async Task<List<ExternalSongResult>> EnrichGenresBatchAsync(List<ExternalSongResult> items, IEnumerable<string> existingGenres)
     {
         var apiKey = config["Gemini:ApiKey"];
@@ -133,8 +124,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
         catch (Exception ex)
         {
-            // ШІ недоступний / ліміт — повертаємо оригінальний список без змін,
-            // але логуємо причину, щоб можна було розібратись, чому саме.
+            // ШІ недоступний/ліміт — лишаємо список без змін, причину логуємо.
             logger.LogWarning(ex, "EnrichGenresBatchAsync: виняток під час звернення до Gemini.");
             return items;
         }
@@ -142,9 +132,8 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 
-    // На випадок, якщо ШІ все ж поєднав кілька жанрів через слеш/кому в
-    // одному елементі масиву попри пряму заборону в промпті — розбиваємо
-    // додатково, про всяк випадок.
+    // Про всяк випадок: розбиваємо, якщо ШІ все ж об'єднав жанри через "/"/","
+    // попри заборону в промпті.
     private static List<string> NormalizeGenreList(List<string> raw) =>
         raw.SelectMany(g => g.Split(['/', ','], StringSplitOptions.RemoveEmptyEntries))
            .Select(g => g.Trim().ToLowerInvariant())
@@ -167,16 +156,12 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         public List<string>? Genres { get; set; }
     }
 
-    // Сканує ВЕСЬ список жанрів одним запитом до ШІ і знаходить групи
-    // дублікатів (той самий жанр, написаний по-різному). Використовується
-    // адміном для одноразового прибирання вже наявних у базі дублікатів
-    // (наприклад, якщо хтось відредагував жанр напряму в базі даних,
-    // оминувши звичайну логіку застосунку, і виникла розбіжність).
+    // Сканує всі жанри одним запитом до ШІ, знаходить групи дублікатів
+    // (той самий жанр, написаний по-різному) — для адмінського прибирання.
     //
-    // На відміну від NormalizeGenreAsync (який мовчки повертає fallback,
-    // щоб не заважати звичайній роботі сайту), тут помилка повертається
-    // явно — це окрема адмінська дія, і людині важливо знати, чи справді
-    // дублікатів немає, чи ШІ просто не відповів (наприклад, невірний ключ).
+    // На відміну від NormalizeGenreAsync (мовчазний fallback), тут помилка
+    // повертається явно — адмін має бачити, чи дублікатів справді немає,
+    // чи ШІ просто не відповів.
     public async Task<GenreDuplicateScanResult> FindDuplicateGroupsAsync(List<string> allGenres)
     {
         var apiKey = config["Gemini:ApiKey"];
@@ -304,8 +289,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
         catch
         {
-            // Ліміт запитів, мережева помилка тощо — не валимо запит користувача,
-            // просто працюємо як без ШІ (звичайне точне порівняння з базою).
+            // Ліміт/мережева помилка — працюємо як без ШІ (fallback).
             return fallback;
         }
     }
@@ -356,7 +340,6 @@ public class DuplicateGroup
     public List<string>? Duplicates { get; set; }
 }
 
-// Результат сканування на дублікати: чи вдалося звернутись до ШІ,
-// і якщо ні — текст помилки (щоб адмін бачив ПРИЧИНУ, а не просто
-// "дублікатів не знайдено", коли насправді ШІ не відповів).
+// Результат сканування дублікатів: Success + текст помилки, якщо ШІ не відповів
+// (щоб адмін бачив причину, а не хибне "дублікатів немає").
 public record GenreDuplicateScanResult(bool Success, string? Error, List<DuplicateGroup> Groups);

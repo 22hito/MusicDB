@@ -37,8 +37,7 @@ public record UpdateSongDto(
 public record GenreDto(int Id, string Name);
 
 // Результат ШІ-об'єднання дублікатів жанрів (POST /api/genres/normalize).
-// Error заповнюється, якщо звернення до ШІ не вдалося (наприклад, невірний
-// ключ) — щоб адмін бачив ПРИЧИНУ, а не хибне "дублікатів не знайдено".
+// Error — якщо звернення до ШІ не вдалося, щоб адмін бачив причину, а не хибне "дублікатів немає".
 public record NormalizeGenresResultDto(int MergedCount, List<string> MergedPairs, string? Error);
 
 // ─── Requests ─────────────────────────────────────────────────────────────────

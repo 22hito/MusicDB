@@ -4,16 +4,13 @@ using System.Text.RegularExpressions;
 
 namespace MusicDB.Api.Services;
 
-// Перекладає назви жанрів на англійську через безкоштовний MyMemory API
-// (без API-ключа, але з добовим лімітом запитів).
-// Використовується, коли користувач у запиті вказав жанр не англійською
-// (наприклад "рок"), щоб у базі всі жанри були уніфіковані ("rock").
+// Перекладає жанри на англійську через MyMemory API (без ключа, добовий ліміт).
+// Потрібно, щоб неанглійські жанри ("рок") в базі уніфікувались до "rock".
 public class TranslationService(HttpClient http)
 {
     private static readonly Regex NonLatinRegex = new(@"[^\x00-\x7F]", RegexOptions.Compiled);
-    // MyMemory інколи додає зайве слово "music"/"genre" для однослівних неоднозначних
-    // жанрів (наприклад "рок" перекладається як "rock music", бо "рок" ще й "доля/фатум").
-    // Прибираємо цей суфікс, якщо без нього лишається непорожній текст.
+    // MyMemory інколи додає "music"/"genre" для неоднозначних слів (напр. "рок"
+    // → "rock music", бо "рок" ще й "доля"). Прибираємо цей суфікс.
     private static readonly Regex NoiseSuffixRegex = new(@"\s+(music|genre)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     // Чи виглядає текст так, ніби він НЕ англійською (містить кириличні/інші не-ASCII символи).
@@ -40,8 +37,7 @@ public class TranslationService(HttpClient http)
         }
         catch
         {
-            // Якщо сервіс перекладу недоступний (ліміт/помилка мережі) — не валимо запит,
-            // просто лишаємо оригінальний текст як є.
+            // Сервіс недоступний (ліміт/мережа) — лишаємо оригінальний текст.
             return text;
         }
     }

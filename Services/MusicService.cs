@@ -7,20 +7,12 @@ namespace MusicDB.Api.Services;
 public class MusicService(MusicDbContext db, GenreNormalizationService genreNormalizer)
 {
     // Знаходить або створює жанри за іменами, повертає їх id.
-    // Спершу жанр перевіряється через ШІ (GenreNormalizationService) —
-    // чи не є він уже наявним жанром, написаним по-іншому (без пробілу,
-    // з дефісом, іншим регістром тощо). Це замінило просте порівняння
-    // рядків, щоб гарантовано уникати дублікатів типу "hardrock"/"hard rock".
+    // Кожен жанр спершу проходить через GenreNormalizationService (ШІ),
+    // щоб не плодити дублікати типу "hardrock"/"hard rock".
     public async Task<List<int>> ResolveGenresAsync(IEnumerable<string> names)
     {
-        // Клієнт (сайт, мобільний застосунок чи будь-хто інший, хто звертається
-        // до API напряму) міг надіслати одне "поєднане" значення жанру через
-        // слеш — найчастіше це трапляється, коли жанр підтягнувся з підказки
-        // iTunes (там жанри вроду "Hip-Hop/Rap" чи "R&B/Soul" — це ОДНЕ поле в
-        // самому iTunes) і людина просто натиснула "Надіслати", не розділивши
-        // його комою вручну. Тому тут додатково розбиваємо кожне вхідне
-        // значення і на "/", і на "," — незалежно від того, як його передав
-        // клієнт — щоб два різних жанри ніколи не злипались в один рядок бази.
+        // iTunes віддає жанри одним рядком через "/" (напр. "Hip-Hop/Rap"),
+        // тож розбиваємо і по "/", і по ",".
         var flatNames = names
             .SelectMany(raw => raw.Split(['/', ','], StringSplitOptions.RemoveEmptyEntries))
             .Select(n => n.Trim())
@@ -41,17 +33,14 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
                 genre = new Genre { GenreName = normalized };
                 db.Genres.Add(genre);
                 await db.SaveChangesAsync();
-                // Додаємо в локальний список, щоб наступні жанри з цього ж запиту
-                // теж бачили щойно створений (наприклад, дві близькі назви поспіль).
+                // Додаємо в локальний список, щоб наступні жанри цього ж запиту теж його бачили.
                 allExisting.Add(normalized);
             }
             ids.Add(genre.Id);
         }
 
-        // Якщо в одному запиті передали кілька варіантів написання того самого
-        // жанру, вони resolve-яться в один і той самий id. Без Distinct() це
-        // призводило б до спроби вставити в music_genre два рядки з однаковим
-        // (music_id, genre_id) і падіння запиту через порушення первинного ключа.
+        // Кілька варіантів написання того самого жанру resolve-яться в один id —
+        // без Distinct() це дало б дублікат (music_id, genre_id) і порушення PK.
         return ids.Distinct().ToList();
     }
 
@@ -71,9 +60,8 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
         return album.Id;
     }
 
-    // Перетворює список id пісень у SongDto (з жанрами й назвою альбому).
-    // Використовується улюбленими, плейлистами й рекомендаціями, щоб не
-    // дублювати логіку "склеювання" пісня + жанри + альбом у кожному контролері.
+    // Перетворює id пісень у SongDto (жанри + альбом). Спільна логіка для
+    // улюблених, плейлистів і рекомендацій — щоб не дублювати в контролерах.
     public async Task<List<SongDto>> GetSongDtosByIdsAsync(IEnumerable<int> ids)
     {
         var idList = ids.Distinct().ToList();
