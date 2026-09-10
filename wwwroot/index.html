@@ -374,16 +374,15 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   bottom: calc(var(--player-h) + 12px);
   right: 16px;
   width: 320px;
+  height: 216px;
   min-width: 220px;
+  min-height: 160px;
   max-width: 98vw;
+  max-height: 98vh;
   background: #0f0f11;
   border: 1px solid #2a2a2e;
   border-radius: 10px;
-  /* overflow:hidden (замість visible) потрібен, щоб працював нативний resize —
-     хендл з'являється в правому нижньому куті, тягне за ширину, висота відео
-     сама підлаштовується через aspect-ratio на #video-popup-frame нижче. */
   overflow: hidden;
-  resize: horizontal;
   box-shadow: 0 8px 32px rgba(0,0,0,0.7);
   z-index: 300;
   display: none;
@@ -391,22 +390,32 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 }
 #video-popup.open { display: flex; }
 /* Справжній повноекранний режим через Fullscreen API (кнопка ⛶) — попап
-   заповнює весь екран, висота відео більше не прив'язана до aspect-ratio
-   фіксованої ширини, а розтягується на весь доступний простір під шапкою. */
+   заповнює весь екран. */
 #video-popup:fullscreen {
-  /* !important — перебиває inline style.width, який могли виставити кнопка
-     "розгорнути" чи ручний resize ДО переходу в fullscreen. */
+  /* !important — перебиває inline style.width/height, які могли виставити
+     кнопка "розгорнути" чи ручний resize ДО переходу в fullscreen. */
   width: 100vw !important;
   height: 100vh !important;
   max-width: 100vw;
+  max-height: 100vh;
   border-radius: 0;
-  resize: none;
 }
-#video-popup:fullscreen #video-popup-frame {
-  flex: 1;
-  aspect-ratio: unset;
-  height: auto;
-}
+#video-popup:fullscreen .vp-resize { display: none; }
+/* 8 невидимих хендлів по краях і кутах — тягнуться трохи ЗА межі рамки
+   (від'ємні зсуви), щоб не перекривати відео-iframe і не втрачати вказівник. */
+.vp-resize { position: absolute; z-index: 5; }
+.vp-resize:hover { background: rgba(200,169,110,0.35); }
+.vp-resize-n, .vp-resize-s { left: 10px; right: 10px; height: 8px; cursor: ns-resize; }
+.vp-resize-n { top: -4px; }
+.vp-resize-s { bottom: -4px; }
+.vp-resize-e, .vp-resize-w { top: 10px; bottom: 10px; width: 8px; cursor: ew-resize; }
+.vp-resize-e { right: -4px; }
+.vp-resize-w { left: -4px; }
+.vp-resize-ne, .vp-resize-nw, .vp-resize-se, .vp-resize-sw { width: 14px; height: 14px; }
+.vp-resize-ne { top: -4px; right: -4px; cursor: nesw-resize; }
+.vp-resize-nw { top: -4px; left: -4px; cursor: nwse-resize; }
+.vp-resize-se { bottom: -4px; right: -4px; cursor: nwse-resize; }
+.vp-resize-sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
 #video-popup-header {
   display: flex;
   align-items: center;
@@ -438,7 +447,12 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 #video-popup-frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 16/9;
+  /* flex:1 (замість aspect-ratio) — заповнює будь-яку висоту, яку зараз має
+     #video-popup, бо тепер і ширина, і висота вільно тягнуться за будь-який
+     край/кут; YouTube-iframe сам умістить відео з потрібними чорними смугами,
+     якщо пропорції контейнера не збігаються з пропорціями самого відео. */
+  flex: 1;
+  min-height: 0;
   background: #000;
   border-radius: 0 0 10px 10px;
   overflow: hidden;
@@ -897,6 +911,14 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <span class="loading-dot"></span> <span data-i18n="videoPopup.loading">Завантаження…</span>
     </div>
   </div>
+  <div class="vp-resize vp-resize-n" data-dir="n"></div>
+  <div class="vp-resize vp-resize-s" data-dir="s"></div>
+  <div class="vp-resize vp-resize-e" data-dir="e"></div>
+  <div class="vp-resize vp-resize-w" data-dir="w"></div>
+  <div class="vp-resize vp-resize-ne" data-dir="ne"></div>
+  <div class="vp-resize vp-resize-nw" data-dir="nw"></div>
+  <div class="vp-resize vp-resize-se" data-dir="se"></div>
+  <div class="vp-resize vp-resize-sw" data-dir="sw"></div>
 </div>
 
 <div id="yt-wrap"><div id="yt-iframe"></div></div>
@@ -2619,12 +2641,74 @@ let videoPopupExpanded = false;
 function toggleVideoPopupSize(){
   videoPopupExpanded = !videoPopupExpanded;
   const popup = document.getElementById('video-popup');
-  // Явно перезаписуємо width (а не лише клас) — інакше після ручного
-  // розтягування за нативний resize-хендл лишився б inline-стиль, який
-  // переміг би клас і кнопка нічого не зробила б.
-  popup.style.width = videoPopupExpanded ? 'min(720px, 90vw)' : '320px';
+  const header = document.getElementById('video-popup-header');
+  // Явно перезаписуємо width/height (а не лише клас) — інакше після ручного
+  // перетягування хендлом лишився б inline-стиль, який переміг би клас і
+  // кнопка нічого не зробила б.
+  const targetW = videoPopupExpanded ? Math.min(720, window.innerWidth * 0.9) : 320;
+  const targetH = Math.round(targetW * 9 / 16) + header.offsetHeight;
+  popup.style.width = targetW + 'px';
+  popup.style.height = targetH + 'px';
   document.getElementById('video-popup-expand').classList.toggle('active', videoPopupExpanded);
 }
+
+(function initVideoPopupResize(){
+  const popup = document.getElementById('video-popup');
+  const MIN_W = 220, MIN_H = 160;
+
+  document.querySelectorAll('.vp-resize').forEach((handle) => {
+    const dir = handle.dataset.dir; // 'n','s','e','w','ne','nw','se','sw'
+    let dragging = false, startX = 0, startY = 0, startRect = null;
+
+    handle.addEventListener('pointerdown', (e) => {
+      if (document.fullscreenElement) return; // у fullscreen розмір фіксований
+      dragging = true;
+      startX = e.clientX; startY = e.clientY;
+      startRect = popup.getBoundingClientRect();
+      // Фіксуємо left/top ОДРАЗУ (а не лише скидаємо right/bottom) — інакше
+      // між pointerdown і першим pointermove попап на мить "стрибне" в
+      // позицію за замовчуванням.
+      popup.style.left = startRect.left + 'px';
+      popup.style.top = startRect.top + 'px';
+      popup.style.right = 'auto';
+      popup.style.bottom = 'auto';
+      handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation(); // не даємо це ж pointerdown зачепити перетягування за шапку
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      let width = startRect.width, height = startRect.height;
+      let left = startRect.left, top = startRect.top;
+
+      if (dir.includes('e')) width = startRect.width + dx;
+      if (dir.includes('w')) width = startRect.width - dx;
+      if (dir.includes('s')) height = startRect.height + dy;
+      if (dir.includes('n')) height = startRect.height - dy;
+
+      width = Math.max(MIN_W, Math.min(window.innerWidth * 0.98, width));
+      height = Math.max(MIN_H, Math.min(window.innerHeight * 0.98, height));
+
+      // Протилежний (нерухомий) край лишається на місці — координату
+      // рахуємо ВІД НЬОГО, тож обрізання по min/max не "з'їжджає" бік,
+      // який користувач не тягнув.
+      if (dir.includes('w')) left = startRect.right - width;
+      if (dir.includes('n')) top = startRect.bottom - height;
+
+      popup.style.width = width + 'px';
+      popup.style.height = height + 'px';
+      popup.style.left = left + 'px';
+      popup.style.top = top + 'px';
+    });
+    const endDrag = (e) => {
+      dragging = false;
+      try { handle.releasePointerCapture(e.pointerId); } catch(ex) {}
+    };
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+  });
+})();
 
 (function initVideoPopupDrag(){
   const popup = document.getElementById('video-popup');
