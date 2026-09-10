@@ -973,7 +973,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
     <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="edit-song-genres"><div class="hint" data-i18n="form.genres.hint">Через кому</div></div>
     <div class="form-group">
       <label data-i18n="admin.youtubeVideo">YouTube-відео (необов'язково)</label>
-      <input type="text" id="edit-song-youtube" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео, або залиште порожнім">
+      <input type="text" id="edit-song-youtube" oninput="_updateEditSongYoutubeLink()" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео, або залиште порожнім">
+      <a id="edit-song-youtube-link" href="#" target="_blank" rel="noopener" style="display:none;font-size:0.75rem;color:var(--accent);margin-top:0.4rem;">
+        ▶ <span data-i18n="admin.youtubeVideo.view">Переглянути на YouTube</span>
+      </a>
       <div class="hint" data-i18n="admin.youtubeVideo.hint">Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим</div>
     </div>
     <div class="modal-actions">
@@ -1074,6 +1077,7 @@ const I18N = {
     'admin.youtubeVideo': "YouTube-відео (необов'язково)",
     'admin.youtubeVideo.placeholder': 'ID або посилання на відео, або залиште порожнім',
     'admin.youtubeVideo.hint': 'Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим',
+    'admin.youtubeVideo.view': 'Переглянути на YouTube',
     'admin.normalizeGenresBtn': "🧹 Об'єднати дублікати жанрів",
     'admin.normalizeGenresRunning': 'Перевірка триває…',
     'admin.normalizeGenresNone': 'Дублікатів не знайдено — усі жанри унікальні.',
@@ -1218,6 +1222,7 @@ const I18N = {
     'admin.youtubeVideo': 'YouTube video (optional)',
     'admin.youtubeVideo.placeholder': 'Video ID or link, or leave empty',
     'admin.youtubeVideo.hint': "The auto-picked, cached video can be replaced or cleared here if it turned out to be the wrong one",
+    'admin.youtubeVideo.view': 'View on YouTube',
     'admin.normalizeGenresBtn': '🧹 Merge duplicate genres',
     'admin.normalizeGenresRunning': 'Checking…',
     'admin.normalizeGenresNone': 'No duplicates found — all genres are unique.',
@@ -1983,8 +1988,19 @@ function openEditSongModal(id){
   document.getElementById('edit-song-album').value = s.album || '';
   document.getElementById('edit-song-genres').value = (s.genres||[]).join(', ');
   document.getElementById('edit-song-youtube').value = s.youtubeVideoId || '';
+  _updateEditSongYoutubeLink();
   document.getElementById('edit-song-save-btn').onclick = function(){ saveEditSong(id); };
   document.getElementById('edit-song-modal-overlay').classList.add('open');
+}
+// Оновлює посилання "Переглянути на YouTube" під полем — і для вже
+// закешованого значення при відкритті модалки, і "наживо" поки адмін
+// редагує/вставляє нове (приймає як голий videoId, так і повний URL).
+function _updateEditSongYoutubeLink(){
+  const val = document.getElementById('edit-song-youtube').value.trim();
+  const link = document.getElementById('edit-song-youtube-link');
+  if(!val){ link.style.display = 'none'; return; }
+  link.href = /^https?:\/\//i.test(val) ? val : `https://www.youtube.com/watch?v=${encodeURIComponent(val)}`;
+  link.style.display = 'inline-block';
 }
 function closeEditSongModal(){
   document.getElementById('edit-song-modal-overlay').classList.remove('open');
