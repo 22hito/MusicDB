@@ -559,7 +559,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   <span class="nav-brand" onclick="showPage('home')"><img src="/images/logo.png" alt="MusicDB logo">MusicDB</span>
   <ul class="nav-tabs">
     <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
-    <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 10</button></li>
+    <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 100</button></li>
     <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
     <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
     <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
@@ -624,10 +624,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   </div>
 </div>
 
-<!-- TOP 10 -->
+<!-- TOP 100 -->
 <div id="page-top" class="page">
   <div class="container">
-    <h2><span data-i18n="top.heading.pre">Топ 10</span> <span class="hl" data-i18n="top.heading.accent">найпрослуханіших</span></h2>
+    <h2><span data-i18n="top.heading.pre">Топ 100</span> <span class="hl" data-i18n="top.heading.accent">найпрослуханіших</span></h2>
     <div class="table-wrap scroll-table mobile-cards">
       <table>
         <thead>
@@ -1009,8 +1009,8 @@ const I18N = {
     'nav.request': 'Надіслати запит',
     'nav.admin': 'Адмін — Запити',
     'nav.add': 'Додати пісню',
-    'nav.top': 'Топ 10',
-    'top.heading.pre': 'Топ 10',
+    'nav.top': 'Топ 100',
+    'top.heading.pre': 'Топ 100',
     'top.heading.accent': 'найпрослуханіших',
     'top.empty': 'Ще немає прослуховувань',
     'theme.toggle': 'Змінити тему',
@@ -1150,8 +1150,8 @@ const I18N = {
     'nav.request': 'Submit request',
     'nav.admin': 'Admin — Requests',
     'nav.add': 'Add song',
-    'nav.top': 'Top 10',
-    'top.heading.pre': 'Top 10',
+    'nav.top': 'Top 100',
+    'top.heading.pre': 'Top 100',
     'top.heading.accent': 'most played',
     'top.empty': 'No listens yet',
     'theme.toggle': 'Switch theme',
@@ -2223,7 +2223,7 @@ function playPlaylistFromStart(){
 }
 
 // ================================================================
-// TOP 10 (найпрослуханіші — GET /api/stats/top-songs)
+// TOP 100 (найпрослуханіші — GET /api/stats/top-songs)
 // ================================================================
 let currentTopSongs = [];
 function playFromTop(id){
@@ -2236,7 +2236,7 @@ function playFromTop(id){
 async function loadTopSongsPage(){
   const tbody=document.getElementById('top-songs-body');
   try{
-    const list = await fetch('/api/stats/top-songs?limit=10').then(r=>r.json());
+    const list = await fetch('/api/stats/top-songs?limit=100').then(r=>r.json());
     currentTopSongs = list;
     if(!list.length){
       tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="icon">🎵</span>${t('top.empty')}</div></td></tr>`;
@@ -2282,7 +2282,17 @@ function _loadCurrent(){
   document.getElementById('p-dur').textContent='0:00';
   renderSongs();
 
-  fetchVid(s.artist,s.title).then(vid=>{
+  // Якщо videoId вже закешовано в базі (хтось раніше знайшов і підтвердив
+  // його для цієї ж пісні) — беремо напряму, без нового запиту до YouTube
+  // Search API (100 одиниць квоти за кожен такий пошук).
+  const vidPromise = s.youtubeVideoId
+    ? Promise.resolve(s.youtubeVideoId)
+    : fetchVid(s.artist,s.title).then(vid=>{
+        if(vid) _cacheYoutubeVideo(s.id, vid);
+        return vid;
+      });
+
+  vidPromise.then(vid=>{
     if(!vid){setLoad(false);document.getElementById('p-title').textContent=s.title+t('video.notFoundSuffix');return;}
     currentVid = vid;
     _onVidReady(vid);
@@ -2292,6 +2302,15 @@ function _loadCurrent(){
     document.getElementById('player-cover-ph').style.display='none';
     if(ytReady)_load(vid);else pendingVid=vid;
   });
+}
+// Фонове збереження знайденого videoId — не блокує відтворення й ігнорує помилки
+// (best-effort: якщо не збереглось, наступного разу просто пошукає знову).
+function _cacheYoutubeVideo(songId, videoId){
+  fetch(`/api/songs/${songId}/youtube-video`, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({videoId})
+  }).catch(()=>{});
 }
 
 // Нормалізація для звірки релевантності: без регістру, діакритики й пунктуації.

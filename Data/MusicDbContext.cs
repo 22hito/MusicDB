@@ -37,6 +37,9 @@ public class Music
     [Column("release")] public DateOnly Release { get; set; }
     [Column("duration")] public TimeSpan Duration { get; set; }
     [Column("album_ids")] public int[]? AlbumIds { get; set; }
+    // Кешований YouTube videoId, щойно якийсь клієнт його знайшов і підтвердив
+    // (пройшов перевірку релевантності) — рятує від повторного пошуку через API.
+    [Column("youtube_video_id")] public string? YoutubeVideoId { get; set; }
     public ICollection<MusicGenre> MusicGenres { get; set; } = [];
 }
 

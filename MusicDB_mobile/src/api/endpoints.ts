@@ -31,11 +31,15 @@ export function useMusicApi() {
       createSong: (dto: CreateSongInput) => request<Song>('/api/songs', { method: 'POST', body: dto }),
       updateSong: (id: number, dto: UpdateSongInput) =>
         request<Song>(`/api/songs/${id}`, { method: 'PUT', body: dto }),
+      // Кешує знайдений і підтверджений YouTube videoId — наступного разу цю
+      // пісню можна програти без нового пошуку через YouTube Search API.
+      setYoutubeVideo: (id: number, videoId: string) =>
+        request<void>(`/api/songs/${id}/youtube-video`, { method: 'PUT', body: { videoId } }),
       deleteSong: (id: number) => request<void>(`/api/songs/${id}`, { method: 'DELETE' }),
 
       // Stats / Genres
       getStats: () => request<Stats>('/api/stats'),
-      getTopSongs: (limit = 10) => request<Song[]>('/api/stats/top-songs', { query: { limit } }),
+      getTopSongs: (limit = 100) => request<Song[]>('/api/stats/top-songs', { query: { limit } }),
       getGenres: () => request<Genre[]>('/api/genres'),
       normalizeGenres: () => request<NormalizeGenresResult>('/api/genres/normalize', { method: 'POST' }),
 

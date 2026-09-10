@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SongsController(MusicDbContext db, MusicService musicService) : ControllerBase
+public partial class SongsController(MusicDbContext db, MusicService musicService) : ControllerBase
 {
     [HttpGet]
     public async Task<IEnumerable<SongDto>> GetAll()
@@ -98,6 +99,30 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
         return NoContent();
     }
 
+    // Кешує YouTube videoId, який фронтенд щойно сам знайшов і підтвердив
+    // (пройшов перевірку релевантності перед відтворенням) — наступного разу
+    // цю пісню можна програти без нового звернення до YouTube Search API.
+    // Без [Authorize]: кешування пасивне й не потребує довіри — пишемо лише
+    // якщо ще порожньо (перша спроба виграє), тож зіпсувати вже правильний
+    // запис одним запитом не можна.
+    [HttpPut("{id}/youtube-video")]
+    public async Task<IActionResult> SetYoutubeVideo(int id, [FromBody] SetYoutubeVideoDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.VideoId) || !YoutubeVideoIdRegex().IsMatch(dto.VideoId))
+            return BadRequest();
+
+        var song = await db.Songs.FindAsync(id);
+        if (song is null) return NotFound();
+        if (song.YoutubeVideoId is not null) return Ok();
+
+        song.YoutubeVideoId = dto.VideoId;
+        await db.SaveChangesAsync();
+        return Ok();
+    }
+
+    [GeneratedRegex(@"^[A-Za-z0-9_-]{11}$")]
+    private static partial Regex YoutubeVideoIdRegex();
+
     // Редагування вже опублікованої пісні (не заявки) — повністю
     // перезаписує основні поля, жанри та альбом.
     [Authorize, AdminOnly]
@@ -144,7 +169,7 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
         return new SongDto(m.Id, m.Artist, m.Title,
             m.Release.ToString("yyyy-MM-dd"),
             m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName, playCount);
+            genres, albumName, playCount, m.YoutubeVideoId);
     }
 
     private static SongDto ToDto(Music m, string? albumName, int playCount)
@@ -153,6 +178,6 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
         return new SongDto(m.Id, m.Artist, m.Title,
             m.Release.ToString("yyyy-MM-dd"),
             m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName, playCount);
+            genres, albumName, playCount, m.YoutubeVideoId);
     }
 }

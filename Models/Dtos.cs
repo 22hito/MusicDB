@@ -10,8 +10,14 @@ public record SongDto(
     string   Duration,   // "HH:mm:ss"
     string[] Genres,
     string?  Album,
-    int      PlayCount = 0   // кількість унікальних слухачів, з listening_history
+    int      PlayCount = 0,   // кількість унікальних слухачів, з listening_history
+    // Раз знайдений і підтверджений (пройшов перевірку релевантності) відеоряд
+    // кешується тут — наступні відтворення цієї пісні більше не витрачають
+    // YouTube Search API квоту (100 одиниць/запит) на повторний пошук.
+    string?  YoutubeVideoId = null
 );
+
+public record SetYoutubeVideoDto(string VideoId);
 
 public record CreateSongDto(
     string   Artist,

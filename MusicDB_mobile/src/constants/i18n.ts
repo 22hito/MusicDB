@@ -9,8 +9,8 @@ export const I18N = {
     'nav.profile': 'Профіль',
     'nav.library': 'Бібліотека', // NEW
     'nav.admin.tab': 'Адмін', // NEW
-    'nav.top': 'Топ 10', // NEW
-    'top.heading.pre': 'Топ 10', // NEW
+    'nav.top': 'Топ 100', // NEW
+    'top.heading.pre': 'Топ 100', // NEW
     'top.heading.accent': 'найпрослуханіших', // NEW
     'top.empty': 'Ще немає прослуховувань', // NEW
 
@@ -180,8 +180,8 @@ export const I18N = {
     'nav.profile': 'Profile',
     'nav.library': 'Library',
     'nav.admin.tab': 'Admin',
-    'nav.top': 'Top 10', // NEW
-    'top.heading.pre': 'Top 10', // NEW
+    'nav.top': 'Top 100', // NEW
+    'top.heading.pre': 'Top 100', // NEW
     'top.heading.accent': 'most played', // NEW
     'top.empty': 'No listens yet', // NEW
 

@@ -9,6 +9,7 @@ export interface Song {
   genres: string[];
   album: string | null;
   playCount: number; // унікальних слухачів, з listening_history
+  youtubeVideoId: string | null; // закешований раніше знайдений і підтверджений відеоряд
 }
 
 export interface CreateSongInput {
@@ -117,5 +118,5 @@ export interface ExternalSongResult {
 }
 
 export interface AppConfig {
-  youtubeApiKey: string;
+  youtubeApiKeys: string[]; // по одному на GCP-проєкт — квота 10000/добу рахується на проєкт, не на ключ
 }
