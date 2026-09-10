@@ -4,18 +4,14 @@ using System.Text.RegularExpressions;
 
 namespace MusicDB.Api.Services;
 
-// Last.fm API — безкоштовний, без такого жорсткого ліміту, як у Gemini
-// (орієнтовно кілька запитів на секунду замість 20 на хвилину). Основний
-// шлях отримання МНОЖИНИ жанрів для пісні: люди самі "тегують" треки
-// (краудсорсинг), тож для більшості відомих пісень там є кілька точних
-// жанрових тегів, а не один загальний, як у iTunes.
+// Last.fm — основне джерело МНОЖИНИ жанрів для пісні (краудсорсингові теги
+// слухачів), без жорсткого ліміту як у Gemini (~кілька запитів/сек).
 //
-// Ключ береться з appsettings.json -> LastFm:ApiKey. Отримати безкоштовно
-// (миттєво, без підтвердження): https://www.last.fm/api/account/create
+// Ключ — appsettings.json → LastFm:ApiKey, безкоштовно на
+// https://www.last.fm/api/account/create
 public class LastFmGenreService(HttpClient http, IConfiguration config)
 {
-    // Last.fm-теги — вільний текст від користувачів, тому серед них багато
-    // "сміття", яке жанром не є (настрій, оцінка, факт прослуховування тощо).
+    // Теги — вільний текст користувачів, тож багато "сміття" (не жанри).
     // Відфільтровуємо найпоширеніші такі теги.
     private static readonly HashSet<string> NonGenreTags = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -56,8 +52,7 @@ public class LastFmGenreService(HttpClient http, IConfiguration config)
         }
         catch
         {
-            // Last.fm недоступний / артиста чи пісню не знайдено —
-            // повертаємо порожній список, викликач сам вирішить, що робити далі.
+            // Last.fm недоступний / не знайдено — повертаємо порожній список.
             return [];
         }
     }

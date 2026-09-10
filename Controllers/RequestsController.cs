@@ -24,9 +24,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
     [HttpPost]
     public async Task<ActionResult<RequestDto>> Create([FromBody] CreateRequestDto dto)
     {
-        // Якщо користувач ввів жанр не англійською (наприклад "рок"),
-        // перекладаємо на англійську для узгодженості з рештою бази,
-        // але зберігаємо й оригінал, щоб адмін міг перевірити переклад.
+        // Неанглійські жанри перекладаємо для узгодженості з базою,
+        // оригінал зберігаємо, щоб адмін міг перевірити переклад.
         var originalGenres = dto.Genres.Select(g => g.Trim()).Where(g => g.Length > 0).ToList();
         var translatedGenres = new List<string>();
         var wasAnyTranslated = false;
@@ -95,9 +94,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
 
         var genreIds = await musicService.ResolveGenresAsync(genreNames);
 
-        // Перевірка на дублікат: якщо пісня з таким самим виконавцем і назвою
-        // (без урахування регістру/пробілів) уже є в базі — не створюємо
-        // другий запис, а просто доєднуємо нові жанри до наявного.
+        // Дублікат за виконавцем+назвою (без регістру/пробілів) — не створюємо
+        // новий запис, а доєднуємо жанри до наявного.
         var existing = await db.Songs.FirstOrDefaultAsync(m =>
             m.Artist.Trim().ToLower() == req.Artist.Trim().ToLower() &&
             m.Title.Trim().ToLower() == req.Title.Trim().ToLower());

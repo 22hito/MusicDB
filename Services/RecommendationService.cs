@@ -6,14 +6,10 @@ using MusicDB.Api.Models;
 
 namespace MusicDB.Api.Services;
 
-// Рекомендації пісень на основі історії прослуховувань користувача.
-// Основний шлях — Google Gemini (той самий безкоштовний ключ, що й для
-// жанрів): йому передається історія прослуховувань + весь каталог, і він
-// підбирає пісні з коротким поясненням "чому".
-//
-// Якщо ключ не налаштований, ліміт вичерпано, чи Gemini недоступний —
-// спрацьовує простий фолбек: пісні з жанрами, які користувач слухає
-// найчастіше (без ШІ, без пояснення).
+// Рекомендації на основі історії прослуховувань. Основний шлях — Gemini
+// (історія + каталог → підбір з поясненням "чому").
+// Без ключа/при недоступності Gemini — фолбек: пісні за найчастішими
+// жанрами користувача, без пояснення.
 public class RecommendationService(MusicDbContext db, MusicService musicService, HttpClient http, IConfiguration config)
 {
     private const int MaxRecommendations = 25;
@@ -60,9 +56,7 @@ public class RecommendationService(MusicDbContext db, MusicService musicService,
             var catalogText = string.Join("; ", allSongs.Select(s =>
                 $"id={s.Id}: {s.Artist} - {s.Title} [{string.Join(", ", s.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()))}]"));
 
-            // Пояснення має бути мовою поточного інтерфейсу сайту (укр/англ),
-            // а не завжди українською — інакше при перемиканні мови на
-            // сторінці рекомендацій текст пояснення лишався б українським.
+            // Пояснення мовою поточного інтерфейсу (укр/англ), а не завжди українською.
             var languageName = lang == "en" ? "англійською (English)" : "українською";
 
             var prompt = $$"""

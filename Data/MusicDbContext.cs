@@ -59,16 +59,14 @@ public class MusicRequest
     [Column("duration")] public string? Duration { get; set; }
     [Column("genre_ids")] public int[]? GenreIds { get; set; }
     [Column("genre_names")] public string? GenreNames { get; set; }
-    // Оригінальний (неперекладений) варіант жанрів, як його ввів користувач.
-    // Заповнюється, лише якщо переклад дійсно був застосований (жанр був не англійською).
+    // Оригінал жанрів до перекладу; заповнюється лише якщо переклад застосовувався.
     [Column("genre_names_original")] public string? GenreNamesOriginal { get; set; }
     [Column("album_title")] public string? AlbumTitle { get; set; }
     [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 // ─── Профіль / улюблені / плейлисти / історія прослуховувань ──────────────
-// Користувач ідентифікується за email з Google-акаунту (окремої таблиці
-// користувачів не було — email вже унікальний ключ, який видає OAuth).
+// Користувач ідентифікується за email з Google-акаунту — окремої таблиці users нема.
 
 [Table("user_profiles", Schema = "lab")]
 public class UserProfile
