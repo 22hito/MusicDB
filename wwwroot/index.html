@@ -2013,14 +2013,17 @@ function fmtSec(s){s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).p
 // CONFIG & AUTH
 // ================================================================
 let currentUser = null;
-let ytApiKey = 'AIzaSyCc0I2E_03NGYQchLXv3OMNbBiReak5XP8';
+// Кілька ключів (кожен зі свого GCP-проєкту, бо квота — 10000/добу НА ПРОЄКТ)
+// для автоматичної ротації, коли поточний впирається у денний ліміт пошуку.
+let ytApiKeys = ['AIzaSyCc0I2E_03NGYQchLXv3OMNbBiReak5XP8'];
+let ytApiKeyIdx = 0;
 
 async function initApp() {
   const [cfgRes, meRes] = await Promise.all([
     fetch('/config').then(r=>r.ok?r.json():{}).catch(()=>({})),
     fetch('/auth/me').then(r=>r.ok?r.json():{authenticated:false}).catch(()=>({authenticated:false}))
   ]);
-  if(cfgRes.youtubeApiKey) ytApiKey = cfgRes.youtubeApiKey;
+  if(cfgRes.youtubeApiKeys && cfgRes.youtubeApiKeys.length) ytApiKeys = cfgRes.youtubeApiKeys;
   currentUser = meRes;
   if(currentUser?.authenticated){
     try {
@@ -2267,17 +2270,32 @@ function _isRelevantVideo(item,title){
   return (matched/titleWords.length) >= 0.6;
 }
 async function _searchYoutube(q){
-  const r=await fetch(
-    // maxResults=10 — більший пул кандидатів для відсіювання перезаливів.
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(q)}&key=${ytApiKey}`,
-    {signal:AbortSignal.timeout(8000)}
-  );
-  if(!r.ok) return [];
-  const d=await r.json();
-  return d.items||[];
+  // Пробуємо ключі по черзі, починаючи з поточного — якщо один вичерпав денну
+  // квоту (403/429), непомітно для користувача переходимо на наступний і
+  // запам'ятовуємо його як поточний для наступних запитів.
+  for(let attempt=0; attempt<ytApiKeys.length; attempt++){
+    const key=ytApiKeys[ytApiKeyIdx];
+    try{
+      const r=await fetch(
+        // maxResults=10 — більший пул кандидатів для відсіювання перезаливів.
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(q)}&key=${key}`,
+        {signal:AbortSignal.timeout(8000)}
+      );
+      if(r.ok){
+        const d=await r.json();
+        return d.items||[];
+      }
+      if((r.status===403||r.status===429) && ytApiKeys.length>1){
+        ytApiKeyIdx=(ytApiKeyIdx+1)%ytApiKeys.length;
+        continue; // квота — пробуємо наступний ключ
+      }
+      return []; // інша помилка (мережа/невалідний ключ) — сенсу пробувати ще нема
+    }catch(e){ return []; }
+  }
+  return []; // усі ключі вичерпали квоту
 }
 async function fetchVid(artist,title){
-  if(!ytApiKey) return null;
+  if(!ytApiKeys.length) return null;
   const artistLower=artist.toLowerCase();
   // "live"/"interview"/"teaser"/"making of" тощо містять назву пісні в заголовку
   // (проходять перевірку релевантності), але це не сама студійна пісня — саме
