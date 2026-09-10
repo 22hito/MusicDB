@@ -94,6 +94,51 @@ public class ExternalMusicSearchServiceTests
     }
 
     [Fact]
+    public async Task SearchAsync_AlbumTerm_FetchesFullTracklistViaLookup_NotJustPartialSearchMatches()
+    {
+        // Відтворює реальний баг: /search за назвою альбому повертає лише
+        // частину треків (тут — 2 з 4), бо це нечіткий пошук за релевантністю
+        // по всьому каталогу, а не гарантований повний трек-лист альбому.
+        var searchJson = Results(
+            new Dictionary<string, object?> { ["artistName"] = "ArtistA", ["trackName"] = "Track One", ["collectionId"] = 555, ["collectionName"] = "The Album" },
+            new Dictionary<string, object?> { ["artistName"] = "ArtistA", ["trackName"] = "Track Two", ["collectionId"] = 555, ["collectionName"] = "The Album" });
+
+        var lookupJson = """
+            {"resultCount":5,"results":[
+                {"wrapperType":"collection","collectionId":555,"collectionName":"The Album","artistName":"ArtistA","trackCount":4},
+                {"wrapperType":"track","artistName":"ArtistA","trackName":"Track One","collectionId":555,"collectionName":"The Album","trackNumber":1},
+                {"wrapperType":"track","artistName":"ArtistA","trackName":"Track Two","collectionId":555,"collectionName":"The Album","trackNumber":2},
+                {"wrapperType":"track","artistName":"ArtistA","trackName":"Track Three","collectionId":555,"collectionName":"The Album","trackNumber":3},
+                {"wrapperType":"track","artistName":"ArtistA","trackName":"Track Four","collectionId":555,"collectionName":"The Album","trackNumber":4}
+            ]}
+            """;
+
+        var handler = new RoutedFakeHttpMessageHandler(("/search", searchJson), ("/lookup", lookupJson));
+        var service = new ExternalMusicSearchService(new HttpClient(handler));
+
+        var result = await service.SearchAsync("The Album", "albumTerm");
+
+        Assert.Equal(4, result.Count);
+        Assert.Equal(["Track One", "Track Two", "Track Three", "Track Four"], result.Select(r => r.Title));
+    }
+
+    [Fact]
+    public async Task SearchAsync_AlbumTerm_LookupFailure_FallsBackToPartialSearchResults()
+    {
+        var searchJson = Results(
+            new Dictionary<string, object?> { ["artistName"] = "ArtistA", ["trackName"] = "Track One", ["collectionId"] = 555, ["collectionName"] = "The Album" });
+
+        // /lookup повертає щось непридатне (не JSON) — імітує збій зовнішнього сервісу.
+        var handler = new RoutedFakeHttpMessageHandler(("/search", searchJson), ("/lookup", "not json"));
+        var service = new ExternalMusicSearchService(new HttpClient(handler));
+
+        var result = await service.SearchAsync("The Album", "albumTerm");
+
+        var single = Assert.Single(result);
+        Assert.Equal("Track One", single.Title);
+    }
+
+    [Fact]
     public async Task SearchAsync_SingleAlbumSuffix_IsNormalizedToNull()
     {
         var json = Results(Item("Artist", "My Song", "My Song - Single"));

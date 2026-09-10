@@ -58,13 +58,51 @@ public class ExternalMusicSearchService(HttpClient http)
                     // Ярусна релевантність: спочатку збіг по альбому (точний,
                     // потім частковий), далі — назва пісні, потім — виконавець.
                     // Всередині одного ярусу — пісні заявленого виконавця (artistHint) вище.
-                    ordered = candidates
+                    var tiered = candidates
                         .Select(r => (Item: r, Tier: AlbumRelevanceTier(r, query)))
                         .Where(x => x.Tier is not null)
                         .OrderBy(x => x.Tier)
                         .ThenByDescending(x => !string.IsNullOrWhiteSpace(artistHint)
                             && x.Item.ArtistName!.Contains(artistHint, StringComparison.OrdinalIgnoreCase))
-                        .Select(x => x.Item);
+                        .Select(x => x.Item)
+                        .ToList();
+
+                    // iTunes /search — це нечіткий пошук за релевантністю в межах
+                    // усього каталогу, А НЕ гарантований повний трек-лист альбому:
+                    // перевірено на реальному прикладі — 14-трековий альбом
+                    // повертав term-пошуком лише 4 треки. /lookup за collectionId —
+                    // авторитетне джерело, повертає альбом цілком. Тому для
+                    // кількох найрелевантніших знайдених альбомів довантажуємо їх
+                    // повні трек-листи; порядок альбомів (relevance + artistHint)
+                    // лишається той самий, що встановила ярусна логіка вище.
+                    var topCollectionIds = tiered
+                        .Where(r => r.CollectionId.HasValue)
+                        .Select(r => r.CollectionId!.Value)
+                        .Distinct()
+                        .Take(4)
+                        .ToList();
+
+                    if (topCollectionIds.Count > 0)
+                    {
+                        var fullAlbums = await Task.WhenAll(topCollectionIds.Select(FetchFullAlbumAsync));
+                        var merged = new List<ITunesResult>();
+                        foreach (var albumTracks in fullAlbums)
+                            merged.AddRange(albumTracks);
+
+                        // Лукап міг не спрацювати (мережа, рідкісний edge-case) —
+                        // тоді для такого альбому лишаємо часткові результати term-пошуку.
+                        var coveredIds = fullAlbums
+                            .Where(a => a.Count > 0)
+                            .SelectMany(a => a.Select(t => t.CollectionId))
+                            .ToHashSet();
+                        merged.AddRange(tiered.Where(r => !coveredIds.Contains(r.CollectionId)));
+
+                        ordered = merged;
+                    }
+                    else
+                    {
+                        ordered = tiered;
+                    }
                     break;
 
                 default:
@@ -88,6 +126,26 @@ public class ExternalMusicSearchService(HttpClient http)
         {
             // Якщо зовнішній сервіс недоступний — повертаємо порожній список,
             // користувач просто продовжує заповнювати форму вручну.
+            return [];
+        }
+    }
+
+    // Повний, авторитетний трек-лист альбому за його collectionId (на відміну
+    // від /search — /lookup не "губить" треки через нечітку релевантність).
+    private async Task<List<ITunesResult>> FetchFullAlbumAsync(long collectionId)
+    {
+        try
+        {
+            var url = $"https://itunes.apple.com/lookup?id={collectionId}&entity=song";
+            var result = await http.GetFromJsonAsync<ITunesResponse>(url);
+            return result?.Results?
+                .Where(r => r.WrapperType == "track" && !string.IsNullOrWhiteSpace(r.ArtistName) && !string.IsNullOrWhiteSpace(r.TrackName))
+                .OrderBy(r => r.DiscNumber ?? 1)
+                .ThenBy(r => r.TrackNumber ?? int.MaxValue)
+                .ToList() ?? [];
+        }
+        catch
+        {
             return [];
         }
     }
@@ -141,11 +199,15 @@ public class ExternalMusicSearchService(HttpClient http)
 
     private class ITunesResult
     {
+        [JsonPropertyName("wrapperType")] public string? WrapperType { get; set; }
         [JsonPropertyName("artistName")] public string? ArtistName { get; set; }
         [JsonPropertyName("trackName")] public string? TrackName { get; set; }
+        [JsonPropertyName("collectionId")] public long? CollectionId { get; set; }
         [JsonPropertyName("collectionName")] public string? CollectionName { get; set; }
         [JsonPropertyName("releaseDate")] public string? ReleaseDate { get; set; }
         [JsonPropertyName("trackTimeMillis")] public long? TrackTimeMillis { get; set; }
         [JsonPropertyName("primaryGenreName")] public string? PrimaryGenreName { get; set; }
+        [JsonPropertyName("discNumber")] public int? DiscNumber { get; set; }
+        [JsonPropertyName("trackNumber")] public int? TrackNumber { get; set; }
     }
 }
