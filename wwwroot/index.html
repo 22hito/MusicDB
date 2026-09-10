@@ -2505,6 +2505,17 @@ let currentVid = null;
 let popupPlayer = null;
 let popupReady = false;
 let popupSyncTicker = null;
+// true одразу після НАШОГО Ж programmatic seekTo() на попапі — YouTube на
+// такий seekTo іноді емітить короткий PLAYING, який не можна відрізнити від
+// справжнього від events.onStateChange, тому позначаємо його прапорцем, а не
+// здогадуємось з userIntendedPlaying (той false і одразу після РЕАЛЬНОЇ паузи
+// теж — інакше клік "продовжити" по відео в попапі миттєво сам себе скасовував).
+let _popupProgrammaticSeek = false;
+function _popupSeek(time){
+  _popupProgrammaticSeek = true;
+  try { popupPlayer.seekTo(time, true); } catch(e) {}
+  setTimeout(() => { _popupProgrammaticSeek = false; }, 400);
+}
 
 // Ініціалізуємо прихований div для popup-плеєра (вже є #video-popup-frame)
 function _initPopupPlayer(vid, startAt) {
@@ -2553,7 +2564,7 @@ function _initPopupPlayer(vid, startAt) {
         // Точне вирівнювання по секунді з основним плеєром
         try {
           const cur = ytPlayer.getCurrentTime();
-          e.target.seekTo(cur, true);
+          _popupSeek(cur);
           e.target.mute(); // відео без звуку — звук іде з ytPlayer (setVolume(0) саму по собі YouTube іноді "забуває")
           e.target.setVolume(0);
           // Якщо музика на паузі — не даємо autoplay стартувати попап.
@@ -2568,12 +2579,14 @@ function _initPopupPlayer(vid, startAt) {
           try { if(ytPlayer&&ytReady) ytPlayer.pauseVideo(); } catch(ex) {}
           setPP(false); stopTick(); setEQ(false);
         } else if (e.data === YT.PlayerState.PLAYING) {
-          if (!userIntendedPlaying) {
-            // Не реальний play — побічний ефект seekTo() під час синку (YouTube емітить
-            // PLAYING навіть при перемотуванні на паузі). Повертаємо попап на паузу.
-            try { popupPlayer.pauseVideo(); } catch(ex) {}
+          if (_popupProgrammaticSeek) {
+            // Спурний PLAYING від НАШОГО Ж seekTo() (ініціалізація/синк), а не
+            // від користувача — повертаємо попап у той стан, що й мав бути.
+            if (!userIntendedPlaying) { try { popupPlayer.pauseVideo(); } catch(ex) {} }
             return;
           }
+          // Справжній клік користувача по відео — і перший play, і "продовжити" після паузи.
+          userIntendedPlaying = true;
           try { if(ytPlayer&&ytReady) {
             ytPlayer.seekTo(popupPlayer.getCurrentTime(), true);
             ytPlayer.playVideo();
@@ -2604,7 +2617,7 @@ function _startPopupSync() {
       const mainTime = ytPlayer.getCurrentTime();
       const popTime  = popupPlayer.getCurrentTime();
       if (Math.abs(mainTime - popTime) > 1.5) {
-        popupPlayer.seekTo(mainTime, true);
+        _popupSeek(mainTime);
       }
     } catch(e) {}
   }, 5000);
