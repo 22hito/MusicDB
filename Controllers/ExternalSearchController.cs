@@ -30,11 +30,18 @@ public class ExternalSearchController(
 
         string query;
         string? attribute = null;
+        string? artistHint = null;
 
         if (!string.IsNullOrWhiteSpace(album))
         {
-            query = string.IsNullOrWhiteSpace(artist) ? album : $"{artist} {album}";
-            attribute = string.IsNullOrWhiteSpace(artist) ? "albumTerm" : null;
+            // Запит завжди звужуємо ЛИШЕ до назви альбому — комбінований рядок
+            // "виконавець + альбом" на iTunes різко звужує нечіткий пошук і
+            // повертає лише кілька збігів замість усіх треків альбому.
+            // Виконавець (якщо теж заповнений) йде окремо — як підказка для
+            // сортування релевантності, а не для звуження самого запиту.
+            query = album;
+            attribute = "albumTerm";
+            artistHint = string.IsNullOrWhiteSpace(artist) ? null : artist;
         }
         else if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title))
         {
@@ -55,7 +62,7 @@ public class ExternalSearchController(
             query = q?.Trim() ?? "";
         }
 
-        var results = await searchService.SearchAsync(query, attribute);
+        var results = await searchService.SearchAsync(query, attribute, artistHint: artistHint);
         return Ok(results);
     }
 

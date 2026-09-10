@@ -18,7 +18,10 @@ public class ExternalMusicSearchService(HttpClient http)
 {
     // attribute звужує пошук iTunes до одного поля (artistTerm/songTerm/albumTerm).
     // iTunes сам не гарантує точний збіг у межах поля — фільтруємо нижче ще раз.
-    public async Task<List<ExternalSongResult>> SearchAsync(string query, string? attribute = null, int limit = 20)
+    // artistHint — необов'язкове уточнення ТІЛЬКИ для сортування результатів
+    // albumTerm-пошуку (пісні цього виконавця підіймаються вище), сам запит
+    // до iTunes воно не звужує.
+    public async Task<List<ExternalSongResult>> SearchAsync(string query, string? attribute = null, int limit = 30, string? artistHint = null)
     {
         if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
             return [];
@@ -54,10 +57,13 @@ public class ExternalMusicSearchService(HttpClient http)
                 case "albumTerm":
                     // Ярусна релевантність: спочатку збіг по альбому (точний,
                     // потім частковий), далі — назва пісні, потім — виконавець.
+                    // Всередині одного ярусу — пісні заявленого виконавця (artistHint) вище.
                     ordered = candidates
                         .Select(r => (Item: r, Tier: AlbumRelevanceTier(r, query)))
                         .Where(x => x.Tier is not null)
                         .OrderBy(x => x.Tier)
+                        .ThenByDescending(x => !string.IsNullOrWhiteSpace(artistHint)
+                            && x.Item.ArtistName!.Contains(artistHint, StringComparison.OrdinalIgnoreCase))
                         .Select(x => x.Item);
                     break;
 

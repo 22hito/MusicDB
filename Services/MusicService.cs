@@ -82,6 +82,8 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             ? await db.Albums.Where(a => albumIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name)
             : new Dictionary<int, string>();
 
+        var playCounts = await GetPlayCountsAsync(idList);
+
         return songs.Select(m =>
         {
             var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
@@ -89,7 +91,22 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             return new SongDto(m.Id, m.Artist, m.Title,
                 m.Release.ToString("yyyy-MM-dd"),
                 m.Duration.ToString(@"hh\:mm\:ss"),
-                genres, albumName);
+                genres, albumName, playCounts.GetValueOrDefault(m.Id, 0));
         }).ToList();
+    }
+
+    // Кількість унікальних слухачів на пісню (1 запис в listening_history = 1
+    // слухач, дублікати не пишуться — див. HistoryController). Спільний метод,
+    // щоб SongsController/StatsController рахували однаково.
+    public async Task<Dictionary<int, int>> GetPlayCountsAsync(IEnumerable<int> musicIds)
+    {
+        var idList = musicIds.Distinct().ToList();
+        if (idList.Count == 0) return new Dictionary<int, int>();
+
+        return await db.ListeningHistory
+            .Where(h => idList.Contains(h.MusicId))
+            .GroupBy(h => h.MusicId)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count);
     }
 }

@@ -31,7 +31,9 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
             ? await db.Albums.Where(a => albumIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name)
             : new Dictionary<int, string>();
 
-        return songs.Select(m => ToDto(m, albums));
+        var playCounts = await musicService.GetPlayCountsAsync(songs.Select(m => m.Id));
+
+        return songs.Select(m => ToDto(m, albums, playCounts.GetValueOrDefault(m.Id, 0)));
     }
 
     [HttpGet("{id}")]
@@ -47,7 +49,8 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
         if (song.AlbumIds is { Length: > 0 })
             albumName = (await db.Albums.FindAsync(song.AlbumIds[0]))?.Name;
 
-        return ToDto(song, albumName);
+        var playCounts = await musicService.GetPlayCountsAsync([id]);
+        return ToDto(song, albumName, playCounts.GetValueOrDefault(id, 0));
     }
 
     [Authorize, AdminOnly]
@@ -81,7 +84,7 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
             ? (await db.Albums.FindAsync(albumId.Value))?.Name
             : null;
 
-        return CreatedAtAction(nameof(GetById), new { id = music.Id }, ToDto(created, createdAlbumName));
+        return CreatedAtAction(nameof(GetById), new { id = music.Id }, ToDto(created, createdAlbumName, 0));
     }
 
     [Authorize, AdminOnly]
@@ -126,29 +129,30 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
             .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
             .FirstAsync(m => m.Id == song.Id);
 
+        var playCounts = await musicService.GetPlayCountsAsync([song.Id]);
         string? updatedAlbumName = albumId.HasValue
             ? (await db.Albums.FindAsync(albumId.Value))?.Name
             : null;
 
-        return Ok(ToDto(updated, updatedAlbumName));
+        return Ok(ToDto(updated, updatedAlbumName, playCounts.GetValueOrDefault(song.Id, 0)));
     }
 
-    private static SongDto ToDto(Music m, Dictionary<int, string> albums)
+    private static SongDto ToDto(Music m, Dictionary<int, string> albums, int playCount)
     {
         var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
         var albumName = m.AlbumIds is { Length: > 0 } && albums.TryGetValue(m.AlbumIds[0], out var n) ? n : null;
         return new SongDto(m.Id, m.Artist, m.Title,
             m.Release.ToString("yyyy-MM-dd"),
             m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName);
+            genres, albumName, playCount);
     }
 
-    private static SongDto ToDto(Music m, string? albumName)
+    private static SongDto ToDto(Music m, string? albumName, int playCount)
     {
         var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
         return new SongDto(m.Id, m.Artist, m.Title,
             m.Release.ToString("yyyy-MM-dd"),
             m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName);
+            genres, albumName, playCount);
     }
 }
