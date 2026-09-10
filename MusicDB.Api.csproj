@@ -11,4 +11,12 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
+
+  <!-- Tests/ has its own csproj (MusicDB.Api.Tests) — exclude it from this
+       project's default **/*.cs glob or its files get compiled twice. -->
+  <ItemGroup>
+    <Compile Remove="Tests/**/*.cs" />
+    <Content Remove="Tests/**" />
+    <None Remove="Tests/**" />
+  </ItemGroup>
 </Project>
