@@ -7,8 +7,11 @@ namespace MusicDB.Api.Services;
 public class MusicService(MusicDbContext db, GenreNormalizationService genreNormalizer)
 {
     // Знаходить або створює жанри за іменами, повертає їх id.
-    // Кожен жанр спершу проходить через GenreNormalizationService (ШІ),
-    // щоб не плодити дублікати типу "hardrock"/"hard rock".
+    // Усі жанри одного виклику нормалізуються ОДНИМ запитом до
+    // GenreNormalizationService (ШІ) — не по одному, щоб не плодити
+    // дублікати типу "hardrock"/"hard rock" і не палити денний ліміт
+    // запитів Gemini на кожен окремий жанр (напр. "рок, метал" — 1 запит,
+    // а не 2).
     public async Task<List<int>> ResolveGenresAsync(IEnumerable<string> names)
     {
         // iTunes віддає жанри одним рядком через "/" (напр. "Hip-Hop/Rap"),
@@ -16,15 +19,17 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
         var flatNames = names
             .SelectMany(raw => raw.Split(['/', ','], StringSplitOptions.RemoveEmptyEntries))
             .Select(n => n.Trim())
-            .Where(n => n.Length > 0);
+            .Where(n => n.Length > 0)
+            .ToList();
+
+        if (flatNames.Count == 0) return [];
 
         var allExisting = await db.Genres.Select(g => g.GenreName).ToListAsync();
+        var normalizedNames = await genreNormalizer.NormalizeGenresBatchAsync(flatNames, allExisting);
         var ids = new List<int>();
 
-        foreach (var name in flatNames)
+        foreach (var normalized in normalizedNames)
         {
-            var normalized = await genreNormalizer.NormalizeGenreAsync(name, allExisting);
-
             var genre = await db.Genres.FirstOrDefaultAsync(g => g.GenreName.Trim().ToLower() == normalized.ToLower())
                         ?? db.Genres.Local.FirstOrDefault(g => g.GenreName.Trim().ToLower() == normalized.ToLower());
 
