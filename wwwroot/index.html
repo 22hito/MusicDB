@@ -971,6 +971,11 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
     <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="edit-song-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
     <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="edit-song-album"></div>
     <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="edit-song-genres"><div class="hint" data-i18n="form.genres.hint">Через кому</div></div>
+    <div class="form-group">
+      <label data-i18n="admin.youtubeVideo">YouTube-відео (необов'язково)</label>
+      <input type="text" id="edit-song-youtube" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео, або залиште порожнім">
+      <div class="hint" data-i18n="admin.youtubeVideo.hint">Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим</div>
+    </div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeEditSongModal()" data-i18n="modal.cancel">Скасувати</button>
       <button class="modal-btn-confirm" id="edit-song-save-btn" style="background:var(--accent);" data-i18n="admin.saveBtn">Зберегти</button>
@@ -1066,6 +1071,9 @@ const I18N = {
     'admin.saveBtn': 'Зберегти',
     'msg.errorEditRequest': 'Помилка при збереженні змін',
     'admin.editSongTitle': 'Редагувати пісню',
+    'admin.youtubeVideo': "YouTube-відео (необов'язково)",
+    'admin.youtubeVideo.placeholder': 'ID або посилання на відео, або залиште порожнім',
+    'admin.youtubeVideo.hint': 'Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим',
     'admin.normalizeGenresBtn': "🧹 Об'єднати дублікати жанрів",
     'admin.normalizeGenresRunning': 'Перевірка триває…',
     'admin.normalizeGenresNone': 'Дублікатів не знайдено — усі жанри унікальні.',
@@ -1207,6 +1215,9 @@ const I18N = {
     'admin.saveBtn': 'Save',
     'msg.errorEditRequest': 'Error saving changes',
     'admin.editSongTitle': 'Edit song',
+    'admin.youtubeVideo': 'YouTube video (optional)',
+    'admin.youtubeVideo.placeholder': 'Video ID or link, or leave empty',
+    'admin.youtubeVideo.hint': "The auto-picked, cached video can be replaced or cleared here if it turned out to be the wrong one",
     'admin.normalizeGenresBtn': '🧹 Merge duplicate genres',
     'admin.normalizeGenresRunning': 'Checking…',
     'admin.normalizeGenresNone': 'No duplicates found — all genres are unique.',
@@ -1971,6 +1982,7 @@ function openEditSongModal(id){
   document.getElementById('edit-song-duration').value = s.duration || '';
   document.getElementById('edit-song-album').value = s.album || '';
   document.getElementById('edit-song-genres').value = (s.genres||[]).join(', ');
+  document.getElementById('edit-song-youtube').value = s.youtubeVideoId || '';
   document.getElementById('edit-song-save-btn').onclick = function(){ saveEditSong(id); };
   document.getElementById('edit-song-modal-overlay').classList.add('open');
 }
@@ -1987,11 +1999,15 @@ function saveEditSong(id){
   const duration = document.getElementById('edit-song-duration').value.trim();
   const album = document.getElementById('edit-song-album').value.trim();
   const genres = document.getElementById('edit-song-genres').value.trim();
+  // Порожнє поле тут — навмисне очищення кешу (бекенд розрізняє "не надіслано"
+  // від "надіслано порожнім рядком"), а не "залишити як було".
+  const youtubeVideoId = document.getElementById('edit-song-youtube').value.trim();
   if(!artist||!title||!release||!duration||!genres){alert(t('msg.fillRequiredFields'));return;}
   const body = {
     artist, title, release, duration,
     genres: genres.split(',').map(g=>g.trim()).filter(Boolean),
-    album: album || null
+    album: album || null,
+    youtubeVideoId
   };
   fetch(`/api/songs/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>{
