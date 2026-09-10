@@ -163,7 +163,19 @@ app.MapGet("/auth/me", (HttpContext ctx) =>
 });
 
 app.MapGet("/config", (IConfiguration config) =>
-    Results.Ok(new { youtubeApiKey = config["YouTube:ApiKey"] ?? "" }));
+{
+    // Кілька ключів (кожен — свій GCP-проєкт) для ротації при вичерпанні денної
+    // квоти YouTube Data API (10000 одиниць/добу НА ПРОЄКТ, не на ключ) —
+    // фронтенд сам перемикається на наступний при 403/429. YouTube:ApiKey
+    // лишається як фолбек для сумісності, якщо масив не налаштований.
+    var keys = config.GetSection("YouTube:ApiKeys").Get<string[]>();
+    if (keys is not { Length: > 0 })
+    {
+        var single = config["YouTube:ApiKey"];
+        keys = string.IsNullOrWhiteSpace(single) ? [] : [single];
+    }
+    return Results.Ok(new { youtubeApiKeys = keys });
+});
 
 app.MapControllers();
 app.MapFallbackToFile("index.html");
