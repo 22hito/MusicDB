@@ -139,6 +139,13 @@ export const I18N = {
     'msg.errorAddSong': 'Помилка додавання пісні',
 
     // NEW — специфічно для мобільного застосунку
+    'settings.theme': 'Тема',
+    'theme.dark': 'Темна',
+    'theme.light': 'Світла',
+    'theme.gray': 'Сіра',
+    'settings.language': 'Мова',
+    'lang.uk': 'Українська',
+    'lang.en': 'English',
     'settings.title': 'Налаштування сервера',
     'settings.apiBase': 'Адреса сервера MusicDB',
     'settings.apiBase.placeholder': 'https://your-server.example.com',
@@ -302,6 +309,13 @@ export const I18N = {
     'msg.needAdminRights': 'Admin rights required',
     'msg.errorAddSong': 'Error adding the song',
 
+    'settings.theme': 'Theme',
+    'theme.dark': 'Dark',
+    'theme.light': 'Light',
+    'theme.gray': 'Gray',
+    'settings.language': 'Language',
+    'lang.uk': 'Українська',
+    'lang.en': 'English',
     'settings.title': 'Server settings',
     'settings.apiBase': 'MusicDB server address',
     'settings.apiBase.placeholder': 'https://your-server.example.com',

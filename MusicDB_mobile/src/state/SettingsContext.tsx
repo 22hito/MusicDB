@@ -30,9 +30,9 @@ interface SettingsState {
   clearApiBase: () => Promise<void>;
   theme: AppTheme;
   themeMode: ThemeMode;
-  toggleTheme: () => void;
+  setThemeMode: (mode: ThemeMode) => void;
   lang: Lang;
-  toggleLang: () => void;
+  setLang: (lang: Lang) => void;
   t: (key: keyof typeof I18N['uk'], vars?: Record<string, string | number>) => string;
 }
 
@@ -42,8 +42,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
   const [ready, setReady] = useState(false);
   const [apiBase, setApiBaseState] = useState<string | null>(null);
-  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
-  const [lang, setLang] = useState<Lang>('uk');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
+  const [lang, setLangState] = useState<Lang>('uk');
 
   useEffect(() => {
     (async () => {
@@ -54,9 +54,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem(KEY_LANG),
         ]);
         if (savedBase) setApiBaseState(savedBase);
-        if (savedTheme === 'dark' || savedTheme === 'light') setThemeMode(savedTheme);
-        else if (systemScheme === 'light') setThemeMode('light');
-        if (savedLang === 'uk' || savedLang === 'en') setLang(savedLang);
+        if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'gray') setThemeModeState(savedTheme);
+        else if (systemScheme === 'light') setThemeModeState('light');
+        if (savedLang === 'uk' || savedLang === 'en') setLangState(savedLang);
       } finally {
         setReady(true);
       }
@@ -77,20 +77,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem(KEY_API_BASE);
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    setThemeMode((m) => {
-      const next = m === 'dark' ? 'light' : 'dark';
-      AsyncStorage.setItem(KEY_THEME, next).catch(() => {});
-      return next;
-    });
+  const setThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeModeState(mode);
+    AsyncStorage.setItem(KEY_THEME, mode).catch(() => {});
   }, []);
 
-  const toggleLang = useCallback(() => {
-    setLang((l) => {
-      const next: Lang = l === 'uk' ? 'en' : 'uk';
-      AsyncStorage.setItem(KEY_LANG, next).catch(() => {});
-      return next;
-    });
+  const setLang = useCallback((next: Lang) => {
+    setLangState(next);
+    AsyncStorage.setItem(KEY_LANG, next).catch(() => {});
   }, []);
 
   const t = useCallback(
@@ -115,12 +109,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       clearApiBase,
       theme: THEMES[themeMode],
       themeMode,
-      toggleTheme,
+      setThemeMode,
       lang,
-      toggleLang,
+      setLang,
       t,
     }),
-    [ready, apiBase, setApiBase, clearApiBase, themeMode, toggleTheme, lang, toggleLang, t],
+    [ready, apiBase, setApiBase, clearApiBase, themeMode, setThemeMode, lang, setLang, t],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

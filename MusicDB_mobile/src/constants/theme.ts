@@ -1,7 +1,7 @@
 // Кольори й типографіка перенесені 1:1 зі стилів веб-версії
-// (MusicDB.Api/wwwroot/index.html, :root / html[data-theme="light"]).
+// (MusicDB.Api/wwwroot/index.html, :root / html[data-theme="light"/"gray"]).
 
-export type ThemeMode = 'dark' | 'light';
+export type ThemeMode = 'dark' | 'light' | 'gray';
 
 export interface AppTheme {
   mode: ThemeMode;
@@ -33,22 +33,39 @@ const dark: AppTheme = {
   onAccent: '#0d0d0f',
 };
 
+// Приглушена, тепла — без чистого білого й різкого контрасту.
 const light: AppTheme = {
   mode: 'light',
-  bg: '#f7f6f2',
-  surface: '#ffffff',
-  surface2: '#eef0ea',
-  border: '#dcdcd4',
-  accent: '#b8843c',
-  accent2: '#6f5fb0',
-  text: '#23231f',
-  muted: '#6c6c68',
-  green: '#29885e',
-  red: '#c9455a',
+  bg: '#e9e7e0',
+  surface: '#f2f1ea',
+  surface2: '#e3e1d6',
+  border: '#cecbbe',
+  accent: '#a97a3d',
+  accent2: '#675a9c',
+  text: '#2a2a25',
+  muted: '#726f63',
+  green: '#2f7f57',
+  red: '#b8474f',
   onAccent: '#ffffff',
 };
 
-export const THEMES: Record<ThemeMode, AppTheme> = { dark, light };
+// Нейтральна, проміжна яскравість між темною і світлою.
+const gray: AppTheme = {
+  mode: 'gray',
+  bg: '#303134',
+  surface: '#3a3b3f',
+  surface2: '#45464b',
+  border: '#505257',
+  accent: '#cfa96e',
+  accent2: '#9a8eda',
+  text: '#e4e4e2',
+  muted: '#9b9ba0',
+  green: '#6cc494',
+  red: '#e2807d',
+  onAccent: '#303134',
+};
+
+export const THEMES: Record<ThemeMode, AppTheme> = { dark, light, gray };
 
 // Playfair Display (заголовки/бренд) + DM Mono (усе інше) — ті самі
 // Google Fonts, що й у вебі, підвантажені через @expo-google-fonts/*.

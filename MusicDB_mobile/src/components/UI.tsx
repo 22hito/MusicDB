@@ -115,6 +115,39 @@ export function EmptyState({ icon, label }: { icon: string; label: string }) {
   );
 }
 
+export function SegmentedPicker<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  const { theme } = useSettings();
+  return (
+    <View style={styles.segmented}>
+      {options.map((opt) => {
+        const active = opt.value === value;
+        return (
+          <TouchableOpacity
+            key={opt.value}
+            onPress={() => onChange(opt.value)}
+            style={[
+              styles.segmentBtn,
+              { backgroundColor: active ? theme.accent : theme.surface2, borderColor: active ? theme.accent : theme.border },
+            ]}
+          >
+            <Text style={[styles.segmentText, { color: active ? theme.onAccent : theme.text, fontFamily: FONT_MONO_MEDIUM }]}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 export function Field({
   label,
   hint,
@@ -194,6 +227,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 44,
     paddingHorizontal: 16,
+  },
+  segmented: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  segmentBtn: {
+    borderWidth: 1,
+    borderRadius: RADIUS.pill,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  segmentText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   fieldLabel: {
     fontSize: 11,
