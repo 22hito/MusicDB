@@ -9,7 +9,8 @@ public record SongDto(
     string   Release,    // "yyyy-MM-dd"
     string   Duration,   // "HH:mm:ss"
     string[] Genres,
-    string?  Album
+    string?  Album,
+    int      PlayCount = 0   // кількість унікальних слухачів, з listening_history
 );
 
 public record CreateSongDto(

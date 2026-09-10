@@ -31,16 +31,16 @@
 }
 /* Світла тема: перемикається атрибутом data-theme на <html>, значення зберігається в localStorage */
 html[data-theme="light"] {
-  --bg: #f6f4ef;
+  --bg: #f7f6f2;
   --surface: #ffffff;
-  --surface2: #f0eee6;
-  --border: #ddd8cb;
-  --accent: #a97f3a;
-  --accent2: #6a5acd;
-  --text: #1c1c1e;
-  --muted: #75757c;
-  --green: #2f9e6a;
-  --red: #d6455a;
+  --surface2: #eef0ea;
+  --border: #dcdcd4;
+  --accent: #b8843c;
+  --accent2: #6f5fb0;
+  --text: #23231f;
+  --muted: #6c6c68;
+  --green: #29885e;
+  --red: #c9455a;
 }
 .theme-toggle-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; cursor:pointer; transition:border-color 0.2s, color 0.2s; }
 .theme-toggle-btn:hover { border-color:var(--accent); color:var(--accent); }
@@ -492,6 +492,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   <span class="nav-brand" onclick="showPage('home')"><img src="/images/logo.png" alt="MusicDB logo">MusicDB</span>
   <ul class="nav-tabs">
     <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
+    <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 10</button></li>
     <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
     <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
     <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
@@ -534,10 +535,29 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
           <tr>
             <th style="width:40px"></th>
             <th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th>
-            <th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th style="width:280px" data-i18n="table.album">Альбом</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
+            <th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th style="width:280px" data-i18n="table.album">Альбом</th><th class="duration-col" style="width:90px" data-i18n="table.plays">Прослух.</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
           </tr>
         </thead>
         <tbody id="songs-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TOP 10 -->
+<div id="page-top" class="page">
+  <div class="container">
+    <h2><span data-i18n="top.heading.pre">Топ 10</span> <span class="hl" data-i18n="top.heading.accent">найпрослуханіших</span></h2>
+    <div class="table-wrap scroll-table mobile-cards">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px"></th>
+            <th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th>
+            <th data-i18n="table.album">Альбом</th><th data-i18n="table.plays">Прослух.</th>
+          </tr>
+        </thead>
+        <tbody id="top-songs-body"></tbody>
       </table>
     </div>
   </div>
@@ -889,6 +909,10 @@ const I18N = {
     'nav.request': 'Надіслати запит',
     'nav.admin': 'Адмін — Запити',
     'nav.add': 'Додати пісню',
+    'nav.top': 'Топ 10',
+    'top.heading.pre': 'Топ 10',
+    'top.heading.accent': 'найпрослуханіших',
+    'top.empty': 'Ще немає прослуховувань',
     'theme.toggle': 'Змінити тему',
     'stat.songs': 'Композицій',
     'stat.genres': 'Жанрів',
@@ -907,6 +931,7 @@ const I18N = {
     'table.duration': 'Тривалість',
     'table.genres': 'Жанри',
     'table.album': 'Альбом',
+    'table.plays': 'Прослух.',
     'table.action': 'Дія',
     'table.empty': 'Нічого не знайдено',
     'table.single': 'Сінгл',
@@ -1020,6 +1045,10 @@ const I18N = {
     'nav.request': 'Submit request',
     'nav.admin': 'Admin — Requests',
     'nav.add': 'Add song',
+    'nav.top': 'Top 10',
+    'top.heading.pre': 'Top 10',
+    'top.heading.accent': 'most played',
+    'top.empty': 'No listens yet',
     'theme.toggle': 'Switch theme',
     'stat.songs': 'Songs',
     'stat.genres': 'Genres',
@@ -1038,6 +1067,7 @@ const I18N = {
     'table.duration': 'Duration',
     'table.genres': 'Genres',
     'table.album': 'Album',
+    'table.plays': 'Plays',
     'table.action': 'Action',
     'table.empty': 'Nothing found',
     'table.single': 'Single',
@@ -1184,6 +1214,7 @@ function showPage(n){
   const tab = document.getElementById('tab-'+n);
   if(tab) tab.classList.add('active');
   if(n==='home'){renderSongs();updateStats().catch(console.error);}
+  if(n==='top') loadTopSongsPage();
   if(n==='admin') renderRequests();
   if(n==='profile') loadProfilePage();
   if(n==='recommendations') loadRecommendationsPage();
@@ -1499,7 +1530,7 @@ function renderSongs(){
     : filtered;
   const tbody=document.getElementById('songs-body');
   if(!ordered.length){
-    tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><span class="icon">🎵</span>${t('table.empty')}</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><span class="icon">🎵</span>${t('table.empty')}</div></td></tr>`;
     return;
   }
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
@@ -1519,6 +1550,7 @@ function renderSongs(){
       <td class="duration-col" data-label="${t('table.duration')}">${s.duration}</td>
       <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
       <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+      <td class="duration-col" data-label="${t('table.plays')}">👁 ${s.playCount ?? 0}</td>
       ${currentUser?.authenticated?`<td class="td-icon-trail" data-label=""><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
       ${currentUser?.isAdmin?`<td class="td-actions" data-label="${t('table.action')}"><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
     </tr>`;
@@ -2057,6 +2089,48 @@ function playPlaylistFromStart(){
   playFromPlaylist(currentPlaylistSongs[0].id);
 }
 
+// ================================================================
+// TOP 10 (найпрослуханіші — GET /api/stats/top-songs)
+// ================================================================
+let currentTopSongs = [];
+function playFromTop(id){
+  if(!currentTopSongs.length) return;
+  playerQueue=currentTopSongs.slice();
+  playerIndex=playerQueue.findIndex(s=>s.id===id);
+  if(playerIndex<0)playerIndex=0;
+  _loadCurrent();
+}
+async function loadTopSongsPage(){
+  const tbody=document.getElementById('top-songs-body');
+  try{
+    const list = await fetch('/api/stats/top-songs?limit=10').then(r=>r.json());
+    currentTopSongs = list;
+    if(!list.length){
+      tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="icon">🎵</span>${t('top.empty')}</div></td></tr>`;
+      return;
+    }
+    const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
+    tbody.innerHTML=list.map((s,i)=>{
+      const isPlay=s.id===curId;
+      const btnIcon=isPlay&&isPlaying()
+        ?`<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
+        :`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+      return `<tr class="${isPlay?'playing-row':''}">
+        <td class="td-icon-lead" data-label="" style="padding:0.7rem 0.5rem 0.7rem 1rem;">
+          <button class="play-row-btn${isPlay?' is-playing':''}" onclick="playFromTop(${s.id})">${btnIcon}</button>
+        </td>
+        <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
+        <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
+        <td data-label="${t('table.title')}">${esc(s.title)}</td>
+        <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+        <td class="duration-col" data-label="${t('table.plays')}">👁 ${s.playCount ?? 0}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="icon">🎵</span>${t('top.empty')}</div></td></tr>`;
+  }
+}
+
 function _loadCurrent(){
   const s=playerQueue[playerIndex];if(!s)return;
   listenLogged=false;
@@ -2169,6 +2243,9 @@ function setVolume(v){
   if(ytPlayer&&ytReady)try{ytPlayer.setVolume(vol);}catch(e){}
   document.getElementById('vw1').style.display=vol===0?'none':'';
   document.getElementById('vw2').style.display=vol<50?'none':'';
+  // Захист: слайдер керує лише ytPlayer, але взаємодія з контролами іноді
+  // "оживляє" гучність попап-плеєра назад — примусово глушимо його знову.
+  if(videoPopupOpen&&popupPlayer&&popupReady)try{popupPlayer.mute();}catch(e){}
 }
 
 // SEEK
@@ -2291,7 +2368,8 @@ function _initPopupPlayer(vid, startAt) {
         try {
           const cur = ytPlayer.getCurrentTime();
           e.target.seekTo(cur, true);
-          e.target.setVolume(0); // відео без звуку — звук іде з ytPlayer
+          e.target.mute(); // відео без звуку — звук іде з ytPlayer (setVolume(0) саму по собі YouTube іноді "забуває")
+          e.target.setVolume(0);
           // Якщо музика на паузі — не даємо autoplay стартувати попап.
           if(!userIntendedPlaying) e.target.pauseVideo();
         } catch(ex) {}
@@ -2314,6 +2392,7 @@ function _initPopupPlayer(vid, startAt) {
             ytPlayer.seekTo(popupPlayer.getCurrentTime(), true);
             ytPlayer.playVideo();
           }} catch(ex) {}
+          try { popupPlayer.mute(); } catch(ex) {} // повторно глушимо — саме на PLAYING звук іноді "повертається"
           setPP(true); startTick(); setEQ(true);
         }
       }
@@ -2333,6 +2412,9 @@ function _startPopupSync() {
         if (popupPlayer.getPlayerState() === YT.PlayerState.PLAYING) popupPlayer.pauseVideo();
         return;
       }
+      // Періодично перепідтверджуємо мут — за спостереженнями, після взаємодії
+      // зі слайдером гучності попап іноді "розглушується" сам по собі.
+      if (!popupPlayer.isMuted()) popupPlayer.mute();
       const mainTime = ytPlayer.getCurrentTime();
       const popTime  = popupPlayer.getCurrentTime();
       if (Math.abs(mainTime - popTime) > 1.5) {
