@@ -2257,7 +2257,10 @@ async function _searchYoutube(q){
 async function fetchVid(artist,title){
   if(!ytApiKey) return null;
   const artistLower=artist.toLowerCase();
-  const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up','unofficial','fan made','fan-made','bootleg'];
+  // "live"/"interview"/"teaser"/"making of" тощо містять назву пісні в заголовку
+  // (проходять перевірку релевантності), але це не сама студійна пісня — саме
+  // такі відео найчастіше давали розбіжність тривалості з базою.
+  const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up','unofficial','fan made','fan-made','bootleg','live','interview','making of','teaser','behind the scenes','performance','acoustic'];
 
   function scoreItem(item){
     const t=(item.snippet?.title||'').toLowerCase();
