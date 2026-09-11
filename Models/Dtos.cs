@@ -64,7 +64,8 @@ public record RequestDto(
     string[] Genres,
     string?  GenreNamesOriginal,
     string?  AlbumTitle,
-    string   CreatedAt
+    string   CreatedAt,
+    string?  YoutubeVideoId = null
 );
 
 public record CreateRequestDto(
@@ -77,14 +78,18 @@ public record CreateRequestDto(
 );
 
 // Використовується адміном для редагування заявки перед підтвердженням
-// (якщо, наприклад, автопереклад жанру виявився неправильним).
+// (якщо, наприклад, автопереклад жанру виявився неправильним). YoutubeVideoId
+// дозволяє одразу вказати правильне відео для нішевих/малопопулярних треків,
+// де автопошук на сайті може підібрати не те — та сама семантика
+// null/"" ("не чіпати"/"скинути"), що й в UpdateSongDto.
 public record UpdateRequestDto(
     string   Artist,
     string   Title,
     string   Release,
     string   Duration,
     string[] Genres,
-    string?  AlbumTitle
+    string?  AlbumTitle,
+    string?  YoutubeVideoId = null
 );
 
 // ─── Profile / Favorites / Playlists / History ─────────────────────────────────

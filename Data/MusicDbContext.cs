@@ -66,6 +66,9 @@ public class MusicRequest
     [Column("genre_names_original")] public string? GenreNamesOriginal { get; set; }
     [Column("album_title")] public string? AlbumTitle { get; set; }
     [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    // Адмін може вставити відео вручну ще на етапі розгляду заявки — щоб не
+    // покладатись на автопошук для нішевих/малопопулярних треків.
+    [Column("youtube_video_id")] public string? YoutubeVideoId { get; set; }
 }
 
 // ─── Профіль / улюблені / плейлисти / історія прослуховувань ──────────────

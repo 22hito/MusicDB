@@ -65,6 +65,9 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
     [HttpPut("{id}")]
     public async Task<ActionResult<RequestDto>> Update(int id, [FromBody] UpdateRequestDto dto)
     {
+        if (!YoutubeUrlParser.TryExtract(dto.YoutubeVideoId, out var youtubeVideoId, out var shouldUpdateVideo))
+            return BadRequest("Invalid YouTube video ID or URL.");
+
         var req = await db.Requests.FindAsync(id);
         if (req is null) return NotFound();
 
@@ -74,6 +77,7 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         req.Duration = DurationParser.ParseToString(dto.Duration);
         req.GenreNames = string.Join(", ", dto.Genres.Select(g => g.Trim()).Where(g => g.Length > 0));
         req.AlbumTitle = dto.AlbumTitle?.Trim();
+        if (shouldUpdateVideo) req.YoutubeVideoId = youtubeVideoId;
         // Після ручного редагування адміном "оригінал" більше не потрібен —
         // адмін уже підтвердив правильний варіант.
         req.GenreNamesOriginal = null;
@@ -112,6 +116,11 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
                 .Select(mg => mg.GenreId)
                 .ToListAsync();
 
+            // Якщо в наявної пісні ще нема кешованого відео, а адмін вказав
+            // його в заявці — переносимо (write-once, як і скрізь інде).
+            if (existing.YoutubeVideoId is null && req.YoutubeVideoId is not null)
+                existing.YoutubeVideoId = req.YoutubeVideoId;
+
             foreach (var gid in genreIds.Except(existingGenreIds))
                 db.MusicGenres.Add(new MusicGenre { MusicId = songId, GenreId = gid });
         }
@@ -125,7 +134,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
                 Title = req.Title,
                 Release = req.Release,
                 Duration = DurationParser.Parse(req.Duration, TimeSpan.FromMinutes(3)),
-                AlbumIds = albumId.HasValue ? [albumId.Value] : null
+                AlbumIds = albumId.HasValue ? [albumId.Value] : null,
+                YoutubeVideoId = req.YoutubeVideoId
             };
             db.Songs.Add(music);
             await db.SaveChangesAsync();
@@ -159,6 +169,7 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         (r.GenreNames ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
         r.GenreNamesOriginal,
         r.AlbumTitle,
-        r.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+        r.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
+        r.YoutubeVideoId
     );
 }
