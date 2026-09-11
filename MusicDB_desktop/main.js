@@ -80,7 +80,10 @@ function createWindow() {
     height: 860,
     minWidth: 480,
     minHeight: 480,
-    title: "N'Owl",
+    // Версія у заголовку — простий, наочний спосіб переконатись, що
+    // автооновлення справді підтягнуло нову збірку (порівняти заголовок
+    // вікна до й після), без потреби лізти в консоль чи логи.
+    title: `N'Owl v${app.getVersion()}`,
     icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#0d0d0f',
     autoHideMenuBar: true,
