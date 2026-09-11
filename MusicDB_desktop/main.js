@@ -3,6 +3,25 @@ const path = require('path');
 
 const SITE_URL = 'https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net/';
 
+// Google-логін у цьому вікні виглядає для Google як "новий пристрій" (окрема
+// сесія/куки від звичайного браузера), тож він вимагає найсильнішу з
+// доступних перевірок — ключ безпеки/Windows Hello (WebAuthn), що спливає як
+// нативне вікно "Windows Security". Electron не завжди коректно завершує цей
+// цикл при скасуванні, тож вікно вилазить знову й знову. Прибираємо ознаки
+// підтримки WebAuthn зі сторінки — Google бачить, що це "не підтримується",
+// і сам переходить до звичайного способу входу (пароль/код на телефон/резервні коди).
+const DISABLE_WEBAUTHN_JS = `(function(){
+  try {
+    if (window.PublicKeyCredential) {
+      Object.defineProperty(window, 'PublicKeyCredential', { get: () => undefined, configurable: true });
+    }
+    if (navigator.credentials) {
+      navigator.credentials.get = function(){ return Promise.reject(new DOMException('WebAuthn unavailable', 'NotAllowedError')); };
+      navigator.credentials.create = function(){ return Promise.reject(new DOMException('WebAuthn unavailable', 'NotAllowedError')); };
+    }
+  } catch(e) {}
+})();`;
+
 let mainWindow = null;
 
 function createWindow() {
@@ -28,6 +47,12 @@ function createWindow() {
   // "This browser or app may not be secure".
   const ua = mainWindow.webContents.getUserAgent().replace(/\s*Electron\/\S+/, '');
   mainWindow.webContents.setUserAgent(ua);
+
+  // Google-логін проходить через кілька навігацій (accounts.google.com і
+  // назад на сайт) — виконуємо на КОЖНІЙ, а не лише один раз при завантаженні.
+  mainWindow.webContents.on('dom-ready', () => {
+    mainWindow.webContents.executeJavaScript(DISABLE_WEBAUTHN_JS).catch(() => {});
+  });
 
   mainWindow.loadURL(SITE_URL);
 
