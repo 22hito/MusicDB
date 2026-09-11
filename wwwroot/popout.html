@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>N'Owl</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  #player{position:fixed;inset:0}
+  #player iframe{width:100%;height:100%;border:0;display:block}
+</style>
+</head>
+<body>
+<div id="player"></div>
+<script>
+  // Тільки для нативного pop-out вікна десктопного застосунку (main.js
+  // відкриває саме цю сторінку в окремому BrowserWindow, а не data:-урл із
+  // сирим <iframe src="...">). Помилка YouTube 153 ("Помилка конфігурації
+  // відеопрогравача") — саме через те, що data:-документ має "null" origin,
+  // який YouTube відхиляє; офіційний IFrame Player API (як тут) сам коректно
+  // підставляє справжній https-origin цієї сторінки, тож працює так само
+  // надійно, як основний плеєр і попап на сайті.
+  function getParam(name) { return new URLSearchParams(location.search).get(name); }
+  const videoId = getParam('v');
+  const startAt = parseInt(getParam('t') || '0', 10) || 0;
+
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+
+  window.onYouTubeIframeAPIReady = function () {
+    new YT.Player('player', {
+      width: '100%',
+      height: '100%',
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1,
+        start: startAt,
+        rel: 0,
+        modestbranding: 1,
+        iv_load_policy: 3
+      }
+    });
+  };
+</script>
+</body>
+</html>
