@@ -538,6 +538,11 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   border-radius: 0;
 }
 #video-popup:fullscreen .vp-resize { display: none; }
+/* Плеєр-бар фізично переноситься ВСЕРЕДИНУ попапу на час fullscreen (див.
+   fullscreenchange-обробник), але лишається position:fixed — тобто НЕ бере
+   участі у flex-розкладці й просто накладається зверху на відео, ховаючи
+   нижню частину кадру. Резервуємо йому місце явним відступом знизу. */
+#video-popup:fullscreen #video-popup-frame { margin-bottom: var(--player-h); }
 /* 8 невидимих хендлів по краях і кутах — тягнуться трохи ЗА межі рамки
    (від'ємні зсуви), щоб не перекривати відео-iframe і не втрачати вказівник. */
 .vp-resize { position: absolute; z-index: 5; }
@@ -571,15 +576,19 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 }
 #video-popup-header span { color: var(--accent); pointer-events: none; }
 #video-popup-header .video-popup-btns { display: flex; gap: 2px; }
-#video-popup-fullscreen, #video-popup-expand, #video-popup-close {
+#video-popup-fullscreen, #video-popup-expand, #video-popup-close, #video-popup-popout {
   background: none; border: none; cursor: pointer;
   color: var(--muted); width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 4px; transition: color 0.15s, background 0.15s;
 }
-#video-popup-fullscreen:hover, #video-popup-expand:hover { color: var(--accent); background: rgba(200,169,110,0.1); }
+#video-popup-fullscreen:hover, #video-popup-expand:hover, #video-popup-popout:hover { color: var(--accent); background: rgba(200,169,110,0.1); }
 #video-popup-fullscreen.active, #video-popup-expand.active { color: var(--accent); }
 #video-popup-close:hover { color: var(--red); background: rgba(224,92,92,0.1); }
+/* Коли відео перенесене в окреме (Document Picture-in-Picture) вікно — сам
+   попап у документі стає непотрібним, ним керує нативне вікно ОС (яке вже
+   вміє рухатись між моніторами й ресайзитись без жодного нашого коду). */
+#video-popup-frame.pip-active { width: 100vw !important; height: 100vh !important; border-radius: 0 !important; }
 /* Відео-область попапу — тут буде переміщено #yt-wrap */
 #video-popup-frame {
   position: relative;
@@ -1097,6 +1106,11 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   <div id="video-popup-header">
     <span data-i18n="videoPopup.title">▶ Відео</span>
     <div class="video-popup-btns">
+      <button id="video-popup-popout" onclick="popOutVideoPopup()" title="Перенести в окреме вікно" data-i18n-title="videoPopup.popout" style="display:none;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+      </button>
       <button id="video-popup-fullscreen" onclick="toggleVideoPopupFullscreen()" title="На весь екран" data-i18n-title="videoPopup.fullscreen">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
@@ -1326,6 +1340,7 @@ const I18N = {
     'videoPopup.loading': 'Завантаження…',
     'videoPopup.expand': 'Розгорнути',
     'videoPopup.fullscreen': 'На весь екран',
+    'videoPopup.popout': 'Перенести в окреме вікно',
     'video.notFoundSuffix': ' — відео не знайдено',
     'modal.deleteTitle': 'Видалити пісню?',
     'modal.deleteBodyTemplate': 'Композицію «{label}» буде видалено з бази без можливості відновлення.',
@@ -1474,6 +1489,7 @@ const I18N = {
     'videoPopup.loading': 'Loading…',
     'videoPopup.expand': 'Expand',
     'videoPopup.fullscreen': 'Fullscreen',
+    'videoPopup.popout': 'Move to separate window',
     'video.notFoundSuffix': ' — video not found',
     'modal.deleteTitle': 'Delete song?',
     'modal.deleteBodyTemplate': 'The song "{label}" will be permanently deleted from the database.',
@@ -3086,6 +3102,90 @@ function toggleVideoPopup() {
 }
 
 // ================================================================
+// VIDEO POPUP: перенесення в окреме вікно ОС (Document Picture-in-Picture)
+// ================================================================
+// На відміну від fullscreen (обмежений тим самим монітором/вікном браузера)
+// чи перетягування попапу мишею (обмежене межами сторінки), справжнє
+// системне вікно ОС можна перетягнути на будь-який монітор і змінити його
+// розмір за краї — це вже робить сама ОС, жодних власних хендлів не треба.
+let pipWindow = null;
+let _pipFrameEl = null;
+let _pipFrameNextSibling = null;
+
+function _updatePopoutBtnVisibility(){
+  const btn = document.getElementById('video-popup-popout');
+  if (btn) btn.style.display = ('documentPictureInPicture' in window) ? '' : 'none';
+}
+
+async function popOutVideoPopup(){
+  if (!('documentPictureInPicture' in window) || pipWindow) return;
+
+  const popup = document.getElementById('video-popup');
+  const frame = document.getElementById('video-popup-frame');
+  const rect = popup.getBoundingClientRect();
+
+  try {
+    pipWindow = await documentPictureInPicture.requestWindow({
+      width: Math.max(240, Math.round(rect.width)),
+      height: Math.max(160, Math.round(rect.height)),
+    });
+  } catch (e) {
+    pipWindow = null;
+    return;
+  }
+
+  // Document PiP — окремий document, який не успадковує ЖОДНОГО CSS з
+  // батьківської сторінки за замовчуванням. Копіюємо всі стилі; зовнішні
+  // (Google Fonts) при читанні cssRules впадуть у CORS — тоді просто лінкуємо
+  // тег <link> напряму замість того, щоб читати вміст.
+  [...document.styleSheets].forEach(sheet => {
+    try {
+      const css = [...sheet.cssRules].map(r => r.cssText).join('');
+      const style = pipWindow.document.createElement('style');
+      style.textContent = css;
+      pipWindow.document.head.appendChild(style);
+    } catch (e) {
+      if (sheet.href) {
+        const link = pipWindow.document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = sheet.href;
+        pipWindow.document.head.appendChild(link);
+      }
+    }
+  });
+  pipWindow.document.title = document.getElementById('p-title')?.textContent || "N'Owl";
+  pipWindow.document.body.style.margin = '0';
+  pipWindow.document.body.style.background = '#000';
+  pipWindow.document.body.style.overflow = 'hidden';
+
+  // Переносимо САМ вузол (не копію) — стан YouTube-плеєра всередині
+  // зберігається, відео не перезавантажується. Зберігаємо, куди повертати —
+  // getElementById в головному документі більше його не знайде.
+  _pipFrameEl = frame;
+  _pipFrameNextSibling = frame.nextElementSibling;
+  frame.classList.add('pip-active');
+  pipWindow.document.body.appendChild(frame);
+  popup.classList.remove('open');
+
+  pipWindow.addEventListener('pagehide', _restoreFromPip, { once: true });
+}
+
+// Викликається і подією закриття PiP-вікна, і вручну (closeVideoPopup/
+// playerClose), якщо користувач гасить плеєр повністю, поки відео все ще
+// висить в окремому вікні — інакше видалили б popupPlayer у вузлі, якого вже
+// нема в головному document, і отримали б помилку.
+function _restoreFromPip(){
+  if (!pipWindow) return;
+  const popup = document.getElementById('video-popup');
+  _pipFrameEl.classList.remove('pip-active');
+  popup.insertBefore(_pipFrameEl, _pipFrameNextSibling);
+  if (videoPopupOpen) popup.classList.add('open');
+  try { pipWindow.close(); } catch(e) {}
+  pipWindow = null;
+  _pipFrameEl = null;
+}
+
+// ================================================================
 // VIDEO POPUP: розгортання розміру й перетягування по екрану
 // ================================================================
 function toggleVideoPopupFullscreen(){
@@ -3258,6 +3358,11 @@ function openVideoPopup() {
 }
 
 function closeVideoPopup() {
+  // Якщо відео зараз висить в окремому (Document PiP) вікні — спершу
+  // повертаємо вузол у головний документ, інакше нижче код не знайде
+  // #video-popup-frame (getElementById шукає лише в ЦЬОМУ document).
+  if (pipWindow) _restoreFromPip();
+
   const popup = document.getElementById('video-popup');
 
   // Ховати (display:none) елемент, поки він фактично fullscreen, — заборонений
@@ -3308,6 +3413,7 @@ document.getElementById('vol-slider').value = vol;
 document.getElementById('vw1').style.display = vol===0?'none':'';
 document.getElementById('vw2').style.display = vol<50?'none':'';
 _updateNavIndicator();
+_updatePopoutBtnVisibility();
 
 // ================================================================
 // REALTIME (SignalR) — коли хтось (адмін) додає/редагує/видаляє пісню чи
