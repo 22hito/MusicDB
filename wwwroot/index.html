@@ -76,6 +76,9 @@ html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
   }
 }
 
+/* Перемикання теми має бути миттєвим — див. applyTheme(). */
+.theme-switching, .theme-switching * { transition: none !important; }
+
 /* Випадаючі меню вибору теми/мови */
 .dropdown { position: relative; }
 .dropdown-toggle { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; height:32px; padding:0 0.65rem; display:flex; align-items:center; gap:0.4rem; font-size:0.72rem; font-family: var(--font-mono); letter-spacing:0.03em; white-space:nowrap; cursor:pointer; transition:border-color 0.2s, color 0.2s; }
@@ -2327,8 +2330,18 @@ function abbrGenre(name){return String(name).replace(/alternative/gi,'alt');}
 // ================================================================
 const THEME_ICONS = { dark: '🌙', gray: '◐', light: '☀️' };
 function applyTheme(theme){
+  // Купа елементів (кнопки, картки, рядки таблиці) мають власний transition
+  // для hover — той самий transition спрацьовує і коли колір змінюється через
+  // перемикання теми (CSS-змінні міняються миттєво, але властивість все одно
+  // "анімується"). Тимчасово вимикаємо всі transition на час перемикання,
+  // щоб тема справді клацала миттєво, а не доводилось шукати й переписувати
+  // кожен окремий transition по всьому стилю.
+  document.documentElement.classList.add('theme-switching');
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.documentElement.classList.remove('theme-switching');
+  }));
   const icon = document.getElementById('theme-toggle-icon');
   const label = document.getElementById('theme-toggle-label');
   if(icon) icon.textContent = THEME_ICONS[theme] || THEME_ICONS.dark;
