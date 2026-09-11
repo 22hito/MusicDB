@@ -232,6 +232,16 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .ext-search-item .es-year { color: var(--muted); font-size: 0.72rem; }
 .ext-search-item .es-genre-badge { background: rgba(124,111,205,0.15); color: var(--accent2); border-radius: 4px; padding: 2px 7px; font-size: 0.68rem; white-space: nowrap; }
 .ext-search-empty { color: var(--muted); font-size: 0.8rem; text-align: center; padding: 1.5rem 0; }
+/* Рекомендації — окремі, більші й читабельніші класи (не .ext-search-item,
+   той лишається компактним для автодоповнення в формах пошуку/додавання). */
+.rec-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; padding: 1.1rem 1.4rem; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+.rec-item:hover { border-color: var(--accent); background: rgba(200,169,110,0.06); transform: translateY(-2px); }
+.rec-item .rec-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.rec-item .rec-main strong { color: var(--text); font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; }
+.rec-item .rec-main .rec-title { color: var(--text); font-size: 0.95rem; opacity: 0.85; }
+.rec-item .rec-main .rec-reason { color: var(--accent2); font-size: 0.9rem; line-height: 1.55; white-space: normal; }
+.rec-item .es-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.rec-item .es-genre-badge { background: rgba(124,111,205,0.15); color: var(--accent2); border-radius: 4px; padding: 3px 9px; font-size: 0.75rem; white-space: nowrap; }
 .form-group { margin-bottom: 1.25rem; }
 .form-group label { display: block; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
 .form-group input, .form-group select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: 0.85rem; padding: 0.6rem 0.85rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
@@ -308,9 +318,14 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   border-top: 1px solid #222226;
   z-index: 200;
   display: none;
+  /* Grid замість flex — три колонки з рівними 1fr по боках тримають
+     .player-center у справжньому центрі бару незалежно від того, що
+     .player-left/.player-right мають різну ширину контенту (flex центрував
+     лише в межах "залишку" простору, який зсувався в бік вужчого боку). */
+  grid-template-columns: 1fr auto 1fr;
   align-items: stretch;
 }
-#player-bar.visible { display: flex; }
+#player-bar.visible { display: grid; }
 
 /* SEEKBAR at very top */
 #player-seek-wrap {
@@ -696,7 +711,12 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
     <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
     <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
     <li id="nav-add" style="display:none"><button id="tab-add" onclick="showPage('add')" data-i18n="nav.add">Додати пісню</button></li>
-    <li><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.0/N.Owl.Setup.1.0.0.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
+    <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.0/N.Owl.Setup.1.0.0.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
+    <script>
+      // Сам застосунок (Electron) ставить цей прапорець при завантаженні —
+      // пропонувати встановити застосунок людині, яка вже в ньому, безглуздо.
+      if (localStorage.getItem('isDesktopApp') === '1') document.getElementById('nav-desktop-app').style.display = 'none';
+    </script>
     <span class="nav-tab-indicator" id="nav-tab-indicator"></span>
   </ul>
   <div class="dropdown" id="lang-dropdown" style="margin-left:auto;">
@@ -1828,11 +1848,11 @@ function loadRecommendationsPage(){
     document.getElementById('rec-list').innerHTML = list.map(item=>{
       const s = item.song;
       return `
-      <div class="ext-search-item" onclick="playSong(${s.id})" style="cursor:pointer;">
-        <div class="es-main">
+      <div class="rec-item" onclick="playSong(${s.id})">
+        <div class="rec-main">
           <strong>${esc(s.artist)}</strong>
-          <span>${esc(s.title)}</span>
-          ${item.reason?`<span style="color:var(--accent2);">${esc(item.reason)}</span>`:''}
+          <span class="rec-title">${esc(s.title)}</span>
+          ${item.reason?`<span class="rec-reason">${esc(item.reason)}</span>`:''}
         </div>
         <div class="es-meta">
           ${s.genres.map(g=>`<span class="es-genre-badge">${esc(abbrGenre(g))}</span>`).join('')}
