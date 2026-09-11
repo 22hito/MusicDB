@@ -116,8 +116,11 @@ nav { background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-
 .nav-brand:hover img { transform: rotate(-8deg) scale(1.08); }
 /* Лого — темний силует на прозорому фоні. У темній темі інвертуємо, щоб він був видимий на темному навбарі. */
 html[data-theme="dark"] .nav-brand img { filter: invert(1) brightness(1.15); }
+#nav-hamburger-dropdown { flex: 1; min-width: 0; display: flex; align-items: center; }
+.nav-hamburger { display: none; flex-shrink: 0; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; width: 36px; height: 36px; align-items: center; justify-content: center; cursor: pointer; font-size: 1.15rem; transition: border-color 0.2s, color 0.2s; }
+.nav-hamburger:hover { border-color: var(--accent); color: var(--accent); }
 .nav-tabs {
-  display: flex; gap: 0; list-style: none; flex: 1; position: relative;
+  display: flex; gap: 0; list-style: none; width: 100%; position: relative;
   overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
   mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent);
@@ -622,7 +625,38 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
    ================================================================ */
 @media (max-width: 1650px) {
   nav { flex-wrap: wrap; height: auto; row-gap: 0.35rem; }
-  .nav-tabs { order: 10; flex: 1 1 100%; }
+  #nav-hamburger-dropdown { order: 10; flex: 1 1 100%; }
+}
+
+/* ================================================================
+   ГАМБУРГЕР-МЕНЮ: на зовсім вузькому вікні (мобільний застосунок,
+   застосунок для ПК, стиснутий до мінімуму) навіть перенесені в свій рядок
+   вкладки не влазили без горизонтального скролу під маскою, який на практиці
+   виглядав як обрізаний текст, а не як явний натяк "прокрути далі". Замість
+   цього згортаємо вкладки в кнопку "☰", що відкриває їх спливаючим списком —
+   той самий підхід, що й у theme/lang-дропдаунах (toggleDropdown). */
+@media (max-width: 650px) {
+  #nav-hamburger-dropdown { order: 0; flex: 0 0 auto; position: relative; }
+  .nav-hamburger { display: inline-flex; }
+  .nav-tabs {
+    display: none;
+    position: absolute; top: calc(100% + 8px); left: 0;
+    flex-direction: column; width: 250px; max-width: 82vw;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.4rem; box-shadow: 0 10px 28px rgba(0,0,0,0.3);
+    mask-image: none; -webkit-mask-image: none; overflow: visible;
+    z-index: 250;
+  }
+  #nav-hamburger-dropdown.open .nav-tabs {
+    display: flex;
+    animation: dropIn 0.16s cubic-bezier(.2,.9,.3,1);
+  }
+  .nav-tabs li { width: 100%; }
+  .nav-tabs li button, .nav-tabs li a {
+    width: 100%; height: auto; padding: 0.7rem 0.85rem; border-radius: 6px;
+    border-bottom: none; justify-content: flex-start;
+  }
+  .nav-tab-indicator { display: none; }
 }
 
 /* ================================================================
@@ -716,21 +750,24 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 
 <nav>
   <span class="nav-brand" onclick="showPage('home')"><img src="/images/logo.png" alt="N'Owl logo">N'Owl</span>
-  <ul class="nav-tabs">
-    <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
-    <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 100</button></li>
-    <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
-    <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
-    <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
-    <li id="nav-add" style="display:none"><button id="tab-add" onclick="showPage('add')" data-i18n="nav.add">Додати пісню</button></li>
-    <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.0/N.Owl.Setup.1.0.0.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
-    <script>
-      // Сам застосунок (Electron) ставить цей прапорець при завантаженні —
-      // пропонувати встановити застосунок людині, яка вже в ньому, безглуздо.
-      if (localStorage.getItem('isDesktopApp') === '1') document.getElementById('nav-desktop-app').style.display = 'none';
-    </script>
-    <span class="nav-tab-indicator" id="nav-tab-indicator"></span>
-  </ul>
+  <div class="dropdown" id="nav-hamburger-dropdown">
+    <button class="nav-hamburger" onclick="toggleDropdown(event,'nav-hamburger-dropdown')" aria-label="Меню" data-i18n-title="nav.menu" title="Меню">☰</button>
+    <ul class="nav-tabs">
+      <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
+      <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 100</button></li>
+      <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
+      <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
+      <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
+      <li id="nav-add" style="display:none"><button id="tab-add" onclick="showPage('add')" data-i18n="nav.add">Додати пісню</button></li>
+      <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.0/N.Owl.Setup.1.0.0.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
+      <script>
+        // Сам застосунок (Electron) ставить цей прапорець при завантаженні —
+        // пропонувати встановити застосунок людині, яка вже в ньому, безглуздо.
+        if (localStorage.getItem('isDesktopApp') === '1') document.getElementById('nav-desktop-app').style.display = 'none';
+      </script>
+      <span class="nav-tab-indicator" id="nav-tab-indicator"></span>
+    </ul>
+  </div>
   <div class="dropdown" id="lang-dropdown" style="margin-left:auto;">
     <button class="dropdown-toggle" onclick="toggleDropdown(event,'lang-dropdown')"><span id="lang-toggle-label">UA</span><span class="caret">▾</span></button>
     <div class="dropdown-menu">
@@ -1204,6 +1241,7 @@ const I18N = {
     'nav.admin': 'Адмін — Запити',
     'nav.add': 'Додати пісню',
     'nav.desktopApp': '⬇ Застосунок для ПК',
+    'nav.menu': 'Меню',
     'nav.top': 'Топ 100',
     'top.heading.pre': 'Топ 100',
     'top.heading.accent': 'найпрослуханіших',
@@ -1351,6 +1389,7 @@ const I18N = {
     'nav.admin': 'Admin — Requests',
     'nav.add': 'Add song',
     'nav.desktopApp': '⬇ Desktop app',
+    'nav.menu': 'Menu',
     'nav.top': 'Top 100',
     'top.heading.pre': 'Top 100',
     'top.heading.accent': 'most played',
