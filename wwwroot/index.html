@@ -14,6 +14,7 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
 <style>
 :root {
   --bg: #0d0d0f;
@@ -65,13 +66,6 @@ html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-/* Плавний перехід кольорів при зміні теми — без цього нова тема "клацала"
-   миттєво замість крос-фейду. */
-body, nav, .stat-card, .modal-box, .dropdown-menu, .dropdown-toggle,
-input, select, .badge, table, tbody tr, .filter-bar input, .filter-bar select {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
 /* Хто вимкнув анімації в ОС — поважаємо це, а не нав'язуємо рух. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -119,10 +113,26 @@ nav { background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-
 .nav-brand:hover img { transform: rotate(-8deg) scale(1.08); }
 /* Лого — темний силует на прозорому фоні. У темній темі інвертуємо, щоб він був видимий на темному навбарі. */
 html[data-theme="dark"] .nav-brand img { filter: invert(1) brightness(1.15); }
-.nav-tabs { display: flex; gap: 0; list-style: none; flex: 1; }
-.nav-tabs li button, .nav-tabs li a { background: none; border: none; cursor: pointer; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 1.2rem; height: 56px; display: inline-flex; align-items: center; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; text-decoration: none; }
-.nav-tabs li button:hover, .nav-tabs li a:hover { color: var(--text); }
-.nav-tabs li button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-tabs {
+  display: flex; gap: 0; list-style: none; flex: 1; position: relative;
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent);
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tabs li { flex-shrink: 0; }
+.nav-tabs li button, .nav-tabs li a { background: none; border: none; cursor: pointer; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 1.2rem; height: 56px; display: inline-flex; align-items: center; border-bottom: 2px solid transparent; transition: color 0.2s, background-color 0.2s; text-decoration: none; }
+.nav-tabs li button:hover, .nav-tabs li a:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.nav-tabs li button.active { color: var(--accent); }
+/* Один спільний елемент-індикатор замість border-bottom на кожній кнопці —
+   JS рахує позицію активної вкладки й плавно "їде" туди замість миттєвого
+   перескоку. */
+.nav-tab-indicator {
+  position: absolute; bottom: 0; height: 2px; background: var(--accent);
+  border-radius: 2px 2px 0 0; pointer-events: none;
+  transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s ease;
+  opacity: 0;
+}
 
 .container { max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem; }
 /* Будь-який залогінений користувач бачить додатковий стовпець "Улюблене"
@@ -684,6 +694,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
     <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
     <li id="nav-add" style="display:none"><button id="tab-add" onclick="showPage('add')" data-i18n="nav.add">Додати пісню</button></li>
     <li><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.0/N.Owl.Setup.1.0.0.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
+    <span class="nav-tab-indicator" id="nav-tab-indicator"></span>
   </ul>
   <div class="dropdown" id="lang-dropdown" style="margin-left:auto;">
     <button class="dropdown-toggle" onclick="toggleDropdown(event,'lang-dropdown')"><span id="lang-toggle-label">UA</span><span class="caret">▾</span></button>
@@ -1503,7 +1514,24 @@ function showPage(n){
   if(n==='admin') renderRequests();
   if(n==='profile') loadProfilePage();
   if(n==='recommendations') loadRecommendationsPage();
+  _updateNavIndicator();
 }
+// Плавний індикатор активної вкладки — рахує позицію/ширину кнопки й "їде"
+// туди замість миттєвого перескоку border-bottom.
+function _updateNavIndicator(){
+  const active = document.querySelector('.nav-tabs li button.active');
+  const indicator = document.getElementById('nav-tab-indicator');
+  if(!indicator) return;
+  if(!active){ indicator.style.opacity = '0'; return; }
+  indicator.style.left = active.offsetLeft + 'px';
+  indicator.style.width = active.offsetWidth + 'px';
+  indicator.style.opacity = '1';
+  // Якщо вкладок забагато й вони скролляться (нав вужчий за їх сумарну
+  // ширину) — підкручуємо активну в зону видимості.
+  active.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+}
+window.addEventListener('resize', _updateNavIndicator);
+if (document.fonts?.ready) document.fonts.ready.then(_updateNavIndicator);
 
 // ================================================================
 // RENDER SONGS
@@ -2359,6 +2387,8 @@ function renderAuthArea() {
   document.getElementById('nav-add').style.display = isAdmin ? '' : 'none';
   document.getElementById('nav-request').style.display = authed ? '' : 'none';
   document.getElementById('nav-recommendations').style.display = authed ? '' : 'none';
+  // Показ/приховування вкладок зсуває позиції сусідніх — перерахувати індикатор.
+  setTimeout(_updateNavIndicator, 0);
   const thAction = document.getElementById('th-action');
   if(thAction) thAction.style.display = isAdmin ? '' : 'none';
   const thFav = document.getElementById('th-fav');
@@ -3193,6 +3223,28 @@ applyLang(currentLang);
 document.getElementById('vol-slider').value = vol;
 document.getElementById('vw1').style.display = vol===0?'none':'';
 document.getElementById('vw2').style.display = vol<50?'none':'';
+_updateNavIndicator();
+
+// ================================================================
+// REALTIME (SignalR) — коли хтось (адмін) додає/редагує/видаляє пісню чи
+// заявку, усі відкриті вкладки самі перезавантажують дані замість того, щоб
+// показувати застарілий список, поки хтось вручну не оновить сторінку.
+// ================================================================
+if (window.signalR) {
+  const rtConn = new signalR.HubConnectionBuilder()
+    .withUrl('/hubs/music')
+    .withAutomaticReconnect()
+    .build();
+
+  rtConn.on('songsChanged', () => {
+    loadSongs().then(() => { renderSongs(); updateStats(); }).catch(() => {});
+  });
+  rtConn.on('requestsChanged', () => {
+    if (currentUser?.isAdmin) renderRequests();
+  });
+
+  rtConn.start().catch(() => {});
+}
 </script>
 </body>
 </html>

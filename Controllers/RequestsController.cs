@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MusicDB.Api.Data;
 using MusicDB.Api.Filters;
+using MusicDB.Api.Hubs;
 using MusicDB.Api.Models;
 using MusicDB.Api.Services;
 
@@ -10,7 +12,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RequestsController(MusicDbContext db, MusicService musicService, TranslationService translationService) : ControllerBase
+public class RequestsController(MusicDbContext db, MusicService musicService, TranslationService translationService, IHubContext<MusicHub> hub) : ControllerBase
 {
     [Authorize, AdminOnly]
     [HttpGet]
@@ -56,6 +58,7 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         };
         db.Requests.Add(req);
         await db.SaveChangesAsync();
+        await hub.Clients.All.SendAsync("requestsChanged");
         return Ok(ToDto(req));
     }
 
@@ -83,6 +86,7 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         req.GenreNamesOriginal = null;
 
         await db.SaveChangesAsync();
+        await hub.Clients.All.SendAsync("requestsChanged");
         return Ok(ToDto(req));
     }
 
@@ -148,6 +152,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         db.Requests.Remove(req);
         await db.SaveChangesAsync();
 
+        await hub.Clients.All.SendAsync("requestsChanged");
+        await hub.Clients.All.SendAsync("songsChanged");
         return Ok(new { message = wasDuplicate ? "merged" : "approved", songId, merged = wasDuplicate });
     }
 
@@ -159,6 +165,7 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         if (req is null) return NotFound();
         db.Requests.Remove(req);
         await db.SaveChangesAsync();
+        await hub.Clients.All.SendAsync("requestsChanged");
         return NoContent();
     }
 

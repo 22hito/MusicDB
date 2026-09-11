@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MusicDB.Api.Data;
+using MusicDB.Api.Hubs;
 using MusicDB.Api.Services;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
@@ -33,6 +35,7 @@ builder.Services.AddHttpClient<GenreNormalizationService>();
 builder.Services.AddHttpClient<RecommendationService>();
 builder.Services.AddHttpClient<LastFmGenreService>();
 
+builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -187,6 +190,10 @@ app.MapGet("/config", (IConfiguration config) =>
 });
 
 app.MapControllers();
+// Реалтайм-оновлення: контролери шлють через IHubContext<MusicHub> після
+// кожної мутації (додав/змінив/видалив пісню, нова/підтверджена заявка) —
+// усі відкриті вкладки підхоплюють зміни без ручного оновлення сторінки.
+app.MapHub<MusicHub>("/hubs/music");
 app.MapFallbackToFile("index.html");
 
 app.Run();

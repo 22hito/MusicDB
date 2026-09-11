@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MusicDB.Api.Data;
 using MusicDB.Api.Filters;
+using MusicDB.Api.Hubs;
 using MusicDB.Api.Models;
 using MusicDB.Api.Services;
 
@@ -10,7 +12,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GenresController(MusicDbContext db, GenreNormalizationService genreNormalizer) : ControllerBase
+public class GenresController(MusicDbContext db, GenreNormalizationService genreNormalizer, IHubContext<MusicHub> hub) : ControllerBase
 {
     // GET /api/genres
     [HttpGet]
@@ -78,6 +80,7 @@ public class GenresController(MusicDbContext db, GenreNormalizationService genre
         }
 
         await db.SaveChangesAsync();
+        if (mergedPairs.Count > 0) await hub.Clients.All.SendAsync("songsChanged");
         return Ok(new NormalizeGenresResultDto(mergedPairs.Count, mergedPairs, null));
     }
 }

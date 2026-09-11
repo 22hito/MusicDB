@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MusicDB.Api.Data;
 using MusicDB.Api.Filters;
+using MusicDB.Api.Hubs;
 using MusicDB.Api.Models;
 using MusicDB.Api.Services;
 
@@ -10,7 +12,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SongsController(MusicDbContext db, MusicService musicService) : ControllerBase
+public class SongsController(MusicDbContext db, MusicService musicService, IHubContext<MusicHub> hub) : ControllerBase
 {
     [HttpGet]
     public async Task<IEnumerable<SongDto>> GetAll()
@@ -84,6 +86,7 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
             ? (await db.Albums.FindAsync(albumId.Value))?.Name
             : null;
 
+        await hub.Clients.All.SendAsync("songsChanged");
         return CreatedAtAction(nameof(GetById), new { id = music.Id }, ToDto(created, createdAlbumName, 0));
     }
 
@@ -95,6 +98,7 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
         if (song is null) return NotFound();
         db.Songs.Remove(song);
         await db.SaveChangesAsync();
+        await hub.Clients.All.SendAsync("songsChanged");
         return NoContent();
     }
 
@@ -159,6 +163,7 @@ public class SongsController(MusicDbContext db, MusicService musicService) : Con
             ? (await db.Albums.FindAsync(albumId.Value))?.Name
             : null;
 
+        await hub.Clients.All.SendAsync("songsChanged");
         return Ok(ToDto(updated, updatedAlbumName, playCounts.GetValueOrDefault(song.Id, 0)));
     }
 
