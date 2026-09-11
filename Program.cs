@@ -150,7 +150,12 @@ app.UseRateLimiter();
 
 app.MapGet("/auth/login", () =>
     Results.Challenge(
-        new AuthenticationProperties { RedirectUri = "/" },
+        // IsPersistent=true — без цього кука виходить сесійною (без
+        // Expires/Max-Age), і хоч ExpireTimeSpan=7 днів валідний ВСЕРЕДИНІ
+        // тікета, сам браузер/Electron видаляє таку куку одразу при
+        // повному закритті процесу — саме тому застосунок "забував" логін
+        // після кожного перезапуску, хоча в межах однієї сесії все працювало.
+        new AuthenticationProperties { RedirectUri = "/", IsPersistent = true },
         [GoogleDefaults.AuthenticationScheme]));
 
 app.MapPost("/auth/logout", async (HttpContext ctx) =>
