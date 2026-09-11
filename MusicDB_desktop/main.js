@@ -89,21 +89,32 @@ function createWindow() {
 // само, як будь-яке інше вікно ОС, — саме цього і треба.
 let popoutWindow = null;
 
-function buildPopoutHtml(videoId, startSeconds) {
+// Перша версія рендерила сирий <iframe src="youtube.com/embed/..."> всередині
+// data:-документа — YouTube відповідав помилкою 153 ("Помилка конфігурації
+// відеопрогравача"), бо в data:-документа "null" origin, який офіційний
+// плеєр YouTube відхиляє. Замість власної мінімальної реалізації плеєра
+// вікно тепер відкриває справжню сторінку НАШОГО домену (wwwroot/popout.html),
+// яка використовує офіційний IFrame Player API — той самий механізм, що вже
+// надійно працює в основному плеєрі й попапі на сайті.
+function buildPopoutUrl(videoId, startSeconds) {
   const t = Math.max(0, Math.floor(Number(startSeconds) || 0));
-  const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}` +
-    `?autoplay=1&start=${t}&rel=0&modestbranding=1&iv_load_policy=3`;
-  const html = `<!doctype html><html><head><meta charset="utf-8"><style>` +
-    `html,body{margin:0;height:100%;background:#000;overflow:hidden}` +
-    `iframe{width:100%;height:100%;border:0;display:block}</style></head>` +
-    `<body><iframe src="${embedUrl}" allow="autoplay; encrypted-media" allowfullscreen></iframe></body></html>`;
-  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  return `${SITE_URL}popout.html?v=${encodeURIComponent(videoId)}&t=${t}`;
 }
 
 ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
   if (!videoId) return false;
+
+  // Звук у головному вікні йде з ЙОГО ytPlayer (попап на сайті сам по собі
+  // завжди німий) — без паузи тут звучало б одразу з двох вікон, коли нове
+  // вікно отримує власний, повноцінний, озвучений плеєр.
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.executeJavaScript(
+      'try { if (typeof ytPlayer !== "undefined" && ytPlayer && ytReady) ytPlayer.pauseVideo(); } catch(e) {}'
+    ).catch(() => {});
+  }
+
   if (popoutWindow && !popoutWindow.isDestroyed()) {
-    popoutWindow.loadURL(buildPopoutHtml(videoId, startSeconds));
+    popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds));
     popoutWindow.focus();
     return true;
   }
@@ -118,7 +129,7 @@ ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
   });
   popoutWindow.setMenuBarVisibility(false);
-  popoutWindow.loadURL(buildPopoutHtml(videoId, startSeconds));
+  popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds));
   popoutWindow.on('closed', () => {
     popoutWindow = null;
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('video-popout:closed');
