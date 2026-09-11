@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, Menu, shell } = require('electron');
+const { app, BrowserWindow, globalShortcut, Menu, shell, ipcMain } = require('electron');
 const path = require('path');
 
 const SITE_URL = 'https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net/';
@@ -64,15 +64,72 @@ function createWindow() {
   // Посилання, що мають відкриватись у новому вікні (напр. "Переглянути на
   // YouTube" з адмінського редактора), відкриваємо в системному браузері —
   // застосунок не повинен перетворюватись на повноцінний веб-браузер.
+  // Document Picture-in-Picture (попап "перенести в окреме вікно" на сайті)
+  // теж проходить через цей самий handler з url="about:blank" — без перевірки
+  // http(s) shell.openExternal валилася на порожньому/не-http url і забирала
+  // з собою увесь процес, тож pop-out у застосунку не працював узагалі.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    if (popoutWindow && !popoutWindow.isDestroyed()) popoutWindow.close();
   });
 }
+
+// ================================================================
+// ВІДЕО "В ОКРЕМЕ ВІКНО": справжнє нативне BrowserWindow ОС
+// ================================================================
+// Document Picture-in-Picture (веб-API, який використовує сайт у звичайному
+// браузері) в Electron 32 не є надійним — requestWindow або не створює
+// вікно, або сама спроба валить процес. Нативне вікно Electron натомість
+// перетягується на будь-який монітор і змінюється в розмірі за краї так
+// само, як будь-яке інше вікно ОС, — саме цього і треба.
+let popoutWindow = null;
+
+function buildPopoutHtml(videoId, startSeconds) {
+  const t = Math.max(0, Math.floor(Number(startSeconds) || 0));
+  const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}` +
+    `?autoplay=1&start=${t}&rel=0&modestbranding=1&iv_load_policy=3`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>` +
+    `html,body{margin:0;height:100%;background:#000;overflow:hidden}` +
+    `iframe{width:100%;height:100%;border:0;display:block}</style></head>` +
+    `<body><iframe src="${embedUrl}" allow="autoplay; encrypted-media" allowfullscreen></iframe></body></html>`;
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+}
+
+ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
+  if (!videoId) return false;
+  if (popoutWindow && !popoutWindow.isDestroyed()) {
+    popoutWindow.loadURL(buildPopoutHtml(videoId, startSeconds));
+    popoutWindow.focus();
+    return true;
+  }
+  popoutWindow = new BrowserWindow({
+    width: 480,
+    height: 320,
+    minWidth: 240,
+    minHeight: 160,
+    title: "N'Owl",
+    backgroundColor: '#000000',
+    autoHideMenuBar: true,
+    webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
+  });
+  popoutWindow.setMenuBarVisibility(false);
+  popoutWindow.loadURL(buildPopoutHtml(videoId, startSeconds));
+  popoutWindow.on('closed', () => {
+    popoutWindow = null;
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('video-popout:closed');
+  });
+  return true;
+});
+
+ipcMain.handle('video-popout:close', () => {
+  if (popoutWindow && !popoutWindow.isDestroyed()) popoutWindow.close();
+  return true;
+});
 
 // Виконує JS у вже завантаженій сторінці. Функції плеєра (playerNext,
 // playerPrev, playerToggle, playerClose) — звичайні function-декларації в

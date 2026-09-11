@@ -3116,13 +3116,42 @@ let pipWindow = null;
 let _pipFrameEl = null;
 let _pipFrameNextSibling = null;
 
+// У десктопному застосунку (Electron) Document PiP ненадійний — API там або
+// мовчки не створює вікно, або сама спроба валить процес (Electron 32 не
+// має повної підтримки). Там popOutVideoPopup() іде іншим шляхом: справжнє
+// нативне вікно ОС через window.electronAPI (див. preload.js/main.js
+// застосунку) — та сама можливість перенести на будь-який монітор чи
+// змінити розмір, просто через Electron, а не через веб-API.
+let _electronPopoutActive = false;
+if (window.electronAPI && window.electronAPI.onVideoPopoutClosed) {
+  window.electronAPI.onVideoPopoutClosed(() => {
+    _electronPopoutActive = false;
+    document.getElementById('btn-video')?.classList.remove('active');
+  });
+}
+
 function _updatePopoutBtnVisibility(){
   const btn = document.getElementById('video-popup-popout');
-  if (btn) btn.style.display = ('documentPictureInPicture' in window) ? '' : 'none';
+  const supported = ('documentPictureInPicture' in window) || !!(window.electronAPI && window.electronAPI.openVideoPopout);
+  if (btn) btn.style.display = supported ? '' : 'none';
 }
 
 async function popOutVideoPopup(){
-  if (!('documentPictureInPicture' in window) || pipWindow) return;
+  if (pipWindow || _electronPopoutActive) return;
+
+  if (window.electronAPI && window.electronAPI.openVideoPopout) {
+    if (!currentVid) return;
+    let startAt = 0;
+    try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
+    const ok = await window.electronAPI.openVideoPopout(currentVid, startAt);
+    if (ok) {
+      _electronPopoutActive = true;
+      document.getElementById('video-popup').classList.remove('open');
+    }
+    return;
+  }
+
+  if (!('documentPictureInPicture' in window)) return;
 
   const popup = document.getElementById('video-popup');
   const frame = document.getElementById('video-popup-frame');
@@ -3366,6 +3395,10 @@ function closeVideoPopup() {
   // повертаємо вузол у головний документ, інакше нижче код не знайде
   // #video-popup-frame (getElementById шукає лише в ЦЬОМУ document).
   if (pipWindow) _restoreFromPip();
+  if (_electronPopoutActive && window.electronAPI?.closeVideoPopout) {
+    window.electronAPI.closeVideoPopout();
+    _electronPopoutActive = false;
+  }
 
   const popup = document.getElementById('video-popup');
 
