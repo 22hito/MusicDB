@@ -86,10 +86,12 @@ html[data-theme="dark"] .nav-brand img { filter: invert(1) brightness(1.15); }
 .nav-tabs li button.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 .container { max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem; }
-/* Адмінська таблиця має додатковий стовпець "Дія" (+ "Улюблене") — на типових
-   широких моніторах даємо контейнеру більше простору, щоб дії влазили без
-   горизонтального скролу таблиці. На вузьких екранах max-width все одно не
-   змушує сторінку розтягуватись понад viewport. */
+/* Будь-який залогінений користувач бачить додатковий стовпець "Улюблене"
+   (лайк + додати в плейлист), а адмін — ще й "Дія" (редагувати/видалити).
+   На типових широких моніторах даємо контейнеру більше простору, щоб усе це
+   влазило без горизонтального скролу таблиці. На вузьких екранах max-width
+   все одно не змушує сторінку розтягуватись понад viewport. */
+body.authed-mode .container { max-width: 1450px; }
 body.admin-mode .container { max-width: 1600px; }
 .page { display: none; animation: fadeIn 0.25s ease; }
 .page.active { display: block; }
@@ -993,6 +995,14 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
     <div class="form-group"><label data-i18n="form.duration">Тривалість *</label><input type="text" id="edit-req-duration" placeholder="00:03:30"><div class="hint" data-i18n="form.duration.hint">Формат: гг:хх:сс</div></div>
     <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="edit-req-album"></div>
     <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="edit-req-genres"><div class="hint" data-i18n="form.genres.hint">Через кому</div></div>
+    <div class="form-group">
+      <label data-i18n="admin.youtubeVideo">YouTube-відео (необов'язково)</label>
+      <input type="text" id="edit-req-youtube" oninput="_updateEditReqYoutubeLink()" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео, або залиште порожнім">
+      <a id="edit-req-youtube-link" href="#" target="_blank" rel="noopener" style="display:none;font-size:0.75rem;color:var(--accent);margin-top:0.4rem;">
+        ▶ <span data-i18n="admin.youtubeVideo.view">Переглянути на YouTube</span>
+      </a>
+      <div class="hint" data-i18n="admin.youtubeVideo.hint">Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим</div>
+    </div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeEditRequestModal()" data-i18n="modal.cancel">Скасувати</button>
       <button class="modal-btn-confirm" id="edit-request-save-btn" style="background:var(--accent);" data-i18n="admin.saveBtn">Зберегти</button>
@@ -1658,7 +1668,7 @@ function openPlaylist(id){
     document.getElementById('playlist-play-all-btn').style.display = p.songs.length ? '' : 'none';
     tbody.innerHTML = p.songs.map(s=>`
       <tr>
-        <td class="td-icon-lead" data-label=""><button class="btn-icon-fav" onclick="playFromPlaylist(${s.id})" title="${t('profile.playBtn')}">
+        <td class="td-icon-lead" data-label=""><button class="btn-icon-fav" onclick="toggleOrPlay(${s.id}, playFromPlaylist)" title="${t('profile.playBtn')}">
           <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
         </button></td>
         <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
@@ -1764,7 +1774,7 @@ function renderSongs(){
       :`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     return `<tr class="${isPlay?'playing-row':''}">
       <td class="td-icon-lead" data-label="" style="padding:0.7rem 0.5rem 0.7rem 1rem;">
-        <button class="play-row-btn${isPlay?' is-playing':''}" onclick="playSong(${s.id})">${btnIcon}</button>
+        <button class="play-row-btn${isPlay?' is-playing':''}" onclick="toggleOrPlay(${s.id}, playSong)">${btnIcon}</button>
       </td>
       <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
       <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
@@ -2026,8 +2036,19 @@ function openEditRequestModal(id){
   document.getElementById('edit-req-duration').value = r.duration || '';
   document.getElementById('edit-req-album').value = r.albumTitle || '';
   document.getElementById('edit-req-genres').value = (r.genres||[]).join(', ');
+  document.getElementById('edit-req-youtube').value = r.youtubeVideoId || '';
+  _updateEditReqYoutubeLink();
   document.getElementById('edit-request-save-btn').onclick = function(){ saveEditRequest(id); };
   document.getElementById('edit-request-modal-overlay').classList.add('open');
+}
+// Аналог _updateEditSongYoutubeLink для модалки заявки — окрема функція,
+// бо працює з іншими id полів.
+function _updateEditReqYoutubeLink(){
+  const val = document.getElementById('edit-req-youtube').value.trim();
+  const link = document.getElementById('edit-req-youtube-link');
+  if(!val){ link.style.display = 'none'; return; }
+  link.href = /^https?:\/\//i.test(val) ? val : `https://www.youtube.com/watch?v=${encodeURIComponent(val)}`;
+  link.style.display = 'inline-block';
 }
 function closeEditRequestModal(){
   document.getElementById('edit-request-modal-overlay').classList.remove('open');
@@ -2042,11 +2063,14 @@ function saveEditRequest(id){
   const duration = document.getElementById('edit-req-duration').value.trim();
   const album = document.getElementById('edit-req-album').value.trim();
   const genres = document.getElementById('edit-req-genres').value.trim();
+  // Порожнє поле тут — навмисне очищення (як і в редагуванні пісні), не "залишити як було".
+  const youtubeVideoId = document.getElementById('edit-req-youtube').value.trim();
   if(!artist||!title||!release||!duration||!genres){alert(t('msg.fillRequiredFields'));return;}
   const body = {
     artist, title, release, duration,
     genres: genres.split(',').map(g=>g.trim()).filter(Boolean),
-    albumTitle: album || null
+    albumTitle: album || null,
+    youtubeVideoId
   };
   fetch(`/api/requests/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>{
@@ -2211,6 +2235,7 @@ function renderAuthArea() {
   const isAdmin = currentUser?.isAdmin;
   const authed = currentUser?.authenticated;
   document.body.classList.toggle('admin-mode', !!isAdmin);
+  document.body.classList.toggle('authed-mode', !!authed);
 
   // Show/hide admin tabs
   document.getElementById('nav-admin').style.display = isAdmin ? '' : 'none';
@@ -2330,6 +2355,16 @@ function playSong(id){
   _loadCurrent();
 }
 
+// Кнопка "плей" у рядку таблиці мала лише один режим — завжди перезапускала
+// пісню спочатку, навіть якщо вона й так вже грає (пауза працювала тільки з
+// плеєр-бару). Якщо клікнута пісня — та, що вже завантажена, перемикаємо
+// пауза/відтворення замість повного перезапуску черги.
+function toggleOrPlay(id, playFn){
+  const curId = playerQueue.length && playerQueue[playerIndex] ? playerQueue[playerIndex].id : null;
+  if(curId === id) playerToggle();
+  else playFn(id);
+}
+
 // playerQueue обмежуємо піснями плейлиста — next/prev/shuffle працюють лише в його межах.
 let currentPlaylistSongs = [];
 function playFromPlaylist(id){
@@ -2372,7 +2407,7 @@ async function loadTopSongsPage(){
         :`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
       return `<tr class="${isPlay?'playing-row':''}">
         <td class="td-icon-lead" data-label="" style="padding:0.7rem 0.5rem 0.7rem 1rem;">
-          <button class="play-row-btn${isPlay?' is-playing':''}" onclick="playFromTop(${s.id})">${btnIcon}</button>
+          <button class="play-row-btn${isPlay?' is-playing':''}" onclick="toggleOrPlay(${s.id}, playFromTop)">${btnIcon}</button>
         </td>
         <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
         <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>

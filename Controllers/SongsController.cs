@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +10,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public partial class SongsController(MusicDbContext db, MusicService musicService) : ControllerBase
+public class SongsController(MusicDbContext db, MusicService musicService) : ControllerBase
 {
     [HttpGet]
     public async Task<IEnumerable<SongDto>> GetAll()
@@ -108,7 +107,7 @@ public partial class SongsController(MusicDbContext db, MusicService musicServic
     [HttpPut("{id}/youtube-video")]
     public async Task<IActionResult> SetYoutubeVideo(int id, [FromBody] SetYoutubeVideoDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.VideoId) || !YoutubeVideoIdRegex().IsMatch(dto.VideoId))
+        if (string.IsNullOrWhiteSpace(dto.VideoId) || !YoutubeUrlParser.IsValidId(dto.VideoId))
             return BadRequest();
 
         var song = await db.Songs.FindAsync(id);
@@ -120,41 +119,13 @@ public partial class SongsController(MusicDbContext db, MusicService musicServic
         return Ok();
     }
 
-    [GeneratedRegex(@"^[A-Za-z0-9_-]{11}$")]
-    private static partial Regex YoutubeVideoIdRegex();
-
-    [GeneratedRegex(@"(?:v=|youtu\.be/|embed/)([A-Za-z0-9_-]{11})")]
-    private static partial Regex YoutubeUrlRegex();
-
-    // Приймає або голий 11-символьний videoId, або повний YouTube-лінк
-    // (адмін радше вставить URL з адресного рядка, ніж сам ID).
-    // Розрізняємо: поле взагалі не надіслано (null) — НЕ чіпаємо вже
-    // закешоване значення (щоб інші клієнти, які ще не надсилають це поле —
-    // напр. мобільний застосунок — не стирали кеш при кожному редагуванні);
-    // надіслано явно порожнім рядком — це навмисне скидання (null).
-    private static bool TryExtractYoutubeVideoId(string? raw, out string? videoId, out bool shouldUpdate)
-    {
-        videoId = null;
-        if (raw is null) { shouldUpdate = false; return true; }
-        shouldUpdate = true;
-        if (raw.Length == 0) return true;
-
-        var trimmed = raw.Trim();
-        if (YoutubeVideoIdRegex().IsMatch(trimmed)) { videoId = trimmed; return true; }
-
-        var match = YoutubeUrlRegex().Match(trimmed);
-        if (match.Success) { videoId = match.Groups[1].Value; return true; }
-
-        return false;
-    }
-
     // Редагування вже опублікованої пісні (не заявки) — повністю
     // перезаписує основні поля, жанри та альбом.
     [Authorize, AdminOnly]
     [HttpPut("{id}")]
     public async Task<ActionResult<SongDto>> Update(int id, [FromBody] UpdateSongDto dto)
     {
-        if (!TryExtractYoutubeVideoId(dto.YoutubeVideoId, out var youtubeVideoId, out var shouldUpdateVideo))
+        if (!YoutubeUrlParser.TryExtract(dto.YoutubeVideoId, out var youtubeVideoId, out var shouldUpdateVideo))
             return BadRequest("Invalid YouTube video ID or URL.");
 
         var song = await db.Songs
