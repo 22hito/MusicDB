@@ -2311,7 +2311,10 @@ let listenLogged=false;
 let userIntendedPlaying=true;
 let ticker=null,pendingVid=null;
 let shuffle=false,repeat=false,seekDrag=false;
-let vol=80;
+// Гучність зберігається в localStorage (як тема й мова) — інакше плеєр щоразу
+// стартував на 80% і доводилось прикручувати гучність заново.
+const _savedVol = localStorage.getItem('volume');
+let vol = _savedVol !== null ? parseInt(_savedVol) : 80;
 
 function onYouTubeIframeAPIReady(){
   ytPlayer=new YT.Player('yt-iframe',{
@@ -2635,6 +2638,7 @@ function toggleRepeat(){repeat=!repeat;document.getElementById('btn-repeat').cla
 
 function setVolume(v){
   vol=parseInt(v);
+  localStorage.setItem('volume', vol);
   if(ytPlayer&&ytReady)try{ytPlayer.setVolume(vol);}catch(e){}
   document.getElementById('vw1').style.display=vol===0?'none':'';
   document.getElementById('vw2').style.display=vol<50?'none':'';
@@ -3073,6 +3077,9 @@ function _onVidReady(vid) {
 initApp();
 applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 applyLang(currentLang);
+document.getElementById('vol-slider').value = vol;
+document.getElementById('vw1').style.display = vol===0?'none':'';
+document.getElementById('vw2').style.display = vol<50?'none':'';
 </script>
 </body>
 </html>
