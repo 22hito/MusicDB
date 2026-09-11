@@ -2450,6 +2450,8 @@ function _loadCurrent(){
         return vid;
       });
 
+  _updateMediaSessionMetadata(s, null);
+
   vidPromise.then(vid=>{
     if(!vid){setLoad(false);document.getElementById('p-title').textContent=s.title+t('video.notFoundSuffix');return;}
     currentVid = vid;
@@ -2458,6 +2460,7 @@ function _loadCurrent(){
     img.src='https://img.youtube.com/vi/'+vid+'/mqdefault.jpg';
     img.style.display='block';
     document.getElementById('player-cover-ph').style.display='none';
+    _updateMediaSessionMetadata(s, vid);
     if(ytReady)_load(vid);else pendingVid=vid;
   });
 }
@@ -2581,6 +2584,32 @@ function playerPrev(){
   _loadCurrent();
 }
 
+// ================================================================
+// MEDIA SESSION (апаратні клавіші відтворення на клавіатурі/навушниках,
+// а також системний "зараз грає" оверлей ОС) — працює навіть коли вкладка
+// не у фокусі (наприклад, згорнута під грою), бо ОС спрямовує ці клавіші
+// в активну media session браузера, а не в конкретне активне вікно.
+// ================================================================
+if('mediaSession' in navigator){
+  navigator.mediaSession.setActionHandler('play', ()=>{ try{ytPlayer&&ytReady&&ytPlayer.playVideo();}catch(e){} });
+  navigator.mediaSession.setActionHandler('pause', ()=>{ try{ytPlayer&&ytReady&&ytPlayer.pauseVideo();}catch(e){} });
+  navigator.mediaSession.setActionHandler('previoustrack', playerPrev);
+  navigator.mediaSession.setActionHandler('nexttrack', playerNext);
+  navigator.mediaSession.setActionHandler('stop', playerClose);
+}
+function _updateMediaSessionMetadata(song, videoId){
+  if(!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: song.title,
+    artist: song.artist,
+    album: song.album || '',
+    artwork: videoId ? [
+      {src:`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`, sizes:'320x180', type:'image/jpeg'},
+      {src:`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, sizes:'480x360', type:'image/jpeg'}
+    ] : []
+  });
+}
+
 function playerClose(){
   if(videoPopupOpen) closeVideoPopup();
   try{if(ytPlayer&&ytReady)ytPlayer.stopVideo();}catch(e){}
@@ -2589,6 +2618,7 @@ function playerClose(){
   document.getElementById('player-bar').classList.remove('visible');
   document.body.classList.remove('player-open');
   playerQueue=[];renderSongs();
+  if('mediaSession' in navigator){ navigator.mediaSession.playbackState='none'; navigator.mediaSession.metadata=null; }
 }
 
 function toggleShuffle(){shuffle=!shuffle;document.getElementById('btn-shuffle').classList.toggle('lit',shuffle);}
@@ -2667,6 +2697,7 @@ function stopTick(){if(ticker){clearInterval(ticker);ticker=null;}}
 function setPP(playing){
   document.getElementById('ico-play').style.display=playing?'none':'';
   document.getElementById('ico-pause').style.display=playing?'':'none';
+  if('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
 }
 function setLoad(on){document.getElementById('p-loading').style.display=on?'inline':'none';}
 function setEQ(on){document.getElementById('player-cover-eq').classList.toggle('on',on);}
