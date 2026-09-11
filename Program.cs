@@ -76,6 +76,15 @@ builder.Services.AddAuthentication(options =>
     options.CallbackPath = "/signin-google";
     options.SaveTokens = false;
 
+    // Без цього Google мовчки повторно логінить тим самим акаунтом, що вже
+    // активний у поточній сесії (навіть після виходу з нашого сайту) —
+    // "Увійти" ніколи не пропонував вибір іншого акаунта чи додавання нового.
+    options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
+    {
+        ctx.Response.Redirect(ctx.RedirectUri + "&prompt=select_account");
+        return Task.CompletedTask;
+    };
+
     options.Events.OnTicketReceived = async ctx =>
     {
         var db = ctx.HttpContext.RequestServices.GetRequiredService<MusicDbContext>();
