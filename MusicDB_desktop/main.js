@@ -22,12 +22,6 @@ const DISABLE_WEBAUTHN_JS = `(function(){
   } catch(e) {}
 })();`;
 
-// Сайт ховає посилання "Завантажити застосунок" у навбарі, коли бачить цей
-// прапорець — незручно пропонувати встановити застосунок людині, яка вже в
-// ньому сидить. localStorage (а не querystring) — переживає повноекранні
-// навігації логіну через accounts.google.com і назад.
-const MARK_DESKTOP_APP_JS = `try { localStorage.setItem('isDesktopApp', '1'); } catch(e) {}`;
-
 let mainWindow = null;
 
 function createWindow() {
@@ -44,6 +38,11 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Прапорець "це десктопний застосунок" (localStorage.isDesktopApp) —
+      // тут, а не на dom-ready, бо preload виконується ДО коду сторінки на
+      // кожній навігації, тож встигає ще до того, як навбар перевірить його,
+      // включно з найпершим холодним запуском.
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
@@ -58,7 +57,6 @@ function createWindow() {
   // назад на сайт) — виконуємо на КОЖНІЙ, а не лише один раз при завантаженні.
   mainWindow.webContents.on('dom-ready', () => {
     mainWindow.webContents.executeJavaScript(DISABLE_WEBAUTHN_JS).catch(() => {});
-    mainWindow.webContents.executeJavaScript(MARK_DESKTOP_APP_JS).catch(() => {});
   });
 
   mainWindow.loadURL(SITE_URL);
