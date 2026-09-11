@@ -99,6 +99,18 @@ input, select, .badge, table, tbody tr, .filter-bar input, .filter-bar select {
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 body { background: var(--bg); color: var(--text); font-family: var(--font-mono); min-height: 100vh; font-size: 14px; }
 body.player-open { padding-bottom: var(--player-h); }
+/* Ледь помітна плівкова зернистість — фірмова "дорога" деталь сучасних
+   темних інтерфейсів, майже непомітна свідомо, але додає глибини фону. */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-motion: reduce) { body::before { display: none; } }
 
 /* NAV */
 nav { background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; height: 56px; position: sticky; top: 0; z-index: 100; }
@@ -124,7 +136,13 @@ body.admin-mode .container { max-width: 1600px; }
 .page.active { display: block; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 h2 { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 1.5rem; }
-h2 span.hl { color: var(--accent); }
+h2 span.hl {
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmerText 5s linear infinite;
+}
+@keyframes shimmerText { to { background-position: -200% center; } }
 
 /* TABLE */
 .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
@@ -151,11 +169,13 @@ thead th.sortable:hover { color: var(--text); background: rgba(200,169,110,0.08)
 thead th.sortable::after { content: '\2195'; margin-left: 0.35em; opacity: 0.35; font-size: 0.85em; display: inline-block; transition: transform 0.2s ease, opacity 0.2s ease; }
 thead th.sortable.sort-asc::after { content: '\2191'; opacity: 1; color: var(--accent); }
 thead th.sortable.sort-desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
-tbody tr { position: relative; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s, box-shadow 0.25s ease; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--surface2); }
-tbody tr.playing-row { background: rgba(200,169,110,0.07); }
-tbody tr.playing-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); animation: fadeInUp 0.3s ease; }
+/* inset box-shadow замість ::before — псевдоелемент на <tr> у деяких браузерах
+   рендериться як окрема "фантомна" комірка, зсуваючи всі стовпці праворуч.
+   box-shadow ніколи не бере участі в розкладці, тож зсуву бути не може. */
+tbody tr.playing-row { background: rgba(200,169,110,0.07); box-shadow: inset 3px 0 0 var(--accent); }
 tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .badge { display: inline-block; background: rgba(124,111,205,0.15); color: var(--accent2); border: 1px solid rgba(124,111,205,0.3); padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; margin: 1px; white-space: nowrap; }
 .badge.album { background: rgba(200,169,110,0.12); color: var(--accent); border-color: rgba(200,169,110,0.3); white-space: normal; word-break: normal; overflow-wrap: break-word; max-width: 260px; display: inline-block; line-height: 1.4; }
@@ -165,11 +185,19 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 /* STATS */
 .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
 .stat-card {
+  position: relative; overflow: hidden;
   background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem;
   transition: transform 0.25s cubic-bezier(.2,.8,.2,1), box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.3s ease;
   animation: fadeInUp 0.5s cubic-bezier(.2,.8,.2,1) backwards;
 }
 .stat-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 14px 32px rgba(0,0,0,0.22); }
+/* "Прожектор", що йде за курсором — координати задає JS через --mx/--my. */
+.stat-card::after {
+  content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(200,169,110,0.16), transparent 70%);
+}
+.stat-card:hover::after { opacity: 1; }
 .stats-row .stat-card:nth-child(1) { animation-delay: 0.03s; }
 .stats-row .stat-card:nth-child(2) { animation-delay: 0.08s; }
 .stats-row .stat-card:nth-child(3) { animation-delay: 0.13s; }
@@ -1860,6 +1888,23 @@ function isPlaying(){
 // ================================================================
 // STATS
 // ================================================================
+// Плавний відлік цифри від поточного значення до нового замість миттєвої
+// підміни тексту — дрібниця, але саме такі дрібниці й "продають" сучасний вигляд.
+function _animateCount(id, target){
+  target = Number(target) || 0;
+  const el = document.getElementById(id);
+  const start = Number(el.textContent) || 0;
+  if (start === target) { el.textContent = target; return; }
+  const duration = 700, t0 = performance.now();
+  function tick(now){
+    const p = Math.min((now - t0) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(start + (target - start) * eased);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 async function updateStats(){
   const ag=new Set(songs.flatMap(s=>s.genres));
   const sel=document.getElementById('filter-genre');
@@ -1867,18 +1912,27 @@ async function updateStats(){
   sel.innerHTML=`<option value="">${t('filter.allGenres')}</option>`+[...ag].sort().map(g=>`<option value="${esc(g)}"${g===cur?' selected':''}>${esc(abbrGenre(g))}</option>`).join('');
   try {
     const st = await fetch('/api/stats').then(r=>r.json());
-    document.getElementById('stat-songs').textContent=st.totalSongs;
-    document.getElementById('stat-genres').textContent=st.totalGenres;
-    document.getElementById('stat-albums').textContent=st.totalAlbums;
-    document.getElementById('stat-singles').textContent=st.singles;
+    _animateCount('stat-songs', st.totalSongs);
+    _animateCount('stat-genres', st.totalGenres);
+    _animateCount('stat-albums', st.totalAlbums);
+    _animateCount('stat-singles', st.singles);
   } catch {
     const aa=new Set(songs.filter(s=>s.album).map(s=>s.album));
-    document.getElementById('stat-songs').textContent=songs.length;
-    document.getElementById('stat-genres').textContent=ag.size;
-    document.getElementById('stat-albums').textContent=aa.size;
-    document.getElementById('stat-singles').textContent=songs.filter(s=>!s.album).length;
+    _animateCount('stat-songs', songs.length);
+    _animateCount('stat-genres', ag.size);
+    _animateCount('stat-albums', aa.size);
+    _animateCount('stat-singles', songs.filter(s=>!s.album).length);
   }
 }
+
+// "Прожектор" за курсором на статкартках — координати в CSS custom properties.
+document.querySelectorAll('.stat-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  });
+});
 
 // ================================================================
 // FORMS
