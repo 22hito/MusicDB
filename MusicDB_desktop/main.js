@@ -1,7 +1,57 @@
-const { app, BrowserWindow, globalShortcut, Menu, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, Menu, shell, ipcMain, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
 const SITE_URL = 'https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net/';
+
+// ================================================================
+// АВТООНОВЛЕННЯ (electron-updater, через GitHub Releases)
+// ================================================================
+// Не форсуємо оновлення одразу — тихо завантажуємо у фоні (стандартна
+// поведінка autoDownload) і застосовуємо, коли користувач сам закриє
+// застосунок наступного разу (autoInstallOnAppQuit — теж стандартна
+// поведінка), як і просив користувач. Кнопка "Перезапустити зараз" — лише
+// зручність, не обов'язкова дія.
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+function initAutoUpdater() {
+  // У неспакованому вигляді (npm start під час розробки) electron-updater
+  // не має де шукати релізи й тільки шумить помилками в консоль — сенсу
+  // перевіряти нема, оновлюються лише встановлені (packaged) копії.
+  if (!app.isPackaged) return;
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: "N'Owl — оновлення завантажено",
+      message: `Доступна нова версія застосунку (${info.version}).`,
+      detail: 'Вона встановиться автоматично, коли ви наступного разу закриєте застосунок. Можна перезапустити зараз, щоб оновити одразу.',
+      buttons: ['Перезапустити зараз', 'Пізніше'],
+      defaultId: 1,
+      cancelId: 1,
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('autoUpdater error:', err);
+  });
+
+  const checkForUpdates = () => autoUpdater.checkForUpdates().catch((err) => {
+    console.error('checkForUpdates failed:', err);
+  });
+
+  // Перша перевірка — трохи згодом після старту, щоб не заважати вже
+  // й так навантаженому мережею запуску (логін, завантаження пісень).
+  // Далі — раз на 4 години, щоб ловити реліз, який вийшов, поки застосунок
+  // уже відкритий і працює (саме так, як просив користувач), а не тільки
+  // при наступному холодному запуску.
+  setTimeout(checkForUpdates, 15_000);
+  setInterval(checkForUpdates, 4 * 60 * 60 * 1000);
+}
 
 // Google-логін у цьому вікні виглядає для Google як "новий пристрій" (окрема
 // сесія/куки від звичайного браузера), тож він вимагає найсильнішу з
@@ -156,6 +206,7 @@ function runInPage(js) {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   createWindow();
+  initAutoUpdater();
 
   // Апаратні клавіші відтворення (наступна/попередня/пауза) на клавіатурі чи
   // навушниках — те, що НЕМОЖЛИВО надійно перехопити зі звичайної вкладки
