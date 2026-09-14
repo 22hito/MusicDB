@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, Text, View, useWindowDimensions } from 'react-native';
+import { enableScreens } from 'react-native-screens';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,6 +16,13 @@ import { ApiBridgeProvider } from '@/api/ApiBridge';
 import { FavoritesProvider } from '@/state/FavoritesContext';
 import { PlayerProvider } from '@/player/PlayerContext';
 import { ServerSettingsScreen } from '@/screens/ServerSettingsScreen';
+
+// Має виконатись синхронно на рівні модуля, ДО першого рендеру будь-якого
+// навігатора (Stack/Tabs) — інакше нативні Screen-контейнери вже створяться
+// зі стандартною поведінкою. На деяких Android-прошивках (MIUI зокрема) саме
+// ці контейнери в парі з edge-to-edge неправильно рахують висоту вікна,
+// через що контент займає лише верхню половину екрана.
+enableScreens(false);
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
