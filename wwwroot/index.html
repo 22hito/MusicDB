@@ -585,10 +585,6 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 #video-popup-fullscreen:hover, #video-popup-expand:hover, #video-popup-popout:hover { color: var(--accent); background: rgba(200,169,110,0.1); }
 #video-popup-fullscreen.active, #video-popup-expand.active { color: var(--accent); }
 #video-popup-close:hover { color: var(--red); background: rgba(224,92,92,0.1); }
-/* Коли відео перенесене в окреме (Document Picture-in-Picture) вікно — сам
-   попап у документі стає непотрібним, ним керує нативне вікно ОС (яке вже
-   вміє рухатись між моніторами й ресайзитись без жодного нашого коду). */
-#video-popup-frame.pip-active { width: 100vw !important; height: 100vh !important; border-radius: 0 !important; }
 /* Відео-область попапу — тут буде переміщено #yt-wrap */
 #video-popup-frame {
   position: relative;
@@ -2991,23 +2987,10 @@ function _popupSeek(time){
 }
 
 // Ініціалізуємо прихований div для popup-плеєра (вже є #video-popup-frame).
-// Коли попап у Document PiP (окремому вікні), #video-popup-frame фізично
-// живе в pipWindow.document, а НЕ в головному document — getElementById
-// без цього завжди повертав null при перемиканні пісні під час pip
-// (перемикання/завершення пісні тоді ламалось мовчки: наступна пісня не
-// підхоплювалась у попапі, старе відео так і лишалось висіти).
-function _popupDoc() { return (pipWindow && !pipWindow.closed) ? pipWindow.document : document; }
-
 function _initPopupPlayer(vid, startAt) {
-  const doc = _popupDoc();
-  const frame = doc.getElementById('video-popup-frame');
-  const loading = doc.getElementById('video-popup-loading');
+  const frame = document.getElementById('video-popup-frame');
+  const loading = document.getElementById('video-popup-loading');
   loading.style.display = 'flex';
-  // Заголовок pip-вікна виставлявся лише один раз при відкритті — при
-  // перемиканні пісні так і лишався зі старою назвою.
-  if (pipWindow && !pipWindow.closed) {
-    pipWindow.document.title = document.getElementById('p-title')?.textContent || "N'Owl";
-  }
 
   // Знищуємо попередній якщо є
   if (popupPlayer) {
@@ -3017,17 +3000,14 @@ function _initPopupPlayer(vid, startAt) {
   }
 
   // Контейнер для нового плеєра
-  let ph = doc.getElementById('popup-player-ph');
+  let ph = document.getElementById('popup-player-ph');
   if (!ph) {
-    ph = doc.createElement('div');
+    ph = document.createElement('div');
     ph.id = 'popup-player-ph';
     frame.appendChild(ph);
   }
 
-  // Передаємо сам DOM-елемент (не рядковий id) — офіційний YT IFrame API
-  // шукає id лише через document головного вікна (де завантажений його
-  // скрипт), тож рядковий id ніколи не знайшов би елемент у pipWindow.
-  popupPlayer = new YT.Player(ph, {
+  popupPlayer = new YT.Player('popup-player-ph', {
     width: '100%',
     height: '100%',
     videoId: vid,
@@ -3124,20 +3104,15 @@ function toggleVideoPopup() {
 // ================================================================
 // VIDEO POPUP: перенесення в окреме вікно ОС (Document Picture-in-Picture)
 // ================================================================
-// На відміну від fullscreen (обмежений тим самим монітором/вікном браузера)
-// чи перетягування попапу мишею (обмежене межами сторінки), справжнє
-// системне вікно ОС можна перетягнути на будь-який монітор і змінити його
-// розмір за краї — це вже робить сама ОС, жодних власних хендлів не треба.
-let pipWindow = null;
-let _pipFrameEl = null;
-let _pipFrameNextSibling = null;
-
-// У десктопному застосунку (Electron) Document PiP ненадійний — API там або
-// мовчки не створює вікно, або сама спроба валить процес (Electron 32 не
-// має повної підтримки). Там popOutVideoPopup() іде іншим шляхом: справжнє
-// нативне вікно ОС через window.electronAPI (див. preload.js/main.js
-// застосунку) — та сама можливість перенести на будь-який монітор чи
-// змінити розмір, просто через Electron, а не через веб-API.
+// Document Picture-in-Picture (перенесення попапу в окреме вікно ОС просто
+// в браузері) прибрано зі звичайної веб-версії — фонове відтворення (заради
+// якого спершу й питали) воно все одно не рятує (YouTube-embed так само
+// призупиняється у фоні незалежно від того, в основному чи в pip-вікні), а
+// саму лише можливість "перенести на інший монітор" не визнали вартою
+// повторюваних багів (помилка 152, поломка при перемиканні пісні тощо).
+// У ДЕСКТОПНОМУ застосунку (Electron) аналогічна функція лишається —
+// це справжнє нативне вікно ОС через window.electronAPI (preload.js/
+// main.js застосунку), геть інший, надійніший механізм.
 let _electronPopoutActive = false;
 if (window.electronAPI && window.electronAPI.onVideoPopoutClosed) {
   window.electronAPI.onVideoPopoutClosed(() => {
@@ -3148,90 +3123,22 @@ if (window.electronAPI && window.electronAPI.onVideoPopoutClosed) {
 
 function _updatePopoutBtnVisibility(){
   const btn = document.getElementById('video-popup-popout');
-  const supported = ('documentPictureInPicture' in window) || !!(window.electronAPI && window.electronAPI.openVideoPopout);
+  const supported = !!(window.electronAPI && window.electronAPI.openVideoPopout);
   if (btn) btn.style.display = supported ? '' : 'none';
 }
 
 async function popOutVideoPopup(){
-  if (pipWindow || _electronPopoutActive) return;
+  if (_electronPopoutActive) return;
+  if (!(window.electronAPI && window.electronAPI.openVideoPopout)) return;
 
-  if (window.electronAPI && window.electronAPI.openVideoPopout) {
-    if (!currentVid) return;
-    let startAt = 0;
-    try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
-    const ok = await window.electronAPI.openVideoPopout(currentVid, startAt);
-    if (ok) {
-      _electronPopoutActive = true;
-      document.getElementById('video-popup').classList.remove('open');
-    }
-    return;
+  if (!currentVid) return;
+  let startAt = 0;
+  try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
+  const ok = await window.electronAPI.openVideoPopout(currentVid, startAt);
+  if (ok) {
+    _electronPopoutActive = true;
+    document.getElementById('video-popup').classList.remove('open');
   }
-
-  if (!('documentPictureInPicture' in window)) return;
-
-  const popup = document.getElementById('video-popup');
-  const frame = document.getElementById('video-popup-frame');
-  const rect = popup.getBoundingClientRect();
-
-  try {
-    pipWindow = await documentPictureInPicture.requestWindow({
-      width: Math.max(240, Math.round(rect.width)),
-      height: Math.max(160, Math.round(rect.height)),
-    });
-  } catch (e) {
-    pipWindow = null;
-    return;
-  }
-
-  // Document PiP — окремий document, який не успадковує ЖОДНОГО CSS з
-  // батьківської сторінки за замовчуванням. Копіюємо всі стилі; зовнішні
-  // (Google Fonts) при читанні cssRules впадуть у CORS — тоді просто лінкуємо
-  // тег <link> напряму замість того, щоб читати вміст.
-  [...document.styleSheets].forEach(sheet => {
-    try {
-      const css = [...sheet.cssRules].map(r => r.cssText).join('');
-      const style = pipWindow.document.createElement('style');
-      style.textContent = css;
-      pipWindow.document.head.appendChild(style);
-    } catch (e) {
-      if (sheet.href) {
-        const link = pipWindow.document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = sheet.href;
-        pipWindow.document.head.appendChild(link);
-      }
-    }
-  });
-  pipWindow.document.title = document.getElementById('p-title')?.textContent || "N'Owl";
-  pipWindow.document.body.style.margin = '0';
-  pipWindow.document.body.style.background = '#000';
-  pipWindow.document.body.style.overflow = 'hidden';
-
-  // Переносимо САМ вузол (не копію) — стан YouTube-плеєра всередині
-  // зберігається, відео не перезавантажується. Зберігаємо, куди повертати —
-  // getElementById в головному документі більше його не знайде.
-  _pipFrameEl = frame;
-  _pipFrameNextSibling = frame.nextElementSibling;
-  frame.classList.add('pip-active');
-  pipWindow.document.body.appendChild(frame);
-  popup.classList.remove('open');
-
-  pipWindow.addEventListener('pagehide', _restoreFromPip, { once: true });
-}
-
-// Викликається і подією закриття PiP-вікна, і вручну (closeVideoPopup/
-// playerClose), якщо користувач гасить плеєр повністю, поки відео все ще
-// висить в окремому вікні — інакше видалили б popupPlayer у вузлі, якого вже
-// нема в головному document, і отримали б помилку.
-function _restoreFromPip(){
-  if (!pipWindow) return;
-  const popup = document.getElementById('video-popup');
-  _pipFrameEl.classList.remove('pip-active');
-  popup.insertBefore(_pipFrameEl, _pipFrameNextSibling);
-  if (videoPopupOpen) popup.classList.add('open');
-  try { pipWindow.close(); } catch(e) {}
-  pipWindow = null;
-  _pipFrameEl = null;
 }
 
 // ================================================================
@@ -3407,10 +3314,6 @@ function openVideoPopup() {
 }
 
 function closeVideoPopup() {
-  // Якщо відео зараз висить в окремому (Document PiP) вікні — спершу
-  // повертаємо вузол у головний документ, інакше нижче код не знайде
-  // #video-popup-frame (getElementById шукає лише в ЦЬОМУ document).
-  if (pipWindow) _restoreFromPip();
   if (_electronPopoutActive && window.electronAPI?.closeVideoPopout) {
     window.electronAPI.closeVideoPopout();
     _electronPopoutActive = false;
