@@ -15,6 +15,7 @@
       }
     },
     "android": {
+      "package": "com.nowl.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#0d0d0f",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -22,7 +23,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -49,6 +53,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6649fc84-6592-4735-926f-1fccdf1e3769"
+      }
+    },
+    "owner": "22hito"
   }
 }
