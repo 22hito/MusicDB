@@ -11,6 +11,7 @@ export interface SongFormValues {
   duration: string; // hh:mm:ss
   album: string;
   genres: string; // comma-separated
+  youtubeVideoId: string; // ID або повне посилання — бекенд сам розбирає; порожньо = скинути кеш
 }
 
 export function SongFormModal({
@@ -65,6 +66,15 @@ export function SongFormModal({
               value={values.genres}
               onChangeText={set('genres')}
               hint={t('form.genres.hint')}
+            />
+            <Field
+              label={t('form.youtubeVideoId')}
+              value={values.youtubeVideoId}
+              onChangeText={set('youtubeVideoId')}
+              placeholder={t('form.youtubeVideoId.placeholder')}
+              hint={t('form.youtubeVideoId.hint')}
+              autoCapitalize="none"
+              autoCorrect={false}
             />
           </ScrollView>
           <View style={styles.actions}>

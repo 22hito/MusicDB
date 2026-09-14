@@ -21,7 +21,12 @@ export interface CreateSongInput {
   album: string | null;
 }
 
-export type UpdateSongInput = CreateSongInput;
+// null — не чіпати вже закешоване відео (як і не надсилати поле взагалі);
+// "" — явно скинути; непорожній рядок — новий ID або посилання (бекенд сам
+// розбирає URL). Та сама семантика, що й на сайті/десктопі.
+export interface UpdateSongInput extends CreateSongInput {
+  youtubeVideoId?: string | null;
+}
 
 export interface Genre {
   id: number;
@@ -44,6 +49,7 @@ export interface SongRequest {
   genreNamesOriginal: string | null;
   albumTitle: string | null;
   createdAt: string;
+  youtubeVideoId: string | null;
 }
 
 export interface CreateRequestInput {
@@ -55,7 +61,10 @@ export interface CreateRequestInput {
   albumTitle: string | null;
 }
 
-export type UpdateRequestInput = CreateRequestInput;
+// Та сама семантика null/""/значення, що й в UpdateSongInput.
+export interface UpdateRequestInput extends CreateRequestInput {
+  youtubeVideoId?: string | null;
+}
 
 export interface Profile {
   email: string;

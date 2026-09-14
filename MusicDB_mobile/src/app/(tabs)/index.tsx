@@ -25,6 +25,7 @@ function songToForm(s: Song): SongFormValues {
     duration: s.duration,
     album: s.album || '',
     genres: s.genres.join(', '),
+    youtubeVideoId: s.youtubeVideoId || '',
   };
 }
 
@@ -135,6 +136,7 @@ export default function LibraryScreen() {
         duration: values.duration.trim(),
         album: values.album.trim() || null,
         genres: values.genres.split(',').map((g) => g.trim()).filter(Boolean),
+        youtubeVideoId: values.youtubeVideoId.trim(),
       });
       setSongs((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       setEditSong(null);
