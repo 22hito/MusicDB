@@ -21,64 +21,69 @@ export default function TabsLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <BrandHeader />
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: theme.accent,
-          tabBarInactiveTintColor: theme.muted,
-          tabBarStyle: {
-            backgroundColor: theme.surface,
-            borderTopColor: theme.border,
-            height: tabBarHeight,
-            paddingBottom: insets.bottom,
-            paddingTop: 8,
-          },
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: t('nav.library'),
-            tabBarIcon: ({ color, size }) => <NoteIcon color={String(color)} size={size ?? 20} />,
+      {/* <Tabs> не бере flex:1 сам по собі, коли він більше не єдина дитина
+          (з'явився BrandHeader-сусід) — без цієї обгортки контент і таббар
+          стискались у верхню половину екрана, а решта лишалась порожньою. */}
+      <View style={{ flex: 1 }}>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarActiveTintColor: theme.accent,
+            tabBarInactiveTintColor: theme.muted,
+            tabBarStyle: {
+              backgroundColor: theme.surface,
+              borderTopColor: theme.border,
+              height: tabBarHeight,
+              paddingBottom: insets.bottom,
+              paddingTop: 8,
+            },
           }}
-        />
-        <Tabs.Screen
-          name="top"
-          options={{
-            title: t('nav.top'),
-            tabBarIcon: ({ color, size }) => <TrophyIcon color={String(color)} size={size ?? 20} />,
-          }}
-        />
-        <Tabs.Screen
-          name="request"
-          options={{
-            title: t('nav.request'),
-            tabBarIcon: ({ color, size }) => <SendIcon color={String(color)} size={size ?? 20} />,
-          }}
-        />
-        <Tabs.Screen
-          name="recommendations"
-          options={{
-            title: t('nav.recommendations'),
-            tabBarIcon: ({ color, size }) => <StarIcon color={String(color)} size={size ?? 20} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: t('nav.profile'),
-            tabBarIcon: ({ color, size }) => <PersonIcon color={String(color)} size={size ?? 20} />,
-          }}
-        />
-        <Tabs.Screen
-          name="admin"
-          options={{
-            title: t('nav.admin.tab'),
-            href: isAdmin ? undefined : null,
-            tabBarIcon: ({ color, size }) => <ShieldIcon color={String(color)} size={size ?? 20} />,
-          }}
-        />
-      </Tabs>
+        >
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: t('nav.library'),
+              tabBarIcon: ({ color, size }) => <NoteIcon color={String(color)} size={size ?? 20} />,
+            }}
+          />
+          <Tabs.Screen
+            name="top"
+            options={{
+              title: t('nav.top'),
+              tabBarIcon: ({ color, size }) => <TrophyIcon color={String(color)} size={size ?? 20} />,
+            }}
+          />
+          <Tabs.Screen
+            name="request"
+            options={{
+              title: t('nav.request'),
+              tabBarIcon: ({ color, size }) => <SendIcon color={String(color)} size={size ?? 20} />,
+            }}
+          />
+          <Tabs.Screen
+            name="recommendations"
+            options={{
+              title: t('nav.recommendations'),
+              tabBarIcon: ({ color, size }) => <StarIcon color={String(color)} size={size ?? 20} />,
+            }}
+          />
+          <Tabs.Screen
+            name="profile"
+            options={{
+              title: t('nav.profile'),
+              tabBarIcon: ({ color, size }) => <PersonIcon color={String(color)} size={size ?? 20} />,
+            }}
+          />
+          <Tabs.Screen
+            name="admin"
+            options={{
+              title: t('nav.admin.tab'),
+              href: isAdmin ? undefined : null,
+              tabBarIcon: ({ color, size }) => <ShieldIcon color={String(color)} size={size ?? 20} />,
+            }}
+          />
+        </Tabs>
+      </View>
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: tabBarHeight }} pointerEvents="box-none">
         <MiniPlayerBar />
       </View>
