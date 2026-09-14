@@ -2990,10 +2990,18 @@ function _popupSeek(time){
   setTimeout(() => { _popupProgrammaticSeek = false; }, 400);
 }
 
-// Ініціалізуємо прихований div для popup-плеєра (вже є #video-popup-frame)
+// Ініціалізуємо прихований div для popup-плеєра (вже є #video-popup-frame).
+// Коли попап у Document PiP (окремому вікні), #video-popup-frame фізично
+// живе в pipWindow.document, а НЕ в головному document — getElementById
+// без цього завжди повертав null при перемиканні пісні під час pip
+// (перемикання/завершення пісні тоді ламалось мовчки: наступна пісня не
+// підхоплювалась у попапі, старе відео так і лишалось висіти).
+function _popupDoc() { return (pipWindow && !pipWindow.closed) ? pipWindow.document : document; }
+
 function _initPopupPlayer(vid, startAt) {
-  const frame = document.getElementById('video-popup-frame');
-  const loading = document.getElementById('video-popup-loading');
+  const doc = _popupDoc();
+  const frame = doc.getElementById('video-popup-frame');
+  const loading = doc.getElementById('video-popup-loading');
   loading.style.display = 'flex';
 
   // Знищуємо попередній якщо є
@@ -3004,14 +3012,17 @@ function _initPopupPlayer(vid, startAt) {
   }
 
   // Контейнер для нового плеєра
-  let ph = document.getElementById('popup-player-ph');
+  let ph = doc.getElementById('popup-player-ph');
   if (!ph) {
-    ph = document.createElement('div');
+    ph = doc.createElement('div');
     ph.id = 'popup-player-ph';
     frame.appendChild(ph);
   }
 
-  popupPlayer = new YT.Player('popup-player-ph', {
+  // Передаємо сам DOM-елемент (не рядковий id) — офіційний YT IFrame API
+  // шукає id лише через document головного вікна (де завантажений його
+  // скрипт), тож рядковий id ніколи не знайшов би елемент у pipWindow.
+  popupPlayer = new YT.Player(ph, {
     width: '100%',
     height: '100%',
     videoId: vid,
