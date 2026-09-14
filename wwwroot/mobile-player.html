@@ -1,11 +1,9 @@
-// Локальна HTML-сторінка з YouTube IFrame API у прихованому (або видимому,
-// коли відкритий попап) WebView. Керування — postMessage в обидва боки,
-// той самий підхід, що й window.YT.Player у вебі.
-export const PLAYER_HTML = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>N'Owl</title>
 <style>
   html, body { margin:0; padding:0; background:#000; width:100%; height:100%; overflow:hidden; }
   #player-container { width:100%; height:100%; }
@@ -15,6 +13,12 @@ export const PLAYER_HTML = `<!DOCTYPE html>
 <body>
 <div id="player-container"><div id="yt"></div></div>
 <script>
+  // Реальна сторінка нашого ж домену для мобільного WebView-плеєра (замість
+  // джерела source={{html}} із підробним baseUrl) — YouTube відхиляв
+  // ембед із фейковим origin ("Це відео недоступне", код 152), той самий
+  // клас проблеми, що й помилка 153 у pop-out застосунку для ПК. Тут
+  // справжній https-origin, тож офіційний IFrame Player API працює так
+  // само надійно, як у вебі й на десктопі.
   var player = null;
   var ready = false;
   var pendingCmd = null;
@@ -105,9 +109,9 @@ export const PLAYER_HTML = `<!DOCTYPE html>
   window.addEventListener('message', onMessage);
   // Сигнал "сторінка й слухачі готові приймати команди" — окремо від 'ready'
   // (яке шле лише сам YT.Player після onReady). React-сторона чекає саме
-  // на це повідомлення перед першим 'load', інакше вийшло замкнене коло:
-  // 'load' ніколи не шлеться до 'ready', а 'ready' ніколи не приходить без
-  // попереднього 'load' (створення плеєра) — пісні взагалі не вмикались.
+  // на це повідомлення перед першим 'load', інакше замкнене коло: 'load'
+  // ніколи не шлеться до 'ready', а 'ready' ніколи не приходить без
+  // попереднього 'load' (створення плеєра).
   post({ type: 'pageReady' });
 
   window.onYouTubeIframeAPIReady = function () {
@@ -119,4 +123,4 @@ export const PLAYER_HTML = `<!DOCTYPE html>
   document.head.appendChild(tag);
 </script>
 </body>
-</html>`;
+</html>

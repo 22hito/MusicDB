@@ -15,7 +15,6 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useSettings } from '@/state/SettingsContext';
 import { PLAYER_BAR_HEIGHT } from '@/constants/theme';
 import type { Song } from '@/api/types';
-import { PLAYER_HTML } from './playerHtml';
 
 const FALLBACK_YT_KEY = 'AIzaSyCc0I2E_03NGYQchLXv3OMNbBiReak5XP8';
 const BAD_WORDS = [
@@ -139,7 +138,7 @@ interface PlayerState {
 const PlayerCtx = createContext<PlayerState | null>(null);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
-  const { theme, t } = useSettings();
+  const { theme, t, apiBase } = useSettings();
   const { currentUser } = useApiBridge();
   const api = useMusicApi();
   const engineRef = useRef<any>(null);
@@ -398,9 +397,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         <View style={videoPopupOpen ? styles.popupFrame : styles.hiddenFrame}>
           <WebView
             ref={engineRef}
-            // без baseUrl сторінка вантажиться як about:blank — YouTube IFrame API
-            // мовчки не рендерить відео на реальних пристроях.
-            source={{ html: PLAYER_HTML, baseUrl: 'https://www.youtube.com' }}
+            // Раніше — source={{html, baseUrl:'https://www.youtube.com'}}: підроблений
+            // origin, який YouTube на реальних пристроях відхиляв ("Це відео
+            // недоступне", код 152) — той самий клас проблеми, що й помилка 153
+            // у pop-out вікні десктоп-застосунку. Тепер — справжня сторінка
+            // нашого домену (mobile-player.html, той самий HTML/протокол), з
+            // генуїнним https-origin, як у вебі й на десктопі.
+            source={{ uri: `${apiBase}/mobile-player.html` }}
             onMessage={onEngineMessage}
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
