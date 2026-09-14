@@ -167,7 +167,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [repeat, setRepeat] = useState(false);
   const [volume, setVolumeState] = useState(80);
   const [videoPopupOpen, setVideoPopupOpen] = useState(false);
-  const [engineReady, setEngineReady] = useState(false);
+  const [, setEngineReady] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
 
   const listenLoggedRef = useRef(false);
   const requestSeqRef = useRef(0);
@@ -209,11 +210,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    if (current && engineReady) {
+    if (current && pageReady) {
       _loadCurrent(current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, engineReady]);
+  }, [current?.id, pageReady]);
 
   const playFrom = useCallback((list: Song[], songId: number) => {
     setQueue(list);
@@ -277,7 +278,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       } catch {
         return;
       }
-      if (data.type === 'ready') {
+      if (data.type === 'pageReady') {
+        setPageReady(true);
+      } else if (data.type === 'ready') {
         setEngineReady(true);
         postCommand({ cmd: 'setVolume', volume });
       } else if (data.type === 'state') {
