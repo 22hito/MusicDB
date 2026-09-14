@@ -101,7 +101,7 @@ export default function RequestScreen() {
   const missingRequired = !form.artist || !form.title || !form.release || !form.duration || !form.genres;
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Heading pre={t('request.heading.pre')} accent={t('request.heading.accent')} />

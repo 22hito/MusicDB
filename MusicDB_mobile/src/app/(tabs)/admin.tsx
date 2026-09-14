@@ -37,7 +37,7 @@ export default function AdminScreen() {
   const [mode, setMode] = useState<'requests' | 'add'>('requests');
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <View style={styles.segmentRow}>
         <TouchableOpacity
           onPress={() => setMode('requests')}

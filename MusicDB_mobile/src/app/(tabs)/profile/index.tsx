@@ -124,7 +124,7 @@ export default function ProfileScreen() {
 
   if (!authChecked) {
     return (
-      <SafeAreaView style={[styles.screen, { backgroundColor: theme.bg }]}>
+      <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
         <ActivityIndicator color={theme.accent} style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
@@ -132,7 +132,7 @@ export default function ProfileScreen() {
 
   if (!authenticated) {
     return (
-      <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.bg }]}>
+      <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
         <View style={styles.loginPrompt}>
           <Text style={{ fontSize: 40, marginBottom: 10 }}>👤</Text>
           <Text style={{ color: theme.text, fontSize: 16, lineHeight: 22, marginBottom: 20, textAlign: 'center' }}>
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
   const avatarSrc = avatarValue || currentUser?.picture || null;
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Heading pre={t('profile.heading.pre')} accent={t('profile.heading.accent')} />
 

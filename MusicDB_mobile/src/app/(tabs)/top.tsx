@@ -42,7 +42,7 @@ export default function TopSongsScreen() {
   }, [load]);
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <View style={styles.headerWrap}>
         <Heading pre={t('top.heading.pre')} accent={t('top.heading.accent')} />
       </View>
