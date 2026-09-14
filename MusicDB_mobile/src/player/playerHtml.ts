@@ -103,6 +103,12 @@ export const PLAYER_HTML = `<!DOCTYPE html>
   }
   document.addEventListener('message', onMessage);
   window.addEventListener('message', onMessage);
+  // Сигнал "сторінка й слухачі готові приймати команди" — окремо від 'ready'
+  // (яке шле лише сам YT.Player після onReady). React-сторона чекає саме
+  // на це повідомлення перед першим 'load', інакше вийшло замкнене коло:
+  // 'load' ніколи не шлеться до 'ready', а 'ready' ніколи не приходить без
+  // попереднього 'load' (створення плеєра) — пісні взагалі не вмикались.
+  post({ type: 'pageReady' });
 
   window.onYouTubeIframeAPIReady = function () {
     if (pendingCmd && pendingCmd.cmd === 'load') { createPlayer(pendingCmd.videoId, pendingCmd.autoplay !== false); pendingCmd = null; }
