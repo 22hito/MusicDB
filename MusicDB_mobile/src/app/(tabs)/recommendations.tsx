@@ -33,7 +33,7 @@ export default function RecommendationsScreen() {
   }, [load]);
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <View style={styles.headerWrap}>
         <Heading pre={t('rec.heading.pre')} accent={t('rec.heading.accent')} />
       </View>

@@ -35,7 +35,7 @@ export function ServerSettingsScreen({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={{ fontFamily: FONT_SERIF_BOLD, fontSize: 24, color: theme.accent, marginBottom: 6 }}>
-            MusicDB
+            N'Owl
           </Text>
           <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600', marginBottom: 18 }}>
             {t('settings.title')}

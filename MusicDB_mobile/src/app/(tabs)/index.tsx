@@ -162,7 +162,7 @@ export default function LibraryScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => String(item.id)}

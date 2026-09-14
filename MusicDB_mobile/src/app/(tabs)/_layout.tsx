@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { MiniPlayerBar } from '@/player/MiniPlayerBar';
+import { BrandHeader } from '@/components/BrandHeader';
 import { NoteIcon, PersonIcon, SendIcon, ShieldIcon, StarIcon, TrophyIcon } from '@/components/Icons';
 
 // Трохи вище за типовий (49-50px), щоб іконки й підписи мали комфортну зону дотику.
@@ -19,6 +20,7 @@ export default function TabsLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <BrandHeader />
       <Tabs
         screenOptions={{
           headerShown: false,
