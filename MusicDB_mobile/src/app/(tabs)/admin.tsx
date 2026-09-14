@@ -28,6 +28,7 @@ function requestToForm(r: SongRequest): SongFormValues {
     duration: r.duration,
     album: r.albumTitle || '',
     genres: r.genres.join(', '),
+    youtubeVideoId: r.youtubeVideoId || '',
   };
 }
 
@@ -113,6 +114,7 @@ function RequestsPanel() {
         duration: values.duration.trim(),
         genres: values.genres.split(',').map((g) => g.trim()).filter(Boolean),
         albumTitle: values.album.trim() || null,
+        youtubeVideoId: values.youtubeVideoId.trim(),
       });
       setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
       setEditing(null);

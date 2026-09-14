@@ -1,5 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { Dimensions, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
@@ -18,13 +18,26 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + insets.bottom;
 
+  // ТИМЧАСОВА діагностика для half-screen бага — прибрати після знаходження причини.
+  const [rootH, setRootH] = useState(0);
+  const [wrapH, setWrapH] = useState(0);
+  const winH = Dimensions.get('window').height;
+
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+    <View
+      style={{ flex: 1, backgroundColor: theme.bg, borderWidth: 3, borderColor: 'red' }}
+      onLayout={(e) => setRootH(e.nativeEvent.layout.height)}
+    >
+      <View style={{ backgroundColor: '#ff0', padding: 4 }}>
+        <Text style={{ fontSize: 11, color: '#000' }}>
+          window={Math.round(winH)} root={Math.round(rootH)} wrap={Math.round(wrapH)} insetsTop={Math.round(insets.top)} insetsBottom={Math.round(insets.bottom)}
+        </Text>
+      </View>
       <BrandHeader />
       {/* <Tabs> не бере flex:1 сам по собі, коли він більше не єдина дитина
           (з'явився BrandHeader-сусід) — без цієї обгортки контент і таббар
           стискались у верхню половину екрана, а решта лишалась порожньою. */}
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, borderWidth: 3, borderColor: 'lime' }} onLayout={(e) => setWrapH(e.nativeEvent.layout.height)}>
         <Tabs
           screenOptions={{
             headerShown: false,
