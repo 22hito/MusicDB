@@ -1599,12 +1599,18 @@ function showPage(n){
   document.getElementById('page-'+n).classList.add('active');
   const tab = document.getElementById('tab-'+n);
   if(tab) tab.classList.add('active');
-  if(n==='home'){renderSongs();updateStats().catch(console.error);}
-  if(n==='top') loadTopSongsPage();
-  if(n==='admin') renderRequests();
-  if(n==='profile') loadProfilePage();
-  if(n==='recommendations') loadRecommendationsPage();
   _updateNavIndicator();
+  // Важкий перерендер (велика таблиця пісень, заявки, статистика) відкладаємо
+  // на наступний кадр — інакше він виконується в тому ж такті, що й
+  // перемикання класів, і браузер встигає намалювати новий стан лише ПІСЛЯ
+  // рендеру, через що перехід між сторінками відчувається як підвисання.
+  requestAnimationFrame(()=>{
+    if(n==='home'){renderSongs();updateStats().catch(console.error);}
+    if(n==='top') loadTopSongsPage();
+    if(n==='admin') renderRequests();
+    if(n==='profile') loadProfilePage();
+    if(n==='recommendations') loadRecommendationsPage();
+  });
 }
 // Плавний індикатор активної вкладки — рахує позицію/ширину кнопки й "їде"
 // туди замість миттєвого перескоку border-bottom.
