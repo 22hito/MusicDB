@@ -1,17 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, Text, View, useWindowDimensions } from 'react-native';
-import { enableScreens } from 'react-native-screens';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-
-// ЕКСПЕРИМЕНТ для half-screen бага: react-native-screens рендерить кожен
-// екран через НАТИВНИЙ Android-контейнер (не звичайний JS View) — підозра,
-// що саме він на цьому пристрої/версії Android неправильно рахує розмір,
-// ігноруючи реальну висоту вікна. Вимикаємо нативну оптимізацію, щоб
-// перевірити гіпотезу (і, якщо вона підтвердиться, лишити як фікс).
-enableScreens(false);
 import {
   PlayfairDisplay_400Regular,
   PlayfairDisplay_700Bold,
