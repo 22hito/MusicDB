@@ -28,7 +28,11 @@ export default function TabsLayout() {
       style={{ flex: 1, backgroundColor: theme.bg, borderWidth: 3, borderColor: 'red' }}
       onLayout={(e) => setRootH(e.nativeEvent.layout.height)}
     >
-      <View style={{ backgroundColor: '#ff0', padding: 4 }}>
+      {/* absolute, а не звичайна дитина у flow — щоб гарантовано бути видимим
+          незалежно від того, де саме ламається layout (звичайний варіант
+          цього напису раніше не показувався взагалі, на відміну від
+          рожевого оверлею в app/_layout.tsx, який теж absolute). */}
+      <View style={{ position: 'absolute', top: 30, left: 0, right: 0, zIndex: 99998, elevation: 998, backgroundColor: '#ff0', padding: 4 }} pointerEvents="none">
         <Text style={{ fontSize: 11, color: '#000' }}>
           window={Math.round(winH)} root={Math.round(rootH)} wrap={Math.round(wrapH)} insetsTop={Math.round(insets.top)} insetsBottom={Math.round(insets.bottom)}
         </Text>
