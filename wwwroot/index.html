@@ -3003,6 +3003,11 @@ function _initPopupPlayer(vid, startAt) {
   const frame = doc.getElementById('video-popup-frame');
   const loading = doc.getElementById('video-popup-loading');
   loading.style.display = 'flex';
+  // Заголовок pip-вікна виставлявся лише один раз при відкритті — при
+  // перемиканні пісні так і лишався зі старою назвою.
+  if (pipWindow && !pipWindow.closed) {
+    pipWindow.document.title = document.getElementById('p-title')?.textContent || "N'Owl";
+  }
 
   // Знищуємо попередній якщо є
   if (popupPlayer) {
