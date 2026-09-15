@@ -107,6 +107,9 @@ public class Playlist
     [Required, Column("user_email")] public string UserEmail { get; set; } = "";
     [Required, Column("name")] public string Name { get; set; } = "";
     [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    // Публічний плейлист видно іншим користувачам на сторінці "Батл рояль" —
+    // за замовчуванням false (як і всі плейлисти дотепер), лише власник бачить.
+    [Column("is_public")] public bool IsPublic { get; set; }
     public ICollection<PlaylistSong> PlaylistSongs { get; set; } = [];
 }
 
