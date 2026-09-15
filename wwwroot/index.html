@@ -3520,22 +3520,33 @@ function _ensureBattlePlayers(cb){
   function onEither(){ readyCount++; if(readyCount===2){ battlePlayersReady=true; _wireBattleHoverListeners(); cb(); } }
   // autoplay:0 — і, найголовніше, cueVideoById (не loadVideoById) нижче: на
   // початку раунду обидва відео мають лежати на паузі, а не стартувати самі.
+  // mute:0 — раніше обидва завжди були muted (могли б інакше грати одночасно
+  // з двох боків), а тепер це неможливо (onStateChange нижче), тож звук
+  // лишаємо керованим тим самим повзунком гучності, що й в основному плеєрі.
   battleLeftPlayer = new YT.Player('battle-yt-a', {
     height:'100%', width:'100%',
-    playerVars:{autoplay:0, controls:1, mute:1},
+    playerVars:{autoplay:0, controls:1, mute:0},
     events:{ onReady:onEither, onStateChange: e => _onBattleStateChange('a', e) }
   });
   battleRightPlayer = new YT.Player('battle-yt-b', {
     height:'100%', width:'100%',
-    playerVars:{autoplay:0, controls:1, mute:1},
+    playerVars:{autoplay:0, controls:1, mute:0},
     events:{ onReady:onEither, onStateChange: e => _onBattleStateChange('b', e) }
   });
 }
 
-// Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо
-// другий на паузу. Спрацьовує однаково незалежно від того, ЩО саме запустило
-// відтворення — клік по нативних контролах YouTube чи режим наведення нижче.
 function _onBattleStateChange(side, e){
+  // cueVideoById скидає гучність/mute асинхронно, вже ПІСЛЯ того, як сам виклик
+  // повертається — тому setVolume/unMute одразу за cueVideoById (у
+  // _loadBattleSide) регулярно "губились": відео докидалось до стану CUED і
+  // мовчки перетирало їх назад на 0/muted. Застосовуємо тут, коли CUED
+  // справді настав, — тоді вже нічого не перезатирає.
+  if(e.data === YT.PlayerState.CUED){
+    try{ e.target.unMute(); e.target.setVolume(vol); }catch(err){}
+  }
+  // Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо
+  // другий на паузу. Спрацьовує однаково незалежно від того, ЩО саме запустило
+  // відтворення — клік по нативних контролах YouTube чи режим наведення нижче.
   if(e.data !== YT.PlayerState.PLAYING) return;
   const other = side === 'a' ? battleRightPlayer : battleLeftPlayer;
   try{ other && other.pauseVideo(); }catch(err){}
@@ -3597,7 +3608,10 @@ function _loadBattleSide(player, notFoundElId, vid){
   // cueVideoById (не loadVideoById!) — завантажує кадр і лишає на паузі;
   // loadVideoById завжди стартує відтворення одразу, ігноруючи playerVars.autoplay.
   player.cueVideoById(vid);
-  player.mute(); // обидва відео завжди без звуку за замовчуванням — керування гучністю на розсуд користувача через власні контроли YouTube-плеєра
+  // Початкова гучність — та сама, що зараз стоїть в основному плеєрі (глобальна
+  // змінна vol, той самий повзунок #vol-slider), а не завжди muted.
+  player.unMute();
+  player.setVolume(vol);
 }
 
 function chooseBattleWinner(side){
