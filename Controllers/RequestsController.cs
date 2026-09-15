@@ -90,6 +90,28 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         return Ok(ToDto(req));
     }
 
+    // Текст пісні заявки — окремим ендпоінтом, як і /api/songs/{id}/lyrics
+    // (та сама причина: потенційно важкий текст не роздуває основний список заявок).
+    [Authorize, AdminOnly]
+    [HttpGet("{id}/lyrics")]
+    public async Task<ActionResult<LyricsDto>> GetLyrics(int id)
+    {
+        var req = await db.Requests.FindAsync(id);
+        if (req is null) return NotFound();
+        return Ok(new LyricsDto(req.Lyrics));
+    }
+
+    [Authorize, AdminOnly]
+    [HttpPut("{id}/lyrics")]
+    public async Task<ActionResult<LyricsDto>> SetLyrics(int id, [FromBody] LyricsDto dto)
+    {
+        var req = await db.Requests.FindAsync(id);
+        if (req is null) return NotFound();
+        req.Lyrics = string.IsNullOrWhiteSpace(dto.Lyrics) ? null : dto.Lyrics.Trim();
+        await db.SaveChangesAsync();
+        return Ok(new LyricsDto(req.Lyrics));
+    }
+
     [Authorize, AdminOnly]
     [HttpPost("{id}/approve")]
     public async Task<IActionResult> Approve(int id)
@@ -124,6 +146,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
             // його в заявці — переносимо (write-once, як і скрізь інде).
             if (existing.YoutubeVideoId is null && req.YoutubeVideoId is not null)
                 existing.YoutubeVideoId = req.YoutubeVideoId;
+            if (existing.Lyrics is null && req.Lyrics is not null)
+                existing.Lyrics = req.Lyrics;
 
             foreach (var gid in genreIds.Except(existingGenreIds))
                 db.MusicGenres.Add(new MusicGenre { MusicId = songId, GenreId = gid });
@@ -139,7 +163,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
                 Release = req.Release,
                 Duration = DurationParser.Parse(req.Duration, TimeSpan.FromMinutes(3)),
                 AlbumIds = albumId.HasValue ? [albumId.Value] : null,
-                YoutubeVideoId = req.YoutubeVideoId
+                YoutubeVideoId = req.YoutubeVideoId,
+                Lyrics = req.Lyrics
             };
             db.Songs.Add(music);
             await db.SaveChangesAsync();
