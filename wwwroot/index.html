@@ -88,6 +88,9 @@ html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .dropdown-toggle { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; height:32px; padding:0 0.65rem; display:flex; align-items:center; gap:0.4rem; font-size:0.72rem; font-family: var(--font-mono); letter-spacing:0.03em; white-space:nowrap; cursor:pointer; transition:border-color 0.2s, color 0.2s; }
 .dropdown-toggle:hover { border-color: var(--accent); color: var(--accent); }
 .dropdown.open .dropdown-toggle { border-color: var(--accent); color: var(--accent); }
+#notif-badge { background: var(--red); color: #fff; border: none; font-family: var(--font-mono); font-size: 0.62rem; padding: 1px 5px; line-height: 1.3; }
+.artist-link { color: var(--accent); text-decoration: none; cursor: pointer; }
+.artist-link:hover { text-decoration: underline; }
 .dropdown-toggle .caret { font-size:0.6rem; opacity:0.7; }
 .dropdown-menu { position:absolute; top:calc(100% + 6px); right:0; background:var(--surface); border:1px solid var(--border); border-radius:8px; min-width:160px; padding:0.35rem; display:none; flex-direction:column; gap:2px; z-index:200; box-shadow:0 10px 28px rgba(0,0,0,0.28); transform-origin: top right; }
 .dropdown.open .dropdown-menu { display:flex; animation: dropIn 0.16s cubic-bezier(.2,.9,.3,1); }
@@ -976,6 +979,8 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 100</button></li>
       <li><button id="tab-wheel" onclick="showPage('wheel')" data-i18n="nav.wheel">🎡 Колесо фортуни</button></li>
       <li><button id="tab-battle" onclick="showPage('battle')" data-i18n="nav.battle">🏆 Батл рояль</button></li>
+      <li><button id="tab-artists" onclick="showPage('artists')" data-i18n="nav.artists">🎤 Виконавці</button></li>
+      <li id="nav-friends" style="display:none"><button id="tab-friends" onclick="showPage('friends')" data-i18n="nav.friends">Друзі</button></li>
       <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
       <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
       <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
@@ -1296,6 +1301,90 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <h3 style="font-size:1.1rem;margin-bottom:0.8rem;" data-i18n="battle.pagePublicHeading">Плейлисти спільноти</h3>
       <div id="battle-page-public-empty" class="empty" style="display:none;"><span class="icon">🌍</span><span data-i18n="battle.pagePublicEmpty">Ще немає публічних плейлистів — зробіть свій публічним у профілі</span></div>
       <div id="battle-page-public-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARTISTS: каталог + пошук виконавців -->
+<div id="page-artists" class="page">
+  <div class="container">
+    <h2><span data-i18n="artists.heading.pre">Всі</span> <span class="hl" data-i18n="artists.heading.accent">виконавці</span></h2>
+    <div class="filter-bar">
+      <input type="text" id="artists-search" data-i18n-placeholder="artists.searchPlaceholder" placeholder="Пошук виконавця…" oninput="onArtistsSearchInput()">
+    </div>
+    <div id="artists-empty" class="empty" style="display:none;"><span class="icon">🎤</span><span data-i18n="artists.empty">Нічого не знайдено</span></div>
+    <div id="artists-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+  </div>
+</div>
+
+<!-- ARTIST: сторінка одного виконавця (id -> openArtistPage) -->
+<div id="page-artist" class="page">
+  <div class="container">
+    <div id="artist-not-found" class="empty" style="display:none;"><span class="icon">🎤</span><span data-i18n="artist.notFound">Виконавця не знайдено</span></div>
+    <div id="artist-content" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.5rem;">
+        <div>
+          <h2 id="artist-name" style="margin-bottom:4px;"></h2>
+          <div id="artist-follower-count" style="color:var(--muted);font-size:0.85rem;"></div>
+        </div>
+        <button type="button" class="btn btn-outline" id="artist-follow-btn" onclick="toggleArtistFollow()"></button>
+      </div>
+      <h3 style="font-size:1.05rem;margin-bottom:0.8rem;" data-i18n="artist.discography">Дискографія</h3>
+      <div class="table-wrap mobile-cards">
+        <table>
+          <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th></tr></thead>
+          <tbody id="artist-songs-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FRIENDS: пошук людей, вхідні/надіслані запити, список друзів -->
+<div id="page-friends" class="page">
+  <div class="container">
+    <h2><span data-i18n="friends.heading.pre">Мої</span> <span class="hl" data-i18n="friends.heading.accent">друзі</span></h2>
+
+    <div style="margin-bottom:2rem;">
+      <input type="text" id="friends-search" data-i18n-placeholder="friends.searchPlaceholder" placeholder="Пошук людей за іменем…" oninput="onFriendsSearchInput()">
+      <div id="friends-search-empty" class="empty" style="display:none;padding:1rem 0;"><span data-i18n="friends.searchEmpty">Нікого не знайдено</span></div>
+      <div id="friends-search-results" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.6rem;"></div>
+    </div>
+
+    <div style="margin-bottom:2rem;">
+      <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.incoming">Вхідні запити</h3>
+      <div id="friends-incoming-empty" class="empty" style="display:none;"><span data-i18n="friends.incomingEmpty">Немає вхідних запитів</span></div>
+      <div id="friends-incoming-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+    </div>
+
+    <div style="margin-bottom:2rem;">
+      <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.outgoing">Надіслані запити</h3>
+      <div id="friends-outgoing-empty" class="empty" style="display:none;"><span data-i18n="friends.outgoingEmpty">Немає надісланих запитів</span></div>
+      <div id="friends-outgoing-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+    </div>
+
+    <div>
+      <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.myFriends">Мої друзі</h3>
+      <div id="friends-list-empty" class="empty" style="display:none;"><span data-i18n="friends.friendsEmpty">Ще немає друзів — знайдіть когось через пошук вище</span></div>
+      <div id="friends-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- USER PROFILE: публічний профіль іншого користувача (id -> openUserProfilePage) -->
+<div id="page-user-profile" class="page">
+  <div class="container">
+    <button class="btn btn-outline" onclick="showPage('friends')" style="margin-bottom:1rem;" data-i18n="profile.public.back">← До друзів</button>
+    <div id="user-profile-not-found" class="empty" style="display:none;"><span data-i18n="profile.public.notFound">Користувача не знайдено</span></div>
+    <div id="user-profile-content" style="display:none;">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <img id="user-profile-avatar" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid var(--border);display:none;">
+        <span id="user-profile-avatar-ph" style="width:64px;height:64px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.8rem;">👤</span>
+        <div>
+          <h2 id="user-profile-name" style="margin-bottom:6px;"></h2>
+          <button type="button" class="btn btn-outline" id="user-profile-action-btn" onclick="onUserProfileActionClick()"></button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1690,6 +1779,44 @@ const I18N = {
     'battle.hoverModeBtn': '👆 Режим наведення',
     'battle.hoverModeHint': 'Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза',
     'nav.battle': '🏆 Батл рояль',
+    'nav.artists': '🎤 Виконавці',
+    'nav.friends': 'Друзі',
+    'notif.bellTitle': 'Сповіщення',
+    'notif.loading': 'Завантаження…',
+    'notif.empty': 'Поки немає сповіщень',
+    'notif.markAllRead': 'Позначити все прочитаним',
+    'notif.event.songAdded': 'додано нову пісню',
+    'notif.event.songRemoved': 'видалено пісню',
+    'notif.event.lyricsAdded': 'додано текст пісні',
+    'artists.heading.pre': 'Всі',
+    'artists.heading.accent': 'виконавці',
+    'artists.searchPlaceholder': 'Пошук виконавця…',
+    'artists.empty': 'Нічого не знайдено',
+    'artists.songsWord': 'пісень',
+    'artist.followBtn': '+ Підписатись',
+    'artist.unfollowBtn': '✓ Підписано',
+    'artist.followers': 'підписників',
+    'artist.discography': 'Дискографія',
+    'artist.notFound': 'Виконавця не знайдено',
+    'friends.heading.pre': 'Мої',
+    'friends.heading.accent': 'друзі',
+    'friends.searchPlaceholder': 'Пошук людей за іменем…',
+    'friends.searchEmpty': 'Нікого не знайдено',
+    'friends.incoming': 'Вхідні запити',
+    'friends.outgoing': 'Надіслані запити',
+    'friends.myFriends': 'Мої друзі',
+    'friends.incomingEmpty': 'Немає вхідних запитів',
+    'friends.outgoingEmpty': 'Немає надісланих запитів',
+    'friends.friendsEmpty': 'Ще немає друзів — знайдіть когось через пошук вище',
+    'friends.addBtn': '+ Додати в друзі',
+    'friends.pendingLabel': 'Запит надіслано',
+    'friends.cancelBtn': 'Скасувати',
+    'friends.acceptBtn': 'Прийняти',
+    'friends.rejectBtn': 'Відхилити',
+    'friends.unfriendBtn': 'Розфрендити',
+    'friends.friendsBadge': '✓ Друзі',
+    'profile.public.back': '← До друзів',
+    'profile.public.notFound': 'Користувача не знайдено',
     'battle.heading.pre': 'Батл',
     'battle.heading.accent': 'рояль',
     'battle.pageOwnHeading': 'Мої плейлисти',
@@ -1882,6 +2009,44 @@ const I18N = {
     'battle.hoverModeBtn': '👆 Hover to play',
     'battle.hoverModeHint': 'Hover the video to play it — move the cursor away to pause',
     'nav.battle': '🏆 Battle royale',
+    'nav.artists': '🎤 Artists',
+    'nav.friends': 'Friends',
+    'notif.bellTitle': 'Notifications',
+    'notif.loading': 'Loading…',
+    'notif.empty': 'No notifications yet',
+    'notif.markAllRead': 'Mark all as read',
+    'notif.event.songAdded': 'added a new song',
+    'notif.event.songRemoved': 'removed a song',
+    'notif.event.lyricsAdded': 'added lyrics for a song',
+    'artists.heading.pre': 'All',
+    'artists.heading.accent': 'artists',
+    'artists.searchPlaceholder': 'Search for an artist…',
+    'artists.empty': 'Nothing found',
+    'artists.songsWord': 'songs',
+    'artist.followBtn': '+ Follow',
+    'artist.unfollowBtn': '✓ Following',
+    'artist.followers': 'followers',
+    'artist.discography': 'Discography',
+    'artist.notFound': 'Artist not found',
+    'friends.heading.pre': 'My',
+    'friends.heading.accent': 'friends',
+    'friends.searchPlaceholder': 'Search people by name…',
+    'friends.searchEmpty': 'No one found',
+    'friends.incoming': 'Incoming requests',
+    'friends.outgoing': 'Sent requests',
+    'friends.myFriends': 'My friends',
+    'friends.incomingEmpty': 'No incoming requests',
+    'friends.outgoingEmpty': 'No sent requests',
+    'friends.friendsEmpty': "No friends yet — find someone using the search above",
+    'friends.addBtn': '+ Add friend',
+    'friends.pendingLabel': 'Request sent',
+    'friends.cancelBtn': 'Cancel',
+    'friends.acceptBtn': 'Accept',
+    'friends.rejectBtn': 'Reject',
+    'friends.unfriendBtn': 'Unfriend',
+    'friends.friendsBadge': '✓ Friends',
+    'profile.public.back': '← Back to friends',
+    'profile.public.notFound': 'User not found',
     'battle.heading.pre': 'Battle',
     'battle.heading.accent': 'royale',
     'battle.pageOwnHeading': 'My playlists',
@@ -2095,6 +2260,10 @@ function showPage(n){
     if(n==='recommendations') loadRecommendationsPage();
     if(n==='wheel') openWheelPage();
     if(n==='battle') openBattlePage();
+    if(n==='artists') loadArtistsPage();
+    if(n==='artist') loadArtistPage();
+    if(n==='friends') loadFriendsPage();
+    if(n==='user-profile') loadUserProfilePage();
   });
 }
 // Плавний індикатор активної вкладки — рахує позицію/ширину кнопки й "їде"
@@ -2708,6 +2877,15 @@ function playWheelFromStart(){
   playFromWheel(currentWheelSongs[0].id);
 }
 
+// Клікабельні посилання на сторінки виконавців — s.artists (ArtistRefDto[]
+// з бекенду) уже розбитий на окремих колаборантів; кома-склеєний рядок
+// s.artist лишається фолбеком для пісень, які ще не пройшли бекфіл артистів.
+function artistLinksHtml(s){
+  return (s.artists && s.artists.length)
+    ? s.artists.map(a => `<a href="#" class="artist-link" onclick="openArtistPage(${a.id});return false;">${esc(a.name)}</a>`).join(', ')
+    : esc(s.artist);
+}
+
 function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
@@ -2746,7 +2924,7 @@ function renderSongs(){
         <button class="play-row-btn${isPlay?' is-playing':''}" onclick="toggleOrPlay(${s.id}, playSong)">${btnIcon}</button>
       </td>
       <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
-      <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
+      <td data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
       <td data-label="${t('table.title')}">${esc(s.title)}</td>
       <td class="duration-col" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
       <td class="duration-col" data-label="${t('table.duration')}">${s.duration}</td>
@@ -3273,6 +3451,7 @@ function renderAuthArea() {
   document.getElementById('nav-add').style.display = isAdmin ? '' : 'none';
   document.getElementById('nav-request').style.display = authed ? '' : 'none';
   document.getElementById('nav-recommendations').style.display = authed ? '' : 'none';
+  document.getElementById('nav-friends').style.display = authed ? '' : 'none';
   // Показ/приховування вкладок зсуває позиції сусідніх — перерахувати індикатор.
   setTimeout(_updateNavIndicator, 0);
   const thAction = document.getElementById('th-action');
@@ -3293,6 +3472,12 @@ function renderAuthArea() {
       : `<span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">👤</span>`;
     const displayLabel = currentUser.displayName || currentUser.name || currentUser.email || '';
     area.innerHTML = `
+      <div class="dropdown" id="notif-dropdown" style="margin-right:0.3rem;">
+        <button class="dropdown-toggle" onclick="toggleDropdown(event,'notif-dropdown'); onOpenNotifDropdown();" title="${t('notif.bellTitle')}">
+          🔔<span id="notif-badge" class="badge" style="display:none;margin-left:2px;"></span>
+        </button>
+        <div class="dropdown-menu" id="notif-list" style="min-width:300px;max-height:360px;overflow-y:auto;"></div>
+      </div>
       <span onclick="openProfilePage()" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;" title="${t('nav.profile')}">
         ${pic}
         <span style="color:var(--muted);font-size:0.78rem;font-family:var(--font-mono);">${esc(displayLabel)}</span>
@@ -3300,6 +3485,7 @@ function renderAuthArea() {
       ${isAdmin?'<span style="background:var(--accent);color:#0d0d0f;font-size:0.65rem;font-family:var(--font-mono);padding:0.15rem 0.5rem;border-radius:4px;font-weight:700;">ADMIN</span>':''}
       <button onclick="logout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.72rem;font-family:var(--font-mono);cursor:pointer;">${t('auth.logout')}</button>
     `;
+    refreshNotifBadge();
   } else {
     area.innerHTML = `
       <button onclick="login()" style="background:var(--accent);border:none;color:#0d0d0f;border-radius:6px;padding:0.35rem 0.9rem;font-size:0.75rem;font-family:var(--font-mono);font-weight:700;cursor:pointer;letter-spacing:0.06em;">
@@ -3307,6 +3493,50 @@ function renderAuthArea() {
       </button>
     `;
   }
+}
+
+// ================================================================
+// СПОВІЩЕННЯ (дзвіночок) — підписки на виконавців
+// ================================================================
+function refreshNotifBadge(){
+  const badge = document.getElementById('notif-badge');
+  if(!badge) return;
+  fetch('/api/notifications?limit=1').then(r=>r.ok?r.json():null).then(d=>{
+    if(!d) return;
+    if(d.unreadCount > 0){ badge.textContent = d.unreadCount > 99 ? '99+' : d.unreadCount; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  }).catch(()=>{});
+}
+function _notifEventText(type){
+  if(type === 'song_added') return t('notif.event.songAdded');
+  if(type === 'song_removed') return t('notif.event.songRemoved');
+  if(type === 'lyrics_added') return t('notif.event.lyricsAdded');
+  return type;
+}
+function onOpenNotifDropdown(){
+  const list = document.getElementById('notif-list');
+  list.innerHTML = `<div style="padding:0.8rem;color:var(--muted);font-size:0.8rem;">${t('notif.loading')}</div>`;
+  fetch('/api/notifications?limit=30').then(r=>r.ok?r.json():null).then(d=>{
+    const recent = d?.recent || [];
+    if(!recent.length){
+      list.innerHTML = `<div style="padding:0.8rem;color:var(--muted);font-size:0.8rem;">${t('notif.empty')}</div>`;
+      return;
+    }
+    list.innerHTML = `
+      <div style="display:flex;justify-content:flex-end;padding:0.3rem 0.5rem;">
+        <button class="btn btn-outline" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="markAllNotificationsRead()">${t('notif.markAllRead')}</button>
+      </div>
+      ${recent.map(n=>`
+        <div style="padding:0.5rem 0.8rem;border-top:1px solid var(--border);cursor:pointer;" onclick="openArtistPage(${n.artistId})">
+          <div style="font-size:0.8rem;"><strong>${esc(n.artistName)}</strong> — ${_notifEventText(n.eventType)}</div>
+          <div style="font-size:0.75rem;color:var(--muted);">${esc(n.songLabel)}</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${esc(n.createdAt)}</div>
+        </div>`).join('')}
+    `;
+  }).catch(()=>{ list.innerHTML = `<div style="padding:0.8rem;color:var(--muted);font-size:0.8rem;">${t('notif.empty')}</div>`; });
+}
+function markAllNotificationsRead(){
+  fetch('/api/notifications/mark-read', { method:'POST' }).then(()=>{ refreshNotifBadge(); onOpenNotifDropdown(); }).catch(()=>{});
 }
 
 function login() { window.location.href = '/auth/login'; }
@@ -3466,6 +3696,217 @@ function startBattleFromPlaylist(id){
     openBattleSetup();
   }).catch(()=>{ alert(t('msg.connectionError')); });
 }
+
+// ================================================================
+// ВИКОНАВЦІ: каталог, пошук, сторінка виконавця з дискографією й підпискою
+// ================================================================
+let artistsSearchTimer = null;
+function onArtistsSearchInput(){
+  clearTimeout(artistsSearchTimer);
+  artistsSearchTimer = setTimeout(loadArtistsPage, 350);
+}
+function loadArtistsPage(){
+  const q = document.getElementById('artists-search').value.trim();
+  fetch(`/api/artists${q ? '?q=' + encodeURIComponent(q) : ''}`).then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('artists-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('artists-list').innerHTML = list.map(a=>`
+      <div class="ext-search-item" onclick="openArtistPage(${a.id})">
+        <div class="es-main"><strong>${esc(a.name)}</strong><span>${a.songCount} ${t('artists.songsWord')}</span></div>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+let currentArtistId = null;
+let currentArtistSongs = [];
+function openArtistPage(id){
+  currentArtistId = id;
+  showPage('artist');
+}
+function loadArtistPage(){
+  const id = currentArtistId;
+  if(id == null) return;
+  document.getElementById('artist-content').style.display = 'none';
+  document.getElementById('artist-not-found').style.display = 'none';
+  fetch(`/api/artists/${id}`).then(r=>r.ok?r.json():null).then(a=>{
+    if(!a){ document.getElementById('artist-not-found').style.display = ''; return; }
+    document.getElementById('artist-content').style.display = '';
+    document.getElementById('artist-name').textContent = a.name;
+    document.getElementById('artist-follower-count').textContent = `${a.followerCount} ${t('artist.followers')}`;
+    const btn = document.getElementById('artist-follow-btn');
+    btn.textContent = a.isFollowing ? t('artist.unfollowBtn') : t('artist.followBtn');
+    btn.classList.toggle('active', !!a.isFollowing);
+    btn.style.display = currentUser?.authenticated ? '' : 'none';
+
+    fetch(`/api/artists/${id}/songs`).then(r=>r.ok?r.json():[]).then(songs=>{
+      currentArtistSongs = songs;
+      document.getElementById('artist-songs-body').innerHTML = songs.map(s=>`
+        <tr>
+          <td class="td-icon-lead" data-label=""><button class="btn-icon-fav" onclick="toggleOrPlay(${s.id}, playFromArtist)" title="${t('profile.playBtn')}">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+          </button></td>
+          <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
+          <td data-label="${t('table.title')}">${esc(s.title)}</td>
+          <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+        </tr>`).join('');
+    }).catch(()=>{});
+  }).catch(()=>{ document.getElementById('artist-not-found').style.display = ''; });
+}
+function playFromArtist(id){
+  if(!currentArtistSongs.length) return;
+  playerQueue = currentArtistSongs.slice();
+  playerIndex = playerQueue.findIndex(s=>s.id===id);
+  if(playerIndex<0) playerIndex = 0;
+  _loadCurrent();
+}
+function toggleArtistFollow(){
+  if(!currentUser?.authenticated){ login(); return; }
+  const id = currentArtistId;
+  if(id == null) return;
+  const btn = document.getElementById('artist-follow-btn');
+  const wasFollowing = btn.classList.contains('active');
+  const method = wasFollowing ? 'DELETE' : 'POST';
+  fetch(`/api/artists/${id}/follow`, { method })
+    .then(r=>{ if(r.ok) loadArtistPage(); else alert(t('msg.connectionError')); })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+// ================================================================
+// ДРУЗІ: пошук людей, вхідні/надіслані запити, список друзів
+// ================================================================
+let friendsSearchTimer = null;
+function onFriendsSearchInput(){
+  clearTimeout(friendsSearchTimer);
+  friendsSearchTimer = setTimeout(runFriendsSearch, 350);
+}
+function _friendActionButtonHtml(u){
+  if(u.relationshipStatus === 'friends')
+    return `<button class="btn btn-outline active" onclick="event.stopPropagation();unfriendUser(${u.userId})">${t('friends.friendsBadge')}</button>`;
+  if(u.relationshipStatus === 'pending_outgoing')
+    return `<button class="btn btn-outline" onclick="event.stopPropagation();alert('${esc(t('friends.pendingLabel'))}')" title="${t('friends.pendingLabel')}">${t('friends.pendingLabel')}</button>`;
+  if(u.relationshipStatus === 'pending_incoming')
+    return `<button class="btn btn-primary" onclick="event.stopPropagation();acceptFriendRequestFromUser(${u.userId})">${t('friends.acceptBtn')}</button>`;
+  return `<button class="btn btn-primary" onclick="event.stopPropagation();sendFriendRequest(${u.userId})">${t('friends.addBtn')}</button>`;
+}
+function runFriendsSearch(){
+  const q = document.getElementById('friends-search').value.trim();
+  const wrap = document.getElementById('friends-search-results');
+  const empty = document.getElementById('friends-search-empty');
+  if(!q){ wrap.innerHTML = ''; empty.style.display = 'none'; return; }
+  fetch(`/api/users/search?q=${encodeURIComponent(q)}`).then(r=>r.ok?r.json():[]).then(list=>{
+    empty.style.display = list.length ? 'none' : '';
+    wrap.innerHTML = list.map(u=>`
+      <div class="ext-search-item" onclick="openUserProfilePage(${u.userId})">
+        <div class="es-main"><strong>${esc(u.displayName)}</strong></div>
+        ${_friendActionButtonHtml(u)}
+      </div>`).join('');
+  }).catch(()=>{});
+}
+function loadFriendsPage(){
+  if(!currentUser?.authenticated){ showPage('home'); login(); return; }
+  document.getElementById('friends-search').value = '';
+  document.getElementById('friends-search-results').innerHTML = '';
+
+  fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('friends-incoming-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('friends-incoming-list').innerHTML = list.map(r=>`
+      <div class="ext-search-item" onclick="openUserProfilePage(${r.userId})">
+        <div class="es-main"><strong>${esc(r.displayName)}</strong></div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-primary" onclick="event.stopPropagation();acceptFriendRequest(${r.requestId})">${t('friends.acceptBtn')}</button>
+          <button class="btn btn-outline" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.rejectBtn')}</button>
+        </div>
+      </div>`).join('');
+  }).catch(()=>{});
+
+  fetch('/api/friends/requests/outgoing').then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('friends-outgoing-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('friends-outgoing-list').innerHTML = list.map(r=>`
+      <div class="ext-search-item" onclick="openUserProfilePage(${r.userId})">
+        <div class="es-main"><strong>${esc(r.displayName)}</strong></div>
+        <button class="btn btn-outline" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.cancelBtn')}</button>
+      </div>`).join('');
+  }).catch(()=>{});
+
+  fetch('/api/friends').then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('friends-list-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('friends-list').innerHTML = list.map(u=>`
+      <div class="ext-search-item" onclick="openUserProfilePage(${u.userId})">
+        <div class="es-main"><strong>${esc(u.displayName)}</strong></div>
+        <button class="btn btn-outline" onclick="event.stopPropagation();unfriendUser(${u.userId})">${t('friends.unfriendBtn')}</button>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+function sendFriendRequest(targetUserId){
+  fetch('/api/friends/requests', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ targetUserId }) })
+    .then(r=>{ if(r.ok){ runFriendsSearch(); if(document.getElementById('page-friends').classList.contains('active')) loadFriendsPage(); if(currentProfileUserId===targetUserId) loadUserProfilePage(); } else alert(t('msg.connectionError')); })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function acceptFriendRequest(requestId){
+  fetch(`/api/friends/requests/${requestId}/accept`, { method:'POST' })
+    .then(r=>{ if(r.ok) loadFriendsPage(); else alert(t('msg.connectionError')); })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function acceptFriendRequestFromUser(userId){
+  // Пошук людей не знає requestId (лише статус) — знаходимо його через
+  // вхідні запити, той самий підхід, що вже підвантажений на сторінці друзів.
+  fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).then(list=>{
+    const req = list.find(r=>r.userId===userId);
+    if(req) acceptFriendRequest(req.requestId);
+  }).catch(()=>{});
+}
+function cancelOrRejectFriendRequest(requestId){
+  fetch(`/api/friends/requests/${requestId}`, { method:'DELETE' })
+    .then(()=>{ loadFriendsPage(); if(currentProfileUserId!=null) loadUserProfilePage(); })
+    .catch(()=>{});
+}
+function unfriendUser(userId){
+  fetch(`/api/friends/${userId}`, { method:'DELETE' })
+    .then(()=>{ loadFriendsPage(); if(currentProfileUserId===userId) loadUserProfilePage(); })
+    .catch(()=>{});
+}
+
+// ================================================================
+// ПУБЛІЧНИЙ ПРОФІЛЬ іншого користувача
+// ================================================================
+let currentProfileUserId = null;
+function openUserProfilePage(userId){
+  currentProfileUserId = userId;
+  showPage('user-profile');
+}
+function loadUserProfilePage(){
+  const id = currentProfileUserId;
+  if(id == null) return;
+  document.getElementById('user-profile-content').style.display = 'none';
+  document.getElementById('user-profile-not-found').style.display = 'none';
+  fetch(`/api/users/${id}`).then(r=>r.ok?r.json():null).then(u=>{
+    if(!u){ document.getElementById('user-profile-not-found').style.display = ''; return; }
+    document.getElementById('user-profile-content').style.display = '';
+    document.getElementById('user-profile-name').textContent = u.displayName;
+    const img = document.getElementById('user-profile-avatar');
+    const ph = document.getElementById('user-profile-avatar-ph');
+    if(u.avatarUrl){ img.src = u.avatarUrl; img.style.display = ''; ph.style.display = 'none'; }
+    else { img.style.display = 'none'; ph.style.display = ''; }
+
+    const btn = document.getElementById('user-profile-action-btn');
+    if(u.relationshipStatus === 'self'){
+      btn.style.display = 'none';
+    } else if(u.relationshipStatus === 'friends'){
+      btn.style.display = ''; btn.className = 'btn btn-outline active'; btn.textContent = t('friends.unfriendBtn');
+      btn.onclick = () => unfriendUser(id);
+    } else if(u.relationshipStatus === 'pending_outgoing'){
+      btn.style.display = ''; btn.className = 'btn btn-outline'; btn.textContent = t('friends.cancelBtn');
+      btn.onclick = () => { fetch('/api/friends/requests/outgoing').then(r=>r.ok?r.json():[]).then(list=>{
+        const req = list.find(r=>r.userId===id); if(req) cancelOrRejectFriendRequest(req.requestId);
+      }); };
+    } else if(u.relationshipStatus === 'pending_incoming'){
+      btn.style.display = ''; btn.className = 'btn btn-primary'; btn.textContent = t('friends.acceptBtn');
+      btn.onclick = () => acceptFriendRequestFromUser(id);
+    } else {
+      btn.style.display = ''; btn.className = 'btn btn-primary'; btn.textContent = t('friends.addBtn');
+      btn.onclick = () => sendFriendRequest(id);
+    }
+  }).catch(()=>{ document.getElementById('user-profile-not-found').style.display = ''; });
+}
+function onUserProfileActionClick(){ /* onclick встановлюється динамічно в loadUserProfilePage() */ }
 
 function openBattleSetup(){
   const count = currentPlaylistSongs.length;
@@ -3958,7 +4399,7 @@ function _loadCurrent(){
   listenLogged=false;
   userIntendedPlaying=true;
   document.getElementById('p-title').textContent=s.title;
-  document.getElementById('p-artist').textContent=s.artist;
+  document.getElementById('p-artist').innerHTML=artistLinksHtml(s);
   document.getElementById('p-album').textContent=s.album||t('table.single');
   document.getElementById('player-cover-img').style.display='none';
   document.getElementById('player-cover-ph').style.display='block';
@@ -4695,6 +5136,9 @@ if (window.signalR) {
 
   rtConn.on('songsChanged', () => {
     loadSongs().then(() => { renderSongs(); updateStats(); }).catch(() => {});
+    // Немає окремої SignalR-події на сповіщення виконавців — пісня й так
+    // змінюється лише через ці ж мутації, тож бейдж оновлюємо тут же.
+    if(currentUser?.authenticated) refreshNotifBadge();
   });
   rtConn.on('requestsChanged', () => {
     if (currentUser?.isAdmin) renderRequests();

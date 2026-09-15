@@ -12,7 +12,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RequestsController(MusicDbContext db, MusicService musicService, TranslationService translationService, IHubContext<MusicHub> hub) : ControllerBase
+public class RequestsController(MusicDbContext db, MusicService musicService, TranslationService translationService, ArtistActivityService artistActivity, IHubContext<MusicHub> hub) : ControllerBase
 {
     [Authorize, AdminOnly]
     [HttpGet]
@@ -132,6 +132,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
 
         int songId;
         bool wasDuplicate = existing is not null;
+        bool lyricsWasAdded = false;
+        List<int> newSongArtistIds = [];
 
         if (existing is not null)
         {
@@ -146,7 +148,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
             // його в заявці — переносимо (write-once, як і скрізь інде).
             if (existing.YoutubeVideoId is null && req.YoutubeVideoId is not null)
                 existing.YoutubeVideoId = req.YoutubeVideoId;
-            if (existing.Lyrics is null && req.Lyrics is not null)
+            lyricsWasAdded = existing.Lyrics is null && req.Lyrics is not null;
+            if (lyricsWasAdded)
                 existing.Lyrics = req.Lyrics;
 
             foreach (var gid in genreIds.Except(existingGenreIds))
@@ -172,10 +175,32 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
 
             foreach (var gid in genreIds)
                 db.MusicGenres.Add(new MusicGenre { MusicId = songId, GenreId = gid });
+
+            newSongArtistIds = await musicService.ResolveArtistsAsync(music.Artist);
+            await musicService.SyncMusicArtistsAsync(songId, newSongArtistIds);
         }
 
         db.Requests.Remove(req);
         await db.SaveChangesAsync();
+
+        if (wasDuplicate)
+        {
+            if (lyricsWasAdded)
+            {
+                // Самолікування: стара пісня могла ще не пройти бекфіл.
+                var artistIds = await db.MusicArtists.Where(ma => ma.MusicId == songId).Select(ma => ma.ArtistId).ToListAsync();
+                if (artistIds.Count == 0)
+                {
+                    artistIds = await musicService.ResolveArtistsAsync(existing!.Artist);
+                    await musicService.SyncMusicArtistsAsync(songId, artistIds);
+                }
+                await artistActivity.RecordEventAsync(artistIds, "lyrics_added", songId, $"{existing!.Artist} — {existing.Title}");
+            }
+        }
+        else
+        {
+            await artistActivity.RecordEventAsync(newSongArtistIds, "song_added", songId, $"{req.Artist} — {req.Title}");
+        }
 
         await hub.Clients.All.SendAsync("requestsChanged");
         await hub.Clients.All.SendAsync("songsChanged");

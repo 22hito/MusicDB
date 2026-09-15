@@ -132,6 +132,89 @@ public class ListeningHistory
     [Column("listened_at")] public DateTime ListenedAt { get; set; } = DateTime.UtcNow;
 }
 
+// Канонічний реєстр користувачів — на відміну від UserProfile (спарс,
+// заповнюється лише при явному збереженні нікнейму/аватарки), рядок тут
+// апсертиться при КОЖНОМУ логіні (Program.cs, OnTicketReceived), тож завжди
+// має непорожній фолбек імені/фото. Opaque Id — для публічних посилань
+// (друзі, підписки на виконавців), щоб ніде не світити сам email.
+[Table("users", Schema = "lab")]
+public class User
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Required, Column("email")] public string Email { get; set; } = "";
+    [Column("google_name")] public string? GoogleName { get; set; }
+    [Column("google_picture")] public string? GooglePicture { get; set; }
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("last_login_at")] public DateTime? LastLoginAt { get; set; }
+}
+
+// ─── Виконавці ──────────────────────────────────────────────────────────────
+// lab.music.artist лишається вільним текстом (джерело правди для показу не
+// міняється) — це ПОХІДНА нормалізація: кожне ім'я зі списку через кому
+// (напр. "Bring Me The Horizon, Nova Twins") отримує свій рядок і власну
+// сторінку з повною дискографією, включно з колабораціями.
+[Table("artists", Schema = "lab")]
+public class Artist
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Required, Column("name")] public string Name { get; set; } = "";
+    [Required, Column("normalized_name")] public string NormalizedName { get; set; } = "";
+    [Column("bio")] public string? Bio { get; set; }
+    [Column("image_url")] public string? ImageUrl { get; set; }
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public ICollection<MusicArtist> MusicArtists { get; set; } = [];
+}
+
+[Table("music_artists", Schema = "lab")]
+public class MusicArtist
+{
+    [Column("music_id")] public int MusicId { get; set; }
+    [Column("artist_id")] public int ArtistId { get; set; }
+    [Column("position")] public short Position { get; set; }
+    public Music Music { get; set; } = null!;
+    public Artist Artist { get; set; } = null!;
+}
+
+// Підписка на виконавця — непрочитане рахується від last_read_at (без
+// рядка-на-подію-на-підписника), див. ArtistEvent нижче.
+[Table("artist_follows", Schema = "lab")]
+public class ArtistFollow
+{
+    [Column("user_id")] public int UserId { get; set; }
+    [Column("artist_id")] public int ArtistId { get; set; }
+    [Column("followed_at")] public DateTime FollowedAt { get; set; } = DateTime.UtcNow;
+    [Column("last_read_at")] public DateTime LastReadAt { get; set; } = DateTime.UtcNow;
+}
+
+// Подія каталогу (пісню додано/видалено, додано текст) — один рядок на
+// подію незалежно від кількості підписників; SongLabel — знімок "Артист —
+// Назва" на момент події, лишається читабельним навіть якщо пісню видалено.
+[Table("artist_events", Schema = "lab")]
+public class ArtistEvent
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("artist_id")] public int ArtistId { get; set; }
+    [Column("music_id")] public int? MusicId { get; set; }
+    [Required, Column("event_type")] public string EventType { get; set; } = "";
+    [Required, Column("song_label")] public string SongLabel { get; set; } = "";
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// ─── Друзі ──────────────────────────────────────────────────────────────────
+// pair_low/pair_high (генеровані колонки на боці Postgres, гарантують не
+// більше одного рядка між двома юзерами) застосунок не читає й не пише,
+// тому в EF-сутність не мапляться.
+[Table("friend_requests", Schema = "lab")]
+public class FriendRequest
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("requester_id")] public int RequesterId { get; set; }
+    [Column("addressee_id")] public int AddresseeId { get; set; }
+    [Required, Column("status")] public string Status { get; set; } = "pending";
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("responded_at")] public DateTime? RespondedAt { get; set; }
+}
+
 public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(opts)
 {
     public DbSet<Music> Songs { get; set; }
@@ -145,6 +228,12 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
     public DbSet<Playlist> Playlists { get; set; }
     public DbSet<PlaylistSong> PlaylistSongs { get; set; }
     public DbSet<ListeningHistory> ListeningHistory { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<Artist> Artists { get; set; }
+    public DbSet<MusicArtist> MusicArtists { get; set; }
+    public DbSet<ArtistFollow> ArtistFollows { get; set; }
+    public DbSet<ArtistEvent> ArtistEvents { get; set; }
+    public DbSet<FriendRequest> FriendRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -183,5 +272,21 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
             .HasOne(ps => ps.Music)
             .WithMany()
             .HasForeignKey(ps => ps.MusicId);
+
+        mb.Entity<User>().HasIndex(u => u.Email).IsUnique();
+
+        mb.Entity<Artist>().HasIndex(a => a.NormalizedName).IsUnique();
+
+        mb.Entity<MusicArtist>().HasKey(ma => new { ma.MusicId, ma.ArtistId });
+        mb.Entity<MusicArtist>()
+            .HasOne(ma => ma.Music)
+            .WithMany()
+            .HasForeignKey(ma => ma.MusicId);
+        mb.Entity<MusicArtist>()
+            .HasOne(ma => ma.Artist)
+            .WithMany(a => a.MusicArtists)
+            .HasForeignKey(ma => ma.ArtistId);
+
+        mb.Entity<ArtistFollow>().HasKey(f => new { f.UserId, f.ArtistId });
     }
 }

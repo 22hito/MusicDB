@@ -29,6 +29,8 @@ builder.Services.AddDbContext<MusicDbContext>(opts =>
     opts.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
 builder.Services.AddScoped<MusicService>();
+builder.Services.AddScoped<UserDirectoryService>();
+builder.Services.AddScoped<ArtistActivityService>();
 builder.Services.AddHttpClient<TranslationService>();
 builder.Services.AddHttpClient<ExternalMusicSearchService>();
 builder.Services.AddHttpClient<GenreNormalizationService>();
@@ -91,7 +93,15 @@ builder.Services.AddAuthentication(options =>
     options.Events.OnTicketReceived = async ctx =>
     {
         var db = ctx.HttpContext.RequestServices.GetRequiredService<MusicDbContext>();
+        var userDirectory = ctx.HttpContext.RequestServices.GetRequiredService<UserDirectoryService>();
         var email = ctx.Principal?.FindFirstValue(ClaimTypes.Email) ?? "";
+        var name = ctx.Principal?.FindFirstValue(ClaimTypes.Name);
+        var picture = ctx.Principal?.FindFirstValue("picture") ?? ctx.Principal?.FindFirstValue("urn:google:picture");
+
+        // Апсертить lab.users при КОЖНОМУ логіні (не лише при першому) — див.
+        // коментар над UserDirectoryService: на відміну від lab.user_profiles,
+        // цей реєстр не лишається спарс і завжди має свіже імʼя/фото.
+        await userDirectory.GetOrCreateUserIdAsync(email, name, picture);
 
         if (await db.Admins.AnyAsync(a => a.Email == email))
             ((ClaimsIdentity)ctx.Principal!.Identity!).AddClaim(new Claim("role", "admin"));
