@@ -123,6 +123,29 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
         return Ok();
     }
 
+    // Текст пісні (караоке) підвантажуємо окремим ендпоінтом, а не разом з
+    // GET /api/songs — інакше повний текст КОЖНОЇ пісні (можуть бути кілобайти)
+    // роздував би основний список, який і так підвантажується часто
+    // (перше завантаження сторінки, кожне songsChanged через SignalR).
+    [HttpGet("{id}/lyrics")]
+    public async Task<ActionResult<LyricsDto>> GetLyrics(int id)
+    {
+        var song = await db.Songs.FindAsync(id);
+        if (song is null) return NotFound();
+        return Ok(new LyricsDto(song.Lyrics));
+    }
+
+    [Authorize, AdminOnly]
+    [HttpPut("{id}/lyrics")]
+    public async Task<ActionResult<LyricsDto>> SetLyrics(int id, [FromBody] LyricsDto dto)
+    {
+        var song = await db.Songs.FindAsync(id);
+        if (song is null) return NotFound();
+        song.Lyrics = string.IsNullOrWhiteSpace(dto.Lyrics) ? null : dto.Lyrics.Trim();
+        await db.SaveChangesAsync();
+        return Ok(new LyricsDto(song.Lyrics));
+    }
+
     // Редагування вже опублікованої пісні (не заявки) — повністю
     // перезаписує основні поля, жанри та альбом.
     [Authorize, AdminOnly]

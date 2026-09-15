@@ -19,6 +19,9 @@ public record SongDto(
 
 public record SetYoutubeVideoDto(string VideoId);
 
+// Текст пісні для режиму караоке — вводить вручну адмін, не з стороннього API.
+public record LyricsDto(string? Lyrics);
+
 public record CreateSongDto(
     string   Artist,
     string   Title,

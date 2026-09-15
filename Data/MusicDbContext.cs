@@ -40,6 +40,10 @@ public class Music
     // Кешований YouTube videoId, щойно якийсь клієнт його знайшов і підтвердив
     // (пройшов перевірку релевантності) — рятує від повторного пошуку через API.
     [Column("youtube_video_id")] public string? YoutubeVideoId { get; set; }
+    // Текст пісні для режиму караоке — вводиться вручну адміном, не через
+    // стороннє API (Musixmatch безкоштовно віддає лише 30%, Genius офіційно
+    // взагалі не має ендпоінта для тексту).
+    [Column("lyrics")] public string? Lyrics { get; set; }
     public ICollection<MusicGenre> MusicGenres { get; set; } = [];
 }
 
