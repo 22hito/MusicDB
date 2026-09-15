@@ -45,18 +45,22 @@ html[data-theme="light"] {
   --green: #2f7f57;
   --red: #b8474f;
 }
-/* Сіра тема: нейтральна, проміжна яскравість між темною і світлою. */
+/* Сіра тема: СПРАВЖНЯ проміжна яскравість між темною (bg L≈0.005) і світлою
+   (bg L≈0.77) — попередні значення (#303134) за WCAG-яскравістю були майже
+   такими ж темними, як і темна тема, тобто по суті другим темним варіантом,
+   а не серединою. Увесь набір (surface/border/accent/muted), а не лише фон,
+   підняли разом, інакше золотий акцент і межі карток губилися на світлішому тлі. */
 html[data-theme="gray"] {
-  --bg: #303134;
-  --surface: #3a3b3f;
-  --surface2: #45464b;
-  --border: #505257;
-  --accent: #cfa96e;
-  --accent2: #9a8eda;
-  --text: #e4e4e2;
-  --muted: #9b9ba0;
-  --green: #6cc494;
-  --red: #e2807d;
+  --bg: #5c5954;
+  --surface: #6b675f;
+  --surface2: #78736a;
+  --border: #8a8478;
+  --accent: #e8c988;
+  --accent2: #b7a8e6;
+  --text: #f2efe8;
+  --muted: #b3ac9f;
+  --green: #7fcda0;
+  --red: #e69494;
 }
 
 /* Тонкий темний скролбар на весь сайт (не лише в таблиці) */
@@ -214,6 +218,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(200,169,110,0.16), transparent 70%);
 }
 .stat-card:hover::after { opacity: 1; }
+.stat-card-clickable { cursor: pointer; }
 .stats-row .stat-card:nth-child(1) { animation-delay: 0.03s; }
 .stats-row .stat-card:nth-child(2) { animation-delay: 0.08s; }
 .stats-row .stat-card:nth-child(3) { animation-delay: 0.13s; }
@@ -247,9 +252,9 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .rec-item .es-genre-badge { background: rgba(124,111,205,0.15); color: var(--accent2); border-radius: 4px; padding: 3px 9px; font-size: 0.75rem; white-space: nowrap; }
 .form-group { margin-bottom: 1.25rem; }
 .form-group label { display: block; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
-.form-group input, .form-group select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: 0.85rem; padding: 0.6rem 0.85rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-.form-group input:focus, .form-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,169,110,0.16); }
-.form-group input::placeholder { color: var(--muted); }
+.form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: 0.85rem; padding: 0.6rem 0.85rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,169,110,0.16); }
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--muted); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
 .btn { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.55rem 1.25rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s cubic-bezier(.2,.8,.2,1); }
@@ -292,6 +297,87 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .btn-outline { background: none; border-color: var(--border); color: var(--text); }
 .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 .btn-outline.active { border-color: var(--accent); color: var(--accent); background: rgba(200,169,110,0.1); }
+
+/* Колесо фортуни */
+.wheel-wrap { position: relative; width: 240px; height: 240px; margin: 6px auto 18px; }
+.wheel-disc {
+  width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden;
+  border: 4px solid var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  transition: transform 4s cubic-bezier(.17,.67,.32,1.01);
+}
+.wheel-pointer {
+  position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent;
+  border-top: 18px solid var(--accent); z-index: 5; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4));
+}
+.wheel-seg-label {
+  position: absolute; left: 50%; top: 50%; transform-origin: 0 0;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7); white-space: nowrap; pointer-events: none;
+}
+.wheel-result { display: none; margin-bottom: 14px; }
+.wheel-result-label { color: var(--muted); font-size: 0.78rem; margin-bottom: 4px; }
+.wheel-result-genre { color: var(--accent); font-family: var(--font-serif); font-size: 1.4rem; font-weight: 700; }
+
+/* Батл рояль */
+.battle-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  width: min(1000px, 94vw); max-height: 92vh; overflow-y: auto;
+  animation: modalIn 0.28s cubic-bezier(.2,.9,.3,1.1);
+}
+.battle-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.battle-header span { color: var(--muted); font-family: var(--font-mono); font-size: 0.85rem; letter-spacing: 0.3px; }
+.battle-close-btn { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
+.battle-close-btn:hover { color: var(--text); }
+.battle-split { display: flex; align-items: stretch; gap: 0; }
+.battle-side {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center;
+  padding: 20px;
+}
+.battle-video-wrap { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+.battle-video-wrap iframe { width: 100%; height: 100%; }
+.battle-side-info { text-align: center; margin-bottom: 14px; min-height: 44px; }
+.battle-side-artist { color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.05rem; }
+.battle-side-title { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+.battle-side-notfound { display: none; color: var(--red); font-size: 0.75rem; margin-top: 4px; }
+.battle-choose-btn {
+  background: var(--accent); color: #0d0d0f; border: none; border-radius: 6px;
+  padding: 0.55rem 1.2rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+}
+.battle-choose-btn:hover { background: #ddbd85; }
+.battle-vs {
+  display: flex; align-items: center; justify-content: center; width: 54px; flex-shrink: 0;
+  color: var(--muted); font-family: var(--font-serif); font-weight: 700; font-size: 1.1rem;
+}
+.battle-champion { text-align: center; padding: 50px 20px; }
+.battle-champion-label { color: var(--accent); font-size: 1.1rem; margin-bottom: 14px; }
+.battle-champion-artist { color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.8rem; }
+.battle-champion-title { color: var(--muted); font-size: 1.05rem; margin: 4px 0 22px; }
+@media (max-width: 720px) {
+  .battle-split { flex-direction: column; }
+  .battle-vs { width: 100%; height: 30px; }
+}
+
+/* Граф схожості */
+.graph-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  width: min(900px, 94vw); max-height: 92vh; display: flex; flex-direction: column;
+  animation: modalIn 0.28s cubic-bezier(.2,.9,.3,1.1);
+}
+.graph-loading { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 40px 0; }
+.graph-canvas-wrap {
+  position: relative; height: min(560px, 70vh); margin: 0 4px;
+  background: radial-gradient(circle at 50% 42%, rgba(200,169,110,0.10), transparent 70%);
+  border-radius: 8px; overflow: hidden;
+}
+.graph-svg { width: 100%; height: 100%; display: block; }
+.graph-svg .graph-node { cursor: pointer; }
+.graph-svg .graph-node circle { transition: r 0.15s ease, opacity 0.15s ease; }
+.graph-svg .graph-node:hover circle { opacity: 0.75; }
+.graph-hint { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 10px 0 16px; }
 .alert { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 1rem; display: none; }
 .alert.show { display: block; }
 .alert-success { background: rgba(76,175,125,0.15); border: 1px solid rgba(76,175,125,0.3); color: var(--green); }
@@ -605,6 +691,44 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   width: 100% !important; height: 100% !important;
   border: none;
 }
+
+/* Панель караоке — текст поточної пісні, той самий "плаваючий попап" патерн,
+   що й відео, але зліва, щоб можна було тримати відкритими обидва разом. */
+#karaoke-panel {
+  position: fixed;
+  bottom: calc(var(--player-h) + 12px);
+  left: 16px;
+  width: 300px;
+  height: 360px;
+  max-width: 92vw;
+  max-height: 70vh;
+  background: #0f0f11;
+  border: 1px solid #2a2a2e;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+}
+#karaoke-panel.open { display: flex; }
+#karaoke-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-bottom: 1px solid #1e1e22;
+  font-size: 0.7rem; color: var(--accent); font-family: var(--font-mono);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+#karaoke-close {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: color 0.15s, background 0.15s;
+}
+#karaoke-close:hover { color: var(--red); background: rgba(224,92,92,0.1); }
+#karaoke-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+#karaoke-text {
+  margin: 0; color: var(--text); font-family: var(--font-mono); font-size: 0.82rem;
+  line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+}
 #video-popup-loading {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
@@ -768,7 +892,13 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
       <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
       <li id="nav-add" style="display:none"><button id="tab-add" onclick="showPage('add')" data-i18n="nav.add">Додати пісню</button></li>
-      <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.2/NOwl-Setup-1.0.2.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
+      <!-- Пряме посилання на файл релізу, не /latest/download/ — ім'я файлу
+           містить номер версії (NOwl-Setup-X.Y.Z.exe), тож /latest/ однаково
+           зламався б на наступному релізі з іншою версією в назві файлу. Тег
+           і назва файлу мають збігатись із фактично опублікованим релізом на
+           https://github.com/22hito/MusicDB/releases — оновлювати тут разом
+           із кожним новим релізом десктоп-застосунку. -->
+      <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.1/NOwl-Setup-1.0.2.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
       <script>
         // Сам застосунок (Electron) ставить цей прапорець при завантаженні —
         // пропонувати встановити застосунок людині, яка вже в ньому, безглуздо.
@@ -804,10 +934,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 <div id="page-home" class="page active">
   <div class="container">
     <div class="stats-row">
-      <div class="stat-card"><div class="label" data-i18n="stat.songs">Композицій</div><div class="value" id="stat-songs">0</div></div>
-      <div class="stat-card"><div class="label" data-i18n="stat.genres">Жанрів</div><div class="value" id="stat-genres">0</div></div>
-      <div class="stat-card"><div class="label" data-i18n="stat.albums">Альбомів</div><div class="value" id="stat-albums">0</div></div>
-      <div class="stat-card"><div class="label" data-i18n="stat.singles">Сінглів</div><div class="value" id="stat-singles">0</div></div>
+      <div class="stat-card stat-card-clickable" onclick="openSimilarityGraph('songs')" title="" data-i18n-title="graph.openHint"><div class="label" data-i18n="stat.songs">Композицій</div><div class="value" id="stat-songs">0</div></div>
+      <div class="stat-card stat-card-clickable" onclick="openSimilarityGraph('genres')" title="" data-i18n-title="graph.openHint"><div class="label" data-i18n="stat.genres">Жанрів</div><div class="value" id="stat-genres">0</div></div>
+      <div class="stat-card stat-card-clickable" onclick="openSimilarityGraph('albums')" title="" data-i18n-title="graph.openHint"><div class="label" data-i18n="stat.albums">Альбомів</div><div class="value" id="stat-albums">0</div></div>
+      <div class="stat-card stat-card-clickable" onclick="openSimilarityGraph('singles')" title="" data-i18n-title="graph.openHint"><div class="label" data-i18n="stat.singles">Сінглів</div><div class="value" id="stat-singles">0</div></div>
     </div>
     <div id="admin-tools-row" style="display:none;margin-bottom:1.5rem;">
       <button class="btn btn-outline" onclick="normalizeGenres()" id="normalize-genres-btn" data-i18n="admin.normalizeGenresBtn">🧹 Об'єднати дублікати жанрів</button>
@@ -820,6 +950,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="renderSongs()">
       <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn" data-i18n="table.shuffle">🔀 Перемішати</button>
+      <button type="button" class="btn btn-outline" onclick="openWheel()" data-i18n="wheel.openBtn">🎡 Колесо фортуни</button>
     </div>
     <div class="table-wrap scroll-table mobile-cards">
       <table>
@@ -989,7 +1120,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
     <button class="btn btn-outline" onclick="showPage('profile')" style="margin-bottom:1rem;" data-i18n="profile.backToProfile">← До профілю</button>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h2 id="playlist-detail-title" style="margin-bottom:0;"></h2>
-      <button class="btn btn-primary" id="playlist-play-all-btn" onclick="playPlaylistFromStart()" data-i18n="profile.playAllBtn">▶ Слухати весь плейлист</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="openBattleSetup()" data-i18n="battle.openBtn">🏆 Батл рояль</button>
+        <button class="btn btn-primary" id="playlist-play-all-btn" onclick="playPlaylistFromStart()" data-i18n="profile.playAllBtn">▶ Слухати весь плейлист</button>
+      </div>
     </div>
     <div id="playlist-detail-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.playlistEmpty">У цьому плейлисті ще немає пісень</span></div>
     <div class="table-wrap mobile-cards">
@@ -1084,6 +1218,11 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
         <path d="M17 9.5l5-3v11l-5-3v-5z"/>
       </svg>
     </button>
+    <button class="pc-icon-btn video-btn" id="btn-karaoke" onclick="toggleKaraoke()" title="Караоке" data-i18n-title="player.karaoke">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+      </svg>
+    </button>
     <div class="vol-row">
       <svg id="vol-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -1100,6 +1239,23 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   </div>
 </div>
 
+<!-- КАРАОКЕ: текст поточної пісні, вводить вручну адмін (без стороннього API) -->
+<div id="karaoke-panel">
+  <div id="karaoke-header">
+    <span data-i18n="player.karaoke">Караоке</span>
+    <button id="karaoke-close" onclick="toggleKaraoke()" title="Закрити" data-i18n-title="player.close">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div id="karaoke-body">
+    <div id="karaoke-empty" class="empty" style="display:none;padding:2rem 1rem;">
+      <span class="icon">🎤</span><span data-i18n="player.karaokeEmpty">Для цієї пісні ще немає тексту</span>
+    </div>
+    <pre id="karaoke-text"></pre>
+  </div>
+</div>
 
 <!-- VIDEO POPUP -->
 <div id="video-popup">
@@ -1216,6 +1372,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       </a>
       <div class="hint" data-i18n="admin.youtubeVideo.hint">Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим</div>
     </div>
+    <div class="form-group">
+      <label data-i18n="admin.lyrics">Текст пісні — для режиму караоке (необов'язково)</label>
+      <textarea id="edit-song-lyrics" rows="6" style="resize:vertical;font-family:var(--font-mono);font-size:0.8rem;" data-i18n-placeholder="admin.lyrics.placeholder" placeholder="Вставте текст пісні рядок за рядком, або залиште порожнім"></textarea>
+    </div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeEditSongModal()" data-i18n="modal.cancel">Скасувати</button>
       <button class="modal-btn-confirm" id="edit-song-save-btn" style="background:var(--accent);" data-i18n="admin.saveBtn">Зберегти</button>
@@ -1238,6 +1398,93 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <button class="modal-btn-cancel" onclick="closeAddToPlaylistModal()" data-i18n="modal.cancel">Скасувати</button>
       <button class="modal-btn-confirm" style="background:var(--accent);" onclick="createPlaylistAndAdd()" data-i18n="profile.createAndAddBtn">Створити й додати</button>
     </div>
+  </div>
+</div>
+
+<!-- Колесо фортуни: випадковий жанр -> перемішаний плейлист цього жанру -->
+<div class="modal-overlay" id="wheel-modal-overlay">
+  <div class="modal-box" style="width:340px; text-align:center;">
+    <div class="modal-title-row" style="justify-content:center;">
+      <span data-i18n="wheel.title">🎡 Колесо фортуни</span>
+    </div>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <div id="wheel-disc" class="wheel-disc"></div>
+    </div>
+    <div id="wheel-result" class="wheel-result">
+      <div class="wheel-result-label" data-i18n="wheel.resultLabel">Випав жанр:</div>
+      <div id="wheel-result-genre" class="wheel-result-genre"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="modal-btn-cancel" onclick="closeWheel()" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" id="wheel-spin-btn" style="background:var(--accent);" onclick="spinWheel()" data-i18n="wheel.spinBtn">Крутити</button>
+      <button class="modal-btn-confirm" id="wheel-play-btn" style="background:var(--green); display:none;" onclick="playWheelGenre()" data-i18n="wheel.playBtn">▶ Слухати</button>
+    </div>
+  </div>
+</div>
+
+<!-- Батл рояль: вибір розміру турніру -->
+<div class="modal-overlay" id="battle-setup-modal-overlay">
+  <div class="modal-box" style="width:320px; text-align:center;">
+    <div class="modal-title-row" style="justify-content:center;">
+      <span data-i18n="battle.setupTitle">🏆 Батл рояль</span>
+    </div>
+    <div id="battle-setup-body"></div>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="modal-btn-cancel" onclick="closeBattleSetup()" data-i18n="modal.cancel">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<!-- Батл рояль: сам турнір (два відео пліч-о-пліч, оберіть переможця раунду) -->
+<div class="modal-overlay" id="battle-modal-overlay">
+  <div class="battle-box">
+    <div class="battle-header">
+      <span id="battle-round-label"></span>
+      <button class="battle-close-btn" onclick="closeBattle()">✕</button>
+    </div>
+    <div id="battle-split" class="battle-split">
+      <div class="battle-side">
+        <div class="battle-video-wrap"><div id="battle-yt-a"></div></div>
+        <div class="battle-side-info">
+          <div class="battle-side-artist" id="battle-a-artist"></div>
+          <div class="battle-side-title" id="battle-a-title"></div>
+          <div class="battle-side-notfound" id="battle-a-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
+        </div>
+        <button class="battle-choose-btn" onclick="chooseBattleWinner(0)" data-i18n="battle.chooseBtn">✓ Обрати цю</button>
+      </div>
+      <div class="battle-vs" data-i18n="battle.vs">VS</div>
+      <div class="battle-side">
+        <div class="battle-video-wrap"><div id="battle-yt-b"></div></div>
+        <div class="battle-side-info">
+          <div class="battle-side-artist" id="battle-b-artist"></div>
+          <div class="battle-side-title" id="battle-b-title"></div>
+          <div class="battle-side-notfound" id="battle-b-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
+        </div>
+        <button class="battle-choose-btn" onclick="chooseBattleWinner(1)" data-i18n="battle.chooseBtn">✓ Обрати цю</button>
+      </div>
+    </div>
+    <div id="battle-champion" class="battle-champion" style="display:none;">
+      <div class="battle-champion-label" data-i18n="battle.championLabel">🏆 Переможець</div>
+      <div class="battle-champion-artist" id="battle-champion-artist"></div>
+      <div class="battle-champion-title" id="battle-champion-title"></div>
+      <button class="btn btn-primary" onclick="closeBattle()" data-i18n="player.close">Закрити</button>
+    </div>
+  </div>
+</div>
+
+<!-- Граф схожості: композиції/жанри/альбоми/сингли -->
+<div class="modal-overlay" id="graph-modal-overlay">
+  <div class="graph-box">
+    <div class="battle-header">
+      <span id="graph-title"></span>
+      <button class="battle-close-btn" onclick="closeGraph()">✕</button>
+    </div>
+    <div id="graph-loading" class="graph-loading" data-i18n="graph.loading">Обчислюємо розташування…</div>
+    <div class="graph-canvas-wrap">
+      <svg id="graph-svg" class="graph-svg"></svg>
+    </div>
+    <div class="graph-hint" data-i18n="graph.hint">Чим ближче — тим більше схожі. Клік по вузлу — відтворити/перейти.</div>
   </div>
 </div>
 
@@ -1274,6 +1521,27 @@ const I18N = {
     'search.placeholder': 'Пошук за назвою, виконавцем або альбомом…',
     'filter.allGenres': 'Усі жанри',
     'table.shuffle': '🔀 Перемішати',
+    'wheel.openBtn': '🎡 Колесо фортуни',
+    'wheel.title': '🎡 Колесо фортуни',
+    'wheel.spinBtn': 'Крутити',
+    'wheel.playBtn': '▶ Слухати',
+    'wheel.resultLabel': 'Випав жанр:',
+    'battle.openBtn': '🏆 Батл рояль',
+    'battle.setupTitle': '🏆 Батл рояль',
+    'battle.chooseSize': 'Оберіть розмір турніру:',
+    'battle.notEnough': 'Замало пісень у плейлисті — потрібно щонайменше 16.',
+    'battle.roundLabel': 'Учасників: ',
+    'battle.vs': 'VS',
+    'battle.chooseBtn': '✓ Обрати цю',
+    'battle.championLabel': '🏆 Переможець',
+    'battle.videoNotFound': 'Відео не знайдено',
+    'graph.openHint': 'Показати граф схожості',
+    'graph.loading': 'Обчислюємо розташування…',
+    'graph.hint': 'Чим ближче — тим більше схожі. Клік по вузлу — відтворити/перейти.',
+    'graph.titleSongs': 'Схожість композицій',
+    'graph.titleGenres': 'Схожість жанрів',
+    'graph.titleAlbums': 'Схожість альбомів',
+    'graph.titleSingles': 'Схожість синглів',
     'table.number': '№',
     'table.artist': 'Виконавець',
     'table.title': 'Назва',
@@ -1317,6 +1585,8 @@ const I18N = {
     'admin.youtubeVideo.placeholder': 'ID або посилання на відео, або залиште порожнім',
     'admin.youtubeVideo.hint': 'Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим',
     'admin.youtubeVideo.view': 'Переглянути на YouTube',
+    'admin.lyrics': "Текст пісні — для режиму караоке (необов'язково)",
+    'admin.lyrics.placeholder': 'Вставте текст пісні рядок за рядком, або залиште порожнім',
     'admin.normalizeGenresBtn': "🧹 Об'єднати дублікати жанрів",
     'admin.normalizeGenresRunning': 'Перевірка триває…',
     'admin.normalizeGenresNone': 'Дублікатів не знайдено — усі жанри унікальні.',
@@ -1334,6 +1604,8 @@ const I18N = {
     'player.next': 'Наступна',
     'player.repeat': 'Повтор',
     'player.video': 'Відкрити відео',
+    'player.karaoke': 'Караоке',
+    'player.karaokeEmpty': 'Для цієї пісні ще немає тексту',
     'player.editSong': 'Редагувати пісню',
     'player.close': 'Закрити',
     'videoPopup.title': '▶ Відео',
@@ -1423,6 +1695,27 @@ const I18N = {
     'search.placeholder': 'Search by title, artist, or album…',
     'filter.allGenres': 'All genres',
     'table.shuffle': '🔀 Shuffle',
+    'wheel.openBtn': '🎡 Wheel of fortune',
+    'wheel.title': '🎡 Wheel of fortune',
+    'wheel.spinBtn': 'Spin',
+    'wheel.playBtn': '▶ Play',
+    'wheel.resultLabel': 'You got:',
+    'battle.openBtn': '🏆 Battle royale',
+    'battle.setupTitle': '🏆 Battle royale',
+    'battle.chooseSize': 'Choose tournament size:',
+    'battle.notEnough': 'Not enough songs in this playlist — need at least 16.',
+    'battle.roundLabel': 'Contestants: ',
+    'battle.vs': 'VS',
+    'battle.chooseBtn': '✓ Pick this one',
+    'battle.championLabel': '🏆 Champion',
+    'battle.videoNotFound': 'Video not found',
+    'graph.openHint': 'Show similarity graph',
+    'graph.loading': 'Computing layout…',
+    'graph.hint': 'Closer = more similar. Click a node to play/open it.',
+    'graph.titleSongs': 'Song similarity',
+    'graph.titleGenres': 'Genre similarity',
+    'graph.titleAlbums': 'Album similarity',
+    'graph.titleSingles': 'Single similarity',
     'table.number': '#',
     'table.artist': 'Artist',
     'table.title': 'Title',
@@ -1466,6 +1759,8 @@ const I18N = {
     'admin.youtubeVideo.placeholder': 'Video ID or link, or leave empty',
     'admin.youtubeVideo.hint': "The auto-picked, cached video can be replaced or cleared here if it turned out to be the wrong one",
     'admin.youtubeVideo.view': 'View on YouTube',
+    'admin.lyrics': 'Song lyrics — for karaoke mode (optional)',
+    'admin.lyrics.placeholder': 'Paste the lyrics line by line, or leave empty',
     'admin.normalizeGenresBtn': '🧹 Merge duplicate genres',
     'admin.normalizeGenresRunning': 'Checking…',
     'admin.normalizeGenresNone': 'No duplicates found — all genres are unique.',
@@ -1483,6 +1778,8 @@ const I18N = {
     'player.next': 'Next',
     'player.repeat': 'Repeat',
     'player.video': 'Open video',
+    'player.karaoke': 'Karaoke',
+    'player.karaokeEmpty': 'No lyrics for this song yet',
     'player.editSong': 'Edit song',
     'player.close': 'Close',
     'videoPopup.title': '▶ Video',
@@ -1661,6 +1958,18 @@ function _sortVal(s, key){
     case 'artist': case 'title': return s[key].toLowerCase();
     default: return s[key];
   }
+}
+// Порівняння текстів для сортування (жанри, і будь-де, де просто .sort()
+// рядків): звичайний .sort() без компаратора порівнює СИРІ коди символів —
+// великі літери (A-Z: 65-90) йдуть окремим блоком ПЕРЕД усіма малими (a-z:
+// 97-122), а ті — перед великою кирилицею (А-Я) і так далі, тобто виходить
+// 4 окремі блоки замість "Aa, Бб...". Приведення до нижнього регістру перед
+// порівнянням само по собі вже дає бажаний результат: малі коди латиниці
+// (97-122) < малих кодів кирилиці (1072-1103), тож латиниця й кирилиця не
+// перемішуються між собою, а регістр усередині кожної не впливає на порядок.
+function _textSortCmp(a, b){
+  const la = String(a).toLowerCase(), lb = String(b).toLowerCase();
+  return la < lb ? -1 : la > lb ? 1 : 0;
 }
 // ================================================================
 // АДМІН: ШІ-об'єднання дублікатів жанрів (POST /api/genres/normalize)
@@ -1954,6 +2263,94 @@ function toggleShuffleTable(){
   }
   renderSongs();
 }
+
+// ================================================================
+// КОЛЕСО ФОРТУНИ: випадковий жанр -> перемішаний плейлист цього жанру
+// ================================================================
+const WHEEL_COLORS = ['#c8a96e','#7c6fcd','#4caf7d','#e05c5c','#5aa9e6','#e0a15c','#8ecae6','#f2a65a','#8a5cf2','#5ce0c0'];
+const WHEEL_MAX_SEGMENTS = 10;
+let wheelGenres = [];
+let wheelResultGenre = null;
+let wheelSpinning = false;
+
+function _shuffledCopy(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function openWheel(){
+  const allGenres = [...new Set(songs.flatMap(s=>s.genres))];
+  if(!allGenres.length) return;
+  wheelGenres = _shuffledCopy(allGenres).slice(0, Math.min(WHEEL_MAX_SEGMENTS, allGenres.length));
+  wheelResultGenre = null;
+  wheelSpinning = false;
+  renderWheelDisc();
+  document.getElementById('wheel-disc').style.transition = 'none';
+  document.getElementById('wheel-disc').style.transform = 'rotate(0deg)';
+  requestAnimationFrame(()=>{ document.getElementById('wheel-disc').style.transition = ''; });
+  document.getElementById('wheel-result').style.display = 'none';
+  document.getElementById('wheel-spin-btn').style.display = '';
+  document.getElementById('wheel-play-btn').style.display = 'none';
+  document.getElementById('wheel-modal-overlay').classList.add('open');
+}
+function closeWheel(){
+  document.getElementById('wheel-modal-overlay').classList.remove('open');
+}
+document.getElementById('wheel-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeWheel();
+});
+
+function renderWheelDisc(){
+  const disc = document.getElementById('wheel-disc');
+  const n = wheelGenres.length;
+  const segAngle = 360/n;
+  const gradientParts = wheelGenres.map((g,i)=>`${WHEEL_COLORS[i%WHEEL_COLORS.length]} ${i*segAngle}deg ${(i+1)*segAngle}deg`).join(', ');
+  disc.style.background = `conic-gradient(${gradientParts})`;
+  disc.innerHTML = wheelGenres.map((g,i)=>{
+    const mid = i*segAngle + segAngle/2;
+    return `<span class="wheel-seg-label" style="transform:rotate(${mid}deg) translate(52px, -6px);">${esc(abbrGenre(g))}</span>`;
+  }).join('');
+}
+
+function spinWheel(){
+  if(wheelSpinning || !wheelGenres.length) return;
+  wheelSpinning = true;
+  const n = wheelGenres.length;
+  const segAngle = 360/n;
+  const winnerIndex = Math.floor(Math.random()*n);
+  // Диск повертається за годинниковою стрілкою; стрілка нерухома вгорі (кут 0).
+  // Середина сегмента winnerIndex спочатку на куті (winnerIndex*segAngle + segAngle/2).
+  // Після повороту на rotation вона опиняється під стрілкою, коли
+  // (mid + rotation) mod 360 == 0 — тобто rotation == 360 - mid (+ повні оберти для ефекту).
+  const fullSpins = 5 + Math.floor(Math.random()*3);
+  const mid = winnerIndex*segAngle + segAngle/2;
+  const rotation = fullSpins*360 + (360 - mid);
+  const disc = document.getElementById('wheel-disc');
+  disc.style.transform = `rotate(${rotation}deg)`;
+  setTimeout(()=>{
+    wheelSpinning = false;
+    wheelResultGenre = wheelGenres[winnerIndex];
+    document.getElementById('wheel-result-genre').textContent = abbrGenre(wheelResultGenre);
+    document.getElementById('wheel-result').style.display = 'block';
+    document.getElementById('wheel-spin-btn').style.display = 'none';
+    document.getElementById('wheel-play-btn').style.display = '';
+  }, 4150);
+}
+
+function playWheelGenre(){
+  if(!wheelResultGenre) return;
+  const list = songs.filter(s=>s.genres.includes(wheelResultGenre));
+  if(!list.length) return;
+  closeWheel();
+  playerQueue = _shuffledCopy(list);
+  playerIndex = 0;
+  _loadCurrent();
+}
+
 function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
@@ -2033,7 +2430,7 @@ async function updateStats(){
   const ag=new Set(songs.flatMap(s=>s.genres));
   const sel=document.getElementById('filter-genre');
   const cur=sel.value;
-  sel.innerHTML=`<option value="">${t('filter.allGenres')}</option>`+[...ag].sort().map(g=>`<option value="${esc(g)}"${g===cur?' selected':''}>${esc(abbrGenre(g))}</option>`).join('');
+  sel.innerHTML=`<option value="">${t('filter.allGenres')}</option>`+[...ag].sort(_textSortCmp).map(g=>`<option value="${esc(g)}"${g===cur?' selected':''}>${esc(abbrGenre(g))}</option>`).join('');
   try {
     const st = await fetch('/api/stats').then(r=>r.json());
     _animateCount('stat-songs', st.totalSongs);
@@ -2341,6 +2738,12 @@ function openEditSongModal(id){
   document.getElementById('edit-song-genres').value = (s.genres||[]).join(', ');
   document.getElementById('edit-song-youtube').value = s.youtubeVideoId || '';
   _updateEditSongYoutubeLink();
+  // Текст пісні не приходить разом з /api/songs (окремий, потенційно важкий
+  // ендпоінт) — підвантажуємо лише зараз, при відкритті форми редагування.
+  document.getElementById('edit-song-lyrics').value = '';
+  fetch(`/api/songs/${id}/lyrics`).then(r=>r.ok?r.json():null).then(d=>{
+    if(d) document.getElementById('edit-song-lyrics').value = d.lyrics || '';
+  }).catch(()=>{});
   document.getElementById('edit-song-save-btn').onclick = function(){ saveEditSong(id); };
   document.getElementById('edit-song-modal-overlay').classList.add('open');
 }
@@ -2377,9 +2780,13 @@ function saveEditSong(id){
     album: album || null,
     youtubeVideoId
   };
+  const lyrics = document.getElementById('edit-song-lyrics').value;
   fetch(`/api/songs/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>{
       if(!r.ok){alert(t('msg.errorEditSong'));return;}
+      // Окремий ендпоінт (той самий, яким караоке його й читає) — та сама
+      // причина, що й для читання: текст пісні не є частиною основного DTO.
+      fetch(`/api/songs/${id}/lyrics`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({lyrics})}).catch(()=>{});
       closeEditSongModal();
       loadSongs().then(()=>{renderSongs();updateStats();});
     })
@@ -2636,6 +3043,327 @@ function playPlaylistFromStart(){
 }
 
 // ================================================================
+// БАТЛ РОЯЛЬ: одиночне вибування з плейлиста (16/32/64 учасників)
+// ================================================================
+const BATTLE_SIZES = [16, 32, 64];
+let battleRound = [];    // пісні поточного раунду (парна кількість, i та i+1 — пара)
+let battleWinners = [];  // переможці поточного раунду, стають battleRound наступного
+let battleMatchIndex = 0;
+let battleLeftPlayer = null, battleRightPlayer = null;
+let battlePlayersReady = false;
+
+function openBattleSetup(){
+  const count = currentPlaylistSongs.length;
+  const sizes = BATTLE_SIZES.filter(sz => count >= sz);
+  const body = document.getElementById('battle-setup-body');
+  if(!sizes.length){
+    body.innerHTML = `<div class="modal-body-text">${t('battle.notEnough')}</div>`;
+  } else {
+    body.innerHTML = `<div class="modal-body-text">${t('battle.chooseSize')}</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:6px;flex-wrap:wrap;">
+        ${sizes.map(sz=>`<button type="button" class="btn btn-outline" onclick="startBattleRoyale(${sz})">${sz}</button>`).join('')}
+      </div>`;
+  }
+  document.getElementById('battle-setup-modal-overlay').classList.add('open');
+}
+function closeBattleSetup(){
+  document.getElementById('battle-setup-modal-overlay').classList.remove('open');
+}
+
+function startBattleRoyale(size){
+  if(typeof YT === 'undefined' || !YT.Player){
+    // YouTube IFrame API інколи ще не встигає підвантажитись (повільна мережа) —
+    // пробуємо ще раз за секунду замість того, щоб впасти з ReferenceError.
+    setTimeout(()=>startBattleRoyale(size), 1000);
+    return;
+  }
+  closeBattleSetup();
+  battleRound = _shuffledCopy(currentPlaylistSongs).slice(0, size);
+  battleWinners = [];
+  battleMatchIndex = 0;
+  // Один плеєр на весь сайт грає одночасно — щоб не було потрійного звуку,
+  // ставимо головний на паузу на час турніру.
+  if(ytPlayer && ytReady){ try{ ytPlayer.pauseVideo(); }catch(e){} }
+  document.getElementById('battle-champion').style.display = 'none';
+  document.getElementById('battle-split').style.display = 'flex';
+  document.getElementById('battle-modal-overlay').classList.add('open');
+  _ensureBattlePlayers(()=>{ loadBattleMatch(); });
+}
+
+// YT.Player створюємо один раз і перевикористовуємо між матчами (loadVideoById) —
+// перестворювати iframe на кожен матч і повільніше, і призводить до спалахів
+// "чорного екрана" між раундами.
+function _ensureBattlePlayers(cb){
+  if(battlePlayersReady){ cb(); return; }
+  let readyCount = 0;
+  function onEither(){ readyCount++; if(readyCount===2){ battlePlayersReady=true; cb(); } }
+  battleLeftPlayer = new YT.Player('battle-yt-a', {
+    height:'100%', width:'100%',
+    playerVars:{autoplay:1, controls:1, mute:1},
+    events:{ onReady:onEither }
+  });
+  battleRightPlayer = new YT.Player('battle-yt-b', {
+    height:'100%', width:'100%',
+    playerVars:{autoplay:1, controls:1, mute:1},
+    events:{ onReady:onEither }
+  });
+}
+
+async function loadBattleMatch(){
+  const a = battleRound[battleMatchIndex*2];
+  const b = battleRound[battleMatchIndex*2+1];
+  document.getElementById('battle-round-label').textContent =
+    `${t('battle.roundLabel')}${battleRound.length} → ${battleRound.length/2}`;
+  document.getElementById('battle-a-artist').textContent = a.artist;
+  document.getElementById('battle-a-title').textContent = a.title;
+  document.getElementById('battle-b-artist').textContent = b.artist;
+  document.getElementById('battle-b-title').textContent = b.title;
+  document.getElementById('battle-a-notfound').style.display = 'none';
+  document.getElementById('battle-b-notfound').style.display = 'none';
+
+  const [vidA, vidB] = await Promise.all([_resolveBattleVid(a), _resolveBattleVid(b)]);
+  _loadBattleSide(battleLeftPlayer, 'battle-a-notfound', vidA);
+  _loadBattleSide(battleRightPlayer, 'battle-b-notfound', vidB);
+}
+
+async function _resolveBattleVid(song){
+  if(song.youtubeVideoId) return song.youtubeVideoId;
+  const vid = await fetchVid(song.artist, song.title);
+  if(vid) _cacheYoutubeVideo(song.id, vid);
+  return vid;
+}
+
+function _loadBattleSide(player, notFoundElId, vid){
+  if(!vid){
+    document.getElementById(notFoundElId).style.display = 'block';
+    return;
+  }
+  player.loadVideoById(vid);
+  player.mute(); // обидва відео завжди без звуку за замовчуванням — керування гучністю на розсуд користувача через власні контроли YouTube-плеєра
+}
+
+function chooseBattleWinner(side){
+  const winner = battleRound[battleMatchIndex*2 + side];
+  battleWinners.push(winner);
+  battleMatchIndex++;
+  if(battleMatchIndex*2 >= battleRound.length){
+    if(battleWinners.length === 1){
+      showBattleChampion(battleWinners[0]);
+      return;
+    }
+    battleRound = battleWinners;
+    battleWinners = [];
+    battleMatchIndex = 0;
+  }
+  loadBattleMatch();
+}
+
+function showBattleChampion(song){
+  try{ battleLeftPlayer && battleLeftPlayer.pauseVideo(); }catch(e){}
+  try{ battleRightPlayer && battleRightPlayer.pauseVideo(); }catch(e){}
+  document.getElementById('battle-champion-artist').textContent = song.artist;
+  document.getElementById('battle-champion-title').textContent = song.title;
+  document.getElementById('battle-split').style.display = 'none';
+  document.getElementById('battle-champion').style.display = 'block';
+}
+
+function closeBattle(){
+  document.getElementById('battle-modal-overlay').classList.remove('open');
+  try{ battleLeftPlayer && battleLeftPlayer.stopVideo(); }catch(e){}
+  try{ battleRightPlayer && battleRightPlayer.stopVideo(); }catch(e){}
+}
+document.getElementById('battle-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeBattle();
+});
+document.getElementById('battle-setup-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeBattleSetup();
+});
+
+// ================================================================
+// ГРАФ СХОЖОСТІ: композиції / жанри / альбоми / сингли
+// ================================================================
+// Лінії малюємо лише для помітної схожості — інакше при N≈300+ вузлів
+// вийшла б суцільна павутина, у якій нічого не видно.
+const GRAPH_SIM_THRESHOLD = 0.15;
+let _graphItems = [], _graphOnClick = null;
+
+function _jaccard(setA, setB){
+  if(!setA.size && !setB.size) return 0;
+  let inter = 0;
+  for(const x of setA) if(setB.has(x)) inter++;
+  const union = setA.size + setB.size - inter;
+  return union ? inter/union : 0;
+}
+function _genreSet(song){ return new Set(song.genres.map(g=>g.toLowerCase())); }
+
+function openSimilarityGraph(kind){
+  let items, simFn, labelFn, colorFn, onClickFn, titleKey;
+
+  if(kind === 'songs'){
+    items = songs;
+    const sets = items.map(_genreSet);
+    simFn = (i,j) => _jaccard(sets[i], sets[j]);
+    labelFn = s => `${s.artist} — ${s.title}`;
+    colorFn = (s,i) => WHEEL_COLORS[i % WHEEL_COLORS.length];
+    onClickFn = s => { closeGraph(); playSong(s.id); };
+    titleKey = 'graph.titleSongs';
+  } else if(kind === 'genres'){
+    const genreNames = [...new Set(songs.flatMap(s=>s.genres))];
+    // Схожість жанрів = наскільки часто вони зустрічаються РАЗОМ у тих самих піснях.
+    const songIdSets = genreNames.map(g => new Set(songs.filter(s=>s.genres.includes(g)).map(s=>s.id)));
+    items = genreNames;
+    simFn = (i,j) => _jaccard(songIdSets[i], songIdSets[j]);
+    labelFn = g => abbrGenre(g);
+    colorFn = (g,i) => WHEEL_COLORS[i % WHEEL_COLORS.length];
+    onClickFn = g => { closeGraph(); showPage('home'); document.getElementById('filter-genre').value = g; renderSongs(); };
+    titleKey = 'graph.titleGenres';
+  } else { // 'albums' | 'singles'
+    let groups;
+    if(kind === 'albums'){
+      const map = new Map();
+      songs.forEach(s=>{
+        if(!s.album) return;
+        if(!map.has(s.album)) map.set(s.album, { name: s.album, songs: [], artists: new Set() });
+        const g = map.get(s.album);
+        g.songs.push(s); g.artists.add(s.artist);
+      });
+      groups = [...map.values()];
+    } else {
+      groups = songs.filter(s=>!s.album).map(s => ({ name: `${s.artist} — ${s.title}`, songs: [s], artists: new Set([s.artist]) }));
+    }
+    items = groups;
+    const genreSets = groups.map(g => {
+      const set = new Set();
+      g.songs.forEach(s => s.genres.forEach(gn => set.add(gn.toLowerCase())));
+      return set;
+    });
+    // Схожість альбомів/синглів: насамперед жанровий профіль, той самий
+    // виконавець — лише другорядний бонус (той самий артист може творити
+    // в геть різних стилях, тож сам собою це не робить альбоми схожими).
+    simFn = (i,j) => {
+      const genreSim = _jaccard(genreSets[i], genreSets[j]);
+      const a1 = groups[i].artists, a2 = groups[j].artists;
+      const sameArtist = (a1.size===1 && a2.size===1 && [...a1][0]===[...a2][0]) ? 1 : 0;
+      return genreSim*0.8 + sameArtist*0.2;
+    };
+    labelFn = g => g.name;
+    colorFn = (g,i) => WHEEL_COLORS[i % WHEEL_COLORS.length];
+    onClickFn = kind === 'albums'
+      ? g => { closeGraph(); showPage('home'); document.getElementById('search').value = g.name; renderSongs(); }
+      : g => { closeGraph(); playSong(g.songs[0].id); };
+    titleKey = kind === 'albums' ? 'graph.titleAlbums' : 'graph.titleSingles';
+  }
+
+  document.getElementById('graph-title').textContent = t(titleKey);
+  document.getElementById('graph-loading').style.display = 'block';
+  document.getElementById('graph-svg').innerHTML = '';
+  document.getElementById('graph-modal-overlay').classList.add('open');
+  // Обчислення відкладаємо на наступний кадр — щоб встиг намалюватись стан
+  // "завантаження" перед тим, як потік на мить зайняється розрахунком (N≈300+).
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{
+      _renderGraph(items, simFn, labelFn, colorFn, onClickFn);
+      document.getElementById('graph-loading').style.display = 'none';
+    }, 20);
+  });
+}
+
+function closeGraph(){
+  document.getElementById('graph-modal-overlay').classList.remove('open');
+}
+document.getElementById('graph-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeGraph();
+});
+
+// Проста фізична симуляція (вузли відштовхуються завжди, притягуються
+// пропорційно до схожості) — не академічна MDS, але для "чим ближче — тим
+// схожіше" цього достатньо й не потребує зовнішніх бібліотек.
+function _computeGraphLayout(n, sim, width, height){
+  const nodes = [];
+  for(let i=0;i<n;i++){
+    const angle = (i/n)*Math.PI*2;
+    const r = Math.min(width,height)*0.35;
+    nodes.push({ x: width/2 + Math.cos(angle)*r, y: height/2 + Math.sin(angle)*r, vx:0, vy:0 });
+  }
+  const repelK = 5000, springK = 0.02, centerK = 0.004;
+  const iterations = n > 200 ? 90 : 150;
+  for(let iter=0; iter<iterations; iter++){
+    for(let i=0;i<n;i++){
+      let fx=0, fy=0;
+      for(let j=0;j<n;j++){
+        if(i===j) continue;
+        const dx = nodes[i].x-nodes[j].x, dy = nodes[i].y-nodes[j].y;
+        let distSq = dx*dx+dy*dy; if(distSq<4) distSq=4;
+        const dist = Math.sqrt(distSq);
+        const rep = repelK/distSq;
+        fx += (dx/dist)*rep; fy += (dy/dist)*rep;
+        const s = sim[i][j];
+        if(s>0){
+          const attract = springK*s*dist;
+          fx -= (dx/dist)*attract; fy -= (dy/dist)*attract;
+        }
+      }
+      fx += (width/2-nodes[i].x)*centerK;
+      fy += (height/2-nodes[i].y)*centerK;
+      nodes[i].vx = (nodes[i].vx+fx)*0.82;
+      nodes[i].vy = (nodes[i].vy+fy)*0.82;
+    }
+    for(let i=0;i<n;i++){ nodes[i].x += nodes[i].vx; nodes[i].y += nodes[i].vy; }
+  }
+  // Відступ від країв, щоб вузли не малювались упритул до рамки.
+  const pad = 20;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  nodes.forEach(p=>{ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; });
+  const spanX = Math.max(1,maxX-minX), spanY = Math.max(1,maxY-minY);
+  const sx = (width-pad*2)/spanX, sy = (height-pad*2)/spanY;
+  const scale = Math.min(sx, sy, 1.4);
+  nodes.forEach(p=>{
+    p.x = pad + (p.x-minX)*scale;
+    p.y = pad + (p.y-minY)*scale;
+  });
+  return nodes;
+}
+
+function _renderGraph(items, simFn, labelFn, colorFn, onClickFn){
+  const n = items.length;
+  const svg = document.getElementById('graph-svg');
+  const w = svg.clientWidth || 700, h = svg.clientHeight || 500;
+  if(!n){ svg.innerHTML=''; return; }
+  if(n===1){
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.innerHTML = `<g class="graph-node" onclick="_graphNodeClicked(0)"><circle cx="${w/2}" cy="${h/2}" r="9" fill="${colorFn(items[0],0)}"><title>${esc(labelFn(items[0]))}</title></circle></g>`;
+    _graphItems = items; _graphOnClick = onClickFn;
+    return;
+  }
+
+  const sim = new Array(n);
+  for(let i=0;i<n;i++) sim[i] = new Array(n).fill(0);
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ const s=simFn(i,j); sim[i][j]=s; sim[j][i]=s; }
+
+  const nodes = _computeGraphLayout(n, sim, w, h);
+  const radius = n>150 ? 3.5 : n>50 ? 6 : 9;
+
+  let edgesSvg = '';
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    const s = sim[i][j];
+    if(s < GRAPH_SIM_THRESHOLD) continue;
+    edgesSvg += `<line x1="${nodes[i].x.toFixed(1)}" y1="${nodes[i].y.toFixed(1)}" x2="${nodes[j].x.toFixed(1)}" y2="${nodes[j].y.toFixed(1)}" stroke="rgba(200,169,110,${Math.min(0.5, s*0.6).toFixed(2)})" stroke-width="${(1+s*2).toFixed(1)}" />`;
+  }
+  let nodesSvg = '';
+  for(let i=0;i<n;i++){
+    nodesSvg += `<g class="graph-node" onclick="_graphNodeClicked(${i})"><circle cx="${nodes[i].x.toFixed(1)}" cy="${nodes[i].y.toFixed(1)}" r="${radius}" fill="${colorFn(items[i],i)}" stroke="rgba(0,0,0,0.3)" stroke-width="1"><title>${esc(labelFn(items[i]))}</title></circle></g>`;
+  }
+
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = edgesSvg + nodesSvg;
+  _graphItems = items;
+  _graphOnClick = onClickFn;
+}
+function _graphNodeClicked(i){
+  if(_graphOnClick) _graphOnClick(_graphItems[i]);
+}
+
+// ================================================================
 // TOP 100 (найпрослуханіші — GET /api/stats/top-songs)
 // ================================================================
 let currentTopSongs = [];
@@ -2695,6 +3423,7 @@ function _loadCurrent(){
   document.getElementById('p-cur').textContent='0:00';
   document.getElementById('p-dur').textContent='0:00';
   renderSongs();
+  if(karaokeOpen) loadKaraokeLyrics();
 
   // Якщо videoId вже закешовано в базі (хтось раніше знайшов і підтвердив
   // його для цієї ж пісні) — беремо напряму, без нового запиту до YouTube
@@ -2868,6 +3597,7 @@ function _updateMediaSessionMetadata(song, videoId){
 
 function playerClose(){
   if(videoPopupOpen) closeVideoPopup();
+  if(karaokeOpen) toggleKaraoke();
   try{if(ytPlayer&&ytReady)ytPlayer.stopVideo();}catch(e){}
   stopTick();setEQ(false);
   currentVid = null;
@@ -3105,6 +3835,33 @@ function _stopPopupSync() {
 function toggleVideoPopup() {
   if (videoPopupOpen) closeVideoPopup();
   else openVideoPopup();
+}
+
+// ================================================================
+// КАРАОКЕ: текст поточної пісні (вводить вручну адмін — див. edit-song-lyrics)
+// ================================================================
+let karaokeOpen = false;
+function toggleKaraoke(){
+  karaokeOpen = !karaokeOpen;
+  document.getElementById('karaoke-panel').classList.toggle('open', karaokeOpen);
+  document.getElementById('btn-karaoke').classList.toggle('active', karaokeOpen);
+  if(karaokeOpen) loadKaraokeLyrics();
+}
+function loadKaraokeLyrics(){
+  const textEl = document.getElementById('karaoke-text');
+  const emptyEl = document.getElementById('karaoke-empty');
+  const s = playerQueue[playerIndex];
+  textEl.textContent = '';
+  emptyEl.style.display = 'none';
+  if(!s) return;
+  fetch(`/api/songs/${s.id}/lyrics`)
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      const text = d && d.lyrics ? d.lyrics : '';
+      if(!text){ emptyEl.style.display = 'block'; return; }
+      textEl.textContent = text;
+    })
+    .catch(() => { emptyEl.style.display = 'block'; });
 }
 
 // ================================================================

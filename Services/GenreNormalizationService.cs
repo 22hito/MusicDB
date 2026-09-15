@@ -156,27 +156,46 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         public List<string>? Genres { get; set; }
     }
 
-    // Сканує всі жанри одним запитом до ШІ, знаходить групи дублікатів
-    // (той самий жанр, написаний по-різному) — для адмінського прибирання.
+    // Сканує жанри, знаходить групи дублікатів (той самий жанр, написаний
+    // по-різному) — для адмінського прибирання.
+    //
+    // Двоступенево: спершу локально, без жодного звернення до ШІ, ловимо
+    // ОЧЕВИДНІ дублікати (одруківка/пробіл/дефіс/регістр) через Левенштейн
+    // (FuzzyText) — на практиці це переважна більшість реальних дублікатів
+    // у списку з ~80+ жанрів. Лише те, що НЕ згрупувалось локально, іде
+    // одним запитом до Gemini — набагато менший список, отже й надійніший
+    // результат (безкоштовний тариф Gemini погано тримає "багато й часто").
     //
     // На відміну від NormalizeGenreAsync (мовчазний fallback), тут помилка
     // повертається явно — адмін має бачити, чи дублікатів справді немає,
-    // чи ШІ просто не відповів.
+    // чи ШІ-етап просто не відпрацював (Success лишається true, якщо
+    // локальний етап хоч щось знайшов — його результат не варто губити).
     public async Task<GenreDuplicateScanResult> FindDuplicateGroupsAsync(List<string> allGenres)
     {
+        var distinct = allGenres.Select(g => g.Trim()).Where(g => g.Length > 0).Distinct().ToList();
+        if (distinct.Count < 2)
+            return new GenreDuplicateScanResult(true, null, []);
+
+        var (localGroups, unmatched) = GroupObviousDuplicates(distinct);
+        if (unmatched.Count < 2)
+            return new GenreDuplicateScanResult(true, null, localGroups);
+
         var apiKey = config["Gemini:ApiKey"];
         var modelName = config["Gemini:Model"] ?? "gemini-3.6-flash";
         if (string.IsNullOrWhiteSpace(apiKey))
-            return new GenreDuplicateScanResult(false, "Ключ Gemini не налаштований (appsettings.json → Gemini:ApiKey).", []);
+        {
+            var note = localGroups.Count > 0
+                ? "Ключ Gemini не налаштований — показано лише очевидні (типографічні) дублікати, знайдені без ШІ."
+                : "Ключ Gemini не налаштований (appsettings.json → Gemini:ApiKey).";
+            return new GenreDuplicateScanResult(true, note, localGroups);
+        }
 
-        if (allGenres.Count < 2)
-            return new GenreDuplicateScanResult(true, null, []);
-
-        var list = string.Join(", ", allGenres.Select(g => $"\"{g.Trim()}\""));
+        var list = string.Join(", ", unmatched.Select(g => $"\"{g}\""));
 
         var prompt = $$"""
             Ти — асистент нормалізації назв музичних жанрів для бази даних.
-            Ось повний список жанрів, що є в базі: [{{list}}]
+            Очевидні (типографічні) дублікати вже прибрано окремо — нижче
+            лише жанри, що НЕ мають явного збігу написання. Ось цей список: [{{list}}]
 
             Знайди серед них групи, де кілька рядків насправді позначають
             ОДИН І ТОЙ САМИЙ жанр, але написані по-різному (без пробілу,
@@ -212,37 +231,86 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync();
-                return new GenreDuplicateScanResult(false,
-                    $"Gemini повернув помилку {(int)response.StatusCode} {response.StatusCode}: {Truncate(errorBody, 400)}", []);
+                return new GenreDuplicateScanResult(true,
+                    $"ШІ-етап не відповів ({(int)response.StatusCode} {response.StatusCode}) — показано лише очевидні дублікати. {Truncate(errorBody, 300)}",
+                    localGroups);
             }
 
             var result = await response.Content.ReadFromJsonAsync<GeminiResponse>();
             var text = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
-            if (string.IsNullOrWhiteSpace(text))
-                return new GenreDuplicateScanResult(false, "Gemini повернув порожню відповідь.", []);
-
-            text = text.Trim().Trim('`').Trim();
-            if (text.StartsWith("json", StringComparison.OrdinalIgnoreCase))
+            text = text?.Trim().Trim('`').Trim();
+            if (!string.IsNullOrWhiteSpace(text) && text.StartsWith("json", StringComparison.OrdinalIgnoreCase))
                 text = text[4..].Trim();
 
-            var parsed = JsonSerializer.Deserialize<DuplicateGroupsResult>(text);
-            var groups = parsed?.Groups?.Where(g => !string.IsNullOrWhiteSpace(g.Canonical) && g.Duplicates?.Count > 0).ToList() ?? [];
-            return new GenreDuplicateScanResult(true, null, groups);
+            var parsed = string.IsNullOrWhiteSpace(text) ? null : JsonSerializer.Deserialize<DuplicateGroupsResult>(text);
+            var aiGroups = parsed?.Groups?.Where(g => !string.IsNullOrWhiteSpace(g.Canonical) && g.Duplicates?.Count > 0).ToList() ?? [];
+            return new GenreDuplicateScanResult(true, null, [.. localGroups, .. aiGroups]);
         }
         catch (Exception ex)
         {
-            return new GenreDuplicateScanResult(false, $"Помилка звернення до Gemini: {ex.Message}", []);
+            return new GenreDuplicateScanResult(true,
+                $"ШІ-етап дав збій ({ex.Message}) — показано лише очевидні дублікати.", localGroups);
         }
+    }
+
+    // Локальне (без ШІ) групування "очевидних" дублікатів: одруківка, зайвий/
+    // відсутній пробіл, дефіс замість пробілу, інший регістр. Повертає готові
+    // групи ТА список жанрів, які лишились без пари (їх варто перевірити ШІ).
+    private static (List<DuplicateGroup> Groups, List<string> Unmatched) GroupObviousDuplicates(List<string> genres)
+    {
+        var used = new bool[genres.Count];
+        var groups = new List<DuplicateGroup>();
+        var unmatched = new List<string>();
+
+        for (var i = 0; i < genres.Count; i++)
+        {
+            if (used[i]) continue;
+            var cluster = new List<string> { genres[i] };
+            used[i] = true;
+            for (var j = i + 1; j < genres.Count; j++)
+            {
+                if (used[j] || !FuzzyText.FuzzyEquals(genres[i], genres[j])) continue;
+                cluster.Add(genres[j]);
+                used[j] = true;
+            }
+
+            if (cluster.Count == 1) { unmatched.Add(genres[i]); continue; }
+
+            var canonical = PickCanonicalForm(cluster);
+            groups.Add(new DuplicateGroup
+            {
+                Canonical = canonical,
+                Duplicates = cluster.Where(g => !g.Equals(canonical, StringComparison.OrdinalIgnoreCase)).ToList(),
+            });
+        }
+        return (groups, unmatched);
+    }
+
+    // Малими літерами, без дефісів, якщо такий варіант уже є в кластері —
+    // інакше найкоротший рядок (менше шансів на зайві символи типу дефіса).
+    private static string PickCanonicalForm(List<string> cluster)
+    {
+        var clean = cluster.FirstOrDefault(g => g == g.ToLowerInvariant() && !g.Contains('-'));
+        return (clean ?? cluster.OrderBy(g => g.Length).First()).ToLowerInvariant();
     }
 
     public async Task<string> NormalizeGenreAsync(string candidate, IEnumerable<string> existingGenres)
     {
         var fallback = candidate.Trim().ToLowerInvariant();
+        var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
+
+        // Дешева перевірка без ШІ: typo/пробіл/дефіс/регістр — це переважна
+        // більшість "дублікатів" при звичайному збереженні пісні. Якщо серед
+        // наявних жанрів уже є майже такий самий рядок, використовуємо його
+        // напряму й НЕ витрачаємо квоту Gemini (вона мала на безкоштовному тарифі).
+        var fuzzyMatch = existingDistinct.FirstOrDefault(g => FuzzyText.FuzzyEquals(g, candidate));
+        if (fuzzyMatch != null) return fuzzyMatch;
+
         var apiKey = config["Gemini:ApiKey"];
         var modelName = config["Gemini:Model"] ?? "gemini-3.6-flash";
         if (string.IsNullOrWhiteSpace(apiKey)) return fallback;
 
-        var existingList = string.Join(", ", existingGenres.Select(g => g.Trim()).Distinct());
+        var existingList = string.Join(", ", existingDistinct);
 
         var prompt = $$"""
             Ти — асистент нормалізації назв музичних жанрів для бази даних.
@@ -303,14 +371,38 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
     {
         var fallback = candidates.Select(c => c.Trim().ToLowerInvariant()).ToList();
         if (candidates.Count == 0) return fallback;
-        if (candidates.Count == 1) return [await NormalizeGenreAsync(candidates[0], existingGenres)];
+
+        var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
+
+        // Той самий дешевий фільтр без ШІ, що й у NormalizeGenreAsync: скільки б
+        // жанрів не збереглось за раз, до Gemini йдуть лише ті, що не збіглись
+        // (навіть приблизно) із жанром, який уже є в базі.
+        var results = new string[candidates.Count];
+        var pendingIndexes = new List<int>();
+        for (var i = 0; i < candidates.Count; i++)
+        {
+            var fuzzyMatch = existingDistinct.FirstOrDefault(g => FuzzyText.FuzzyEquals(g, candidates[i]));
+            if (fuzzyMatch != null) results[i] = fuzzyMatch;
+            else pendingIndexes.Add(i);
+        }
+        if (pendingIndexes.Count == 0) return results.ToList();
+        if (pendingIndexes.Count == 1)
+        {
+            results[pendingIndexes[0]] = await NormalizeGenreAsync(candidates[pendingIndexes[0]], existingDistinct);
+            return results.ToList();
+        }
 
         var apiKey = config["Gemini:ApiKey"];
         var modelName = config["Gemini:Model"] ?? "gemini-3.6-flash";
-        if (string.IsNullOrWhiteSpace(apiKey)) return fallback;
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            foreach (var i in pendingIndexes) results[i] = fallback[i];
+            return results.ToList();
+        }
 
-        var existingList = string.Join(", ", existingGenres.Select(g => g.Trim()).Distinct());
-        var candidatesList = string.Join("\n", candidates.Select((c, i) => $"{i}: \"{c}\""));
+        var pending = pendingIndexes.Select(i => candidates[i]).ToList();
+        var existingList = string.Join(", ", existingDistinct);
+        var candidatesList = string.Join("\n", pending.Select((c, i) => $"{i}: \"{c}\""));
 
         var prompt = $$"""
             Ти — асистент нормалізації назв музичних жанрів для бази даних.
@@ -332,7 +424,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
             слів на кшталт "music" чи "genre".
 
             Відповідь дай СТРОГО у форматі JSON, без жодного іншого тексту,
-            з РІВНО {{candidates.Count}} елементами, по одному на кожен індекс:
+            з РІВНО {{pending.Count}} елементами, по одному на кожен індекс:
             {"results": [{"index": 0, "genre": "rock"}, {"index": 1, "genre": "metal"}]}
             """;
 
@@ -346,30 +438,36 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
                     generationConfig = new { temperature = 0.0, responseMimeType = "application/json" }
                 }, maxAttempts: 2);
 
-            if (!response.IsSuccessStatusCode) return fallback;
+            if (!response.IsSuccessStatusCode)
+            {
+                foreach (var i in pendingIndexes) results[i] = fallback[i];
+                return results.ToList();
+            }
 
             var result = await response.Content.ReadFromJsonAsync<GeminiResponse>();
             var text = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
-            if (string.IsNullOrWhiteSpace(text)) return fallback;
-
-            text = text.Trim().Trim('`').Trim();
-            if (text.StartsWith("json", StringComparison.OrdinalIgnoreCase))
+            text = text?.Trim().Trim('`').Trim();
+            if (!string.IsNullOrWhiteSpace(text) && text.StartsWith("json", StringComparison.OrdinalIgnoreCase))
                 text = text[4..].Trim();
 
-            var parsed = JsonSerializer.Deserialize<BatchGenreNormalizeResult>(text);
-            if (parsed?.Results is null) return fallback;
+            var parsed = string.IsNullOrWhiteSpace(text) ? null : JsonSerializer.Deserialize<BatchGenreNormalizeResult>(text);
+            var byIndex = parsed?.Results?.Where(r => r.Index.HasValue).ToDictionary(r => r.Index!.Value)
+                ?? new Dictionary<int, BatchGenreNormalizeItem>();
 
-            var byIndex = parsed.Results.Where(r => r.Index.HasValue).ToDictionary(r => r.Index!.Value);
-            return candidates.Select((c, i) =>
+            for (var k = 0; k < pendingIndexes.Count; k++)
             {
-                var genre = byIndex.TryGetValue(i, out var r) ? r.Genre?.Trim() : null;
-                return string.IsNullOrWhiteSpace(genre) ? fallback[i] : genre.ToLowerInvariant();
-            }).ToList();
+                var origIndex = pendingIndexes[k];
+                var genre = byIndex.TryGetValue(k, out var r) ? r.Genre?.Trim() : null;
+                results[origIndex] = string.IsNullOrWhiteSpace(genre) ? fallback[origIndex] : genre.ToLowerInvariant();
+            }
+            return results.ToList();
         }
         catch
         {
-            // Ліміт/мережева помилка — працюємо як без ШІ (фолбек для всіх елементів).
-            return fallback;
+            // Ліміт/мережева помилка — фолбек лише для того, що ще не вирішено
+            // фільтром вище (fuzzy-збіги вже записані в results і не губляться).
+            foreach (var i in pendingIndexes) results[i] = fallback[i];
+            return results.ToList();
         }
     }
 
