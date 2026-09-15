@@ -91,6 +91,10 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Без цього Chromium притишує таймери/rAF, коли вікно згорнуте або
+      // без фокусу (напр. перемкнулись на іншу вкладку/застосунок) — саме
+      // через це зупинялось відтворення відео у фоні.
+      backgroundThrottling: false,
       // Прапорець "це десктопний застосунок" (localStorage.isDesktopApp) —
       // тут, а не на dom-ready, бо preload виконується ДО коду сторінки на
       // кожній навігації, тож встигає ще до того, як навбар перевірить його,
@@ -179,7 +183,9 @@ ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
     title: "N'Owl",
     backgroundColor: '#000000',
     autoHideMenuBar: true,
-    webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
+    // backgroundThrottling: false — інакше саме ЦЕ вікно (з реальним звуком)
+    // притишується, коли втрачає фокус чи згортається, і музика зупиняється.
+    webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   });
   popoutWindow.setMenuBarVisibility(false);
   popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds));
