@@ -365,10 +365,22 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   animation: modalIn 0.28s cubic-bezier(.2,.9,.3,1.1);
 }
 .battle-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between; position: relative;
   padding: 14px 18px; border-bottom: 1px solid var(--border);
 }
 .battle-header span { color: var(--muted); font-family: var(--font-mono); font-size: 0.85rem; letter-spacing: 0.3px; }
+/* Абсолютне позиціювання, а не третій flex-елемент у space-between — інакше
+   центр "з'їжджає" вбік залежно від ширини сусідів (лічильника раунду й ✕).
+   .battle-header — той самий клас, що й у заголовку графа схожості (де цієї
+   кнопки нема), тому чіпати сам flex/justify-content там не можна. */
+.battle-hover-toggle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+/* Загальний .btn:hover{transform:translateY(-2px)} має ту саму специфічність
+   (клас+псевдоклас) і, перемагаючи на hover, повністю ЗАМІНЯВ це
+   translate(-50%,-50%) — кнопка "губила" центрування й стрибала. Тут той
+   самий рівень специфічності, але правило нижче в файлі — перемагає воно,
+   і об'єднує підняття з тим самим центруванням замість втрати останнього. */
+.battle-hover-toggle:hover { transform: translate(-50%, calc(-50% - 2px)); }
+.battle-hover-toggle:active { transform: translate(-50%, -50%) scale(0.97); }
 .battle-close-btn { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
 .battle-close-btn:hover { color: var(--text); }
 .battle-split { display: flex; align-items: stretch; gap: 0; }
@@ -378,13 +390,24 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 }
 .battle-video-wrap { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
 .battle-video-wrap iframe { width: 100%; height: 100%; }
-.battle-side-info { text-align: center; margin-bottom: 14px; min-height: 44px; }
-.battle-side-artist { color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.05rem; }
-.battle-side-title { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+/* Фіксована висота (не min-height) — щоб кнопка "Обрати цю" завжди сиділа на
+   тому самому місці, незалежно від довжини назви пісні/виконавця з обох
+   боків. Замало місця для довгого тексту — рядок обрізається трикрапкою
+   (-webkit-line-clamp), а не розтягує блок і не зсуває кнопку нижче. */
+.battle-side-info { text-align: center; margin-bottom: 14px; height: 92px; overflow: hidden; }
+.battle-side-artist {
+  color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.05rem;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.battle-side-title {
+  color: var(--muted); font-size: 0.85rem; margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .battle-side-notfound { display: none; color: var(--red); font-size: 0.75rem; margin-top: 4px; }
 .battle-choose-btn {
   background: var(--accent); color: #0d0d0f; border: none; border-radius: 6px;
   padding: 0.55rem 1.2rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  margin-top: auto; /* підстраховка: приклеює кнопку до низу навіть якщо висоти сторін розійдуться з іншої причини */
 }
 .battle-choose-btn:hover { background: #ddbd85; }
 .battle-vs {
@@ -952,6 +975,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
       <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
       <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 100</button></li>
       <li><button id="tab-wheel" onclick="showPage('wheel')" data-i18n="nav.wheel">🎡 Колесо фортуни</button></li>
+      <li><button id="tab-battle" onclick="showPage('battle')" data-i18n="nav.battle">🏆 Батл рояль</button></li>
       <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
       <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
       <li id="nav-admin" style="display:none"><button id="tab-admin" onclick="showPage('admin')" data-i18n="nav.admin">Адмін — Запити</button></li>
@@ -1258,6 +1282,24 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   </div>
 </div>
 
+<!-- BATTLE ROYALE: вибір плейлиста (власного або публічного, чужого) для турніру -->
+<div id="page-battle" class="page">
+  <div class="container">
+    <h2><span data-i18n="battle.heading.pre">Батл</span> <span class="hl" data-i18n="battle.heading.accent">рояль</span></h2>
+    <div id="battle-page-own-section" style="margin-bottom:2rem;">
+      <h3 style="font-size:1.1rem;margin-bottom:0.8rem;" data-i18n="battle.pageOwnHeading">Мої плейлисти</h3>
+      <div id="battle-page-own-login-hint" class="empty" style="display:none;"><span class="icon">🔒</span><span data-i18n="battle.pageOwnLoginHint">Увійдіть, щоб побачити тут свої плейлисти</span></div>
+      <div id="battle-page-own-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="battle.pageOwnEmpty">У вас ще немає плейлистів — створіть їх у профілі</span></div>
+      <div id="battle-page-own-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+    </div>
+    <div>
+      <h3 style="font-size:1.1rem;margin-bottom:0.8rem;" data-i18n="battle.pagePublicHeading">Плейлисти спільноти</h3>
+      <div id="battle-page-public-empty" class="empty" style="display:none;"><span class="icon">🌍</span><span data-i18n="battle.pagePublicEmpty">Ще немає публічних плейлистів — зробіть свій публічним у профілі</span></div>
+      <div id="battle-page-public-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- PLAYER BAR -->
 <div id="player-bar">
   <div id="player-seek-wrap" onmousedown="seekStart(event)" ontouchstart="seekStart(event)">
@@ -1542,6 +1584,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   <div class="battle-box">
     <div class="battle-header">
       <span id="battle-round-label"></span>
+      <button type="button" class="btn btn-outline battle-hover-toggle" id="battle-hover-toggle-btn" onclick="toggleBattleHoverMode()" data-i18n="battle.hoverModeBtn" title="Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза" data-i18n-title="battle.hoverModeHint">👆 Режим наведення</button>
       <button class="battle-close-btn" onclick="closeBattle()">✕</button>
     </div>
     <div id="battle-split" class="battle-split">
@@ -1644,6 +1687,19 @@ const I18N = {
     'battle.roundLabel': 'Учасників: ',
     'battle.vs': 'VS',
     'battle.chooseBtn': '✓ Обрати цю',
+    'battle.hoverModeBtn': '👆 Режим наведення',
+    'battle.hoverModeHint': 'Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза',
+    'nav.battle': '🏆 Батл рояль',
+    'battle.heading.pre': 'Батл',
+    'battle.heading.accent': 'рояль',
+    'battle.pageOwnHeading': 'Мої плейлисти',
+    'battle.pageOwnLoginHint': 'Увійдіть, щоб побачити тут свої плейлисти',
+    'battle.pageOwnEmpty': 'У вас ще немає плейлистів — створіть їх у профілі',
+    'battle.pagePublicHeading': 'Плейлисти спільноти',
+    'battle.pagePublicEmpty': 'Ще немає публічних плейлистів — зробіть свій публічним у профілі',
+    'battle.publicBadge': 'публічний',
+    'battle.privateBadge': 'приватний',
+    'battle.togglePublicHint': "Клік перемикає приватний/публічний — публічний бачать інші на сторінці \"Батл рояль\"",
     'battle.championLabel': '🏆 Переможець',
     'battle.videoNotFound': 'Відео не знайдено',
     'graph.openHint': 'Показати граф схожості',
@@ -1760,6 +1816,7 @@ const I18N = {
     'profile.favToggle': 'Улюблене',
     'profile.songsWord': 'пісень',
     'profile.newPlaylistPrompt': 'Назва нового плейлиста:',
+    'profile.newPlaylistPublicConfirm': "Зробити плейлист публічним? Інші користувачі зможуть побачити й використати його на сторінці \"Батл рояль\" (не в іншому місці сайту). Скасувати — плейлист лишиться приватним, як завжди.",
     'profile.addToPlaylist': 'Додати в плейлист',
     'profile.addToPlaylistTitle': 'Додати в плейлист',
     'profile.newPlaylistPlaceholder': 'Назва нового плейлиста',
@@ -1822,6 +1879,19 @@ const I18N = {
     'battle.roundLabel': 'Contestants: ',
     'battle.vs': 'VS',
     'battle.chooseBtn': '✓ Pick this one',
+    'battle.hoverModeBtn': '👆 Hover to play',
+    'battle.hoverModeHint': 'Hover the video to play it — move the cursor away to pause',
+    'nav.battle': '🏆 Battle royale',
+    'battle.heading.pre': 'Battle',
+    'battle.heading.accent': 'royale',
+    'battle.pageOwnHeading': 'My playlists',
+    'battle.pageOwnLoginHint': 'Log in to see your own playlists here',
+    'battle.pageOwnEmpty': "You don't have any playlists yet — create one in your profile",
+    'battle.pagePublicHeading': 'Community playlists',
+    'battle.pagePublicEmpty': 'No public playlists yet — make one of yours public in your profile',
+    'battle.publicBadge': 'public',
+    'battle.privateBadge': 'private',
+    'battle.togglePublicHint': 'Click to toggle private/public — public playlists are visible to others on the "Battle royale" page',
     'battle.championLabel': '🏆 Champion',
     'battle.videoNotFound': 'Video not found',
     'graph.openHint': 'Show similarity graph',
@@ -1938,6 +2008,7 @@ const I18N = {
     'profile.favToggle': 'Favorite',
     'profile.songsWord': 'songs',
     'profile.newPlaylistPrompt': 'New playlist name:',
+    'profile.newPlaylistPublicConfirm': 'Make this playlist public? Other users will be able to see and use it on the "Battle royale" page (nowhere else on the site). Cancel keeps it private, as usual.',
     'profile.addToPlaylist': 'Add to playlist',
     'profile.addToPlaylistTitle': 'Add to playlist',
     'profile.newPlaylistPlaceholder': 'New playlist name',
@@ -2023,6 +2094,7 @@ function showPage(n){
     if(n==='profile') loadProfilePage();
     if(n==='recommendations') loadRecommendationsPage();
     if(n==='wheel') openWheelPage();
+    if(n==='battle') openBattlePage();
   });
 }
 // Плавний індикатор активної вкладки — рахує позицію/ширину кнопки й "їде"
@@ -2236,21 +2308,37 @@ function loadProfilePlaylists(){
     document.getElementById('profile-playlists-list').innerHTML = list.map(p=>`
       <div class="ext-search-item" onclick="openPlaylist(${p.id})">
         <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
-        <button class="btn-icon-danger" onclick="event.stopPropagation();deletePlaylist(${p.id})" title="${t('modal.confirmDelete')}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:8px;" onclick="event.stopPropagation()">
+          <button type="button" class="btn btn-outline${p.isPublic?' active':''}" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="togglePlaylistPublic(${p.id}, ${p.isPublic ? 'false' : 'true'})" title="${t('battle.togglePublicHint')}">${p.isPublic ? '🌍 '+t('battle.publicBadge') : '🔒 '+t('battle.privateBadge')}</button>
+          <button class="btn-icon-danger" onclick="deletePlaylist(${p.id})" title="${t('modal.confirmDelete')}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+          </button>
+        </div>
       </div>`).join('');
   }).catch(()=>{});
 }
 function createPlaylist(){
   const name = prompt(t('profile.newPlaylistPrompt'));
   if(!name || !name.trim()) return;
-  fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: name.trim() }) })
+  // Публічний плейлист видно іншим на сторінці "Батл рояль" (і лише там,
+  // поки що) — за замовчуванням (Скасувати/Ні) лишається приватним, як і
+  // раніше. confirm() тут — той самий мінімальний підхід, що й prompt() вище,
+  // без окремої модалки (оформлення — окремим заходом).
+  const isPublic = confirm(t('profile.newPlaylistPublicConfirm'));
+  fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: name.trim(), isPublic }) })
     .then(r=>{ if(r.ok) loadProfilePlaylists(); else alert(t('msg.connectionError')); })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
 function deletePlaylist(id){
   fetch(`/api/playlists/${id}`, { method:'DELETE' }).then(()=>loadProfilePlaylists()).catch(()=>{});
+}
+// Перемикач публічності — окремою кнопкою на кожному плейлисті в профілі
+// (а не лише питанням при створенні), щоб можна було й передумати пізніше,
+// і зробити публічним плейлист, який уже існував.
+function togglePlaylistPublic(id, makePublic){
+  fetch(`/api/playlists/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ isPublic: makePublic }) })
+    .then(r=>{ if(r.ok) loadProfilePlaylists(); else alert(t('msg.connectionError')); })
+    .catch(()=>{ alert(t('msg.connectionError')); });
 }
 
 // ================================================================
@@ -3336,6 +3424,48 @@ let battleWinners = [];  // переможці поточного раунду, 
 let battleMatchIndex = 0;
 let battleLeftPlayer = null, battleRightPlayer = null;
 let battlePlayersReady = false;
+let battleHoverModeActive = false;
+
+// Сторінка "Батл рояль" у навбарі: список власних плейлистів (якщо
+// залогінені) + публічні плейлисти інших користувачів — вибір будь-якого
+// запускає той самий openBattleSetup(), що й кнопка у відкритому плейлисті.
+function openBattlePage(){
+  const ownSection = document.getElementById('battle-page-own-login-hint');
+  const ownEmpty = document.getElementById('battle-page-own-empty');
+  const ownList = document.getElementById('battle-page-own-list');
+  if(currentUser?.authenticated){
+    ownSection.style.display = 'none';
+    fetch('/api/playlists').then(r=>r.ok?r.json():[]).then(list=>{
+      ownEmpty.style.display = list.length ? 'none' : '';
+      ownList.innerHTML = list.map(p=>`
+        <div class="ext-search-item" onclick="startBattleFromPlaylist(${p.id})">
+          <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span>${p.isPublic?`<span class="badge">${t('battle.publicBadge')}</span>`:''}</div>
+        </div>`).join('');
+    }).catch(()=>{});
+  } else {
+    ownSection.style.display = '';
+    ownEmpty.style.display = 'none';
+    ownList.innerHTML = '';
+  }
+  fetch('/api/playlists/public').then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('battle-page-public-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('battle-page-public-list').innerHTML = list.map(p=>`
+      <div class="ext-search-item" onclick="startBattleFromPlaylist(${p.id})">
+        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')} — ${esc(p.ownerLabel)}</span></div>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+// currentPlaylistSongs — той самий "поточний плейлист", яким користується і
+// сторінка плейлиста, і openBattleSetup() нижче; playlists/{id} тепер віддає
+// й чужий плейлист, якщо він публічний (див. PlaylistsController.GetById).
+function startBattleFromPlaylist(id){
+  fetch(`/api/playlists/${id}`).then(r=>r.ok?r.json():null).then(p=>{
+    if(!p) return;
+    currentPlaylistId = id;
+    currentPlaylistSongs = p.songs;
+    openBattleSetup();
+  }).catch(()=>{ alert(t('msg.connectionError')); });
+}
 
 function openBattleSetup(){
   const count = currentPlaylistSongs.length;
@@ -3379,19 +3509,60 @@ function startBattleRoyale(size){
 // перестворювати iframe на кожен матч і повільніше, і призводить до спалахів
 // "чорного екрана" між раундами.
 function _ensureBattlePlayers(cb){
-  if(battlePlayersReady){ cb(); return; }
+  if(battlePlayersReady){
+    // Кнопки вибору/наведення живуть у battle-video-wrap і не змінюються між
+    // матчами, тож слухачі наведення теж вішаємо лише один раз (тут, а не в
+    // loadBattleMatch) — інакше вони накопичувались би з кожним новим матчем.
+    cb();
+    return;
+  }
   let readyCount = 0;
-  function onEither(){ readyCount++; if(readyCount===2){ battlePlayersReady=true; cb(); } }
+  function onEither(){ readyCount++; if(readyCount===2){ battlePlayersReady=true; _wireBattleHoverListeners(); cb(); } }
+  // autoplay:0 — і, найголовніше, cueVideoById (не loadVideoById) нижче: на
+  // початку раунду обидва відео мають лежати на паузі, а не стартувати самі.
   battleLeftPlayer = new YT.Player('battle-yt-a', {
     height:'100%', width:'100%',
-    playerVars:{autoplay:1, controls:1, mute:1},
-    events:{ onReady:onEither }
+    playerVars:{autoplay:0, controls:1, mute:1},
+    events:{ onReady:onEither, onStateChange: e => _onBattleStateChange('a', e) }
   });
   battleRightPlayer = new YT.Player('battle-yt-b', {
     height:'100%', width:'100%',
-    playerVars:{autoplay:1, controls:1, mute:1},
-    events:{ onReady:onEither }
+    playerVars:{autoplay:0, controls:1, mute:1},
+    events:{ onReady:onEither, onStateChange: e => _onBattleStateChange('b', e) }
   });
+}
+
+// Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо
+// другий на паузу. Спрацьовує однаково незалежно від того, ЩО саме запустило
+// відтворення — клік по нативних контролах YouTube чи режим наведення нижче.
+function _onBattleStateChange(side, e){
+  if(e.data !== YT.PlayerState.PLAYING) return;
+  const other = side === 'a' ? battleRightPlayer : battleLeftPlayer;
+  try{ other && other.pauseVideo(); }catch(err){}
+}
+
+// "Режим наведення": навів курсор на відео — грає, вивів — пауза. Вмикається/
+// вимикається кнопкою в заголовку батла; слухачі завжди підключені, просто
+// нічого не роблять, поки прапорець вимкнено.
+function toggleBattleHoverMode(){
+  battleHoverModeActive = !battleHoverModeActive;
+  document.getElementById('battle-hover-toggle-btn').classList.toggle('active', battleHoverModeActive);
+}
+function _wireBattleHoverListeners(){
+  const wrapA = document.querySelector('#battle-yt-a').closest('.battle-video-wrap');
+  const wrapB = document.querySelector('#battle-yt-b').closest('.battle-video-wrap');
+  const wire = (wrap, getPlayer) => {
+    wrap.addEventListener('mouseenter', () => {
+      if(!battleHoverModeActive) return;
+      try{ getPlayer().playVideo(); }catch(e){}
+    });
+    wrap.addEventListener('mouseleave', () => {
+      if(!battleHoverModeActive) return;
+      try{ getPlayer().pauseVideo(); }catch(e){}
+    });
+  };
+  wire(wrapA, () => battleLeftPlayer);
+  wire(wrapB, () => battleRightPlayer);
 }
 
 async function loadBattleMatch(){
@@ -3423,7 +3594,9 @@ function _loadBattleSide(player, notFoundElId, vid){
     document.getElementById(notFoundElId).style.display = 'block';
     return;
   }
-  player.loadVideoById(vid);
+  // cueVideoById (не loadVideoById!) — завантажує кадр і лишає на паузі;
+  // loadVideoById завжди стартує відтворення одразу, ігноруючи playerVars.autoplay.
+  player.cueVideoById(vid);
   player.mute(); // обидва відео завжди без звуку за замовчуванням — керування гучністю на розсуд користувача через власні контроли YouTube-плеєра
 }
 

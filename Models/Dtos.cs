@@ -112,11 +112,18 @@ public record ProfileDto(
 
 public record UpdateProfileDto(string? DisplayName, string? AvatarUrl);
 
-public record PlaylistDto(int Id, string Name, int SongCount, string CreatedAt);
+public record PlaylistDto(int Id, string Name, int SongCount, string CreatedAt, bool IsPublic = false);
 
 public record PlaylistDetailDto(int Id, string Name, List<SongDto> Songs);
 
-public record CreatePlaylistDto(string Name);
+public record CreatePlaylistDto(string Name, bool IsPublic = false);
+
+public record UpdatePlaylistPublicDto(bool IsPublic);
+
+// Плейлист іншого користувача, зроблений публічним — видно на сторінці
+// "Батл рояль" усім, з іменем власника (без email, лише DisplayName або
+// заглушка), щоб можна було провести турнір серед чужих пісень.
+public record PublicPlaylistDto(int Id, string Name, int SongCount, string OwnerLabel);
 
 public record LogListenDto(int MusicId);
 
