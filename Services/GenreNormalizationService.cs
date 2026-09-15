@@ -253,9 +253,16 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
     }
 
-    // Локальне (без ШІ) групування "очевидних" дублікатів: одруківка, зайвий/
-    // відсутній пробіл, дефіс замість пробілу, інший регістр. Повертає готові
-    // групи ТА список жанрів, які лишились без пари (їх варто перевірити ШІ).
+    // Локальне (без ШІ) групування "очевидних" дублікатів. НАВМИСНО не через
+    // Левенштейн (FuzzyText) — та толерантність до одруківок зроблена для
+    // ВІЛЬНОГО тексту (ім'я артиста/назва пісні), де 1-2 символи різниці
+    // справді майже завжди одруківка. Назви жанрів — короткі, смислово щільні
+    // ідентифікатори, де та сама відстань у символах часто означає ІНШИЙ
+    // жанр: "trap"/"rap" (відстань 1), "alternative rock"/"alternative pop"
+    // (відстань 3, обидва >10 символів — проходило поріг), "pop rock"/"rap
+    // rock" тощо. Це реально стались хибні об'єднання на проді. Тому тут —
+    // лише точна рівність після зняття регістру/пробілів/дефісів/підкреслень:
+    // "hardrock" == "hard rock" == "Hard-Rock", але "trap" != "rap".
     private static (List<DuplicateGroup> Groups, List<string> Unmatched) GroupObviousDuplicates(List<string> genres)
     {
         var used = new bool[genres.Count];
@@ -269,7 +276,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
             used[i] = true;
             for (var j = i + 1; j < genres.Count; j++)
             {
-                if (used[j] || !FuzzyText.FuzzyEquals(genres[i], genres[j])) continue;
+                if (used[j] || GenreKey(genres[i]) != GenreKey(genres[j])) continue;
                 cluster.Add(genres[j]);
                 used[j] = true;
             }
@@ -286,6 +293,13 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         return (groups, unmatched);
     }
 
+    // "Hard-Rock" / "hard rock" / "HARDROCK" -> "hardrock". Прибирає лише
+    // формат (регістр/пробіли/дефіси/підкреслення), не міняє й не толерує
+    // жодної літери самого слова — на відміну від Левенштейна, тут
+    // "trap"/"rap" НІКОЛИ не співпадуть.
+    private static string GenreKey(string g) =>
+        new(g.Trim().ToLowerInvariant().Where(c => c != ' ' && c != '-' && c != '_').ToArray());
+
     // Малими літерами, без дефісів, якщо такий варіант уже є в кластері —
     // інакше найкоротший рядок (менше шансів на зайві символи типу дефіса).
     private static string PickCanonicalForm(List<string> cluster)
@@ -299,12 +313,12 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         var fallback = candidate.Trim().ToLowerInvariant();
         var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
 
-        // Дешева перевірка без ШІ: typo/пробіл/дефіс/регістр — це переважна
-        // більшість "дублікатів" при звичайному збереженні пісні. Якщо серед
-        // наявних жанрів уже є майже такий самий рядок, використовуємо його
-        // напряму й НЕ витрачаємо квоту Gemini (вона мала на безкоштовному тарифі).
-        var fuzzyMatch = existingDistinct.FirstOrDefault(g => FuzzyText.FuzzyEquals(g, candidate));
-        if (fuzzyMatch != null) return fuzzyMatch;
+        // Дешева перевірка без ШІ: пробіл/дефіс/регістр — це переважна
+        // більшість "дублікатів" при звичайному збереженні пісні. Точна
+        // рівність після зняття формату (НЕ Левенштейн — той для коротких
+        // назв жанрів плутає "trap" з "rap" тощо, див. коментар біля GenreKey).
+        var exactMatch = existingDistinct.FirstOrDefault(g => GenreKey(g) == GenreKey(candidate));
+        if (exactMatch != null) return exactMatch;
 
         var apiKey = config["Gemini:ApiKey"];
         var modelName = config["Gemini:Model"] ?? "gemini-3.6-flash";
@@ -374,15 +388,15 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
 
         var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
 
-        // Той самий дешевий фільтр без ШІ, що й у NormalizeGenreAsync: скільки б
-        // жанрів не збереглось за раз, до Gemini йдуть лише ті, що не збіглись
-        // (навіть приблизно) із жанром, який уже є в базі.
+        // Той самий фільтр без ШІ, що й у NormalizeGenreAsync: до Gemini йдуть
+        // лише жанри, що не збіглись ТОЧНО (без урахування формату) із тим,
+        // що вже є в базі.
         var results = new string[candidates.Count];
         var pendingIndexes = new List<int>();
         for (var i = 0; i < candidates.Count; i++)
         {
-            var fuzzyMatch = existingDistinct.FirstOrDefault(g => FuzzyText.FuzzyEquals(g, candidates[i]));
-            if (fuzzyMatch != null) results[i] = fuzzyMatch;
+            var exactMatch = existingDistinct.FirstOrDefault(g => GenreKey(g) == GenreKey(candidates[i]));
+            if (exactMatch != null) results[i] = exactMatch;
             else pendingIndexes.Add(i);
         }
         if (pendingIndexes.Count == 0) return results.ToList();
