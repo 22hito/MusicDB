@@ -88,6 +88,7 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             : new Dictionary<int, string>();
 
         var playCounts = await GetPlayCountsAsync(idList);
+        var artistsBySong = await GetSongArtistsAsync(idList);
 
         return songs.Select(m =>
         {
@@ -96,7 +97,8 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             return new SongDto(m.Id, m.Artist, m.Title,
                 m.Release.ToString("yyyy-MM-dd"),
                 m.Duration.ToString(@"hh\:mm\:ss"),
-                genres, albumName, playCounts.GetValueOrDefault(m.Id, 0), m.YoutubeVideoId);
+                genres, albumName, playCounts.GetValueOrDefault(m.Id, 0), m.YoutubeVideoId,
+                artistsBySong.GetValueOrDefault(m.Id));
         }).ToList();
     }
 
@@ -113,5 +115,73 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             .GroupBy(h => h.MusicId)
             .Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Key, x => x.Count);
+    }
+
+    // Розбиває "Artist" (напр. "Bring Me The Horizon, Nova Twins") на окремих
+    // виконавців, знаходить-або-створює кожного в lab.artists, повертає їхні id.
+    // На відміну від ResolveGenresAsync — без ШІ-нормалізації, лише split+trim
+    // (case/пробіл-нечутливе злиття через normalized_name; пунктуаційні
+    // варіанти типу "blink-182"/"blink182" свідомо НЕ мерджаться в v1).
+    public async Task<List<int>> ResolveArtistsAsync(string rawArtistField)
+    {
+        var names = rawArtistField
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(n => n.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var ids = new List<int>();
+        foreach (var name in names)
+        {
+            var normalized = name.ToLowerInvariant();
+            var artist = await db.Artists.FirstOrDefaultAsync(a => a.NormalizedName == normalized)
+                         ?? db.Artists.Local.FirstOrDefault(a => a.NormalizedName == normalized);
+
+            if (artist is null)
+            {
+                artist = new Artist { Name = name, NormalizedName = normalized };
+                db.Artists.Add(artist);
+                try
+                {
+                    await db.SaveChangesAsync();
+                }
+                catch (DbUpdateException) // гонка: хтось інший щойно створив того ж артиста
+                {
+                    db.Entry(artist).State = EntityState.Detached;
+                    artist = await db.Artists.FirstAsync(a => a.NormalizedName == normalized);
+                }
+            }
+            ids.Add(artist.Id);
+        }
+        return ids.Distinct().ToList();
+    }
+
+    // Повністю замінює набір зв'язків music_artists для пісні (той самий
+    // патерн replace-all, що й MusicGenres при редагуванні пісні).
+    public async Task SyncMusicArtistsAsync(int musicId, List<int> artistIds)
+    {
+        var current = await db.MusicArtists.Where(ma => ma.MusicId == musicId).ToListAsync();
+        db.MusicArtists.RemoveRange(current);
+        for (var i = 0; i < artistIds.Count; i++)
+            db.MusicArtists.Add(new MusicArtist { MusicId = musicId, ArtistId = artistIds[i], Position = (short)i });
+        await db.SaveChangesAsync();
+    }
+
+    // Батчево підвантажує ArtistRefDto[] для набору пісень (один запит, не N+1) —
+    // спільна логіка для GetSongDtosByIdsAsync і SongsController.ToDto.
+    public async Task<Dictionary<int, ArtistRefDto[]>> GetSongArtistsAsync(IEnumerable<int> musicIds)
+    {
+        var idList = musicIds.Distinct().ToList();
+        if (idList.Count == 0) return new Dictionary<int, ArtistRefDto[]>();
+
+        var rows = await db.MusicArtists
+            .Where(ma => idList.Contains(ma.MusicId))
+            .OrderBy(ma => ma.Position)
+            .Select(ma => new { ma.MusicId, ma.Artist.Id, ma.Artist.Name })
+            .ToListAsync();
+
+        return rows
+            .GroupBy(r => r.MusicId)
+            .ToDictionary(g => g.Key, g => g.Select(r => new ArtistRefDto(r.Id, r.Name)).ToArray());
     }
 }

@@ -14,7 +14,10 @@ public record SongDto(
     // Раз знайдений і підтверджений (пройшов перевірку релевантності) відеоряд
     // кешується тут — наступні відтворення цієї пісні більше не витрачають
     // YouTube Search API квоту (100 одиниць/запит) на повторний пошук.
-    string?  YoutubeVideoId = null
+    string?  YoutubeVideoId = null,
+    // Розбір поля Artist на окремих виконавців (для посилань на їхні сторінки) —
+    // null для DTO, де це поле ще не заповнюється (не ламає позиційні виклики).
+    ArtistRefDto[]? Artists = null
 );
 
 public record SetYoutubeVideoDto(string VideoId);
@@ -129,3 +132,28 @@ public record LogListenDto(int MusicId);
 
 // Рекомендація з коротким поясненням від ШІ, чому саме ця пісня.
 public record RecommendationDto(SongDto Song, string? Reason);
+
+// ─── Artists ──────────────────────────────────────────────────────────────────
+
+public record ArtistRefDto(int Id, string Name);
+
+public record ArtistSummaryDto(int Id, string Name, int SongCount);
+
+public record ArtistDetailDto(int Id, string Name, string? Bio, string? ImageUrl, int SongCount, int FollowerCount, bool IsFollowing);
+
+public record ArtistNotificationDto(int Id, int ArtistId, string ArtistName, string EventType, string SongLabel, string CreatedAt);
+
+public record NotificationsSummaryDto(int UnreadCount, List<ArtistNotificationDto> Recent);
+
+// ─── Users / Friends ────────────────────────────────────────────────────────────
+// UserId — opaque id з lab.users. Email НІКОЛИ не повертається цими DTO —
+// той самий принцип, що й у PublicPlaylistDto.OwnerLabel.
+
+// RelationshipStatus: "self" | "none" | "friends" | "pending_outgoing" | "pending_incoming"
+public record PublicUserDto(int UserId, string DisplayName, string? AvatarUrl, string RelationshipStatus);
+
+public record UserSearchResultDto(int UserId, string DisplayName, string? AvatarUrl, string RelationshipStatus);
+
+public record FriendRequestDto(int RequestId, int UserId, string DisplayName, string? AvatarUrl, string CreatedAt);
+
+public record SendFriendRequestDto(int TargetUserId);

@@ -12,7 +12,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SongsController(MusicDbContext db, MusicService musicService, IHubContext<MusicHub> hub) : ControllerBase
+public class SongsController(MusicDbContext db, MusicService musicService, ArtistActivityService artistActivity, IHubContext<MusicHub> hub) : ControllerBase
 {
     [HttpGet]
     public async Task<IEnumerable<SongDto>> GetAll()
@@ -34,8 +34,9 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
             : new Dictionary<int, string>();
 
         var playCounts = await musicService.GetPlayCountsAsync(songs.Select(m => m.Id));
+        var artistsBySong = await musicService.GetSongArtistsAsync(songs.Select(m => m.Id));
 
-        return songs.Select(m => ToDto(m, albums, playCounts.GetValueOrDefault(m.Id, 0)));
+        return songs.Select(m => ToDto(m, albums, playCounts.GetValueOrDefault(m.Id, 0), artistsBySong.GetValueOrDefault(m.Id)));
     }
 
     [HttpGet("{id}")]
@@ -52,7 +53,8 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
             albumName = (await db.Albums.FindAsync(song.AlbumIds[0]))?.Name;
 
         var playCounts = await musicService.GetPlayCountsAsync([id]);
-        return ToDto(song, albumName, playCounts.GetValueOrDefault(id, 0));
+        var artistsBySong = await musicService.GetSongArtistsAsync([id]);
+        return ToDto(song, albumName, playCounts.GetValueOrDefault(id, 0), artistsBySong.GetValueOrDefault(id));
     }
 
     [Authorize, AdminOnly]
@@ -76,6 +78,9 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
         foreach (var gid in genreIds)
             db.MusicGenres.Add(new MusicGenre { MusicId = music.Id, GenreId = gid });
 
+        var artistIds = await musicService.ResolveArtistsAsync(music.Artist);
+        await musicService.SyncMusicArtistsAsync(music.Id, artistIds);
+
         await db.SaveChangesAsync();
 
         var created = await db.Songs
@@ -85,9 +90,11 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
         string? createdAlbumName = albumId.HasValue
             ? (await db.Albums.FindAsync(albumId.Value))?.Name
             : null;
+        var createdArtists = (await musicService.GetSongArtistsAsync([music.Id])).GetValueOrDefault(music.Id);
 
+        await artistActivity.RecordEventAsync(artistIds, "song_added", music.Id, $"{music.Artist} — {music.Title}");
         await hub.Clients.All.SendAsync("songsChanged");
-        return CreatedAtAction(nameof(GetById), new { id = music.Id }, ToDto(created, createdAlbumName, 0));
+        return CreatedAtAction(nameof(GetById), new { id = music.Id }, ToDto(created, createdAlbumName, 0, createdArtists));
     }
 
     [Authorize, AdminOnly]
@@ -96,8 +103,15 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
     {
         var song = await db.Songs.FindAsync(id);
         if (song is null) return NotFound();
+
+        // Знімаємо artist_id-и й підпис ДО видалення — каскад зітре
+        // music_artists разом із піснею.
+        var artistIds = await db.MusicArtists.Where(ma => ma.MusicId == id).Select(ma => ma.ArtistId).ToListAsync();
+        var label = $"{song.Artist} — {song.Title}";
+
         db.Songs.Remove(song);
         await db.SaveChangesAsync();
+        await artistActivity.RecordEventAsync(artistIds, "song_removed", null, label);
         await hub.Clients.All.SendAsync("songsChanged");
         return NoContent();
     }
@@ -141,8 +155,24 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
     {
         var song = await db.Songs.FindAsync(id);
         if (song is null) return NotFound();
+
+        // Сповіщення лише коли текст СПРАВДІ зʼявився (null -> непорожній),
+        // не на кожне редагування вже наявного.
+        var wasAdded = string.IsNullOrWhiteSpace(song.Lyrics) && !string.IsNullOrWhiteSpace(dto.Lyrics);
         song.Lyrics = string.IsNullOrWhiteSpace(dto.Lyrics) ? null : dto.Lyrics.Trim();
         await db.SaveChangesAsync();
+
+        if (wasAdded)
+        {
+            var artistIds = await db.MusicArtists.Where(ma => ma.MusicId == id).Select(ma => ma.ArtistId).ToListAsync();
+            if (artistIds.Count == 0) // самолікування: пісня ще не пройшла бекфіл
+            {
+                artistIds = await musicService.ResolveArtistsAsync(song.Artist);
+                await musicService.SyncMusicArtistsAsync(id, artistIds);
+            }
+            await artistActivity.RecordEventAsync(artistIds, "lyrics_added", song.Id, $"{song.Artist} — {song.Title}");
+        }
+
         return Ok(new LyricsDto(song.Lyrics));
     }
 
@@ -177,6 +207,11 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
 
         await db.SaveChangesAsync();
 
+        // Ресинк music_artists під нове поле Artist — це корекція наявного
+        // запису, не "подія" (без ArtistActivityService.RecordEventAsync).
+        var artistIds = await musicService.ResolveArtistsAsync(song.Artist);
+        await musicService.SyncMusicArtistsAsync(song.Id, artistIds);
+
         var updated = await db.Songs
             .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
             .FirstAsync(m => m.Id == song.Id);
@@ -185,27 +220,28 @@ public class SongsController(MusicDbContext db, MusicService musicService, IHubC
         string? updatedAlbumName = albumId.HasValue
             ? (await db.Albums.FindAsync(albumId.Value))?.Name
             : null;
+        var updatedArtists = (await musicService.GetSongArtistsAsync([song.Id])).GetValueOrDefault(song.Id);
 
         await hub.Clients.All.SendAsync("songsChanged");
-        return Ok(ToDto(updated, updatedAlbumName, playCounts.GetValueOrDefault(song.Id, 0)));
+        return Ok(ToDto(updated, updatedAlbumName, playCounts.GetValueOrDefault(song.Id, 0), updatedArtists));
     }
 
-    private static SongDto ToDto(Music m, Dictionary<int, string> albums, int playCount)
+    private static SongDto ToDto(Music m, Dictionary<int, string> albums, int playCount, ArtistRefDto[]? artists = null)
     {
         var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
         var albumName = m.AlbumIds is { Length: > 0 } && albums.TryGetValue(m.AlbumIds[0], out var n) ? n : null;
         return new SongDto(m.Id, m.Artist, m.Title,
             m.Release.ToString("yyyy-MM-dd"),
             m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName, playCount, m.YoutubeVideoId);
+            genres, albumName, playCount, m.YoutubeVideoId, artists);
     }
 
-    private static SongDto ToDto(Music m, string? albumName, int playCount)
+    private static SongDto ToDto(Music m, string? albumName, int playCount, ArtistRefDto[]? artists = null)
     {
         var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
         return new SongDto(m.Id, m.Artist, m.Title,
             m.Release.ToString("yyyy-MM-dd"),
             m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName, playCount, m.YoutubeVideoId);
+            genres, albumName, playCount, m.YoutubeVideoId, artists);
     }
 }
