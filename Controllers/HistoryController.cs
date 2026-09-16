@@ -13,15 +13,9 @@ namespace MusicDB.Api.Controllers;
 [EnableRateLimiting("history")]
 public class HistoryController(MusicDbContext db) : ControllerBase
 {
-    // Фронтенд викликає це, коли пісня "прослухана" (програло принаймні
-    // 20 секунд або більше половини тривалості — перевірка на клієнті).
-    //
-    // Захист від накрутки лічильника прослуховувань (як у Spotify):
-    // 1) один користувач рахується максимум один раз на пісню — назавжди
-    //    (перевірка нижче + унікальний індекс (user_email, music_id) в БД —
-    //    прибирає й race condition при паралельних запитах);
-    // 2) rate limiter на маршруті (див. Program.cs, політика "history") —
-    //    відсікає швидкі скриптові запити без реального прослуховування.
+    // Фронтенд викликає це, коли пісня "прослухана" (перевірка на клієнті).
+    // Захист від накрутки: один користувач рахується раз на пісню назавжди
+    // (унікальний індекс (user_email, music_id) в БД) + rate limiter (Program.cs).
     [HttpPost]
     public async Task<IActionResult> Log([FromBody] Models.LogListenDto dto)
     {
@@ -39,8 +33,7 @@ public class HistoryController(MusicDbContext db) : ControllerBase
         }
         catch (DbUpdateException)
         {
-            // Унікальний індекс в БД — паралельний запит вже встиг зарахувати
-            // те саме прослуховування першим, це нормально, просто ігноруємо.
+            // Паралельний запит вже встиг зарахувати те саме — ігноруємо.
         }
         return Ok();
     }

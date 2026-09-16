@@ -20,9 +20,7 @@ public class NotificationsController(MusicDbContext db, UserDirectoryService use
         User.FindFirstValue(ClaimTypes.Name),
         User.FindFirstValue("picture") ?? User.FindFirstValue("urn:google:picture"));
 
-    // Непрочитане — без фан-ауту (рядок-на-підписника-на-подію): один запис
-    // події на артиста, "прочитано" — ArtistFollow.LastReadAt. LINQ-join
-    // компілюється в реальний SQL JOIN + WHERE, без фільтрації в памʼяті.
+    // Непрочитане — без фан-ауту: один запис події на артиста, "прочитано" — ArtistFollow.LastReadAt.
     [HttpGet]
     public async Task<ActionResult<NotificationsSummaryDto>> Get([FromQuery] int limit = 30)
     {
@@ -64,13 +62,8 @@ public class NotificationsController(MusicDbContext db, UserDirectoryService use
         return Ok();
     }
 
-    // Позначає прочитаним ОДНЕ сповіщення — без фан-ауту "прочитано" все одно
-    // немає per-подійного стану, лише per-(user, artist) LastReadAt (див.
-    // коментар над Get). Тому "прочитати цю одну" — це насправді "підняти
-    // LastReadAt цього артиста рівно до часу цієї події": усе, що СТАРІШЕ
-    // або таке саме, автоматично теж стає прочитаним (як у email/Slack —
-    // "прочитано до цього моменту"), а новіші події від того ж артиста
-    // лишаються непрочитаними, бо їхній CreatedAt більший за нове LastReadAt.
+    // "Прочитати одну" = підняти LastReadAt цього артиста до часу цієї події —
+    // усе старіше/рівне теж стає прочитаним, новіші події лишаються непрочитаними.
     [HttpPost("{eventId:int}/mark-read")]
     public async Task<IActionResult> MarkOneRead(int eventId)
     {

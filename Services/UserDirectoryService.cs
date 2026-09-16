@@ -3,15 +3,11 @@ using MusicDB.Api.Data;
 
 namespace MusicDB.Api.Services;
 
-// Єдина точка "email -> opaque id" — і Program.cs (при кожному Google-логіні),
-// і будь-який контролер, якому потрібен стабільний id (для юзера, чия кука
-// пережила деплой цієї фічі й ще не пройшла новий логін). Кука вже несе
-// Name/picture-claims з оригінального тікета (так само їх читає /auth/me),
-// тож обидва шляхи апсертять однакові дані — жодного "збіднення" для лінивого шляху.
+// Єдина точка "email -> opaque id" — викликається і з Program.cs (при кожному
+// Google-логіні), і з будь-якого контролера, якому потрібен стабільний id.
 public class UserDirectoryService(MusicDbContext db)
 {
-    // INSERT ... ON CONFLICT — захист від гонки при одночасному першому
-    // запиті (напр. дві вкладки відкрились одночасно одразу після деплою).
+    // INSERT ... ON CONFLICT — захист від гонки при одночасному першому запиті.
     public async Task<int> GetOrCreateUserIdAsync(string email, string? googleName, string? googlePicture)
     {
         await db.Database.ExecuteSqlInterpolatedAsync($@"

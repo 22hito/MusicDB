@@ -54,9 +54,7 @@ public class ExternalMusicSearchServiceTests
     [Fact]
     public async Task SearchAsync_AlbumTerm_ArtistHintMatchesDespiteMissingYo()
     {
-        // Реальний сценарій: користувач набирає виконавця без "ё" (як прийнято
-        // в побутовому рос. письмі), а в базі iTunes ім'я записане з "ё" —
-        // видача не повинна від цього змінюватись.
+        // Користувач набирає виконавця без "ё", а в базі iTunes ім'я з "ё" — видача не повинна змінюватись.
         var json = Results(
             Item("Кишлак", "Track A", "Эскапист"),
             Item("Дешёвые Драмы", "Track B", "Эскапист"));
@@ -139,9 +137,7 @@ public class ExternalMusicSearchServiceTests
     [Fact]
     public async Task SearchAsync_AlbumTerm_FetchesFullTracklistViaLookup_NotJustPartialSearchMatches()
     {
-        // Відтворює реальний баг: /search за назвою альбому повертає лише
-        // частину треків (тут — 2 з 4), бо це нечіткий пошук за релевантністю
-        // по всьому каталогу, а не гарантований повний трек-лист альбому.
+        // /search за назвою альбому повертає лише частину треків (тут — 2 з 4).
         var searchJson = Results(
             new Dictionary<string, object?> { ["artistName"] = "ArtistA", ["trackName"] = "Track One", ["collectionId"] = 555, ["collectionName"] = "The Album" },
             new Dictionary<string, object?> { ["artistName"] = "ArtistA", ["trackName"] = "Track Two", ["collectionId"] = 555, ["collectionName"] = "The Album" });

@@ -12,13 +12,10 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Реальні секрети (пароль БД, API-ключі) — файл у .gitignore, у appsettings.json
-// лише порожні плейсхолдери. optional:true — на сервері секрети йдуть через
-// env vars, файлу нема. Додається після appsettings.json, тож перекриває плейсхолдери.
+// Реальні секрети (пароль БД, API-ключі) — файл у .gitignore, перекриває appsettings.json.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-// Render/Railway/Fly.io призначають порт через env PORT — слухаємо на ньому.
-// Локально PORT не задано, тож використовується "Urls" з appsettings.json.
+// Render/Railway/Fly.io призначають порт через env PORT.
 var renderPort = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrEmpty(renderPort))
 {
@@ -81,9 +78,7 @@ builder.Services.AddAuthentication(options =>
     options.CallbackPath = "/signin-google";
     options.SaveTokens = false;
 
-    // Без цього Google мовчки повторно логінить тим самим акаунтом, що вже
-    // активний у поточній сесії (навіть після виходу з нашого сайту) —
-    // "Увійти" ніколи не пропонував вибір іншого акаунта чи додавання нового.
+    // Без цього Google мовчки перелогінює тим самим акаунтом без вибору іншого.
     options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
     {
         ctx.Response.Redirect(ctx.RedirectUri + "&prompt=select_account");
@@ -98,9 +93,7 @@ builder.Services.AddAuthentication(options =>
         var name = ctx.Principal?.FindFirstValue(ClaimTypes.Name);
         var picture = ctx.Principal?.FindFirstValue("picture") ?? ctx.Principal?.FindFirstValue("urn:google:picture");
 
-        // Апсертить lab.users при КОЖНОМУ логіні (не лише при першому) — див.
-        // коментар над UserDirectoryService: на відміну від lab.user_profiles,
-        // цей реєстр не лишається спарс і завжди має свіже імʼя/фото.
+        // Апсертить lab.users при кожному логіні — завжди має свіже імʼя/фото.
         await userDirectory.GetOrCreateUserIdAsync(email, name, picture);
 
         if (await db.Admins.AnyAsync(a => a.Email == email))
@@ -110,9 +103,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Захист /api/history від накрутки лічильника прослуховувань: не частіше
-// одного зарахованого запиту на юзера за 15с (реальне прослуховування й так
-// вимагає щонайменше стільки часу — звичайного користувача це не обмежує).
+// Захист /api/history від накрутки лічильника: не частіше 1 запиту на юзера за 15с.
 builder.Services.AddRateLimiter(opts =>
 {
     opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -144,9 +135,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseDefaultFiles();
-// no-cache (не no-store): без явних заголовків браузер кешує index.html
-// надовго і показує стару версію після деплою навіть при Ctrl+F5.
-// ETag-валідація лишається — повторні візити швидкі (304).
+// no-cache (не no-store): вимагає ревалідації, щоб не показувати стару версію
+// після деплою, але ETag лишається — повторні візити швидкі (304).
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
@@ -160,11 +150,7 @@ app.UseRateLimiter();
 
 app.MapGet("/auth/login", () =>
     Results.Challenge(
-        // IsPersistent=true — без цього кука виходить сесійною (без
-        // Expires/Max-Age), і хоч ExpireTimeSpan=7 днів валідний ВСЕРЕДИНІ
-        // тікета, сам браузер/Electron видаляє таку куку одразу при
-        // повному закритті процесу — саме тому застосунок "забував" логін
-        // після кожного перезапуску, хоча в межах однієї сесії все працювало.
+        // IsPersistent=true — інакше кука сесійна й зникає при закритті браузера/Electron.
         new AuthenticationProperties { RedirectUri = "/", IsPersistent = true },
         [GoogleDefaults.AuthenticationScheme]));
 
@@ -191,10 +177,8 @@ app.MapGet("/auth/me", (HttpContext ctx) =>
 
 app.MapGet("/config", (IConfiguration config) =>
 {
-    // Кілька ключів (кожен — свій GCP-проєкт) для ротації при вичерпанні денної
-    // квоти YouTube Data API (10000 одиниць/добу НА ПРОЄКТ, не на ключ) —
-    // фронтенд сам перемикається на наступний при 403/429. YouTube:ApiKey
-    // лишається як фолбек для сумісності, якщо масив не налаштований.
+    // Кілька ключів для ротації при вичерпанні денної квоти YouTube Data API —
+    // фронтенд сам перемикається при 403/429. YouTube:ApiKey — фолбек.
     var keys = config.GetSection("YouTube:ApiKeys").Get<string[]>();
     if (keys is not { Length: > 0 })
     {
@@ -205,9 +189,7 @@ app.MapGet("/config", (IConfiguration config) =>
 });
 
 app.MapControllers();
-// Реалтайм-оновлення: контролери шлють через IHubContext<MusicHub> після
-// кожної мутації (додав/змінив/видалив пісню, нова/підтверджена заявка) —
-// усі відкриті вкладки підхоплюють зміни без ручного оновлення сторінки.
+// Реалтайм: контролери шлють події через IHubContext<MusicHub> після кожної мутації.
 app.MapHub<MusicHub>("/hubs/music");
 app.MapFallbackToFile("index.html");
 

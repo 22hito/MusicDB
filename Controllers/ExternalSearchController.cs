@@ -14,10 +14,8 @@ public class ExternalSearchController(
     GenreNormalizationService genreNormalizer,
     MusicDbContext db) : ControllerBase
 {
-    // Жанри тут НЕ збагачуються — це робиться пізніше, лише для обраної
-    // пісні (SuggestGenres).
-    // artist/title/album — окремими полями (а не одним q), щоб звужувати
-    // пошук iTunes під конкретний attribute (albumTerm/artistTerm/songTerm).
+    // Жанри тут НЕ збагачуються — лише пізніше, для обраної пісні (SuggestGenres).
+    // artist/title/album — окремими полями, щоб звужувати пошук iTunes під attribute;
     // q лишився для сумісності зі старими клієнтами.
     [Authorize]
     [HttpGet]
@@ -34,11 +32,8 @@ public class ExternalSearchController(
 
         if (!string.IsNullOrWhiteSpace(album))
         {
-            // Запит завжди звужуємо ЛИШЕ до назви альбому — комбінований рядок
-            // "виконавець + альбом" на iTunes різко звужує нечіткий пошук і
-            // повертає лише кілька збігів замість усіх треків альбому.
-            // Виконавець (якщо теж заповнений) йде окремо — як підказка для
-            // сортування релевантності, а не для звуження самого запиту.
+            // Запит звужуємо лише до назви альбому — "виконавець + альбом" на iTunes
+            // повертає замало збігів. Виконавець іде окремо, лише для сортування.
             query = album;
             attribute = "albumTerm";
             artistHint = string.IsNullOrWhiteSpace(artist) ? null : artist;

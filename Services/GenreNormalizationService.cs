@@ -4,15 +4,11 @@ using System.Text.Json.Serialization;
 
 namespace MusicDB.Api.Services;
 
-// Нормалізує написання жанру через Gemini, щоб уникнути дублів типу
-// "hardrock" / "hard rock" / "Hard-Rock".
-//
-// Ключ — appsettings.json → Gemini:ApiKey, безкоштовно на
-// https://aistudio.google.com/apikey. Без ключа чи при недоступності
-// сервісу повертається оригінальний текст без змін.
+// Нормалізує написання жанру через Gemini (appsettings.json → Gemini:ApiKey),
+// щоб уникнути дублів типу "hardrock" / "hard rock". Без ключа — оригінал без змін.
 public class GenreNormalizationService(HttpClient http, IConfiguration config, ILogger<GenreNormalizationService> logger)
 {
-    // Gemini інколи повертає 503 (тимчасове перевантаження) — ретраїмо з паузою.
+    // Ретрай на 503 (тимчасове перевантаження Gemini).
     internal static async Task<HttpResponseMessage> PostWithRetryAsync(HttpClient http, string url, object body, int maxAttempts = 3)
     {
         HttpResponseMessage? response = null;
@@ -26,9 +22,8 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
     }
 
 
-    // Збагачує весь список результатів пошуку точнішими жанрами одним
-    // запитом до ШІ (а не окремим на кожен елемент, щоб не палити ліміт).
-    // Якщо ШІ недоступний — елементи лишаються з тим жанром, що вже був.
+    // Збагачує весь список результатів пошуку жанрами одним запитом до ШІ
+    // (не по одному, щоб не палити ліміт).
     public async Task<List<ExternalSongResult>> EnrichGenresBatchAsync(List<ExternalSongResult> items, IEnumerable<string> existingGenres)
     {
         var apiKey = config["Gemini:ApiKey"];
@@ -124,7 +119,6 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
         catch (Exception ex)
         {
-            // ШІ недоступний/ліміт — лишаємо список без змін, причину логуємо.
             logger.LogWarning(ex, "EnrichGenresBatchAsync: виняток під час звернення до Gemini.");
             return items;
         }
@@ -132,8 +126,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 
-    // Про всяк випадок: розбиваємо, якщо ШІ все ж об'єднав жанри через "/"/","
-    // попри заборону в промпті.
+    // Розбиває жанри, якщо ШІ все ж об'єднав кілька через "/" чи "," попри промпт.
     private static List<string> NormalizeGenreList(List<string> raw) =>
         raw.SelectMany(g => g.Split(['/', ','], StringSplitOptions.RemoveEmptyEntries))
            .Select(g => g.Trim().ToLowerInvariant())
@@ -156,20 +149,9 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         public List<string>? Genres { get; set; }
     }
 
-    // Сканує жанри, знаходить групи дублікатів (той самий жанр, написаний
-    // по-різному) — для адмінського прибирання.
-    //
-    // Двоступенево: спершу локально, без жодного звернення до ШІ, ловимо
-    // ОЧЕВИДНІ дублікати (одруківка/пробіл/дефіс/регістр) через Левенштейн
-    // (FuzzyText) — на практиці це переважна більшість реальних дублікатів
-    // у списку з ~80+ жанрів. Лише те, що НЕ згрупувалось локально, іде
-    // одним запитом до Gemini — набагато менший список, отже й надійніший
-    // результат (безкоштовний тариф Gemini погано тримає "багато й часто").
-    //
-    // На відміну від NormalizeGenreAsync (мовчазний fallback), тут помилка
-    // повертається явно — адмін має бачити, чи дублікатів справді немає,
-    // чи ШІ-етап просто не відпрацював (Success лишається true, якщо
-    // локальний етап хоч щось знайшов — його результат не варто губити).
+    // Знаходить групи дублікатів жанрів (той самий жанр, написаний по-різному)
+    // для адмінського прибирання. Двоступенево: спершу локальний Левенштейн-матч
+    // (FuzzyText) для очевидних дублікатів, потім Gemini лише для решти.
     public async Task<GenreDuplicateScanResult> FindDuplicateGroupsAsync(List<string> allGenres)
     {
         var distinct = allGenres.Select(g => g.Trim()).Where(g => g.Length > 0).Distinct().ToList();
@@ -253,16 +235,9 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
     }
 
-    // Локальне (без ШІ) групування "очевидних" дублікатів. НАВМИСНО не через
-    // Левенштейн (FuzzyText) — та толерантність до одруківок зроблена для
-    // ВІЛЬНОГО тексту (ім'я артиста/назва пісні), де 1-2 символи різниці
-    // справді майже завжди одруківка. Назви жанрів — короткі, смислово щільні
-    // ідентифікатори, де та сама відстань у символах часто означає ІНШИЙ
-    // жанр: "trap"/"rap" (відстань 1), "alternative rock"/"alternative pop"
-    // (відстань 3, обидва >10 символів — проходило поріг), "pop rock"/"rap
-    // rock" тощо. Це реально стались хибні об'єднання на проді. Тому тут —
-    // лише точна рівність після зняття регістру/пробілів/дефісів/підкреслень:
-    // "hardrock" == "hard rock" == "Hard-Rock", але "trap" != "rap".
+    // Локальне (без ШІ) групування "очевидних" дублікатів. НЕ через Левенштейн —
+    // для коротких назв жанрів та толерантність плутає різні жанри ("trap"/"rap").
+    // Лише точна рівність після зняття регістру/пробілів/дефісів/підкреслень.
     private static (List<DuplicateGroup> Groups, List<string> Unmatched) GroupObviousDuplicates(List<string> genres)
     {
         var used = new bool[genres.Count];
@@ -293,15 +268,11 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         return (groups, unmatched);
     }
 
-    // "Hard-Rock" / "hard rock" / "HARDROCK" -> "hardrock". Прибирає лише
-    // формат (регістр/пробіли/дефіси/підкреслення), не міняє й не толерує
-    // жодної літери самого слова — на відміну від Левенштейна, тут
-    // "trap"/"rap" НІКОЛИ не співпадуть.
+    // "Hard-Rock" / "hard rock" / "HARDROCK" -> "hardrock" — прибирає лише формат.
     private static string GenreKey(string g) =>
         new(g.Trim().ToLowerInvariant().Where(c => c != ' ' && c != '-' && c != '_').ToArray());
 
-    // Малими літерами, без дефісів, якщо такий варіант уже є в кластері —
-    // інакше найкоротший рядок (менше шансів на зайві символи типу дефіса).
+    // Обирає малими літерами без дефісів варіант із кластера, інакше найкоротший.
     private static string PickCanonicalForm(List<string> cluster)
     {
         var clean = cluster.FirstOrDefault(g => g == g.ToLowerInvariant() && !g.Contains('-'));
@@ -313,10 +284,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         var fallback = candidate.Trim().ToLowerInvariant();
         var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
 
-        // Дешева перевірка без ШІ: пробіл/дефіс/регістр — це переважна
-        // більшість "дублікатів" при звичайному збереженні пісні. Точна
-        // рівність після зняття формату (НЕ Левенштейн — той для коротких
-        // назв жанрів плутає "trap" з "rap" тощо, див. коментар біля GenreKey).
+        // Дешева перевірка без ШІ: точна рівність після зняття формату (див. GenreKey).
         var exactMatch = existingDistinct.FirstOrDefault(g => GenreKey(g) == GenreKey(candidate));
         if (exactMatch != null) return exactMatch;
 
@@ -360,7 +328,6 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
             var text = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
             if (string.IsNullOrWhiteSpace(text)) return fallback;
 
-            // На випадок, якщо модель загорнула відповідь у ```json ... ``` попри вимогу.
             text = text.Trim().Trim('`').Trim();
             if (text.StartsWith("json", StringComparison.OrdinalIgnoreCase))
                 text = text[4..].Trim();
@@ -371,16 +338,12 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
         catch
         {
-            // Ліміт/мережева помилка — працюємо як без ШІ (fallback).
             return fallback;
         }
     }
 
-    // Пакетна версія NormalizeGenreAsync — ОДИН запит до Gemini на весь набір
-    // жанрів одного збереження (напр. "рок, метал" при доданні/редагуванні
-    // пісні) замість окремого виклику на кожен жанр. Порядок результату
-    // відповідає порядку candidates; при помилці/відсутності ключа так само
-    // м'яко деградує в lowercase-фолбек для КОЖНОГО елемента, як одиночна версія.
+    // Пакетна версія NormalizeGenreAsync — один запит до Gemini на весь набір
+    // жанрів одного збереження, замість окремого виклику на кожен.
     public async Task<List<string>> NormalizeGenresBatchAsync(List<string> candidates, IEnumerable<string> existingGenres)
     {
         var fallback = candidates.Select(c => c.Trim().ToLowerInvariant()).ToList();
@@ -388,9 +351,6 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
 
         var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
 
-        // Той самий фільтр без ШІ, що й у NormalizeGenreAsync: до Gemini йдуть
-        // лише жанри, що не збіглись ТОЧНО (без урахування формату) із тим,
-        // що вже є в базі.
         var results = new string[candidates.Count];
         var pendingIndexes = new List<int>();
         for (var i = 0; i < candidates.Count; i++)
@@ -478,8 +438,6 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         }
         catch
         {
-            // Ліміт/мережева помилка — фолбек лише для того, що ще не вирішено
-            // фільтром вище (fuzzy-збіги вже записані в results і не губляться).
             foreach (var i in pendingIndexes) results[i] = fallback[i];
             return results.ToList();
         }
@@ -546,6 +504,5 @@ public class DuplicateGroup
     public List<string>? Duplicates { get; set; }
 }
 
-// Результат сканування дублікатів: Success + текст помилки, якщо ШІ не відповів
-// (щоб адмін бачив причину, а не хибне "дублікатів немає").
+// Результат сканування дублікатів: Success + текст помилки, якщо ШІ не відповів.
 public record GenreDuplicateScanResult(bool Success, string? Error, List<DuplicateGroup> Groups);

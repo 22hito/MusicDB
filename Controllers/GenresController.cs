@@ -45,8 +45,7 @@ public class GenresController(MusicDbContext db, GenreNormalizationService genre
             var canonical = allGenres.FirstOrDefault(g =>
                 g.GenreName.Trim().Equals(canonicalName, StringComparison.OrdinalIgnoreCase));
 
-            // Канонічної назви може не бути серед наявних рядків — тоді
-            // перейменовуємо перший знайдений дублікат і робимо його базовим.
+            // Канонічної назви може не бути серед наявних — перейменовуємо перший дублікат.
             if (canonical is null)
             {
                 canonical = allGenres.FirstOrDefault(g =>

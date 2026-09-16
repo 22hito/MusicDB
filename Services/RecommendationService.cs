@@ -6,10 +6,8 @@ using MusicDB.Api.Models;
 
 namespace MusicDB.Api.Services;
 
-// Рекомендації на основі історії прослуховувань. Основний шлях — Gemini
-// (історія + каталог → підбір з поясненням "чому").
-// Без ключа/при недоступності Gemini — фолбек: пісні за найчастішими
-// жанрами користувача, без пояснення.
+// Рекомендації на основі історії прослуховувань — Gemini з поясненням "чому",
+// без ключа/недоступності — фолбек за найчастішими жанрами, без пояснення.
 public class RecommendationService(MusicDbContext db, MusicService musicService, HttpClient http, IConfiguration config)
 {
     private const int MaxRecommendations = 25;

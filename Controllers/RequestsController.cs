@@ -90,8 +90,7 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         return Ok(ToDto(req));
     }
 
-    // Текст пісні заявки — окремим ендпоінтом, як і /api/songs/{id}/lyrics
-    // (та сама причина: потенційно важкий текст не роздуває основний список заявок).
+    // Текст пісні заявки — окремим ендпоінтом, як і /api/songs/{id}/lyrics.
     [Authorize, AdminOnly]
     [HttpGet("{id}/lyrics")]
     public async Task<ActionResult<LyricsDto>> GetLyrics(int id)

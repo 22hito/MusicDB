@@ -17,9 +17,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
     [HttpGet]
     public async Task<IEnumerable<SongDto>> GetAll()
     {
-        // .ToLower() — інакше сортування впорядковує за сирими кодами символів:
-        // усі великі літери (A-Z) окремим блоком ПЕРЕД усіма малими (a-z), тож
-        // "Zero 9:36" опинявся б перед "alt." замість звичного алфавітного порядку.
+        // .ToLower() — інакше велика/мала літери сортуються окремими блоками (A-Z, a-z).
         var songs = await db.Songs
             .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
             .OrderBy(m => m.Artist.ToLower()).ThenBy(m => m.Title.ToLower())
@@ -107,8 +105,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         var song = await db.Songs.FindAsync(id);
         if (song is null) return NotFound();
 
-        // Знімаємо artist_id-и й підпис ДО видалення — каскад зітре
-        // music_artists разом із піснею.
+        // Знімаємо artist_id-и й підпис ДО видалення — каскад зітре music_artists разом із піснею.
         var artistIds = await db.MusicArtists.Where(ma => ma.MusicId == id).Select(ma => ma.ArtistId).ToListAsync();
         var label = $"{song.Artist} — {song.Title}";
 
@@ -119,12 +116,8 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         return NoContent();
     }
 
-    // Кешує YouTube videoId, який фронтенд щойно сам знайшов і підтвердив
-    // (пройшов перевірку релевантності перед відтворенням) — наступного разу
-    // цю пісню можна програти без нового звернення до YouTube Search API.
-    // Без [Authorize]: кешування пасивне й не потребує довіри — пишемо лише
-    // якщо ще порожньо (перша спроба виграє), тож зіпсувати вже правильний
-    // запис одним запитом не можна.
+    // Кешує підтверджений YouTube videoId для повторних відтворень без нового
+    // пошуку. Без [Authorize]: пишемо лише якщо ще порожньо, перша спроба виграє.
     [HttpPut("{id}/youtube-video")]
     public async Task<IActionResult> SetYoutubeVideo(int id, [FromBody] SetYoutubeVideoDto dto)
     {
@@ -140,10 +133,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         return Ok();
     }
 
-    // Текст пісні (караоке) підвантажуємо окремим ендпоінтом, а не разом з
-    // GET /api/songs — інакше повний текст КОЖНОЇ пісні (можуть бути кілобайти)
-    // роздував би основний список, який і так підвантажується часто
-    // (перше завантаження сторінки, кожне songsChanged через SignalR).
+    // Окремий ендпоінт для тексту пісні — щоб не роздувати основний список пісень.
     [HttpGet("{id}/lyrics")]
     public async Task<ActionResult<LyricsDto>> GetLyrics(int id)
     {
@@ -159,8 +149,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         var song = await db.Songs.FindAsync(id);
         if (song is null) return NotFound();
 
-        // Сповіщення лише коли текст СПРАВДІ зʼявився (null -> непорожній),
-        // не на кожне редагування вже наявного.
+        // Сповіщення лише коли текст СПРАВДІ зʼявився (null -> непорожній).
         var wasAdded = string.IsNullOrWhiteSpace(song.Lyrics) && !string.IsNullOrWhiteSpace(dto.Lyrics);
         song.Lyrics = string.IsNullOrWhiteSpace(dto.Lyrics) ? null : dto.Lyrics.Trim();
         await db.SaveChangesAsync();
@@ -168,7 +157,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         if (wasAdded)
         {
             var artistIds = await db.MusicArtists.Where(ma => ma.MusicId == id).Select(ma => ma.ArtistId).ToListAsync();
-            if (artistIds.Count == 0) // самолікування: пісня ще не пройшла бекфіл
+            if (artistIds.Count == 0) // пісня ще не пройшла бекфіл
             {
                 artistIds = await musicService.ResolveArtistsAsync(song.Artist);
                 await musicService.SyncMusicArtistsAsync(id, artistIds);
@@ -179,8 +168,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         return Ok(new LyricsDto(song.Lyrics));
     }
 
-    // Редагування вже опублікованої пісні (не заявки) — повністю
-    // перезаписує основні поля, жанри та альбом.
+    // Редагування вже опублікованої пісні (не заявки).
     [Authorize, AdminOnly]
     [HttpPut("{id}")]
     public async Task<ActionResult<SongDto>> Update(int id, [FromBody] UpdateSongDto dto)
@@ -202,7 +190,6 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         var albumId = await musicService.ResolveAlbumAsync(dto.Album);
         song.AlbumIds = albumId.HasValue ? [albumId.Value] : null;
 
-        // Повністю замінюємо набір жанрів на той, що прийшов з форми редагування.
         db.MusicGenres.RemoveRange(song.MusicGenres);
         var genreIds = await musicService.ResolveGenresAsync(dto.Genres);
         foreach (var gid in genreIds)
@@ -210,8 +197,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
 
         await db.SaveChangesAsync();
 
-        // Ресинк music_artists під нове поле Artist — це корекція наявного
-        // запису, не "подія" (без ArtistActivityService.RecordEventAsync).
+        // Ресинк music_artists під нове поле Artist — корекція, не "подія".
         var artistIds = await musicService.ResolveArtistsAsync(song.Artist);
         await musicService.SyncMusicArtistsAsync(song.Id, artistIds);
 

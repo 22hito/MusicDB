@@ -87,11 +87,9 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
         return Ok(result);
     }
 
-    // Якщо цільовий юзер уже надіслав pending-запит мені — одразу приймаємо
-    // замість створення другого (зустрічного) рядка. Унікальність пари
-    // (pair_low/pair_high, на боці Postgres) захищає від гонки при
-    // одночасному натисканні "додати в друзі" з обох боків: DbUpdateException
-    // тут перетворюється на ідемпотентну відповідь замість 500.
+    // Якщо цільовий юзер уже надіслав pending-запит мені — одразу приймаємо,
+    // замість створення другого рядка. Унікальність пари (pair_low/pair_high)
+    // захищає від гонки: DbUpdateException стає ідемпотентною відповіддю.
     [HttpPost("requests")]
     public async Task<ActionResult<FriendRequestDto>> SendRequest([FromBody] SendFriendRequestDto dto)
     {
@@ -138,8 +136,7 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
         return Ok(await ToFriendRequestDtoAsync(req, req.RequesterId));
     }
 
-    // Скасувати власний вихідний запит АБО відхилити вхідний — обидва просто
-    // видаляють pending-рядок; хто зі сторін пари викликає, значення не має.
+    // Скасувати вихідний запит АБО відхилити вхідний — обидва просто видаляють pending-рядок.
     [HttpDelete("requests/{requestId:int}")]
     public async Task<IActionResult> CancelOrReject(int requestId)
     {
