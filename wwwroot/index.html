@@ -2764,8 +2764,16 @@ function _wheelSegColor(i, n){
   return `hsl(${Math.round((i*137.508) % 360)}deg 62% 52%)`;
 }
 
+// Жанр бере участь у колесі лише якщо в ньому є щонайменше 5 пісень — інакше
+// плейлист по цьому жанру виходив би заскладно коротким.
+function _eligibleWheelGenres(){
+  const counts = {};
+  for(const s of songs) for(const g of s.genres) counts[g] = (counts[g] || 0) + 1;
+  return Object.keys(counts).filter(g => counts[g] >= 5);
+}
+
 function openWheelPage(){
-  wheelAllGenres = _shuffledCopy([...new Set(songs.flatMap(s=>s.genres))]);
+  wheelAllGenres = _shuffledCopy(_eligibleWheelGenres());
   const countInput = document.getElementById('wheel-count');
   const total = wheelAllGenres.length;
   countInput.max = total || 1;
