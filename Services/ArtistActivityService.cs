@@ -2,10 +2,8 @@ using MusicDB.Api.Data;
 
 namespace MusicDB.Api.Services;
 
-// Журнал подій каталогу для підписників-на-виконавця (додано/видалено
-// пісню, додано текст). Один рядок на подію НЕЗАЛЕЖНО від кількості
-// підписників — "непрочитане" рахується порівнянням з ArtistFollow.LastReadAt
-// (NotificationsController), а не фан-аутом рядка на кожного підписника.
+// Журнал подій каталогу для підписників-на-виконавця. Один рядок на подію
+// незалежно від кількості підписників (не фан-аут) — див. ArtistFollow.LastReadAt.
 public class ArtistActivityService(MusicDbContext db)
 {
     public async Task RecordEventAsync(IEnumerable<int> artistIds, string eventType, int? musicId, string songLabel)

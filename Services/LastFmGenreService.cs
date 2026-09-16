@@ -4,11 +4,8 @@ using System.Text.RegularExpressions;
 
 namespace MusicDB.Api.Services;
 
-// Last.fm — основне джерело МНОЖИНИ жанрів для пісні (краудсорсингові теги
-// слухачів), без жорсткого ліміту як у Gemini (~кілька запитів/сек).
-//
-// Ключ — appsettings.json → LastFm:ApiKey, безкоштовно на
-// https://www.last.fm/api/account/create
+// Last.fm — основне джерело жанрів для пісні (краудсорсингові теги слухачів),
+// без жорсткого ліміту як у Gemini. Ключ — appsettings.json → LastFm:ApiKey.
 public class LastFmGenreService(HttpClient http, IConfiguration config)
 {
     // Теги — вільний текст користувачів, тож багато "сміття" (не жанри).

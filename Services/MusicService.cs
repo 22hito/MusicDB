@@ -6,12 +6,8 @@ namespace MusicDB.Api.Services;
 
 public class MusicService(MusicDbContext db, GenreNormalizationService genreNormalizer)
 {
-    // Знаходить або створює жанри за іменами, повертає їх id.
-    // Усі жанри одного виклику нормалізуються ОДНИМ запитом до
-    // GenreNormalizationService (ШІ) — не по одному, щоб не плодити
-    // дублікати типу "hardrock"/"hard rock" і не палити денний ліміт
-    // запитів Gemini на кожен окремий жанр (напр. "рок, метал" — 1 запит,
-    // а не 2).
+    // Знаходить або створює жанри за іменами, повертає їх id. Усі жанри одного
+    // виклику нормалізуються ОДНИМ запитом до Gemini — не палить ліміт на кожен окремо.
     public async Task<List<int>> ResolveGenresAsync(IEnumerable<string> names)
     {
         // iTunes віддає жанри одним рядком через "/" (напр. "Hip-Hop/Rap"),
@@ -117,11 +113,8 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             .ToDictionaryAsync(x => x.Key, x => x.Count);
     }
 
-    // Розбиває "Artist" (напр. "Bring Me The Horizon, Nova Twins") на окремих
-    // виконавців, знаходить-або-створює кожного в lab.artists, повертає їхні id.
-    // На відміну від ResolveGenresAsync — без ШІ-нормалізації, лише split+trim
-    // (case/пробіл-нечутливе злиття через normalized_name; пунктуаційні
-    // варіанти типу "blink-182"/"blink182" свідомо НЕ мерджаться в v1).
+    // Розбиває "Artist" (напр. "A, B") на окремих виконавців, знаходить-або-створює
+    // кожного в lab.artists. Без ШІ — лише split+trim, злиття через normalized_name.
     public async Task<List<int>> ResolveArtistsAsync(string rawArtistField)
     {
         var names = rawArtistField

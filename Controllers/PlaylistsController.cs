@@ -29,8 +29,7 @@ public class PlaylistsController(MusicDbContext db, MusicService musicService) :
     }
 
     // Публічні плейлисти інших користувачів — для сторінки "Батл рояль".
-    // Без [Authorize]: список має бути видно й неавторизованим відвідувачам
-    // (сам батл рояль не пише в базу, тож дивитись і грати можна без логіну).
+    // Без [Authorize]: видно й неавторизованим відвідувачам.
     [AllowAnonymous]
     [HttpGet("public")]
     public async Task<ActionResult<IEnumerable<PublicPlaylistDto>>> GetPublic()
@@ -51,9 +50,7 @@ public class PlaylistsController(MusicDbContext db, MusicService musicService) :
             (names.TryGetValue(p.UserEmail, out var dn) && !string.IsNullOrWhiteSpace(dn)) ? dn! : "учасника спільноти")));
     }
 
-    // Без [Authorize]: власні плейлисти й далі лише за збігом email, але
-    // публічний плейлист (чужий чи анонімний відвідувач) теж має відкриватись —
-    // саме так на сторінці "Батл рояль" підвантажуються пісні чужого плейлиста.
+    // Без [Authorize]: публічний плейлист теж має відкриватись анонімно (Батл рояль).
     [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<ActionResult<PlaylistDetailDto>> GetById(int id)
@@ -81,9 +78,7 @@ public class PlaylistsController(MusicDbContext db, MusicService musicService) :
         return Ok(new PlaylistDto(playlist.Id, playlist.Name, 0, playlist.CreatedAt.ToString("yyyy-MM-dd"), playlist.IsPublic));
     }
 
-    // Перемикає публічність уже створеного плейлиста — окремо від Create,
-    // бо публічним можна захотіти зробити й плейлист, який існував ще до
-    // появи цієї можливості (чи просто передумати пізніше).
+    // Перемикає публічність уже створеного плейлиста.
     [HttpPatch("{id}")]
     public async Task<ActionResult<PlaylistDto>> UpdatePublic(int id, [FromBody] UpdatePlaylistPublicDto dto)
     {

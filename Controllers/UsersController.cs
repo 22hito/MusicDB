@@ -8,8 +8,7 @@ using MusicDB.Api.Services;
 
 namespace MusicDB.Api.Controllers;
 
-// "Друзі" — концепція для залогінених, тож на відміну від публічних
-// плейлистів (PlaylistsController.GetPublic) увесь контролер вимагає логіну.
+// "Друзі" — концепція для залогінених, тож увесь контролер вимагає логіну.
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -75,8 +74,7 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
             .Select(g => g.Key.Trim())
             .ToListAsync();
 
-        // Лише публічні плейлисти — приватні цього користувача чужим очам не видно,
-        // той самий механізм, що й PlaylistsController.GetPublic (для батл рояля).
+        // Лише публічні плейлисти — приватні чужим очам не видно.
         var playlists = await db.Playlists
             .Where(p => p.UserEmail == user.Email && p.IsPublic)
             .Include(p => p.PlaylistSongs)

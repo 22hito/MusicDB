@@ -11,13 +11,8 @@ public record SongDto(
     string[] Genres,
     string?  Album,
     int      PlayCount = 0,   // кількість унікальних слухачів, з listening_history
-    // Раз знайдений і підтверджений (пройшов перевірку релевантності) відеоряд
-    // кешується тут — наступні відтворення цієї пісні більше не витрачають
-    // YouTube Search API квоту (100 одиниць/запит) на повторний пошук.
-    string?  YoutubeVideoId = null,
-    // Розбір поля Artist на окремих виконавців (для посилань на їхні сторінки) —
-    // null для DTO, де це поле ще не заповнюється (не ламає позиційні виклики).
-    ArtistRefDto[]? Artists = null
+    string?  YoutubeVideoId = null,   // кеш підтвердженого відео — економить YouTube API квоту
+    ArtistRefDto[]? Artists = null    // розбір Artist на окремих виконавців, для посилань на їхні сторінки
 );
 
 public record SetYoutubeVideoDto(string VideoId);
@@ -34,8 +29,7 @@ public record CreateSongDto(
     string?  Album
 );
 
-// Використовується адміном для редагування вже опублікованої пісні
-// (не заявки) прямо в головній таблиці.
+// Редагування вже опублікованої пісні (не заявки) адміном у головній таблиці.
 public record UpdateSongDto(
     string   Artist,
     string   Title,
@@ -43,12 +37,7 @@ public record UpdateSongDto(
     string   Duration,
     string[] Genres,
     string?  Album,
-    // На відміну від PUT /api/songs/{id}/youtube-video (пише лише якщо
-    // порожньо), тут адмін може як очистити (null/""), так і замінити вже
-    // закешоване відео — якщо перше автопідтверджене значення виявилось
-    // невдалим (напр. авторський "Remastered"/"Reimagined" реліз замість
-    // потрібного оригіналу).
-    string?  YoutubeVideoId = null
+    string?  YoutubeVideoId = null   // на відміну від PUT .../youtube-video, тут можна й очистити, й замінити
 );
 
 // ─── Genres ───────────────────────────────────────────────────────────────────
@@ -56,7 +45,6 @@ public record UpdateSongDto(
 public record GenreDto(int Id, string Name);
 
 // Результат ШІ-об'єднання дублікатів жанрів (POST /api/genres/normalize).
-// Error — якщо звернення до ШІ не вдалося, щоб адмін бачив причину, а не хибне "дублікатів немає".
 public record NormalizeGenresResultDto(int MergedCount, List<string> MergedPairs, string? Error);
 
 // ─── Requests ─────────────────────────────────────────────────────────────────
@@ -83,11 +71,7 @@ public record CreateRequestDto(
     string?  AlbumTitle
 );
 
-// Використовується адміном для редагування заявки перед підтвердженням
-// (якщо, наприклад, автопереклад жанру виявився неправильним). YoutubeVideoId
-// дозволяє одразу вказати правильне відео для нішевих/малопопулярних треків,
-// де автопошук на сайті може підібрати не те — та сама семантика
-// null/"" ("не чіпати"/"скинути"), що й в UpdateSongDto.
+// Редагування заявки адміном перед підтвердженням.
 public record UpdateRequestDto(
     string   Artist,
     string   Title,
@@ -123,9 +107,7 @@ public record CreatePlaylistDto(string Name, bool IsPublic = false);
 
 public record UpdatePlaylistPublicDto(bool IsPublic);
 
-// Плейлист іншого користувача, зроблений публічним — видно на сторінці
-// "Батл рояль" усім, з іменем власника (без email, лише DisplayName або
-// заглушка), щоб можна було провести турнір серед чужих пісень.
+// Публічний плейлист іншого користувача — з іменем власника, без email.
 public record PublicPlaylistDto(int Id, string Name, int SongCount, string OwnerLabel);
 
 public record LogListenDto(int MusicId);
@@ -146,15 +128,12 @@ public record ArtistNotificationDto(int Id, int ArtistId, string ArtistName, str
 public record NotificationsSummaryDto(int UnreadCount, List<ArtistNotificationDto> Recent);
 
 // ─── Users / Friends ────────────────────────────────────────────────────────────
-// UserId — opaque id з lab.users. Email НІКОЛИ не повертається цими DTO —
-// той самий принцип, що й у PublicPlaylistDto.OwnerLabel.
+// UserId — opaque id з lab.users. Email НІКОЛИ не повертається цими DTO.
 
 // RelationshipStatus: "self" | "none" | "friends" | "pending_outgoing" | "pending_incoming"
 public record PublicUserDto(int UserId, string DisplayName, string? AvatarUrl, string RelationshipStatus);
 
-// Розширений публічний профіль для сторінки page-user-profile — той самий
-// принцип приватності, що й PublicUserDto (email ніколи), але з "музичним
-// портретом" (як у власному ProfileDto) і списком ЛИШЕ публічних плейлистів.
+// Розширений публічний профіль (page-user-profile): "музичний портрет" і публічні плейлисти.
 public record PublicProfileDto(
     int UserId, string DisplayName, string? AvatarUrl, string RelationshipStatus,
     string MemberSince, int TotalListened, int FavoritesCount, string[] TopGenres,

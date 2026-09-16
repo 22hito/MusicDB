@@ -993,8 +993,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
            із кожним новим релізом десктоп-застосунку. -->
       <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/desktop-v1.0.1/NOwl-Setup-1.0.2.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
       <script>
-        // Сам застосунок (Electron) ставить цей прапорець при завантаженні —
-        // пропонувати встановити застосунок людині, яка вже в ньому, безглуздо.
+        // Electron-застосунок сам ставить цей прапорець — не пропонувати встановити його вже в ньому.
         if (localStorage.getItem('isDesktopApp') === '1') document.getElementById('nav-desktop-app').style.display = 'none';
       </script>
       <span class="nav-tab-indicator" id="nav-tab-indicator"></span>
@@ -2295,9 +2294,7 @@ function applyLang(lang){
     b.classList.toggle('active', b.getAttribute('data-lang-option') === lang);
   });
   document.title = t('page.title');
-  // Динамічний контент, який генерується в JS (текст із t() прямо в
-  // HTML-рядку, без data-i18n), потрібно перемалювати наново — інакше він
-  // лишається старою мовою, аж доки не перевідкрити сторінку.
+  // Динамічний контент без data-i18n треба перемалювати наново при зміні мови.
   renderSongs();
   updateStats();
   renderAuthArea();
@@ -2347,10 +2344,7 @@ function showPage(n){
   const tab = document.getElementById('tab-'+n);
   if(tab) tab.classList.add('active');
   _updateNavIndicator();
-  // Важкий перерендер (велика таблиця пісень, заявки, статистика) відкладаємо
-  // на наступний кадр — інакше він виконується в тому ж такті, що й
-  // перемикання класів, і браузер встигає намалювати новий стан лише ПІСЛЯ
-  // рендеру, через що перехід між сторінками відчувається як підвисання.
+  // Важкий перерендер відкладаємо на наступний кадр — інакше перехід між сторінками виглядає як підвисання.
   requestAnimationFrame(()=>{
     if(n==='home'){renderSongs();updateStats().catch(console.error);}
     if(n==='top') loadTopSongsPage();
@@ -2376,18 +2370,13 @@ function _updateNavIndicator(){
   indicator.style.left = active.offsetLeft + 'px';
   indicator.style.width = active.offsetWidth + 'px';
   indicator.style.opacity = '1';
-  // Якщо вкладок забагато й вони скролляться (нав вужчий за їх сумарну
-  // ширину) — підкручуємо активну в зону видимості.
+  // Підкручуємо активну вкладку в зону видимості, якщо нав скролиться.
   active.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
 }
 window.addEventListener('resize', _updateNavIndicator);
 if (document.fonts?.ready) document.fonts.ready.then(_updateNavIndicator);
 
-// Вкладок побільшало (виконавці, друзі...) і на типовому екрані вони вже не
-// вміщуються цілком — .nav-tabs і так прокручується (overflow-x:auto), але
-// звичайне колесо миші рухає сторінку ВЕРТИКАЛЬНО, а не саму смугу вкладок,
-// тож частина вкладок виглядала недосяжною. Перенаправляємо вертикальний
-// скрол у горизонтальний саме над цією смугою.
+// Перенаправляє вертикальний скрол колеса миші в горизонтальний над смугою вкладок.
 (function(){
   const navTabs = document.querySelector('.nav-tabs');
   if(!navTabs) return;
@@ -2431,14 +2420,8 @@ function _sortVal(s, key){
     default: return s[key];
   }
 }
-// Порівняння текстів для сортування (жанри, і будь-де, де просто .sort()
-// рядків): звичайний .sort() без компаратора порівнює СИРІ коди символів —
-// великі літери (A-Z: 65-90) йдуть окремим блоком ПЕРЕД усіма малими (a-z:
-// 97-122), а ті — перед великою кирилицею (А-Я) і так далі, тобто виходить
-// 4 окремі блоки замість "Aa, Бб...". Приведення до нижнього регістру перед
-// порівнянням само по собі вже дає бажаний результат: малі коди латиниці
-// (97-122) < малих кодів кирилиці (1072-1103), тож латиниця й кирилиця не
-// перемішуються між собою, а регістр усередині кожної не впливає на порядок.
+// Порівняння текстів для сортування — приводить до нижнього регістру, інакше
+// великі й малі літери сортуються окремими блоками замість "Aa, Бб...".
 function _textSortCmp(a, b){
   const la = String(a).toLowerCase(), lb = String(b).toLowerCase();
   return la < lb ? -1 : la > lb ? 1 : 0;
@@ -2540,8 +2523,7 @@ function loadProfileSettingsPage(){
     if(shown){ pic.src = shown; pic.style.display = 'block'; } else pic.style.display = 'none';
   }).catch(()=>{});
 }
-// Вибір нового файлу аватарки — конвертуємо в base64 (data URL) і показуємо
-// одразу в прев'ю; фактично надсилається на сервер лише при натисканні "Зберегти".
+// Конвертує обрану аватарку в base64 для прев'ю; надсилається лише при "Зберегти".
 function onAvatarFileSelected(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -2610,10 +2592,7 @@ function loadProfilePlaylists(){
 function createPlaylist(){
   const name = prompt(t('profile.newPlaylistPrompt'));
   if(!name || !name.trim()) return;
-  // Публічний плейлист видно іншим на сторінці "Батл рояль" (і лише там,
-  // поки що) — за замовчуванням (Скасувати/Ні) лишається приватним, як і
-  // раніше. confirm() тут — той самий мінімальний підхід, що й prompt() вище,
-  // без окремої модалки (оформлення — окремим заходом).
+  // Публічний плейлист видно іншим на сторінці "Батл рояль"; за замовчуванням — приватний.
   const isPublic = confirm(t('profile.newPlaylistPublicConfirm'));
   fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: name.trim(), isPublic }) })
     .then(r=>{ if(r.ok) loadProfilePlaylists(); else alert(t('msg.connectionError')); })
@@ -2622,9 +2601,7 @@ function createPlaylist(){
 function deletePlaylist(id){
   fetch(`/api/playlists/${id}`, { method:'DELETE' }).then(()=>loadProfilePlaylists()).catch(()=>{});
 }
-// Перемикач публічності — окремою кнопкою на кожному плейлисті в профілі
-// (а не лише питанням при створенні), щоб можна було й передумати пізніше,
-// і зробити публічним плейлист, який уже існував.
+// Перемикач публічності — окремою кнопкою на кожному плейлисті, а не лише при створенні.
 function togglePlaylistPublic(id, makePublic){
   fetch(`/api/playlists/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ isPublic: makePublic }) })
     .then(r=>{ if(r.ok) loadProfilePlaylists(); else alert(t('msg.connectionError')); })
@@ -2763,11 +2740,8 @@ function toggleShuffleTable(){
 // (окрема сторінка page-wheel, а не модалка — відкривається через showPage('wheel'))
 // ================================================================
 const WHEEL_COLORS = ['#c8a96e','#7c6fcd','#4caf7d','#e05c5c','#5aa9e6','#e0a15c','#8ecae6','#f2a65a','#8a5cf2','#5ce0c0'];
-// wheelAllGenres — весь пул, перемішаний один раз при відкритті сторінки;
-// wheelGenres — перші N з нього (N із поля "Кількість жанрів на колесі"), саме
-// вони й намальовані/крутяться. Зміна кількості просто обрізає той самий
-// перемішаний порядок, а не перемішує наново — так вибірка не "стрибає"
-// щоразу, коли адмін підкручує число.
+// wheelAllGenres — весь пул, перемішаний раз при відкритті; wheelGenres — перші N з нього.
+// Зміна кількості обрізає той самий порядок, а не перемішує наново.
 let wheelAllGenres = [];
 let wheelGenres = [];
 let wheelResultGenre = null;
@@ -2783,12 +2757,8 @@ function _shuffledCopy(arr){
   return a;
 }
 
-// Колір сегмента: до 10 жанрів — з підібраної палітри (як і граф схожості).
-// Більше — HSL, але НЕ по колу відтінків підряд (i/n*360) — сусідні сектори
-// тоді відрізнялись би на кілька градусів і зливались би один в інший
-// (саме це й було на скріні). "Золотий кут" (~137.5°) — стандартний трюк для
-// послідовності кольорів, де КОЖЕН наступний максимально відрізняється від
-// попереднього, а не лавиноподібне забарвлення через все коло.
+// Колір сегмента: до 10 жанрів — підібрана палітра; більше — HSL за "золотим кутом"
+// (~137.5°), щоб сусідні сектори не зливались, як при звичайному i/n*360.
 function _wheelSegColor(i, n){
   if(n <= WHEEL_COLORS.length) return WHEEL_COLORS[i % WHEEL_COLORS.length];
   return `hsl(${Math.round((i*137.508) % 360)}deg 62% 52%)`;
@@ -2839,13 +2809,7 @@ function _applyWheelCount(){
   requestAnimationFrame(()=>{ disc.style.transition = ''; });
 }
 
-// Розмір шрифту підписів масштабуємо під кількість секторів — інакше з
-// великою кількістю жанрів (десятки) текст просто накладається сам на себе
-// й колесо стає нечитабельним. При радіальному підписі (від центру до краю)
-// на зіткнення із сусідом впливає лише ТОВЩИНА рядка (~розмір шрифту) на
-// стартовому радіусі innerR, а не довжина назви — тож завдяки більшому
-// колесу й innerR, що росте разом із n (renderWheelDisc), можна тримати
-// шрифт відносно великим навіть при десятках секторів.
+// Розмір шрифту підписів масштабуємо під кількість секторів — інакше текст накладається сам на себе.
 function _wheelLabelFontSize(n){
   if(n <= 8) return 14;
   if(n <= 16) return 12.5;
@@ -2863,34 +2827,20 @@ function renderWheelDisc(){
   const gradientParts = wheelGenres.map((g,i)=>`${_wheelSegColor(i,n)} ${i*segAngle}deg ${(i+1)*segAngle}deg`).join(', ');
   disc.style.background = `conic-gradient(${gradientParts})`;
 
-  // "По центру сектора" тут означає КУТОВЕ центрування (mid — точно
-  // посередині між двома межами сектора, на бісектрисі) — текст лежить рівно
-  // на цій бісектрисі й простим horizontal-flow тягнеться від неї назовні.
-  // Радіальне центрування (щоб середина НАЗВИ, а не сектора, була десь
-  // посередині радіуса) тут навмисне НЕ робимо — по-перше, сама середина
-  // диска однаково закрита хабом з лого, по-друге, почати можна й ближче до
-  // краю колеса, аби кожен варіант лишався рівно на своїй бісектрисі
-  // (по ширині сектора), а не "гуляв" по колу.
+  // "По центру сектора" — кутове центрування (mid, бісектриса сектора), не радіальне.
   const hubR = (document.getElementById('wheel-hub')?.clientWidth || 0)/2;
   const discR = disc.clientWidth/2;
   const startR = Math.max(hubR + 14, Math.min(discR*0.42, n*2.6));
   const fontSize = _wheelLabelFontSize(n);
   disc.innerHTML = wheelGenres.map((g,i)=>{
     const mid = i*segAngle + segAngle/2;
-    // conic-gradient/переможець рахують кут "mid" від верху (0°) за годинниковою.
-    // rotate(θ) translate(r,0) ставить точку (r,0) [те, що дивиться на 3-ту
-    // годину, тобто позиція "90°" у нашому відліку] на кут (90+θ) від верху —
-    // щоб отримати саме mid, беремо θ = mid-90. Той самий поворот застосовано
-    // і до самого тексту, тож його "низ рядка" (напрямок читання) також
-    // дивиться вздовж цього радіуса (бісектриси сектора).
+    // rotate(θ) translate(r,0) дивиться на кут (90+θ) від верху — щоб отримати mid, беремо θ = mid-90.
     const rot = mid - 90;
     return `<span class="wheel-seg-label" style="font-size:${fontSize}px;transform:rotate(${rot}deg) translate(${startR}px, 0);">${esc(abbrGenre(g))}</span>`;
   }).join('');
 }
 
-// Легенда — той самий список назв, що й на диску, але списком і з кольоровим
-// квадратиком замість повороту/клипу по краю — зручно звірити навіть коли
-// на самому колесі назва десь обрізалась через дуже малий сектор.
+// Легенда — той самий список назв, що й на диску, але списком, для звірки з обрізаними підписами.
 function renderWheelLegend(){
   const n = wheelGenres.length;
   document.getElementById('wheel-legend').innerHTML = wheelGenres.map((g,i)=>`
@@ -2900,15 +2850,9 @@ function renderWheelLegend(){
     </div>`).join('');
 }
 
-// Спільний "жорсткий" санітайзер для числових полів колеса. type="number" тут
-// НЕ рятує: браузери по-різному пропускають проміжний невалідний ввід
-// ("5-1", "1e5", "--3", повторні крапки) — деякі при цьому взагалі повертають
-// порожній .value, тож клемп на основі .value просто нічого не робив (звідси
-// й "5-1" на скріні). Тому поля тепер type="text", а тут ми не довіряємо
-// .value як числу — просто викидаємо з сирого рядка все, що не цифра, і вже
-// ЦЕ затискаємо в межі [min,max]. Порожній рядок лишаємо як є (людина ще
-// друкує/стирає), повертаємо null — дозаповнення на blur через
-// _restoreIntInputIfEmpty, щоб не нав'язувати мінімум після кожного backspace.
+// Санітайзер для числових полів колеса (type="text", бо type="number" пропускає
+// невалідний проміжний ввід): викидає нецифрові символи, затискає в [min,max].
+// Порожній рядок лишає як є — дозаповнення на blur через _restoreIntInputIfEmpty.
 function _sanitizeIntInput(el, min, max){
   const digitsOnly = el.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
   if(digitsOnly === ''){
@@ -2945,11 +2889,7 @@ function spinWheel(){
   const n = wheelGenres.length;
   const segAngle = 360/n;
   const winnerIndex = Math.floor(Math.random()*n);
-  // Диск повертається за годинниковою стрілкою; стрілка нерухома вгорі (кут 0).
-  // Середина сегмента winnerIndex спочатку на куті (winnerIndex*segAngle + segAngle/2).
-  // Після повороту на rotation вона опиняється під стрілкою, коли
-  // (mid + rotation) mod 360 == 0 — тобто rotation == 360 - mid (+ повні оберти для ефекту).
-  // Більше обертів для довшої прокрутки — щоб не виглядало млявим на 15-30 сек.
+  // Сегмент winnerIndex опиняється під нерухомою стрілкою, коли rotation == 360 - mid (+ повні оберти).
   const fullSpins = Math.max(4, Math.round(duration*1.4)) + Math.floor(Math.random()*2);
   const mid = winnerIndex*segAngle + segAngle/2;
   const rotation = fullSpins*360 + (360 - mid);
@@ -2968,8 +2908,7 @@ function spinWheel(){
   }, duration*1000 + 150);
 }
 
-// Плейлист показуємо одразу після зупинки колеса (не лише після натискання
-// "Слухати") — так адмін/гість бачить, що саме зіграє, ще до старту.
+// Плейлист показуємо одразу після зупинки колеса, ще до натискання "Слухати".
 function renderWheelPlaylist(){
   if(!wheelResultGenre) return;
   currentWheelSongs = _shuffledCopy(songs.filter(s=>s.genres.includes(wheelResultGenre)));
@@ -2998,9 +2937,7 @@ function playWheelFromStart(){
   playFromWheel(currentWheelSongs[0].id);
 }
 
-// Клікабельні посилання на сторінки виконавців — s.artists (ArtistRefDto[]
-// з бекенду) уже розбитий на окремих колаборантів; кома-склеєний рядок
-// s.artist лишається фолбеком для пісень, які ще не пройшли бекфіл артистів.
+// Посилання на виконавців — s.artists уже розбитий по колаборантах; s.artist — фолбек для пісень без бекфілу.
 function artistLinksHtml(s){
   return (s.artists && s.artists.length)
     ? s.artists.map(a => `<a href="#" class="artist-link" onclick="openArtistPage(${a.id});return false;">${esc(a.name)}</a>`).join(', ')
@@ -3025,9 +2962,7 @@ function renderSongs(){
           return 0;
         })
       : filtered;
-  // Черга відтворення (playSong/next/prev) слідує за тим, що зараз реально
-  // показано в таблиці — інакше сортування чи пошук на екрані не збігалися б
-  // з порядком, у якому насправді йдуть пісні при "наступна".
+  // Черга відтворення слідує за тим, що зараз реально показано в таблиці (сортування/пошук).
   displayedSongs = ordered;
   const tbody=document.getElementById('songs-body');
   if(!ordered.length){
@@ -3065,8 +3000,7 @@ function isPlaying(){
 // ================================================================
 // STATS
 // ================================================================
-// Плавний відлік цифри від поточного значення до нового замість миттєвої
-// підміни тексту — дрібниця, але саме такі дрібниці й "продають" сучасний вигляд.
+// Плавний відлік цифри від поточного значення до нового замість миттєвої підміни тексту.
 function _animateCount(id, target){
   target = Number(target) || 0;
   const el = document.getElementById(id);
@@ -3157,8 +3091,7 @@ function renderExtSearchItem(it, idx, prefix){
       </div>
     </div>`;
 }
-// Кеш результатів на префікс форми (req/add/edit-req) — простіше й безпечніше
-// за раніше окремі глобальні window[...Cache] змінні на кожен новий префікс.
+// Кеш результатів на префікс форми (req/add/edit-req).
 const _extSearchCaches = {};
 function runExternalSearch(prefix){
   const artistId = `${prefix}-artist`;
@@ -3245,9 +3178,7 @@ function submitRequest(){
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
 
-// Підтаби всередині "Адмін-панелі" — самі "Запити" й "Додати пісню"
-// лишились тими самими блоками розмітки/функціями, що й раніше, коли були
-// окремими вкладками навбару, просто тепер перемикаються тут, а не showPage().
+// Підтаби всередині "Адмін-панелі" — перемикають ті самі блоки, що раніше були окремими вкладками навбару.
 function switchAdminHubTab(tab){
   document.getElementById('admin-hub-requests-section').style.display = tab==='requests' ? '' : 'none';
   document.getElementById('admin-hub-add-section').style.display = tab==='add' ? '' : 'none';
@@ -3428,9 +3359,7 @@ function openEditSongModal(id){
   document.getElementById('edit-song-save-btn').onclick = function(){ saveEditSong(id); };
   document.getElementById('edit-song-modal-overlay').classList.add('open');
 }
-// Оновлює посилання "Переглянути на YouTube" під полем — і для вже
-// закешованого значення при відкритті модалки, і "наживо" поки адмін
-// редагує/вставляє нове (приймає як голий videoId, так і повний URL).
+// Оновлює посилання "Переглянути на YouTube" наживо (приймає голий videoId або повний URL).
 function _updateEditSongYoutubeLink(){
   const val = document.getElementById('edit-song-youtube').value.trim();
   const link = document.getElementById('edit-song-youtube-link');
@@ -3451,8 +3380,7 @@ function saveEditSong(id){
   const duration = document.getElementById('edit-song-duration').value.trim();
   const album = document.getElementById('edit-song-album').value.trim();
   const genres = document.getElementById('edit-song-genres').value.trim();
-  // Порожнє поле тут — навмисне очищення кешу (бекенд розрізняє "не надіслано"
-  // від "надіслано порожнім рядком"), а не "залишити як було".
+  // Порожнє поле — навмисне очищення кешу, не "залишити як було".
   const youtubeVideoId = document.getElementById('edit-song-youtube').value.trim();
   if(!artist||!title||!release||!duration||!genres){alert(t('msg.fillRequiredFields'));return;}
   const body = {
@@ -3465,8 +3393,7 @@ function saveEditSong(id){
   fetch(`/api/songs/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>{
       if(!r.ok){alert(t('msg.errorEditSong'));return;}
-      // Окремий ендпоінт (той самий, яким караоке його й читає) — та сама
-      // причина, що й для читання: текст пісні не є частиною основного DTO.
+      // Окремий ендпоінт — текст пісні не є частиною основного DTO.
       fetch(`/api/songs/${id}/lyrics`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({lyrics})}).catch(()=>{});
       closeEditSongModal();
       loadSongs().then(()=>{renderSongs();updateStats();});
@@ -3511,12 +3438,7 @@ function abbrGenre(name){return String(name).replace(/alternative/gi,'alt');}
 // ================================================================
 const THEME_ICONS = { dark: '🌙', gray: '◐', light: '☀️' };
 function applyTheme(theme){
-  // Купа елементів (кнопки, картки, рядки таблиці) мають власний transition
-  // для hover — той самий transition спрацьовує і коли колір змінюється через
-  // перемикання теми (CSS-змінні міняються миттєво, але властивість все одно
-  // "анімується"). Тимчасово вимикаємо всі transition на час перемикання,
-  // щоб тема справді клацала миттєво, а не доводилось шукати й переписувати
-  // кожен окремий transition по всьому стилю.
+  // Тимчасово вимикаємо всі hover-transition, щоб зміна теми клацала миттєво.
   document.documentElement.classList.add('theme-switching');
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
@@ -3541,8 +3463,7 @@ function fmtSec(s){s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).p
 // CONFIG & AUTH
 // ================================================================
 let currentUser = null;
-// Кілька ключів (кожен зі свого GCP-проєкту, бо квота — 10000/добу НА ПРОЄКТ)
-// для автоматичної ротації, коли поточний впирається у денний ліміт пошуку.
+// Кілька ключів для автоматичної ротації, коли поточний впирається у денний ліміт квоти.
 let ytApiKeys = ['AIzaSyD5hFlUEq2bOv7r5XstBHKLUEND8E5ZThA', 'AIzaSyCKI5XDq_JwVrVK5tWjNC0Z9byuPijSLa4'];
 let ytApiKeyIdx = 0;
 
@@ -3633,9 +3554,7 @@ function renderAuthArea() {
 // ================================================================
 // СПОВІЩЕННЯ (дзвіночок) — підписки на виконавців
 // ================================================================
-// Бейдж/список — не лише події виконавців (ArtistEvent), а й вхідні запити
-// дружби (окреме джерело, FriendsController): жодних "прочитано" для них,
-// вони просто зникають зі списку, коли їх приймають/відхиляють.
+// Бейдж/список — події виконавців + вхідні запити дружби; запити зникають зі списку при прийнятті/відхиленні.
 function refreshNotifBadge(){
   const badge = document.getElementById('notif-badge');
   if(!badge) return;
@@ -3722,12 +3641,11 @@ let playerQueue=[],playerIndex=0;
 // Прапорець "пісню вже зараховано як прослухану" — скидається при переключенні на нову пісню.
 let listenLogged=false;
 // userIntendedPlaying: чи музика МАЄ грати за наміром користувача — відрізняє реальний
-// play/pause від технічних onStateChange під час фонової синхронізації відео-попапу.
+// play/pause від технічних onStateChange під час синхронізації відео-попапу.
 let userIntendedPlaying=true;
 let ticker=null,pendingVid=null;
 let shuffle=false,repeat=false,seekDrag=false;
-// Гучність зберігається в localStorage (як тема й мова) — інакше плеєр щоразу
-// стартував на 80% і доводилось прикручувати гучність заново.
+// Гучність зберігається в localStorage — інакше плеєр щоразу стартував на 80%.
 const _savedVol = localStorage.getItem('volume');
 let vol = _savedVol !== null ? parseInt(_savedVol) : 80;
 
@@ -3780,10 +3698,7 @@ function playSong(id){
   _loadCurrent();
 }
 
-// Кнопка "плей" у рядку таблиці мала лише один режим — завжди перезапускала
-// пісню спочатку, навіть якщо вона й так вже грає (пауза працювала тільки з
-// плеєр-бару). Якщо клікнута пісня — та, що вже завантажена, перемикаємо
-// пауза/відтворення замість повного перезапуску черги.
+// Якщо клікнута пісня вже завантажена — перемикаємо пауза/відтворення замість перезапуску черги.
 function toggleOrPlay(id, playFn){
   const curId = playerQueue.length && playerQueue[playerIndex] ? playerQueue[playerIndex].id : null;
   if(curId === id) playerToggle();
@@ -3815,9 +3730,7 @@ let battleLeftPlayer = null, battleRightPlayer = null;
 let battlePlayersReady = false;
 let battleHoverModeActive = false;
 
-// Сторінка "Батл рояль" у навбарі: список власних плейлистів (якщо
-// залогінені) + публічні плейлисти інших користувачів — вибір будь-якого
-// запускає той самий openBattleSetup(), що й кнопка у відкритому плейлисті.
+// Сторінка "Батл рояль" у навбарі: власні плейлисти (якщо залогінені) + публічні чужі.
 function openBattlePage(){
   const ownSection = document.getElementById('battle-page-own-login-hint');
   const ownEmpty = document.getElementById('battle-page-own-empty');
@@ -3844,9 +3757,7 @@ function openBattlePage(){
       </div>`).join('');
   }).catch(()=>{});
 }
-// currentPlaylistSongs — той самий "поточний плейлист", яким користується і
-// сторінка плейлиста, і openBattleSetup() нижче; playlists/{id} тепер віддає
-// й чужий плейлист, якщо він публічний (див. PlaylistsController.GetById).
+// currentPlaylistSongs — той самий "поточний плейлист", яким користується і сторінка плейлиста.
 function startBattleFromPlaylist(id){
   fetch(`/api/playlists/${id}`).then(r=>r.ok?r.json():null).then(p=>{
     if(!p) return;
@@ -4005,8 +3916,7 @@ function acceptFriendRequest(requestId){
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
 function acceptFriendRequestFromUser(userId){
-  // Пошук людей не знає requestId (лише статус) — знаходимо його через
-  // вхідні запити, той самий підхід, що вже підвантажений на сторінці друзів.
+  // Пошук людей не знає requestId (лише статус) — знаходимо його через вхідні запити.
   fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).then(list=>{
     const req = list.find(r=>r.userId===userId);
     if(req) acceptFriendRequest(req.requestId);
@@ -4109,8 +4019,7 @@ function closeBattleSetup(){
 
 function startBattleRoyale(size){
   if(typeof YT === 'undefined' || !YT.Player){
-    // YouTube IFrame API інколи ще не встигає підвантажитись (повільна мережа) —
-    // пробуємо ще раз за секунду замість того, щоб впасти з ReferenceError.
+    // YouTube IFrame API міг ще не підвантажитись — пробуємо ще раз за секунду.
     setTimeout(()=>startBattleRoyale(size), 1000);
     return;
   }
@@ -4118,8 +4027,7 @@ function startBattleRoyale(size){
   battleRound = _shuffledCopy(currentPlaylistSongs).slice(0, size);
   battleWinners = [];
   battleMatchIndex = 0;
-  // Один плеєр на весь сайт грає одночасно — щоб не було потрійного звуку,
-  // ставимо головний на паузу на час турніру.
+  // Ставимо головний плеєр на паузу на час турніру — щоб не було потрійного звуку.
   if(ytPlayer && ytReady){ try{ ytPlayer.pauseVideo(); }catch(e){} }
   document.getElementById('battle-champion').style.display = 'none';
   document.getElementById('battle-split').style.display = 'flex';
@@ -4127,24 +4035,18 @@ function startBattleRoyale(size){
   _ensureBattlePlayers(()=>{ loadBattleMatch(); });
 }
 
-// YT.Player створюємо один раз і перевикористовуємо між матчами (loadVideoById) —
-// перестворювати iframe на кожен матч і повільніше, і призводить до спалахів
-// "чорного екрана" між раундами.
+// YT.Player створюємо один раз і перевикористовуємо між матчами — перестворення
+// iframe на кожен матч повільніше й дає спалахи "чорного екрана".
 function _ensureBattlePlayers(cb){
   if(battlePlayersReady){
-    // Кнопки вибору/наведення живуть у battle-video-wrap і не змінюються між
-    // матчами, тож слухачі наведення теж вішаємо лише один раз (тут, а не в
-    // loadBattleMatch) — інакше вони накопичувались би з кожним новим матчем.
+    // Слухачі наведення теж вішаємо лише один раз тут, інакше накопичувались би з кожним матчем.
     cb();
     return;
   }
   let readyCount = 0;
   function onEither(){ readyCount++; if(readyCount===2){ battlePlayersReady=true; _wireBattleHoverListeners(); cb(); } }
-  // autoplay:0 — і, найголовніше, cueVideoById (не loadVideoById) нижче: на
-  // початку раунду обидва відео мають лежати на паузі, а не стартувати самі.
-  // mute:0 — раніше обидва завжди були muted (могли б інакше грати одночасно
-  // з двох боків), а тепер це неможливо (onStateChange нижче), тож звук
-  // лишаємо керованим тим самим повзунком гучності, що й в основному плеєрі.
+  // autoplay:0 + cueVideoById нижче — обидва відео лежать на паузі на початку раунду.
+  // mute:0 — звук керується тим самим повзунком гучності, що й в основному плеєрі.
   battleLeftPlayer = new YT.Player('battle-yt-a', {
     height:'100%', width:'100%',
     playerVars:{autoplay:0, controls:1, mute:0},
@@ -4158,25 +4060,18 @@ function _ensureBattlePlayers(cb){
 }
 
 function _onBattleStateChange(side, e){
-  // cueVideoById скидає гучність/mute асинхронно, вже ПІСЛЯ того, як сам виклик
-  // повертається — тому setVolume/unMute одразу за cueVideoById (у
-  // _loadBattleSide) регулярно "губились": відео докидалось до стану CUED і
-  // мовчки перетирало їх назад на 0/muted. Застосовуємо тут, коли CUED
-  // справді настав, — тоді вже нічого не перезатирає.
+  // cueVideoById скидає гучність/mute асинхронно ПІСЛЯ повернення виклику — тому
+  // застосовуємо unMute/setVolume тут, коли CUED справді настав, а не одразу за cueVideoById.
   if(e.data === YT.PlayerState.CUED){
     try{ e.target.unMute(); e.target.setVolume(vol); }catch(err){}
   }
-  // Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо
-  // другий на паузу. Спрацьовує однаково незалежно від того, ЩО саме запустило
-  // відтворення — клік по нативних контролах YouTube чи режим наведення нижче.
+  // Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо другий на паузу.
   if(e.data !== YT.PlayerState.PLAYING) return;
   const other = side === 'a' ? battleRightPlayer : battleLeftPlayer;
   try{ other && other.pauseVideo(); }catch(err){}
 }
 
-// "Режим наведення": навів курсор на відео — грає, вивів — пауза. Вмикається/
-// вимикається кнопкою в заголовку батла; слухачі завжди підключені, просто
-// нічого не роблять, поки прапорець вимкнено.
+// "Режим наведення": навів курсор на відео — грає, вивів — пауза.
 function toggleBattleHoverMode(){
   battleHoverModeActive = !battleHoverModeActive;
   document.getElementById('battle-hover-toggle-btn').classList.toggle('active', battleHoverModeActive);
@@ -4227,11 +4122,9 @@ function _loadBattleSide(player, notFoundElId, vid){
     document.getElementById(notFoundElId).style.display = 'block';
     return;
   }
-  // cueVideoById (не loadVideoById!) — завантажує кадр і лишає на паузі;
-  // loadVideoById завжди стартує відтворення одразу, ігноруючи playerVars.autoplay.
+  // cueVideoById (не loadVideoById!) — завантажує кадр і лишає на паузі.
   player.cueVideoById(vid);
-  // Початкова гучність — та сама, що зараз стоїть в основному плеєрі (глобальна
-  // змінна vol, той самий повзунок #vol-slider), а не завжди muted.
+  // Початкова гучність — та сама, що в основному плеєрі (глобальна змінна vol).
   player.unMute();
   player.setVolume(vol);
 }
@@ -4276,8 +4169,7 @@ document.getElementById('battle-setup-modal-overlay').addEventListener('click', 
 // ================================================================
 // ГРАФ СХОЖОСТІ: композиції / жанри / альбоми / сингли
 // ================================================================
-// Лінії малюємо лише для помітної схожості — інакше при N≈300+ вузлів
-// вийшла б суцільна павутина, у якій нічого не видно.
+// Лінії малюємо лише для помітної схожості — інакше при N≈300+ вузлів вийшла б суцільна павутина.
 const GRAPH_SIM_THRESHOLD = 0.15;
 let _graphItems = [], _graphOnClick = null, _graphLabelFn = null, _graphAdj = [];
 let _graphView = { x: 0, y: 0, scale: 1 };
@@ -4404,9 +4296,7 @@ function openSimilarityGraph(kind){
       g.songs.forEach(s => s.genres.forEach(gn => set.add(gn.toLowerCase())));
       return set;
     });
-    // Схожість альбомів/синглів: насамперед жанровий профіль, той самий
-    // виконавець — лише другорядний бонус (той самий артист може творити
-    // в геть різних стилях, тож сам собою це не робить альбоми схожими).
+    // Схожість альбомів/синглів: насамперед жанровий профіль, той самий виконавець — лише другорядний бонус.
     simFn = (i,j) => {
       const genreSim = _jaccard(genreSets[i], genreSets[j]);
       const a1 = groups[i].artists, a2 = groups[j].artists;
@@ -4426,8 +4316,7 @@ function openSimilarityGraph(kind){
   document.getElementById('graph-viewport').innerHTML = '';
   _graphResetView();
   document.getElementById('graph-modal-overlay').classList.add('open');
-  // Обчислення відкладаємо на наступний кадр — щоб встиг намалюватись стан
-  // "завантаження" перед тим, як потік на мить зайняється розрахунком (N≈300+).
+  // Обчислення відкладаємо на наступний кадр — щоб встиг намалюватись стан "завантаження".
   requestAnimationFrame(()=>{
     setTimeout(()=>{
       _renderGraph(items, simFn, labelFn, colorFn, onClickFn);
@@ -4444,9 +4333,7 @@ document.getElementById('graph-modal-overlay').addEventListener('click', functio
   if(e.target === this) closeGraph();
 });
 
-// Проста фізична симуляція (вузли відштовхуються завжди, притягуються
-// пропорційно до схожості) — не академічна MDS, але для "чим ближче — тим
-// схожіше" цього достатньо й не потребує зовнішніх бібліотек.
+// Проста фізична симуляція (вузли відштовхуються завжди, притягуються пропорційно до схожості) — не MDS, але достатньо.
 function _computeGraphLayout(n, sim, width, height){
   const nodes = [];
   for(let i=0;i<n;i++){
@@ -4601,9 +4488,7 @@ function _loadCurrent(){
   renderSongs();
   if(karaokeOpen) loadKaraokeLyrics();
 
-  // Якщо videoId вже закешовано в базі (хтось раніше знайшов і підтвердив
-  // його для цієї ж пісні) — беремо напряму, без нового запиту до YouTube
-  // Search API (100 одиниць квоти за кожен такий пошук).
+  // Якщо videoId вже закешовано в базі — беремо напряму, без нового запиту до YouTube Search API.
   const vidPromise = s.youtubeVideoId
     ? Promise.resolve(s.youtubeVideoId)
     : fetchVid(s.artist,s.title).then(vid=>{
@@ -4625,8 +4510,7 @@ function _loadCurrent(){
     if(ytReady)_load(vid);else pendingVid=vid;
   });
 }
-// Фонове збереження знайденого videoId — не блокує відтворення й ігнорує помилки
-// (best-effort: якщо не збереглось, наступного разу просто пошукає знову).
+// Фонове збереження знайденого videoId — не блокує відтворення, best-effort.
 function _cacheYoutubeVideo(songId, videoId){
   fetch(`/api/songs/${songId}/youtube-video`, {
     method:'PUT',
@@ -4645,10 +4529,7 @@ function _normForMatch(s){
 function _significantWords(s){
   return _normForMatch(s).split(' ').filter(w=>w.length>2);
 }
-// Відео справді про ЦЮ пісню, а не випадковий інший збіг з пошуку YouTube —
-// вимагаємо, щоб більшість значущих слів із назви пісні реально були в назві відео.
-// Без цього для рідкісних/непопулярних пісень видача YouTube могла підсунути
-// найбільш "офіційно виглядаючий" канал з геть іншою піснею чи виконавцем.
+// Відео справді про ЦЮ пісню — вимагаємо, щоб більшість значущих слів із назви пісні були в назві відео.
 function _isRelevantVideo(item,title){
   const nItem=_normForMatch(item.snippet?.title);
   const titleWords=_significantWords(title);
@@ -4657,9 +4538,7 @@ function _isRelevantVideo(item,title){
   return (matched/titleWords.length) >= 0.6;
 }
 async function _searchYoutube(q){
-  // Пробуємо ключі по черзі, починаючи з поточного — якщо один вичерпав денну
-  // квоту (403/429), непомітно для користувача переходимо на наступний і
-  // запам'ятовуємо його як поточний для наступних запитів.
+  // Пробуємо ключі по черзі — якщо один вичерпав денну квоту (403/429), переходимо на наступний.
   for(let attempt=0; attempt<ytApiKeys.length; attempt++){
     const key=ytApiKeys[ytApiKeyIdx];
     try{
@@ -4684,21 +4563,17 @@ async function _searchYoutube(q){
 async function fetchVid(artist,title){
   if(!ytApiKeys.length) return null;
   const artistLower=artist.toLowerCase();
-  // "live"/"interview"/"teaser"/"making of" тощо містять назву пісні в заголовку
-  // (проходять перевірку релевантності), але це не сама студійна пісня — саме
-  // такі відео найчастіше давали розбіжність тривалості з базою.
+  // "live"/"interview"/"teaser" тощо проходять перевірку релевантності, але не є студійною піснею.
   const badWords=['cover','reaction','lyric','lyrics','8d audio','slowed','reverb','nightcore','1 hour','remix','karaoke','instrumental','tiktok','sped up','unofficial','fan made','fan-made','bootleg','live','interview','making of','teaser','behind the scenes','performance','acoustic'];
 
   function scoreItem(item){
     const t=(item.snippet?.title||'').toLowerCase();
     const ch=(item.snippet?.channelTitle||'').toLowerCase();
-    // Канал артиста, VEVO, авто-канал "Artist - Topic" (його не підробити) або "official" в назві —
-    // надійні ознаки офіційного джерела.
+    // Канал артиста, VEVO, авто-канал "Artist - Topic" або "official" в назві — ознаки офіційного джерела.
     const channelLooksOfficial = ch.includes(artistLower)||ch.includes('vevo')||ch.includes(' - topic')||ch.includes('official');
     let s=0;
     if(channelLooksOfficial) s+=4;
-    // "official video" у назві саме по собі нічого не гарантує (типова фраза в перезаливах) —
-    // довіряємо лише коли канал і справді офіційний, інакше це підозріло і йде в мінус.
+    // "official video" у назві саме по собі нічого не гарантує — довіряємо лише коли канал справді офіційний.
     if(t.includes('official video')||t.includes('official music video')) s+=channelLooksOfficial?2:-2;
     else if(t.includes('official')) s+=channelLooksOfficial?1:-1;
     if(badWords.some(w=>t.includes(w))) s-=5;
@@ -4709,8 +4584,7 @@ async function fetchVid(artist,title){
     let items=await _searchYoutube(`${artist} ${title} official video`);
     let relevant=items.filter(it=>_isRelevantVideo(it,title));
     if(!relevant.length){
-      // Друга спроба без "official video" — деякі маленькі канали не використовують
-      // цю фразу в назві, і вона ж могла відсунути релевантні відео нижче в видачі.
+      // Друга спроба без "official video" — деякі малі канали не використовують цю фразу.
       items=await _searchYoutube(`${artist} ${title}`);
       relevant=items.filter(it=>_isRelevantVideo(it,title));
     }
@@ -4746,10 +4620,7 @@ function playerPrev(){
 }
 
 // ================================================================
-// MEDIA SESSION (апаратні клавіші відтворення на клавіатурі/навушниках,
-// а також системний "зараз грає" оверлей ОС) — працює навіть коли вкладка
-// не у фокусі (наприклад, згорнута під грою), бо ОС спрямовує ці клавіші
-// в активну media session браузера, а не в конкретне активне вікно.
+// MEDIA SESSION (апаратні клавіші відтворення, системний "зараз грає" оверлей ОС) — працює навіть поза фокусом.
 // ================================================================
 if('mediaSession' in navigator){
   navigator.mediaSession.setActionHandler('play', ()=>{ try{ytPlayer&&ytReady&&ytPlayer.playVideo();}catch(e){} });
@@ -4794,8 +4665,7 @@ function setVolume(v){
   if(ytPlayer&&ytReady)try{ytPlayer.setVolume(vol);}catch(e){}
   document.getElementById('vw1').style.display=vol===0?'none':'';
   document.getElementById('vw2').style.display=vol<50?'none':'';
-  // Захист: слайдер керує лише ytPlayer, але взаємодія з контролами іноді
-  // "оживляє" гучність попап-плеєра назад — примусово глушимо його знову.
+  // Взаємодія з контролами іноді "оживляє" гучність попап-плеєра назад — глушимо знову.
   if(videoPopupOpen&&popupPlayer&&popupReady)try{popupPlayer.mute();}catch(e){}
 }
 
@@ -4844,7 +4714,7 @@ function startTick(){
         document.getElementById('player-seek-thumb').style.left=p+'%';
         document.getElementById('p-cur').textContent=fmtSec(c);
 
-        // Зараховуємо як прослухану після 20с або половини тривалості (що раніше), один раз, тільки для авторизованих.
+        // Зараховуємо як прослухану після 20с або половини тривалості (що раніше).
         if(!listenLogged && currentUser?.authenticated){
           const threshold=Math.min(20,d/2);
           if(c>=threshold){
@@ -4863,9 +4733,7 @@ function setPP(playing){
   document.getElementById('ico-play').style.display=playing?'none':'';
   document.getElementById('ico-pause').style.display=playing?'':'none';
   if('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-  // Реальне аудіо грає всередині чужого iframe (youtube.com) — без власного
-  // елемента, що теж "грає", Chrome віддає активну media session (і апаратні
-  // клавіші наступна/попередня) саме тому iframe, а не нашій сторінці.
+  // Без власного елемента, що теж "грає", Chrome віддає активну media session чужому iframe (youtube.com).
   const anchor = document.getElementById('ms-anchor');
   if(anchor){ if(playing) anchor.play().catch(()=>{}); else anchor.pause(); }
 }
@@ -4879,18 +4747,14 @@ function setEQ(on){
 // ================================================================
 // VIDEO POPUP
 // ================================================================
-// Два плеєри: ytPlayer (аудіо, прихований, завжди грає) і popupPlayer (відео в попапі,
-// стартує з поточної секунди ytPlayer і синхронізується з ним; звук вимкнено — див. нижче).
+// Два плеєри: ytPlayer (аудіо, прихований, завжди грає) і popupPlayer (відео в попапі, синхронізоване, без звуку).
 let videoPopupOpen = false;
 let currentVid = null;
 let popupPlayer = null;
 let popupReady = false;
 let popupSyncTicker = null;
-// true одразу після НАШОГО Ж programmatic seekTo() на попапі — YouTube на
-// такий seekTo іноді емітить короткий PLAYING, який не можна відрізнити від
-// справжнього від events.onStateChange, тому позначаємо його прапорцем, а не
-// здогадуємось з userIntendedPlaying (той false і одразу після РЕАЛЬНОЇ паузи
-// теж — інакше клік "продовжити" по відео в попапі миттєво сам себе скасовував).
+// true одразу після нашого ж programmatic seekTo() — YouTube може емітити короткий
+// спурний PLAYING, який не відрізнити від справжнього без цього прапорця.
 let _popupProgrammaticSeek = false;
 function _popupSeek(time){
   _popupProgrammaticSeek = true;
@@ -4923,12 +4787,8 @@ function _initPopupPlayer(vid, startAt) {
     width: '100%',
     height: '100%',
     videoId: vid,
-    // controls:0 — попап лише показує відео, звук завжди йде з ytPlayer (нижче).
-    // Нативний YouTube-повзунок гучності розглушував popupPlayer в обхід нашого
-    // mute()/setVolume(0) (звідси й переперевірка мута кожні 5с у _startPopupSync) —
-    // прибираємо саму можливість його торкнутись, а не боремось з наслідками.
-    // Керування (play/pause/перемотування) лишається через плеєр-бар застосунку —
-    // єдине джерело правди для гучності й відтворення, як у Spotify.
+    // controls:0 — звук завжди йде з ytPlayer; нативний повзунок гучності міг
+    // розглушувати popupPlayer в обхід нашого mute(), тож прибираємо контроли взагалі.
     playerVars: {
       autoplay: userIntendedPlaying ? 1 : 0,
       start: Math.floor(startAt || 0),
@@ -5043,15 +4903,10 @@ function loadKaraokeLyrics(){
 // ================================================================
 // VIDEO POPUP: перенесення в окреме вікно ОС (Document Picture-in-Picture)
 // ================================================================
-// Document Picture-in-Picture (перенесення попапу в окреме вікно ОС просто
-// в браузері) прибрано зі звичайної веб-версії — фонове відтворення (заради
-// якого спершу й питали) воно все одно не рятує (YouTube-embed так само
-// призупиняється у фоні незалежно від того, в основному чи в pip-вікні), а
-// саму лише можливість "перенести на інший монітор" не визнали вартою
-// повторюваних багів (помилка 152, поломка при перемиканні пісні тощо).
-// У ДЕСКТОПНОМУ застосунку (Electron) аналогічна функція лишається —
-// це справжнє нативне вікно ОС через window.electronAPI (preload.js/
-// main.js застосунку), геть інший, надійніший механізм.
+// Document Picture-in-Picture прибрано з веб-версії — фонове відтворення воно
+// не рятує (YouTube-embed так само призупиняється у фоні), а лише "перенести на
+// інший монітор" не варте повторюваних багів. У Electron лишається справжнє
+// нативне вікно ОС через window.electronAPI — геть інший, надійніший механізм.
 let _electronPopoutActive = false;
 if (window.electronAPI && window.electronAPI.onVideoPopoutClosed) {
   window.electronAPI.onVideoPopoutClosed(() => {
@@ -5091,12 +4946,8 @@ function toggleVideoPopupFullscreen(){
     document.exitFullscreen?.();
   }
 }
-// Fullscreen API ховає геть усе, що НЕ є нащадком fullscreen-елемента —
-// плеєр-бар лежить окремо в DOM, тож у fullscreen він би просто зникав і
-// натиснути play/pause/перемотати стало б неможливо. Тому на час fullscreen
-// фізично переносимо сам вузол плеєр-бару всередину попапу (це той самий
-// DOM-елемент з усіма обробниками — просто змінюємо йому батька), а після
-// виходу повертаємо назад.
+// Fullscreen API ховає все, що НЕ є нащадком fullscreen-елемента — тому на час
+// fullscreen фізично переносимо вузол плеєр-бару всередину попапу, а після виходу повертаємо назад.
 document.addEventListener('fullscreenchange', () => {
   const popup = document.getElementById('video-popup');
   const playerBar = document.getElementById('player-bar');
@@ -5111,18 +4962,12 @@ function toggleVideoPopupSize(){
   videoPopupExpanded = !videoPopupExpanded;
   const popup = document.getElementById('video-popup');
   const header = document.getElementById('video-popup-header');
-  // Явно перезаписуємо width/height (а не лише клас) — інакше після ручного
-  // перетягування хендлом лишився б inline-стиль, який переміг би клас і
-  // кнопка нічого не зробила б.
+  // Явно перезаписуємо width/height — інакше inline-стиль від ручного перетягування переміг би клас.
   const rect = popup.getBoundingClientRect();
   const targetW = videoPopupExpanded ? Math.min(720, window.innerWidth * 0.9) : 320;
   const targetH = Math.round(targetW * 9 / 16) + header.offsetHeight;
-  // За замовчуванням попап прив'язаний CSS-властивостями right/bottom.
-  // Якщо лишити ці анкери й просто змінити width/height, ріст іде у той же
-  // бік, звідки анкер порахований, — але коли попап уже стоїть близько до
-  // краю екрана (початкова точка появи), більший розмір виштовхує його за
-  // межі viewport. Тому ростимо від поточного правого-нижнього кута явними
-  // left/top і одразу обмежуємо результат межами екрана.
+  // Попап за замовчуванням прив'язаний right/bottom — ростимо від поточного
+  // правого-нижнього кута явними left/top, щоб не виштовхувати його за межі viewport.
   let newLeft = rect.right - targetW;
   let newTop = rect.bottom - targetH;
   newLeft = Math.max(8, Math.min(newLeft, window.innerWidth - targetW - 8));
@@ -5174,17 +5019,11 @@ function toggleVideoPopupSize(){
       width = Math.max(MIN_W, Math.min(window.innerWidth * 0.98, width));
       height = Math.max(MIN_H, Math.min(window.innerHeight * 0.98, height));
 
-      // Протилежний (нерухомий) край лишається на місці — координату
-      // рахуємо ВІД НЬОГО, тож обрізання по min/max не "з'їжджає" бік,
-      // який користувач не тягнув.
+      // Протилежний (нерухомий) край лишається на місці — координату рахуємо від нього.
       if (dir.includes('w')) left = startRect.right - width;
       if (dir.includes('n')) top = startRect.bottom - height;
 
-      // Шапка попапу — єдина "ручка" для переміщення. Якщо розтягування
-      // вгору/вліво виштовхне top/left за межі екрана (в'ємні координати),
-      // шапка стане фізично недосяжною і попап застрягне без можливості
-      // повернути його назад. Тому притискаємо до 0, "з'їдаючи" різницю
-      // з відповідного виміру — протилежний край лишається на місці.
+      // Притискаємо до 0 — інакше шапка (єдина "ручка" переміщення) могла б виштовхнутись за екран.
       if (dir.includes('n') && top < 0) { height += top; top = 0; }
       if (dir.includes('w') && left < 0) { width += left; left = 0; }
 
@@ -5210,8 +5049,7 @@ function toggleVideoPopupSize(){
   header.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button')) return; // не тягнемо, якщо клік по кнопці
     const rect = popup.getBoundingClientRect();
-    // Переходимо з bottom/right-позиціювання на top/left, щоб рахувати зсув
-    // однаково незалежно від того, звідки попап "прив'язаний" зараз.
+    // Переходимо з bottom/right-позиціювання на top/left, щоб рахувати зсув однаково.
     popup.style.left = rect.left + 'px';
     popup.style.top = rect.top + 'px';
     popup.style.right = 'auto';
@@ -5260,10 +5098,7 @@ function closeVideoPopup() {
 
   const popup = document.getElementById('video-popup');
 
-  // Ховати (display:none) елемент, поки він фактично fullscreen, — заборонений
-  // для браузера стан: він "зависає" в зламаному fullscreen (лагодиться лише
-  // ручним F11), бо ми поховали сам fullscreen-елемент, не вийшовши з режиму.
-  // Тож спершу ГАРАНТОВАНО виходимо з fullscreen, і лише потім ховаємо попап.
+  // Спершу ГАРАНТОВАНО виходимо з fullscreen, і лише потім ховаємо попап — інакше браузер "зависає".
   if (document.fullscreenElement === popup) {
     document.exitFullscreen?.().catch(() => {}).finally(_finishCloseVideoPopup);
   } else {
@@ -5311,9 +5146,7 @@ _updateNavIndicator();
 _updatePopoutBtnVisibility();
 
 // ================================================================
-// REALTIME (SignalR) — коли хтось (адмін) додає/редагує/видаляє пісню чи
-// заявку, усі відкриті вкладки самі перезавантажують дані замість того, щоб
-// показувати застарілий список, поки хтось вручну не оновить сторінку.
+// REALTIME (SignalR) — усі відкриті вкладки перезавантажують дані при мутації пісні/заявки.
 // ================================================================
 if (window.signalR) {
   const rtConn = new signalR.HubConnectionBuilder()
@@ -5323,8 +5156,7 @@ if (window.signalR) {
 
   rtConn.on('songsChanged', () => {
     loadSongs().then(() => { renderSongs(); updateStats(); }).catch(() => {});
-    // Немає окремої SignalR-події на сповіщення виконавців — пісня й так
-    // змінюється лише через ці ж мутації, тож бейдж оновлюємо тут же.
+    // Немає окремої SignalR-події на сповіщення — бейдж оновлюємо тут же.
     if(currentUser?.authenticated) refreshNotifBadge();
   });
   rtConn.on('requestsChanged', () => {
