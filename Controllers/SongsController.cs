@@ -17,9 +17,12 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
     [HttpGet]
     public async Task<IEnumerable<SongDto>> GetAll()
     {
+        // .ToLower() — інакше сортування впорядковує за сирими кодами символів:
+        // усі великі літери (A-Z) окремим блоком ПЕРЕД усіма малими (a-z), тож
+        // "Zero 9:36" опинявся б перед "alt." замість звичного алфавітного порядку.
         var songs = await db.Songs
             .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
-            .OrderBy(m => m.Artist).ThenBy(m => m.Title)
+            .OrderBy(m => m.Artist.ToLower()).ThenBy(m => m.Title.ToLower())
             .ToListAsync();
 
         // Завантажуємо всі потрібні альбоми одним запитом
