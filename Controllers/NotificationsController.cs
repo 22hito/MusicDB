@@ -63,4 +63,27 @@ public class NotificationsController(MusicDbContext db, UserDirectoryService use
             .ExecuteUpdateAsync(s => s.SetProperty(f => f.LastReadAt, DateTime.UtcNow));
         return Ok();
     }
+
+    // Позначає прочитаним ОДНЕ сповіщення — без фан-ауту "прочитано" все одно
+    // немає per-подійного стану, лише per-(user, artist) LastReadAt (див.
+    // коментар над Get). Тому "прочитати цю одну" — це насправді "підняти
+    // LastReadAt цього артиста рівно до часу цієї події": усе, що СТАРІШЕ
+    // або таке саме, автоматично теж стає прочитаним (як у email/Slack —
+    // "прочитано до цього моменту"), а новіші події від того ж артиста
+    // лишаються непрочитаними, бо їхній CreatedAt більший за нове LastReadAt.
+    [HttpPost("{eventId:int}/mark-read")]
+    public async Task<IActionResult> MarkOneRead(int eventId)
+    {
+        var evt = await db.ArtistEvents.FindAsync(eventId);
+        if (evt is null) return NotFound();
+
+        var userId = await CurrentUserIdAsync();
+        var follow = await db.ArtistFollows.FirstOrDefaultAsync(f => f.UserId == userId && f.ArtistId == evt.ArtistId);
+        if (follow is null) return NotFound();
+
+        if (evt.CreatedAt > follow.LastReadAt)
+            follow.LastReadAt = evt.CreatedAt;
+        await db.SaveChangesAsync();
+        return Ok();
+    }
 }
