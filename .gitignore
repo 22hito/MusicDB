@@ -6,3 +6,4 @@ obj/
 # Реальні секрети (пароль БД, API-ключі) — тільки локально, ніколи в git.
 appsettings.Local.json
 .gh-token.local
+.azure-publish-profile.local.xml
