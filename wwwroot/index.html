@@ -4508,6 +4508,9 @@ function _loadCurrent(){
     document.getElementById('player-cover-ph').style.display='none';
     _updateMediaSessionMetadata(s, vid);
     if(ytReady)_load(vid);else pendingVid=vid;
+    // Нативний попап (Electron) не підхоплює зміну пісні сам — без цього
+    // лишалось би старе відео, а нове тим часом почало б грати ще й тут (два звуки одразу).
+    if(_electronPopoutActive&&window.electronAPI?.openVideoPopout)window.electronAPI.openVideoPopout(vid,0,vol,false);
   });
 }
 // Фонове збереження знайденого videoId — не блокує відтворення, best-effort.
@@ -4596,7 +4599,12 @@ async function fetchVid(artist,title){
   return null;
 }
 
-function _load(vid){ytPlayer.loadVideoById(vid);}
+function _load(vid){
+  ytPlayer.loadVideoById(vid);
+  // loadVideoById завжди стартує відтворення, ігноруючи autoplay:0 — коли звук
+  // веде нативний попап (Electron), одразу глушимо тут, інакше грає з двох вікон.
+  if(_electronPopoutActive)try{ytPlayer.pauseVideo();}catch(e){}
+}
 
 function playerToggle(){
   if(!ytPlayer||!ytReady)return;

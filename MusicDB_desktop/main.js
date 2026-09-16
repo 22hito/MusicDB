@@ -159,7 +159,7 @@ function buildPopoutUrl(videoId, startSeconds, volume) {
   return `${SITE_URL}popout.html?v=${encodeURIComponent(videoId)}&t=${t}&vol=${v}`;
 }
 
-ipcMain.handle('video-popout:open', (_event, videoId, startSeconds, volume) => {
+ipcMain.handle('video-popout:open', (_event, videoId, startSeconds, volume, focus = true) => {
   if (!videoId) return false;
 
   // Звук у головному вікні йде з ЙОГО ytPlayer (попап на сайті сам по собі
@@ -173,7 +173,9 @@ ipcMain.handle('video-popout:open', (_event, videoId, startSeconds, volume) => {
 
   if (popoutWindow && !popoutWindow.isDestroyed()) {
     popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds, volume));
-    popoutWindow.focus();
+    // focus:false — фонова синхронізація при перемиканні пісні не повинна
+    // забирати фокус з головного вікна, на відміну від явного відкриття попапу.
+    if (focus) popoutWindow.focus();
     return true;
   }
   popoutWindow = new BrowserWindow({
