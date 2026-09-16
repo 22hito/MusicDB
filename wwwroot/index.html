@@ -1277,6 +1277,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
           <div class="wheel-result-label" data-i18n="wheel.resultLabel">Випав жанр:</div>
           <div id="wheel-result-genre" class="wheel-result-genre"></div>
         </div>
+        <h3 style="margin:0 0 0.6rem;font-size:0.9rem;color:var(--muted);" data-i18n="wheel.legendTitle">Жанри на колесі</h3>
+        <div id="wheel-legend" class="wheel-legend"></div>
+      </div>
+      <div class="wheel-col wheel-playlist-col">
         <div class="wheel-duration-row">
           <span data-i18n="wheel.countLabel">Кількість жанрів на колесі:</span>
           <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onblur="_restoreIntInputIfEmpty(this)">
@@ -1291,10 +1295,6 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
         <div class="wheel-actions">
           <button class="modal-btn-confirm" id="wheel-spin-btn" style="background:var(--accent);" onclick="spinWheel()" data-i18n="wheel.spinBtn">Крутити</button>
         </div>
-      </div>
-      <div class="wheel-col wheel-playlist-col">
-        <h3 style="margin:0 0 0.6rem;font-size:0.9rem;color:var(--muted);" data-i18n="wheel.legendTitle">Жанри на колесі</h3>
-        <div id="wheel-legend" class="wheel-legend"></div>
         <div id="wheel-playlist-empty" class="wheel-playlist-empty" data-i18n="wheel.playlistEmpty">Крутніть колесо, щоб сформувати плейлист із випадкового жанру</div>
         <div id="wheel-playlist-wrap" style="display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;gap:10px;flex-wrap:wrap;">
