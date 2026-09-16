@@ -44,7 +44,6 @@ jobs:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
 
     steps:
@@ -52,14 +51,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A9170B90C0324BBE8AADECB5BFFB10B7 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_AD196BF5B5654579AD63CD5EC0E20F80 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_193F3EBCDBF242548D9B148AA4BB6609 }}
 
+      # Publish-profile замість OIDC/Service Principal — той federated-credential
+      # шлях виявився нестабільним (OneDeploy стабільно падав з Bad Request 400
+      # після кожного реконекту Deployment Center, крім одного разу відразу після).
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -67,4 +62,4 @@ jobs:
           app-name: 'musicDB'
           slot-name: 'Production'
           package: .
-          
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
