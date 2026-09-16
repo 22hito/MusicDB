@@ -51,7 +51,7 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<PublicUserDto>> GetById(int id)
+    public async Task<ActionResult<PublicProfileDto>> GetById(int id)
     {
         var user = await db.Users.FindAsync(id);
         if (user is null) return NotFound();
@@ -60,11 +60,43 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
         var myId = await CurrentUserIdAsync();
         var status = id == myId ? "self" : await RelationshipStatusAsync(myId, id);
 
-        return Ok(new PublicUserDto(
+        var totalListened = await db.ListeningHistory.CountAsync(h => h.UserEmail == user.Email);
+        var favoritesCount = await db.Favorites.CountAsync(f => f.UserEmail == user.Email);
+
+        var listenedMusicIds = await db.ListeningHistory
+            .Where(h => h.UserEmail == user.Email)
+            .Select(h => h.MusicId)
+            .ToListAsync();
+        var topGenres = await db.MusicGenres
+            .Where(mg => listenedMusicIds.Contains(mg.MusicId))
+            .GroupBy(mg => mg.Genre.GenreName)
+            .OrderByDescending(g => g.Count())
+            .Take(3)
+            .Select(g => g.Key.Trim())
+            .ToListAsync();
+
+        // Лише публічні плейлисти — приватні цього користувача чужим очам не видно,
+        // той самий механізм, що й PlaylistsController.GetPublic (для батл рояля).
+        var playlists = await db.Playlists
+            .Where(p => p.UserEmail == user.Email && p.IsPublic)
+            .Include(p => p.PlaylistSongs)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+        var ownerLabel = profile?.DisplayName ?? user.GoogleName ?? $"Учасник спільноти #{user.Id}";
+        var publicPlaylists = playlists
+            .Select(p => new PublicPlaylistDto(p.Id, p.Name, p.PlaylistSongs.Count, ownerLabel))
+            .ToList();
+
+        return Ok(new PublicProfileDto(
             user.Id,
-            profile?.DisplayName ?? user.GoogleName ?? $"Учасник спільноти #{user.Id}",
+            ownerLabel,
             profile?.AvatarUrl ?? user.GooglePicture,
-            status));
+            status,
+            user.CreatedAt.ToString("yyyy-MM-dd"),
+            totalListened,
+            favoritesCount,
+            topGenres.ToArray(),
+            publicPlaylists));
     }
 
     // "none" | "friends" | "pending_outgoing" | "pending_incoming" — стосовно myId.

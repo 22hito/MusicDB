@@ -152,6 +152,14 @@ public record NotificationsSummaryDto(int UnreadCount, List<ArtistNotificationDt
 // RelationshipStatus: "self" | "none" | "friends" | "pending_outgoing" | "pending_incoming"
 public record PublicUserDto(int UserId, string DisplayName, string? AvatarUrl, string RelationshipStatus);
 
+// Розширений публічний профіль для сторінки page-user-profile — той самий
+// принцип приватності, що й PublicUserDto (email ніколи), але з "музичним
+// портретом" (як у власному ProfileDto) і списком ЛИШЕ публічних плейлистів.
+public record PublicProfileDto(
+    int UserId, string DisplayName, string? AvatarUrl, string RelationshipStatus,
+    string MemberSince, int TotalListened, int FavoritesCount, string[] TopGenres,
+    List<PublicPlaylistDto> PublicPlaylists);
+
 public record UserSearchResultDto(int UserId, string DisplayName, string? AvatarUrl, string RelationshipStatus);
 
 public record FriendRequestDto(int RequestId, int UserId, string DisplayName, string? AvatarUrl, string CreatedAt);

@@ -1411,9 +1411,25 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
         <span id="user-profile-avatar-ph" style="width:64px;height:64px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.8rem;">👤</span>
         <div>
           <h2 id="user-profile-name" style="margin-bottom:6px;"></h2>
+          <div id="user-profile-member-since" style="color:var(--muted);font-size:0.78rem;margin-bottom:8px;"></div>
           <button type="button" class="btn btn-outline" id="user-profile-action-btn" onclick="onUserProfileActionClick()"></button>
         </div>
       </div>
+
+      <div class="stats-row" style="margin:2rem 0;">
+        <div class="stat-card"><div class="label" data-i18n="profile.totalListened">Прослухано</div><div class="value" id="user-profile-stat-listened">0</div></div>
+        <div class="stat-card"><div class="label" data-i18n="profile.favoritesCount">Улюблених</div><div class="value" id="user-profile-stat-favorites">0</div></div>
+        <div class="stat-card"><div class="label" data-i18n="profile.public.publicPlaylistsCount">Публічних плейлистів</div><div class="value" id="user-profile-stat-playlists">0</div></div>
+      </div>
+
+      <div id="user-profile-top-genres-wrap" style="margin-bottom:2rem;display:none;">
+        <div style="color:var(--muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem;" data-i18n="profile.topGenres">Улюблені жанри</div>
+        <div id="user-profile-top-genres"></div>
+      </div>
+
+      <h2 style="font-size:1.3rem;" data-i18n="profile.public.playlistsTitle">Публічні плейлисти</h2>
+      <div id="user-profile-playlists-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.public.playlistsEmpty">Немає публічних плейлистів</span></div>
+      <div id="user-profile-playlists-list"></div>
     </div>
   </div>
 </div>
@@ -1862,6 +1878,10 @@ const I18N = {
     'friends.friendsBadge': '✓ Друзі',
     'profile.public.back': '← До друзів',
     'profile.public.notFound': 'Користувача не знайдено',
+    'profile.public.memberSince': 'На сайті з',
+    'profile.public.publicPlaylistsCount': 'Публічних плейлистів',
+    'profile.public.playlistsTitle': 'Публічні плейлисти',
+    'profile.public.playlistsEmpty': 'Немає публічних плейлистів',
     'battle.heading.pre': 'Батл',
     'battle.heading.accent': 'рояль',
     'battle.pageOwnHeading': 'Мої плейлисти',
@@ -2103,6 +2123,10 @@ const I18N = {
     'friends.friendsBadge': '✓ Friends',
     'profile.public.back': '← Back to friends',
     'profile.public.notFound': 'User not found',
+    'profile.public.memberSince': 'Member since',
+    'profile.public.publicPlaylistsCount': 'Public playlists',
+    'profile.public.playlistsTitle': 'Public playlists',
+    'profile.public.playlistsEmpty': 'No public playlists',
     'battle.heading.pre': 'Battle',
     'battle.heading.accent': 'royale',
     'battle.pageOwnHeading': 'My playlists',
@@ -4016,10 +4040,32 @@ function loadUserProfilePage(){
     if(!u){ document.getElementById('user-profile-not-found').style.display = ''; return; }
     document.getElementById('user-profile-content').style.display = '';
     document.getElementById('user-profile-name').textContent = u.displayName;
+    document.getElementById('user-profile-member-since').textContent = u.memberSince ? `${t('profile.public.memberSince')} ${u.memberSince}` : '';
     const img = document.getElementById('user-profile-avatar');
     const ph = document.getElementById('user-profile-avatar-ph');
     if(u.avatarUrl){ img.src = u.avatarUrl; img.style.display = ''; ph.style.display = 'none'; }
     else { img.style.display = 'none'; ph.style.display = ''; }
+
+    document.getElementById('user-profile-stat-listened').textContent = u.totalListened ?? 0;
+    document.getElementById('user-profile-stat-favorites').textContent = u.favoritesCount ?? 0;
+    document.getElementById('user-profile-stat-playlists').textContent = (u.publicPlaylists || []).length;
+
+    const genresWrap = document.getElementById('user-profile-top-genres-wrap');
+    if(u.topGenres && u.topGenres.length){
+      genresWrap.style.display = '';
+      document.getElementById('user-profile-top-genres').innerHTML = u.topGenres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('');
+    } else {
+      genresWrap.style.display = 'none';
+    }
+
+    const plEmpty = document.getElementById('user-profile-playlists-empty');
+    const plList = document.getElementById('user-profile-playlists-list');
+    const playlists = u.publicPlaylists || [];
+    plEmpty.style.display = playlists.length ? 'none' : '';
+    plList.innerHTML = playlists.map(p=>`
+      <div class="ext-search-item" onclick="openPlaylist(${p.id})">
+        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+      </div>`).join('');
 
     const btn = document.getElementById('user-profile-action-btn');
     if(u.relationshipStatus === 'self'){
