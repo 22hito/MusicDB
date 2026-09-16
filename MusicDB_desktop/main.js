@@ -153,12 +153,13 @@ let popoutWindow = null;
 // вікно тепер відкриває справжню сторінку НАШОГО домену (wwwroot/popout.html),
 // яка використовує офіційний IFrame Player API — той самий механізм, що вже
 // надійно працює в основному плеєрі й попапі на сайті.
-function buildPopoutUrl(videoId, startSeconds) {
+function buildPopoutUrl(videoId, startSeconds, volume) {
   const t = Math.max(0, Math.floor(Number(startSeconds) || 0));
-  return `${SITE_URL}popout.html?v=${encodeURIComponent(videoId)}&t=${t}`;
+  const v = Math.max(0, Math.min(100, Math.floor(Number(volume) ?? 80)));
+  return `${SITE_URL}popout.html?v=${encodeURIComponent(videoId)}&t=${t}&vol=${v}`;
 }
 
-ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
+ipcMain.handle('video-popout:open', (_event, videoId, startSeconds, volume) => {
   if (!videoId) return false;
 
   // Звук у головному вікні йде з ЙОГО ytPlayer (попап на сайті сам по собі
@@ -171,7 +172,7 @@ ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
   }
 
   if (popoutWindow && !popoutWindow.isDestroyed()) {
-    popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds));
+    popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds, volume));
     popoutWindow.focus();
     return true;
   }
@@ -188,7 +189,7 @@ ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   });
   popoutWindow.setMenuBarVisibility(false);
-  popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds));
+  popoutWindow.loadURL(buildPopoutUrl(videoId, startSeconds, volume));
   popoutWindow.on('closed', () => {
     popoutWindow = null;
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('video-popout:closed');
@@ -198,6 +199,18 @@ ipcMain.handle('video-popout:open', (_event, videoId, startSeconds) => {
 
 ipcMain.handle('video-popout:close', () => {
   if (popoutWindow && !popoutWindow.isDestroyed()) popoutWindow.close();
+  return true;
+});
+
+// Попап — окремий процес/вікно ОС, тож гучність плеєр-бару головного вікна
+// не дістає туди сама по собі; переганяємо її явно через executeJavaScript
+// у функцію, яку визначає popout.html (window.__setPopoutVolume).
+ipcMain.handle('video-popout:set-volume', (_event, volume) => {
+  if (!popoutWindow || popoutWindow.isDestroyed()) return false;
+  const v = Math.max(0, Math.min(100, Math.floor(Number(volume) || 0)));
+  popoutWindow.webContents.executeJavaScript(
+    `window.__setPopoutVolume && window.__setPopoutVolume(${v});`
+  ).catch(() => {});
   return true;
 });
 
