@@ -15,7 +15,8 @@ try { localStorage.setItem('isDesktopApp', '1'); } catch (e) {}
 // будь-яке інше вікно ОС — саме цього просив користувач.
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
-  openVideoPopout: (videoId, startSeconds) => ipcRenderer.invoke('video-popout:open', videoId, startSeconds),
+  openVideoPopout: (videoId, startSeconds, volume) => ipcRenderer.invoke('video-popout:open', videoId, startSeconds, volume),
   closeVideoPopout: () => ipcRenderer.invoke('video-popout:close'),
   onVideoPopoutClosed: (cb) => ipcRenderer.on('video-popout:closed', () => cb()),
+  setPopoutVolume: (volume) => ipcRenderer.invoke('video-popout:set-volume', volume),
 });

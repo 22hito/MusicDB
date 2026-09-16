@@ -22,22 +22,35 @@
   function getParam(name) { return new URLSearchParams(location.search).get(name); }
   const videoId = getParam('v');
   const startAt = parseInt(getParam('t') || '0', 10) || 0;
+  const initialVol = Math.max(0, Math.min(100, parseInt(getParam('vol') || '80', 10) || 0));
 
   const tag = document.createElement('script');
   tag.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(tag);
 
+  let player = null;
+  // Гучність керується виключно плеєр-баром головного вікна (через
+  // window.__setPopoutVolume, викликається з main.js) — controls:0 ховає
+  // нативний YouTube-повзунок, щоб не було двох неузгоджених джерел правди.
+  window.__setPopoutVolume = function (v) {
+    try { player && player.setVolume(v); } catch (e) {}
+  };
+
   window.onYouTubeIframeAPIReady = function () {
-    new YT.Player('player', {
+    player = new YT.Player('player', {
       width: '100%',
       height: '100%',
       videoId: videoId,
       playerVars: {
         autoplay: 1,
         start: startAt,
+        controls: 0,
         rel: 0,
         modestbranding: 1,
         iv_load_policy: 3
+      },
+      events: {
+        onReady: (e) => { try { e.target.setVolume(initialVol); } catch (err) {} }
       }
     });
   };

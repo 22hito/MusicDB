@@ -4667,6 +4667,8 @@ function setVolume(v){
   document.getElementById('vw2').style.display=vol<50?'none':'';
   // Взаємодія з контролами іноді "оживляє" гучність попап-плеєра назад — глушимо знову.
   if(videoPopupOpen&&popupPlayer&&popupReady)try{popupPlayer.mute();}catch(e){}
+  // Нативний попап (Electron) грає звук сам, окремим вікном/процесом — синхронізуємо його гучність теж.
+  if(_electronPopoutActive&&window.electronAPI?.setPopoutVolume)window.electronAPI.setPopoutVolume(vol);
 }
 
 // SEEK
@@ -4928,7 +4930,7 @@ async function popOutVideoPopup(){
   if (!currentVid) return;
   let startAt = 0;
   try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
-  const ok = await window.electronAPI.openVideoPopout(currentVid, startAt);
+  const ok = await window.electronAPI.openVideoPopout(currentVid, startAt, vol);
   if (ok) {
     _electronPopoutActive = true;
     document.getElementById('video-popup').classList.remove('open');
