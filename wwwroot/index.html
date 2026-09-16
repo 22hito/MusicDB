@@ -2271,13 +2271,28 @@ function applyLang(lang){
     b.classList.toggle('active', b.getAttribute('data-lang-option') === lang);
   });
   document.title = t('page.title');
-  // Динамічний контент, який генерується в JS, потрібно перемалювати наново.
+  // Динамічний контент, який генерується в JS (текст із t() прямо в
+  // HTML-рядку, без data-i18n), потрібно перемалювати наново — інакше він
+  // лишається старою мовою, аж доки не перевідкрити сторінку.
   renderSongs();
   updateStats();
   renderAuthArea();
   if(currentUser?.isAdmin) renderRequests();
   // Рекомендації генерує ШІ мовою фронтенду — якщо сторінка відкрита, перезапитуємо новою мовою.
   if(document.getElementById('page-recommendations')?.classList.contains('active')) loadRecommendationsPage();
+  if(document.getElementById('page-top')?.classList.contains('active')) loadTopSongsPage();
+  if(document.getElementById('page-profile')?.classList.contains('active')) loadProfilePage();
+  if(document.getElementById('page-playlist')?.classList.contains('active') && currentPlaylistId!=null) openPlaylist(currentPlaylistId);
+  if(document.getElementById('page-artists')?.classList.contains('active')) loadArtistsPage();
+  if(document.getElementById('page-artist')?.classList.contains('active') && currentArtistId!=null) loadArtistPage();
+  if(document.getElementById('page-friends')?.classList.contains('active')){
+    loadFriendsPage();
+    if(document.getElementById('friends-search')?.value.trim()) runFriendsSearch();
+  }
+  if(document.getElementById('page-user-profile')?.classList.contains('active') && currentProfileUserId!=null) loadUserProfilePage();
+  if(document.getElementById('page-battle')?.classList.contains('active')) openBattlePage();
+  if(wheelResultGenre && document.getElementById('page-wheel')?.classList.contains('active')) renderWheelPlaylist();
+  if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
 }
 function selectLang(lang){
   applyLang(lang);
@@ -3631,8 +3646,8 @@ function onOpenNotifDropdown(){
       <div style="padding:0.5rem 0.8rem;border-top:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;" onclick="openUserProfilePage(${r.userId})">
         <div style="font-size:0.8rem;"><strong>${esc(r.displayName)}</strong><div style="font-size:0.72rem;color:var(--muted);">${t('friends.incomingRequestLabel')}</div></div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
-          <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.55rem;" onclick="event.stopPropagation();acceptFriendRequest(${r.requestId});onOpenNotifDropdown();">${t('friends.acceptBtn')}</button>
-          <button class="btn btn-outline" style="font-size:0.7rem;padding:0.25rem 0.55rem;" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId});onOpenNotifDropdown();">${t('friends.rejectBtn')}</button>
+          <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.55rem;" onclick="event.stopPropagation();acceptFriendRequest(${r.requestId})">${t('friends.acceptBtn')}</button>
+          <button class="btn btn-outline" style="font-size:0.7rem;padding:0.25rem 0.55rem;" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.rejectBtn')}</button>
         </div>
       </div>`).join('');
     const notifHtml = recent.map(n=>`
@@ -3962,7 +3977,7 @@ function sendFriendRequest(targetUserId){
 }
 function acceptFriendRequest(requestId){
   fetch(`/api/friends/requests/${requestId}/accept`, { method:'POST' })
-    .then(r=>{ if(r.ok){ loadFriendsPage(); refreshNotifBadge(); } else alert(t('msg.connectionError')); })
+    .then(r=>{ if(r.ok){ loadFriendsPage(); refreshNotifBadge(); onOpenNotifDropdown(); } else alert(t('msg.connectionError')); })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
 function acceptFriendRequestFromUser(userId){
@@ -3975,7 +3990,7 @@ function acceptFriendRequestFromUser(userId){
 }
 function cancelOrRejectFriendRequest(requestId){
   fetch(`/api/friends/requests/${requestId}`, { method:'DELETE' })
-    .then(()=>{ loadFriendsPage(); refreshNotifBadge(); if(currentProfileUserId!=null) loadUserProfilePage(); })
+    .then(()=>{ loadFriendsPage(); refreshNotifBadge(); onOpenNotifDropdown(); if(currentProfileUserId!=null) loadUserProfilePage(); })
     .catch(()=>{});
 }
 function unfriendUser(userId){
