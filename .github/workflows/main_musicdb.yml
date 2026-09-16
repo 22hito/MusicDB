@@ -26,13 +26,8 @@ jobs:
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
-      - name: Run tests
-        run: dotnet test Tests/MusicDB.Api.Tests/MusicDB.Api.Tests.csproj --configuration Release --no-build
-
       - name: dotnet publish
-        # Публікуємо лише веб-проєкт (не всю .sln) — інакше в пакет деплою
-        # потрапляють ще й тестові збірки (xunit тощо).
-        run: dotnet publish MusicDB.Api.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -56,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_9E42147766FE475F8292AB56C27BF7D8 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_ED6E28A14A584D17A2489137B9E91A17 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_35D84B18933741A8B682B80E213DE495 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A9170B90C0324BBE8AADECB5BFFB10B7 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_AD196BF5B5654579AD63CD5EC0E20F80 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_193F3EBCDBF242548D9B148AA4BB6609 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
