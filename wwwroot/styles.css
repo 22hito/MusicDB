@@ -491,6 +491,14 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   color: #0d0d0f; background: linear-gradient(135deg, var(--accent), #dcbb87);
   border-color: transparent; font-weight: 700; box-shadow: 0 2px 10px rgba(200,169,110,0.35);
 }
+/* Фінальний сегмент "1" — окремий стан (не .current): турнір уже завершено,
+   а не просто "зараз триває цей раунд", тож підсвічуємо пульсуючим золотим
+   світінням, щоб було явно видно переможний крок. */
+.battle-progress-seg.winner {
+  color: #0d0d0f; background: linear-gradient(135deg, var(--accent), #dcbb87);
+  border-color: transparent; font-weight: 700; animation: battleProgressWinnerPulse 1.6s ease-in-out infinite;
+}
+@keyframes battleProgressWinnerPulse { 0%, 100% { box-shadow: 0 2px 10px rgba(200,169,110,0.35); } 50% { box-shadow: 0 2px 20px rgba(200,169,110,0.75); } }
 .battle-progress-sep { width: 16px; height: 1px; background: var(--border); flex-shrink: 0; }
 /* Два ряди: відео+VS (media-row) окремо від інфо+кнопки (details-row) —
    так VS центрується по висоті САМЕ відео, а не всієї колонки разом з

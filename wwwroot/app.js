@@ -2533,6 +2533,12 @@ function showBattleChampion(song){
   document.getElementById('battle-split').style.display = 'none';
   document.getElementById('battle-champion').style.display = 'block';
   _battleConfetti();
+  // Стрічка прогресу востаннє малювалась для матчу "2 → 1" (loadBattleMatch
+  // більше не викликається після визначення чемпіона) — тож сегмент "1"
+  // ніколи не підсвічувався. Позначаємо його окремо переможним стилем.
+  document.querySelectorAll('#battle-progress-ribbon .battle-progress-seg').forEach(seg => seg.classList.remove('current'));
+  const lastSeg = document.querySelector('#battle-progress-ribbon .battle-progress-seg:last-child');
+  if(lastSeg){ lastSeg.classList.remove('done'); lastSeg.classList.add('winner'); }
 }
 // Невеликий конфеті-вибух над карткою чемпіона — той самий прийом, що й на
 // колесі фортуни (прості DOM-елементи з CSS-анімацією, самі прибираються).
