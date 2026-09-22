@@ -95,11 +95,16 @@ html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
    браузером одразу; ховається через клас .hidden, який ставить initApp(). */
 #app-splash {
   position: fixed; inset: 0; z-index: 9999; background: var(--bg);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.3rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.7rem;
   transition: opacity 0.4s ease;
 }
 #app-splash.hidden { opacity: 0; pointer-events: none; }
-.app-splash-logo { width: 72px; height: auto; animation: splashPulse 1.6s ease-in-out infinite; filter: drop-shadow(0 4px 16px rgba(200,169,110,0.25)); }
+/* Лого — майже чорний силует на прозорому тлі (задумане як водяний знак),
+   на темному сплеші так само губиться, як губилось на хабі колеса — та сама
+   brightness(0) invert(1)-корекція, щоб перефарбувати силует у білий. */
+.app-splash-logo { width: 72px; height: auto; animation: splashPulse 1.6s ease-in-out infinite; filter: brightness(0) invert(1) drop-shadow(0 4px 16px rgba(200,169,110,0.35)); }
+.app-splash-title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); }
+.app-splash-dots { margin-top: 0.6rem; }
 @keyframes splashPulse { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
 .app-splash-dots { display: flex; gap: 6px; }
 .app-splash-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: ldot 1s ease-in-out infinite; }
@@ -367,7 +372,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.45));
 }
 .wheel-seg-label {
-  position: absolute; left: 50%; top: 50%; transform-origin: 0 0;
+  position: absolute; left: 50%; top: 50%; transform-origin: 0 0; z-index: 4;
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: #fff;
   /* Різкий 1px контур замість розмитої тіні (blur-radius) — на кольоровому
      тлі саме блюр і виглядав як "розмазаний" текст; суцільний контур того ж
