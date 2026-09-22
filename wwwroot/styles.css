@@ -478,13 +478,41 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .battle-hover-toggle:active { transform: translate(-50%, -50%) scale(0.97); }
 .battle-close-btn { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
 .battle-close-btn:hover { color: var(--text); }
+/* Стрічка прогресу турніру — сегмент на кожен розмір раунду. */
+.battle-progress-ribbon { display: flex; align-items: center; justify-content: center; gap: 0; padding: 10px 18px 0; }
+.battle-progress-seg {
+  font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; transition: all 0.25s ease;
+}
+.battle-progress-seg.done { color: var(--accent); border-color: rgba(200,169,110,0.4); }
+.battle-progress-seg.current {
+  color: #0d0d0f; background: linear-gradient(135deg, var(--accent), #dcbb87);
+  border-color: transparent; font-weight: 700; box-shadow: 0 2px 10px rgba(200,169,110,0.35);
+}
+.battle-progress-sep { width: 16px; height: 1px; background: var(--border); flex-shrink: 0; }
 .battle-split { display: flex; align-items: stretch; gap: 0; }
 .battle-side {
   flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center;
-  padding: 20px;
+  padding: 20px; border-radius: 10px; transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
 }
-.battle-video-wrap { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+/* Обрана сторона коротко спалахує золотим, програна — тьмяніє й трохи
+   стискається — щоб перехід між парами читався як явний результат, а не
+   миттєва підміна контенту. */
+.battle-side.battle-winner-flash { box-shadow: inset 0 0 0 2px var(--accent), 0 0 24px rgba(200,169,110,0.25); }
+.battle-side.battle-loser-fade { opacity: 0.35; transform: scale(0.96); }
+.battle-video-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
 .battle-video-wrap iframe { width: 100%; height: 100%; }
+/* Власна play-кнопка поверх відео замість чужого червоного брендингу YouTube —
+   ховається класом .hidden, щойно відео реально почало грати (див. JS
+   _updateBattlePlayOverlay), і зникає миттєво (без transition тут), лише
+   поява (нижче) плавна — той самий прийом, що й розмиття колеса фортуни. */
+.battle-play-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.32); cursor: pointer; opacity: 1; transition: opacity 0.25s ease;
+}
+.battle-play-overlay.hidden { opacity: 0; pointer-events: none; }
+.battle-play-overlay svg { width: 52px; height: 52px; color: var(--accent); filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)); transition: transform 0.2s ease; }
+.battle-play-overlay:hover svg { transform: scale(1.1); }
 /* Фіксована висота (не min-height) — щоб кнопка "Обрати цю" завжди сиділа на
    тому самому місці, незалежно від довжини назви пісні/виконавця з обох
    боків. Замало місця для довгого тексту — рядок обрізається трикрапкою
@@ -499,23 +527,63 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .battle-side-notfound { display: none; color: var(--red); font-size: 0.75rem; margin-top: 4px; }
+/* Велика, рішуча кнопка вибору — той самий трактат, що й .wheel-spin-btn. */
 .battle-choose-btn {
-  background: var(--accent); color: #0d0d0f; border: none; border-radius: 6px;
-  padding: 0.55rem 1.2rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  width: 100%; background: linear-gradient(135deg, var(--accent), #dcbb87); color: #0d0d0f; border: none; border-radius: 10px;
+  padding: 0.85rem 1.2rem; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(200,169,110,0.25); transition: all 0.2s cubic-bezier(.2,.8,.2,1);
   margin-top: auto; /* підстраховка: приклеює кнопку до низу навіть якщо висоти сторін розійдуться з іншої причини */
 }
-.battle-choose-btn:hover { background: #ddbd85; }
+.battle-choose-btn:hover { box-shadow: 0 8px 22px rgba(200,169,110,0.38); transform: translateY(-2px); }
+/* Кругла золота емблема замість дрібного сірого тексту "VS". */
 .battle-vs {
   display: flex; align-items: center; justify-content: center; width: 54px; flex-shrink: 0;
-  color: var(--muted); font-family: var(--font-serif); font-weight: 700; font-size: 1.1rem;
 }
-.battle-champion { text-align: center; padding: 50px 20px; }
+.battle-vs span {
+  display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #ddc292, var(--accent) 72%); color: #0d0d0f;
+  font-family: var(--font-serif); font-weight: 700; font-size: 0.82rem;
+  box-shadow: 0 0 0 3px var(--surface), 0 4px 16px rgba(200,169,110,0.3);
+}
+.battle-champion { text-align: center; padding: 50px 20px; position: relative; }
 .battle-champion-label { color: var(--accent); font-size: 1.1rem; margin-bottom: 14px; }
-.battle-champion-artist { color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.8rem; }
+.battle-champion-artist {
+  color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.8rem;
+  animation: battleChampionGlow 1.8s ease-in-out infinite;
+}
+@keyframes battleChampionGlow { 0%, 100% { text-shadow: 0 0 10px rgba(200,169,110,0.2); } 50% { text-shadow: 0 0 26px rgba(200,169,110,0.55); } }
 .battle-champion-title { color: var(--muted); font-size: 1.05rem; margin: 4px 0 22px; }
+.battle-champion-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.battle-confetti-piece { position: absolute; pointer-events: none; animation-name: battleConfettiBurst; animation-timing-function: ease-out; animation-fill-mode: forwards; z-index: 2; }
+@keyframes battleConfettiBurst {
+  0% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) rotate(360deg); opacity: 0; }
+}
+/* Картки плейлистів на сторінці "Батл рояль" — іконка-чип + hover-підйом,
+   замість голого .ext-search-item (той лишається спільним для інших місць). */
+.battle-pl-card {
+  display: flex; align-items: center; gap: 0.9rem; padding: 0.8rem 1rem; border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: 8px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.battle-pl-card:hover { border-color: var(--accent); background: rgba(200,169,110,0.06); transform: translateY(-2px); }
+.battle-pl-card-community { border-left-color: var(--accent2); }
+.battle-pl-card-community:hover { border-color: var(--accent2); background: rgba(124,111,205,0.08); }
+.battle-pl-icon {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); color: var(--accent);
+}
+.battle-pl-card-community .battle-pl-icon { color: var(--accent2); }
+.battle-pl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.battle-pl-main strong { color: var(--text); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.battle-pl-main span { color: var(--muted); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.battle-pl-arrow { color: var(--muted); flex-shrink: 0; width: 16px; height: 16px; }
 @media (max-width: 720px) {
   .battle-split { flex-direction: column; }
-  .battle-vs { width: 100%; height: 30px; }
+  .battle-vs { width: 100%; height: 44px; }
+  .battle-choose-btn { padding: 1rem 1.2rem; font-size: 0.95rem; }
+  .battle-progress-seg { font-size: 0.62rem; padding: 2px 7px; }
+  .battle-progress-sep { width: 8px; }
 }
 
 /* Граф схожості */

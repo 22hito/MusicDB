@@ -845,9 +845,13 @@
       <button type="button" class="btn btn-outline battle-hover-toggle" id="battle-hover-toggle-btn" onclick="toggleBattleHoverMode()" title="Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза" data-i18n-title="battle.hoverModeHint"><svg class="icon"><use href="#icon-cursor"/></svg> <span data-i18n="battle.hoverModeBtn">Режим наведення</span></button>
       <button class="battle-close-btn" onclick="closeBattle()"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
+    <div id="battle-progress-ribbon" class="battle-progress-ribbon"></div>
     <div id="battle-split" class="battle-split">
       <div class="battle-side">
-        <div class="battle-video-wrap"><div id="battle-yt-a"></div></div>
+        <div class="battle-video-wrap">
+          <div id="battle-yt-a"></div>
+          <div class="battle-play-overlay" id="battle-play-overlay-a" onclick="_battleOverlayPlay('a')"><svg class="icon icon-filled"><use href="#icon-play"/></svg></div>
+        </div>
         <div class="battle-side-info">
           <div class="battle-side-artist" id="battle-a-artist"></div>
           <div class="battle-side-title" id="battle-a-title"></div>
@@ -855,9 +859,12 @@
         </div>
         <button class="battle-choose-btn" onclick="chooseBattleWinner(0)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
       </div>
-      <div class="battle-vs" data-i18n="battle.vs">VS</div>
+      <div class="battle-vs"><span data-i18n="battle.vs">VS</span></div>
       <div class="battle-side">
-        <div class="battle-video-wrap"><div id="battle-yt-b"></div></div>
+        <div class="battle-video-wrap">
+          <div id="battle-yt-b"></div>
+          <div class="battle-play-overlay" id="battle-play-overlay-b" onclick="_battleOverlayPlay('b')"><svg class="icon icon-filled"><use href="#icon-play"/></svg></div>
+        </div>
         <div class="battle-side-info">
           <div class="battle-side-artist" id="battle-b-artist"></div>
           <div class="battle-side-title" id="battle-b-title"></div>
@@ -870,7 +877,10 @@
       <div class="battle-champion-label"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="battle.championLabel">Переможець</span></div>
       <div class="battle-champion-artist" id="battle-champion-artist"></div>
       <div class="battle-champion-title" id="battle-champion-title"></div>
-      <button class="btn btn-primary" onclick="closeBattle()" data-i18n="player.close">Закрити</button>
+      <div class="battle-champion-actions">
+        <button class="btn btn-primary" onclick="playBattleChampion()"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="battle.listenToWinnerBtn">Слухати переможця</span></button>
+        <button class="btn btn-outline" onclick="closeBattle()" data-i18n="player.close">Закрити</button>
+      </div>
     </div>
   </div>
 </div>
