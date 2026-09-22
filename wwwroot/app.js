@@ -10,12 +10,12 @@ const I18N = {
     'nav.request': 'Надіслати запит',
     'nav.admin': 'Адмін — Запити',
     'nav.add': 'Додати пісню',
-    'nav.adminHub': '⚙ Адмін-панель',
+    'nav.adminHub': 'Адмін-панель',
     'adminHub.heading.pre': 'Адмін',
     'adminHub.heading.accent': 'панель',
     'adminHub.requestsTab': 'Запити',
     'adminHub.addTab': 'Додати пісню',
-    'nav.desktopApp': '⬇ Застосунок для ПК',
+    'nav.desktopApp': 'Застосунок для ПК',
     'nav.menu': 'Меню',
     'nav.top': 'Топ 100',
     'top.heading.pre': 'Топ 100',
@@ -34,27 +34,27 @@ const I18N = {
     'home.addRequestBtn': '+ Надіслати запит',
     'search.placeholder': 'Пошук за назвою, виконавцем або альбомом…',
     'filter.allGenres': 'Усі жанри',
-    'table.shuffle': '🔀 Перемішати',
-    'nav.wheel': '🎡 Колесо фортуни',
+    'table.shuffle': 'Перемішати',
+    'nav.wheel': 'Колесо фортуни',
     'wheel.spinBtn': 'Крутити',
-    'wheel.playBtn': '▶ Слухати',
+    'wheel.playBtn': 'Слухати',
     'wheel.resultLabel': 'Випав жанр:',
     'wheel.legendTitle': 'Жанри на колесі',
     'wheel.countLabel': 'Кількість жанрів на колесі:',
     'wheel.durationLabel': 'Тривалість прокрутки, сек:',
     'wheel.durationTo': '—',
     'wheel.playlistEmpty': 'Крутніть колесо, щоб сформувати плейлист із випадкового жанру',
-    'battle.openBtn': '🏆 Батл рояль',
-    'battle.setupTitle': '🏆 Батл рояль',
+    'battle.openBtn': 'Батл рояль',
+    'battle.setupTitle': 'Батл рояль',
     'battle.chooseSize': 'Оберіть розмір турніру:',
     'battle.notEnough': 'Замало пісень у плейлисті — потрібно щонайменше 16.',
     'battle.roundLabel': 'Учасників: ',
     'battle.vs': 'VS',
-    'battle.chooseBtn': '✓ Обрати цю',
-    'battle.hoverModeBtn': '👆 Режим наведення',
+    'battle.chooseBtn': 'Обрати цю',
+    'battle.hoverModeBtn': 'Режим наведення',
     'battle.hoverModeHint': 'Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза',
-    'nav.battle': '🏆 Батл рояль',
-    'nav.artists': '🎤 Виконавці',
+    'nav.battle': 'Батл рояль',
+    'nav.artists': 'Виконавці',
     'nav.friends': 'Друзі',
     'notif.bellTitle': 'Сповіщення',
     'notif.loading': 'Завантаження…',
@@ -70,7 +70,7 @@ const I18N = {
     'artists.empty': 'Нічого не знайдено',
     'artists.songsWord': 'пісень',
     'artist.followBtn': '+ Підписатись',
-    'artist.unfollowBtn': '✓ Підписано',
+    'artist.unfollowBtn': 'Підписано',
     'artist.followers': 'підписників',
     'artist.discography': 'Дискографія',
     'artist.notFound': 'Виконавця не знайдено',
@@ -91,8 +91,8 @@ const I18N = {
     'friends.acceptBtn': 'Прийняти',
     'friends.rejectBtn': 'Відхилити',
     'friends.unfriendBtn': 'Розфрендити',
-    'friends.friendsBadge': '✓ Друзі',
-    'profile.public.back': '← До друзів',
+    'friends.friendsBadge': 'Друзі',
+    'profile.public.back': 'До друзів',
     'profile.public.notFound': 'Користувача не знайдено',
     'profile.public.memberSince': 'На сайті з',
     'profile.public.publicPlaylistsCount': 'Публічних плейлистів',
@@ -108,7 +108,7 @@ const I18N = {
     'battle.publicBadge': 'публічний',
     'battle.privateBadge': 'приватний',
     'battle.togglePublicHint': "Клік перемикає приватний/публічний — публічний бачать інші на сторінці \"Батл рояль\"",
-    'battle.championLabel': '🏆 Переможець',
+    'battle.championLabel': 'Переможець',
     'battle.videoNotFound': 'Відео не знайдено',
     'graph.openHint': 'Показати граф схожості',
     'graph.loading': 'Обчислюємо розташування…',
@@ -130,7 +130,7 @@ const I18N = {
     'table.single': 'Сінгл',
     'request.heading.pre': 'Запит на',
     'request.heading.accent': 'додавання пісні',
-    'request.successAlert': '✓ Запит успішно надіслано! Очікуйте підтвердження адміністратора.',
+    'request.successAlert': 'Запит успішно надіслано! Очікуйте підтвердження адміністратора.',
     'request.submitBtn': 'Надіслати запит',
     'extsearch.title': 'Схожі пісні (натисніть, щоб заповнити форму)',
     'extsearch.analyzingGenres': 'Аналізуємо жанри…',
@@ -162,7 +162,7 @@ const I18N = {
     'admin.youtubeVideo.view': 'Переглянути на YouTube',
     'admin.lyrics': "Текст пісні (необов'язково)",
     'admin.lyrics.placeholder': 'Вставте текст пісні рядок за рядком, або залиште порожнім',
-    'admin.normalizeGenresBtn': "🧹 Об'єднати дублікати жанрів",
+    'admin.normalizeGenresBtn': "Об'єднати дублікати жанрів",
     'admin.normalizeGenresRunning': 'Перевірка триває…',
     'admin.normalizeGenresNone': 'Дублікатів не знайдено — усі жанри унікальні.',
     'admin.normalizeGenresError': "Не вдалося звернутись до ШІ (перевірте ключ Gemini):",
@@ -171,7 +171,7 @@ const I18N = {
     'msg.errorEditSong': 'Помилка при збереженні пісні',
     'add.heading.pre': 'Додати',
     'add.heading.accent': 'нову композицію',
-    'add.successAlert': '✓ Композицію успішно додано до бази даних!',
+    'add.successAlert': 'Композицію успішно додано до бази даних!',
     'add.submitBtn': 'Додати до бази',
     'page.title': "N'Owl",
     'player.shuffle': 'Перемішати',
@@ -183,7 +183,7 @@ const I18N = {
     'player.karaokeEmpty': 'Для цієї пісні ще немає тексту',
     'player.editSong': 'Редагувати пісню',
     'player.close': 'Закрити',
-    'videoPopup.title': '▶ Відео',
+    'videoPopup.title': 'Відео',
     'videoPopup.loading': 'Завантаження…',
     'videoPopup.expand': 'Розгорнути',
     'videoPopup.fullscreen': 'На весь екран',
@@ -200,7 +200,7 @@ const I18N = {
     'msg.confirmLoginGeneric': 'Щоб продовжити, потрібно увійти через Google. Перейти до входу?',
     'nav.recommendations': 'Рекомендовано для вас',
     'nav.profile': 'Профіль',
-    'nav.profileSettings': '⚙ Налаштування',
+    'nav.profileSettings': 'Налаштування',
     'profileSettings.heading.pre': 'Налаштування',
     'profileSettings.heading.accent': 'профілю',
     'profile.heading.pre': 'Мій',
@@ -220,10 +220,10 @@ const I18N = {
     'profile.playlistsTitle': 'Мої плейлисти',
     'profile.newPlaylistBtn': '+ Новий плейлист',
     'profile.playlistsEmpty': 'Ще немає плейлистів',
-    'profile.backToProfile': '← До профілю',
+    'profile.backToProfile': 'До профілю',
     'profile.playlistEmpty': 'У цьому плейлисті ще немає пісень',
     'profile.playBtn': 'Відтворити',
-    'profile.playAllBtn': '▶ Слухати весь плейлист',
+    'profile.playAllBtn': 'Слухати весь плейлист',
     'profile.favToggle': 'Улюблене',
     'player.addToPlaylist': 'Додати в плейлист',
     'profile.songsWord': 'пісень',
@@ -255,12 +255,12 @@ const I18N = {
     'nav.request': 'Submit request',
     'nav.admin': 'Admin — Requests',
     'nav.add': 'Add song',
-    'nav.adminHub': '⚙ Admin panel',
+    'nav.adminHub': 'Admin panel',
     'adminHub.heading.pre': 'Admin',
     'adminHub.heading.accent': 'panel',
     'adminHub.requestsTab': 'Requests',
     'adminHub.addTab': 'Add song',
-    'nav.desktopApp': '⬇ Desktop app',
+    'nav.desktopApp': 'Desktop app',
     'nav.menu': 'Menu',
     'nav.top': 'Top 100',
     'top.heading.pre': 'Top 100',
@@ -279,27 +279,27 @@ const I18N = {
     'home.addRequestBtn': '+ Submit request',
     'search.placeholder': 'Search by title, artist, or album…',
     'filter.allGenres': 'All genres',
-    'table.shuffle': '🔀 Shuffle',
-    'nav.wheel': '🎡 Wheel of fortune',
+    'table.shuffle': 'Shuffle',
+    'nav.wheel': 'Wheel of fortune',
     'wheel.spinBtn': 'Spin',
-    'wheel.playBtn': '▶ Play',
+    'wheel.playBtn': 'Play',
     'wheel.resultLabel': 'You got:',
     'wheel.legendTitle': 'Genres on the wheel',
     'wheel.countLabel': 'Genres on the wheel:',
     'wheel.durationLabel': 'Spin duration, sec:',
     'wheel.durationTo': '—',
     'wheel.playlistEmpty': 'Spin the wheel to build a playlist from a random genre',
-    'battle.openBtn': '🏆 Battle royale',
-    'battle.setupTitle': '🏆 Battle royale',
+    'battle.openBtn': 'Battle royale',
+    'battle.setupTitle': 'Battle royale',
     'battle.chooseSize': 'Choose tournament size:',
     'battle.notEnough': 'Not enough songs in this playlist — need at least 16.',
     'battle.roundLabel': 'Contestants: ',
     'battle.vs': 'VS',
-    'battle.chooseBtn': '✓ Pick this one',
-    'battle.hoverModeBtn': '👆 Hover to play',
+    'battle.chooseBtn': 'Pick this one',
+    'battle.hoverModeBtn': 'Hover to play',
     'battle.hoverModeHint': 'Hover the video to play it — move the cursor away to pause',
-    'nav.battle': '🏆 Battle royale',
-    'nav.artists': '🎤 Artists',
+    'nav.battle': 'Battle royale',
+    'nav.artists': 'Artists',
     'nav.friends': 'Friends',
     'notif.bellTitle': 'Notifications',
     'notif.loading': 'Loading…',
@@ -315,7 +315,7 @@ const I18N = {
     'artists.empty': 'Nothing found',
     'artists.songsWord': 'songs',
     'artist.followBtn': '+ Follow',
-    'artist.unfollowBtn': '✓ Following',
+    'artist.unfollowBtn': 'Following',
     'artist.followers': 'followers',
     'artist.discography': 'Discography',
     'artist.notFound': 'Artist not found',
@@ -336,8 +336,8 @@ const I18N = {
     'friends.acceptBtn': 'Accept',
     'friends.rejectBtn': 'Reject',
     'friends.unfriendBtn': 'Unfriend',
-    'friends.friendsBadge': '✓ Friends',
-    'profile.public.back': '← Back to friends',
+    'friends.friendsBadge': 'Friends',
+    'profile.public.back': 'Back to friends',
     'profile.public.notFound': 'User not found',
     'profile.public.memberSince': 'Member since',
     'profile.public.publicPlaylistsCount': 'Public playlists',
@@ -353,7 +353,7 @@ const I18N = {
     'battle.publicBadge': 'public',
     'battle.privateBadge': 'private',
     'battle.togglePublicHint': 'Click to toggle private/public — public playlists are visible to others on the "Battle royale" page',
-    'battle.championLabel': '🏆 Champion',
+    'battle.championLabel': 'Champion',
     'battle.videoNotFound': 'Video not found',
     'graph.openHint': 'Show similarity graph',
     'graph.loading': 'Computing layout…',
@@ -375,7 +375,7 @@ const I18N = {
     'table.single': 'Single',
     'request.heading.pre': 'Request to',
     'request.heading.accent': 'add a song',
-    'request.successAlert': '✓ Request sent successfully! Wait for admin approval.',
+    'request.successAlert': 'Request sent successfully! Wait for admin approval.',
     'request.submitBtn': 'Submit request',
     'extsearch.title': 'Similar songs (click to fill the form)',
     'extsearch.analyzingGenres': 'Analyzing genres…',
@@ -407,7 +407,7 @@ const I18N = {
     'admin.youtubeVideo.view': 'View on YouTube',
     'admin.lyrics': 'Song lyrics (optional)',
     'admin.lyrics.placeholder': 'Paste the lyrics line by line, or leave empty',
-    'admin.normalizeGenresBtn': '🧹 Merge duplicate genres',
+    'admin.normalizeGenresBtn': 'Merge duplicate genres',
     'admin.normalizeGenresRunning': 'Checking…',
     'admin.normalizeGenresNone': 'No duplicates found — all genres are unique.',
     'admin.normalizeGenresError': 'Could not reach the AI (check your Gemini key):',
@@ -416,7 +416,7 @@ const I18N = {
     'msg.errorEditSong': 'Error saving song',
     'add.heading.pre': 'Add a',
     'add.heading.accent': 'new song',
-    'add.successAlert': '✓ Song successfully added to the database!',
+    'add.successAlert': 'Song successfully added to the database!',
     'add.submitBtn': 'Add to database',
     'page.title': "N'Owl",
     'player.shuffle': 'Shuffle',
@@ -428,7 +428,7 @@ const I18N = {
     'player.karaokeEmpty': 'No lyrics for this song yet',
     'player.editSong': 'Edit song',
     'player.close': 'Close',
-    'videoPopup.title': '▶ Video',
+    'videoPopup.title': 'Video',
     'videoPopup.loading': 'Loading…',
     'videoPopup.expand': 'Expand',
     'videoPopup.fullscreen': 'Fullscreen',
@@ -445,7 +445,7 @@ const I18N = {
     'msg.confirmLoginGeneric': 'You need to sign in with Google to continue. Go to login?',
     'nav.recommendations': 'Recommended for you',
     'nav.profile': 'Profile',
-    'nav.profileSettings': '⚙ Settings',
+    'nav.profileSettings': 'Settings',
     'profileSettings.heading.pre': 'Profile',
     'profileSettings.heading.accent': 'settings',
     'profile.heading.pre': 'My',
@@ -465,10 +465,10 @@ const I18N = {
     'profile.playlistsTitle': 'My playlists',
     'profile.newPlaylistBtn': '+ New playlist',
     'profile.playlistsEmpty': 'No playlists yet',
-    'profile.backToProfile': '← Back to profile',
+    'profile.backToProfile': 'Back to profile',
     'profile.playlistEmpty': 'This playlist has no songs yet',
     'profile.playBtn': 'Play',
-    'profile.playAllBtn': '▶ Play playlist',
+    'profile.playAllBtn': 'Play playlist',
     'profile.favToggle': 'Favorite',
     'player.addToPlaylist': 'Add to playlist',
     'profile.songsWord': 'songs',
@@ -648,7 +648,7 @@ function _textSortCmp(a, b){
 // ================================================================
 function normalizeGenres(){
   const btn = document.getElementById('normalize-genres-btn');
-  const originalText = btn.textContent;
+  const originalHtml = btn.innerHTML; // innerHTML, не textContent — кнопка тепер містить ще й <svg class="icon">
   btn.disabled = true;
   btn.textContent = t('admin.normalizeGenresRunning');
 
@@ -669,7 +669,7 @@ function normalizeGenres(){
       loadSongs().then(()=>{renderSongs();updateStats();});
     })
     .catch(()=>{ alert(t('msg.connectionError')); })
-    .finally(()=>{ btn.disabled = false; btn.textContent = originalText; });
+    .finally(()=>{ btn.disabled = false; btn.innerHTML = originalHtml; });
 }
 
 // ================================================================
@@ -798,7 +798,7 @@ function loadProfilePlaylists(){
       <div class="ext-search-item" onclick="openPlaylist(${p.id})">
         <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
         <div style="display:flex;align-items:center;gap:8px;" onclick="event.stopPropagation()">
-          <button type="button" class="btn btn-outline${p.isPublic?' active':''}" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="togglePlaylistPublic(${p.id}, ${p.isPublic ? 'false' : 'true'})" title="${t('battle.togglePublicHint')}">${p.isPublic ? '🌍 '+t('battle.publicBadge') : '🔒 '+t('battle.privateBadge')}</button>
+          <button type="button" class="btn btn-outline${p.isPublic?' active':''}" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="togglePlaylistPublic(${p.id}, ${p.isPublic ? 'false' : 'true'})" title="${t('battle.togglePublicHint')}">${p.isPublic ? `<svg class="icon"><use href="#icon-globe"/></svg> ${esc(t('battle.publicBadge'))}` : `<svg class="icon"><use href="#icon-lock"/></svg> ${esc(t('battle.privateBadge'))}`}</button>
           <button class="btn-icon-danger" onclick="deletePlaylist(${p.id})" title="${t('modal.confirmDelete')}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
           </button>
@@ -1283,7 +1283,7 @@ function renderSongs(){
   displayedSongs = ordered;
   const tbody=document.getElementById('songs-body');
   if(!ordered.length){
-    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><span class="icon">🎵</span>${t('table.empty')}</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t('table.empty')}</div></td></tr>`;
     return;
   }
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
@@ -1303,7 +1303,7 @@ function renderSongs(){
       <td class="duration-col" data-label="${t('table.duration')}">${s.duration}</td>
       <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
       <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
-      <td class="duration-col" data-label="${t('table.plays')}">👁 ${s.playCount ?? 0}</td>
+      <td class="duration-col" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
       ${currentUser?.authenticated?`<td class="td-icon-trail" data-label=""><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
       ${currentUser?.isAdmin?`<td class="td-actions" data-label="${t('table.action')}"><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
     </tr>`;
@@ -1399,7 +1399,7 @@ function renderExtSearchItem(it, idx, prefix){
       <div class="es-main">
         <strong>${esc(it.artist)}</strong>
         <span>${esc(it.title)}</span>
-        ${it.album?`<span>💿 ${esc(it.album)}</span>`:''}
+        ${it.album?`<span><svg class="icon"><use href="#icon-disc"/></svg> ${esc(it.album)}</span>`:''}
       </div>
       <div class="es-meta">
         ${it.release?`<span class="es-year">${esc(it.release.slice(0,4))}</span>`:''}
@@ -1528,7 +1528,7 @@ function renderRequests(){
         <td data-label="${t('table.genres')}">${r.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}${r.genreNamesOriginal?`<div style="color:var(--muted);font-size:0.7rem;margin-top:4px;">(${esc(r.genreNamesOriginal)})</div>`:''}</td>
         <td data-label="${t('table.album')}">${r.albumTitle?`<span class="badge album">${esc(r.albumTitle)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
         <td class="td-actions" data-label="${t('table.action')}"><div class="actions-td">
-          <button class="btn btn-outline" onclick="openEditRequestModal(${r.id})" title="${t('admin.editBtn')}">✏️</button>
+          <button class="btn btn-outline" onclick="openEditRequestModal(${r.id})" title="${t('admin.editBtn')}"><svg class="icon"><use href="#icon-pencil"/></svg></button>
           <button class="btn btn-success" onclick="approveRequest(${r.id})">${t('admin.approveBtn')}</button>
           <button class="btn btn-danger" onclick="rejectRequest(${r.id})">${t('admin.rejectBtn')}</button>
         </div></td></tr>`).join('');
@@ -1753,7 +1753,7 @@ function abbrGenre(name){return String(name).replace(/alternative/gi,'alt');}
 // ================================================================
 // THEME (світла/темна)
 // ================================================================
-const THEME_ICONS = { dark: '🌙', gray: '◐', light: '☀️' };
+const THEME_ICONS = { dark: 'moon', gray: 'contrast', light: 'sun' };
 function applyTheme(theme){
   // Тимчасово вимикаємо всі hover-transition, щоб зміна теми клацала миттєво.
   document.documentElement.classList.add('theme-switching');
@@ -1764,7 +1764,7 @@ function applyTheme(theme){
   }));
   const icon = document.getElementById('theme-toggle-icon');
   const label = document.getElementById('theme-toggle-label');
-  if(icon) icon.textContent = THEME_ICONS[theme] || THEME_ICONS.dark;
+  if(icon) icon.innerHTML = `<svg class="icon"><use href="#icon-${THEME_ICONS[theme] || THEME_ICONS.dark}"/></svg>`;
   if(label){ label.setAttribute('data-i18n', 'theme.' + theme); label.textContent = t('theme.' + theme); }
   document.querySelectorAll('#theme-dropdown [data-theme-option]').forEach(b=>{
     b.classList.toggle('active', b.getAttribute('data-theme-option') === theme);
@@ -1835,12 +1835,12 @@ function renderAuthArea() {
     const avatarSrc = currentUser.avatarUrl || currentUser.picture;
     const pic = avatarSrc
       ? `<img src="${avatarSrc}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover;">`
-      : `<span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">👤</span>`;
+      : `<span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:var(--muted);"><svg class="icon"><use href="#icon-user"/></svg></span>`;
     const displayLabel = currentUser.displayName || currentUser.name || currentUser.email || '';
     area.innerHTML = `
       <div class="dropdown" id="notif-dropdown" style="margin-right:0.3rem;">
         <button class="dropdown-toggle" onclick="toggleDropdown(event,'notif-dropdown'); onOpenNotifDropdown();" title="${t('notif.bellTitle')}">
-          🔔<span id="notif-badge" class="badge" style="display:none;margin-left:2px;"></span>
+          <svg class="icon"><use href="#icon-bell"/></svg><span id="notif-badge" class="badge" style="display:none;margin-left:2px;"></span>
         </button>
         <div class="dropdown-menu" id="notif-list" style="min-width:300px;max-height:360px;overflow-y:auto;"></div>
       </div>
@@ -1917,7 +1917,7 @@ function onOpenNotifDropdown(){
           <div style="font-size:0.75rem;color:var(--muted);">${esc(n.songLabel)}</div>
           <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${esc(n.createdAt)}</div>
         </div>
-        <button class="btn btn-outline" style="font-size:0.7rem;padding:0.15rem 0.4rem;flex-shrink:0;" title="${t('notif.markOneRead')}" onclick="event.stopPropagation();markOneNotificationRead(${n.id})">✓</button>
+        <button class="btn btn-outline" style="font-size:0.7rem;padding:0.15rem 0.4rem;flex-shrink:0;" title="${t('notif.markOneRead')}" onclick="event.stopPropagation();markOneNotificationRead(${n.id})"><svg class="icon"><use href="#icon-check"/></svg></button>
       </div>`).join('');
     list.innerHTML = `
       ${recent.length ? `<div style="display:flex;justify-content:flex-end;padding:0.3rem 0.5rem;">
@@ -2119,7 +2119,7 @@ function loadArtistPage(){
     document.getElementById('artist-name').textContent = a.name;
     document.getElementById('artist-follower-count').textContent = `${a.followerCount} ${t('artist.followers')}`;
     const btn = document.getElementById('artist-follow-btn');
-    btn.textContent = a.isFollowing ? t('artist.unfollowBtn') : t('artist.followBtn');
+    btn.innerHTML = a.isFollowing ? `<svg class="icon"><use href="#icon-check"/></svg> ${esc(t('artist.unfollowBtn'))}` : esc(t('artist.followBtn'));
     btn.classList.toggle('active', !!a.isFollowing);
     btn.style.display = currentUser?.authenticated ? '' : 'none';
 
@@ -2166,7 +2166,7 @@ function onFriendsSearchInput(){
 }
 function _friendActionButtonHtml(u){
   if(u.relationshipStatus === 'friends')
-    return `<button class="btn btn-outline active" onclick="event.stopPropagation();unfriendUser(${u.userId})">${t('friends.friendsBadge')}</button>`;
+    return `<button class="btn btn-outline active" onclick="event.stopPropagation();unfriendUser(${u.userId})"><svg class="icon"><use href="#icon-check"/></svg> ${esc(t('friends.friendsBadge'))}</button>`;
   if(u.relationshipStatus === 'pending_outgoing')
     return `<button class="btn btn-outline" onclick="event.stopPropagation();alert('${esc(t('friends.pendingLabel'))}')" title="${t('friends.pendingLabel')}">${t('friends.pendingLabel')}</button>`;
   if(u.relationshipStatus === 'pending_incoming')
@@ -2754,7 +2754,7 @@ async function loadTopSongsPage(){
     const list = await fetch('/api/stats/top-songs?limit=100').then(r=>r.json());
     currentTopSongs = list;
     if(!list.length){
-      tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="icon">🎵</span>${t('top.empty')}</div></td></tr>`;
+      tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t('top.empty')}</div></td></tr>`;
       return;
     }
     const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
@@ -2771,11 +2771,11 @@ async function loadTopSongsPage(){
         <td data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
         <td data-label="${t('table.title')}">${esc(s.title)}</td>
         <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
-        <td class="duration-col" data-label="${t('table.plays')}">👁 ${s.playCount ?? 0}</td>
+        <td class="duration-col" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
       </tr>`;
     }).join('');
   }catch(e){
-    tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="icon">🎵</span>${t('top.empty')}</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t('top.empty')}</div></td></tr>`;
   }
 }
 
