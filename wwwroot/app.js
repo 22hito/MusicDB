@@ -979,7 +979,12 @@ function toggleShuffleTable(){
 // КОЛЕСО ФОРТУНИ: випадковий жанр -> перемішаний плейлист цього жанру
 // (окрема сторінка page-wheel, а не модалка — відкривається через showPage('wheel'))
 // ================================================================
-const WHEEL_COLORS = ['#c8a96e','#7c6fcd','#4caf7d','#e05c5c','#5aa9e6','#e0a15c','#8ecae6','#f2a65a','#8a5cf2','#5ce0c0'];
+// Приглушена, "коштовна" палітра в тон золотому акценту сайту — замість
+// яскравих іграшкових кольорів звичайного колеса фортуни.
+const WHEEL_COLORS = [
+  '#c8a96e','#8a6fb0','#4f8c6f','#b5555a','#5b84a8','#c98a4b',
+  '#6fa89e','#9a6b8f','#7d9153','#b0703f','#5f6fa0','#a3824f',
+];
 // wheelAllGenres — весь пул, перемішаний раз при відкритті; wheelGenres — перші N з нього.
 // Зміна кількості обрізає той самий порядок, а не перемішує наново.
 let wheelAllGenres = [];
@@ -1001,7 +1006,8 @@ function _shuffledCopy(arr){
 // (~137.5°), щоб сусідні сектори не зливались, як при звичайному i/n*360.
 function _wheelSegColor(i, n){
   if(n <= WHEEL_COLORS.length) return WHEEL_COLORS[i % WHEEL_COLORS.length];
-  return `hsl(${Math.round((i*137.508) % 360)}deg 62% 52%)`;
+  // Приглушено (38%/42%), узгоджено з кураторською палітрою вище.
+  return `hsl(${Math.round((i*137.508) % 360)}deg 38% 42%)`;
 }
 
 // Жанр бере участь у колесі лише якщо в ньому є щонайменше 5 пісень — інакше
@@ -1084,6 +1090,13 @@ function _wheelLabelFontSize(n){
   return 8;
 }
 
+// Підписи позиціонуються окремо від фарбування диска й перемальовуються через
+// ResizeObserver (не одноразово в renderWheelDisc) — clientWidth диска одразу
+// після showPage()/View Transition не завжди встигає влаштуватись на фінальний
+// розмір (звідси стійкий баг "підписи впритул до хаба", що повертався попри
+// правильну формулу — сама формула рахувала на ЗАНИЖЕНОМУ discR). ResizeObserver
+// гарантовано спрацює ще раз, щойно диск отримає свій справжній розмір.
+let _wheelDiscResizeObserver = null;
 function renderWheelDisc(){
   const disc = document.getElementById('wheel-disc');
   const n = wheelGenres.length;
@@ -1091,15 +1104,20 @@ function renderWheelDisc(){
   const segAngle = 360/n;
   const gradientParts = wheelGenres.map((g,i)=>`${_wheelSegColor(i,n)} ${i*segAngle}deg ${(i+1)*segAngle}deg`).join(', ');
   disc.style.background = `conic-gradient(${gradientParts})`;
-
+  _renderWheelLabels(disc);
+  if(!_wheelDiscResizeObserver){
+    _wheelDiscResizeObserver = new ResizeObserver(() => _renderWheelLabels(disc));
+    _wheelDiscResizeObserver.observe(disc);
+  }
+}
+function _renderWheelLabels(disc){
+  const n = wheelGenres.length;
+  if(!n) return;
+  const segAngle = 360/n;
   // "По центру сектора" — кутове центрування (mid, бісектриса сектора), не радіальне.
   const hubR = (document.getElementById('wheel-hub')?.clientWidth || 0)/2;
   const discR = disc.clientWidth/2;
-  // Радіус підпису — частка від радіуса диска, а не від n (той старий розрахунок
-  // n*2.6 давав абсолютні пікселі, що для типового n=5-15 завжди програвали
-  // порівнянню з discR*0.42 і "збивали" всі підписи впритул до хаба). Запас
-  // hubR+28 (замість +16) — додатковий буфер, щоб хаб гарантовано не заходив
-  // на перші символи підпису навіть на маленьких колесах.
+  if(!discR) return; // диск ще без розміру (0 у момент переходу сторінки) — дочекаємось ResizeObserver
   const startR = Math.max(hubR + 28, discR*0.62);
   const fontSize = _wheelLabelFontSize(n);
   disc.innerHTML = wheelGenres.map((g,i)=>{
