@@ -102,10 +102,12 @@ html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 /* Лого — майже чорний силует на прозорому тлі (задумане як водяний знак),
    на темному сплеші так само губиться, як губилось на хабі колеса — та сама
    brightness(0) invert(1)-корекція, щоб перефарбувати силует у білий. */
-.app-splash-logo { width: 72px; height: auto; animation: splashPulse 1.6s ease-in-out infinite; filter: brightness(0) invert(1) drop-shadow(0 4px 16px rgba(200,169,110,0.35)); }
+/* Без анімації opacity/scale — той пульс (0.85→1 щоцикл) читався як
+   поступова поява лого замість миттєвої. Тепер лого одразу на повній
+   непрозорості й більшого розміру. */
+.app-splash-logo { width: 128px; height: auto; filter: brightness(0) invert(1) drop-shadow(0 4px 16px rgba(200,169,110,0.35)); }
 .app-splash-title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); }
 .app-splash-dots { margin-top: 0.6rem; }
-@keyframes splashPulse { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
 .app-splash-dots { display: flex; gap: 6px; }
 .app-splash-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: ldot 1s ease-in-out infinite; }
 .app-splash-dots span:nth-child(2) { animation-delay: 0.15s; }
