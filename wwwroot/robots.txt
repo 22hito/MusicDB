@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net/sitemap.xml
