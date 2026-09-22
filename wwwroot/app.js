@@ -2375,21 +2375,24 @@ function startBattleRoyale(size){
 function _ensureBattlePlayers(cb){
   if(battlePlayersReady){
     // Слухачі наведення теж вішаємо лише один раз тут, інакше накопичувались би з кожним матчем.
+    _battleStartTick();
     cb();
     return;
   }
   let readyCount = 0;
-  function onEither(){ readyCount++; if(readyCount===2){ battlePlayersReady=true; _wireBattleHoverListeners(); cb(); } }
+  function onEither(){ readyCount++; if(readyCount===2){ battlePlayersReady=true; _wireBattleHoverListeners(); _battleStartTick(); cb(); } }
   // autoplay:0 + cueVideoById нижче — обидва відео лежать на паузі на початку раунду.
   // mute:0 — звук керується тим самим повзунком гучності, що й в основному плеєрі.
+  // controls:0 — власний play/pause-оверлей і прогрес-бар замість чужого
+  // червоного брендингу YouTube (кнопка, скрубер, лого) поверх усього відео.
   battleLeftPlayer = new YT.Player('battle-yt-a', {
     height:'100%', width:'100%',
-    playerVars:{autoplay:0, controls:1, mute:0},
+    playerVars:{autoplay:0, controls:0, mute:0},
     events:{ onReady:onEither, onStateChange: e => _onBattleStateChange('a', e) }
   });
   battleRightPlayer = new YT.Player('battle-yt-b', {
     height:'100%', width:'100%',
-    playerVars:{autoplay:0, controls:1, mute:0},
+    playerVars:{autoplay:0, controls:0, mute:0},
     events:{ onReady:onEither, onStateChange: e => _onBattleStateChange('b', e) }
   });
 }
@@ -2400,22 +2403,66 @@ function _onBattleStateChange(side, e){
   if(e.data === YT.PlayerState.CUED){
     try{ e.target.unMute(); e.target.setVolume(vol); }catch(err){}
   }
-  // Власний оверлей "play" показуємо для будь-якого стану, крім PLAYING —
+  // Власна кнопка/іконка відображає стан для будь-якого стану, крім PLAYING —
   // і на початковому CUED, і коли інший бік поставив цей на паузу нижче.
   _updateBattlePlayOverlay(side, e.data === YT.PlayerState.PLAYING);
+  // Новий трек — прогрес-бар назад на нуль, поки тік ще не наздогнав.
+  if(e.data === YT.PlayerState.CUED){
+    const fill = document.getElementById(`battle-progress-fill-${side}`);
+    if(fill) fill.style.width = '0%';
+  }
   // Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо другий на паузу.
   if(e.data !== YT.PlayerState.PLAYING) return;
   const other = side === 'a' ? battleRightPlayer : battleLeftPlayer;
   try{ other && other.pauseVideo(); }catch(err){}
 }
 function _updateBattlePlayOverlay(side, isPlaying){
-  document.getElementById(`battle-play-overlay-${side}`)?.classList.toggle('hidden', isPlaying);
+  const overlay = document.getElementById(`battle-play-overlay-${side}`);
+  if(!overlay) return;
+  overlay.classList.toggle('is-playing', isPlaying);
+  document.getElementById(`battle-play-icon-${side}`)?.setAttribute('href', isPlaying ? '#icon-pause' : '#icon-play');
 }
-// Клік по власному оверлею — той самий плеєр, що й hover-режим, просто без наведення.
-function _battleOverlayPlay(side){
+// Власна кнопка керування — play/pause того самого плеєра, що й hover-режим,
+// просто без наведення (свій контроль замість вимкнених controls:0 YouTube).
+function _battleTogglePlay(side){
   const player = side === 'a' ? battleLeftPlayer : battleRightPlayer;
-  try{ player && player.playVideo(); }catch(e){}
+  if(!player) return;
+  try{
+    if(player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo();
+    else player.playVideo();
+  }catch(e){}
 }
+// Клік по власному прогрес-бару — перемотка (controls:0 забрав і чужий скрубер теж).
+function _battleSeek(side, event){
+  const player = side === 'a' ? battleLeftPlayer : battleRightPlayer;
+  if(!player) return;
+  try{
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const d = player.getDuration();
+    if(d > 0) player.seekTo(d * ratio, true);
+  }catch(e){}
+}
+// Прогрес-бари обох сторін — один спільний тік, оновлює лише той бік, що
+// зараз грає (другий завжди на паузі, див. _onBattleStateChange вище).
+let battleTicker = null;
+function _battleStartTick(){
+  if(battleTicker) return;
+  battleTicker = setInterval(() => {
+    [['a', battleLeftPlayer], ['b', battleRightPlayer]].forEach(([side, player]) => {
+      if(!player) return;
+      try{
+        if(player.getPlayerState() !== YT.PlayerState.PLAYING) return;
+        const c = player.getCurrentTime(), d = player.getDuration();
+        if(d > 0){
+          const fill = document.getElementById(`battle-progress-fill-${side}`);
+          if(fill) fill.style.width = (c/d*100).toFixed(2) + '%';
+        }
+      }catch(e){}
+    });
+  }, 250);
+}
+function _battleStopTick(){ if(battleTicker){ clearInterval(battleTicker); battleTicker = null; } }
 
 // "Режим наведення": навів курсор на відео — грає, вивів — пауза.
 function toggleBattleHoverMode(){
@@ -2568,6 +2615,7 @@ function playBattleChampion(){
 
 function closeBattle(){
   _closeModalAnimated('battle-modal-overlay');
+  _battleStopTick();
   try{ battleLeftPlayer && battleLeftPlayer.stopVideo(); }catch(e){}
   try{ battleRightPlayer && battleRightPlayer.stopVideo(); }catch(e){}
 }

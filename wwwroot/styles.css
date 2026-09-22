@@ -502,17 +502,25 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .battle-side.battle-loser-fade { opacity: 0.35; transform: scale(0.96); }
 .battle-video-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
 .battle-video-wrap iframe { width: 100%; height: 100%; }
-/* Власна play-кнопка поверх відео замість чужого червоного брендингу YouTube —
-   ховається класом .hidden, щойно відео реально почало грати (див. JS
-   _updateBattlePlayOverlay), і зникає миттєво (без transition тут), лише
-   поява (нижче) плавна — той самий прийом, що й розмиття колеса фортуни. */
+/* Повністю власний плеєр (controls:0 у YT.Player — жодного чужого
+   червоного брендингу): кнопка play/pause + прогрес-бар нижче, обидва
+   керують тим самим YT.Player через API замість вбудованого чужого UI.
+   Під час програвання кнопка гасне (лишається клікабельною — клік будь-де
+   по відео так само ставить на паузу) і повертається на hover, як у
+   звичайних відеоплеєрів. */
 .battle-play-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.32); cursor: pointer; opacity: 1; transition: opacity 0.25s ease;
+  background: rgba(0,0,0,0.32); border: none; padding: 0; margin: 0; cursor: pointer;
+  opacity: 1; transition: opacity 0.25s ease, background 0.25s ease;
 }
-.battle-play-overlay.hidden { opacity: 0; pointer-events: none; }
+.battle-play-overlay.is-playing { opacity: 0; background: transparent; }
+.battle-video-wrap:hover .battle-play-overlay.is-playing { opacity: 1; background: rgba(0,0,0,0.22); }
 .battle-play-overlay svg { width: 52px; height: 52px; color: var(--accent); filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)); transition: transform 0.2s ease; }
 .battle-play-overlay:hover svg { transform: scale(1.1); }
+/* Власний прогрес-бар — тонка смуга внизу відео, клікабельна для перемотки. */
+.battle-video-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; display: flex; align-items: flex-end; cursor: pointer; z-index: 2; }
+.battle-video-progress-fill { height: 4px; width: 0%; background: linear-gradient(90deg, var(--accent), #dcbb87); transition: width 0.2s linear; }
+.battle-video-progress:hover .battle-video-progress-fill { height: 6px; }
 /* Фіксована висота (не min-height) — щоб кнопка "Обрати цю" завжди сиділа на
    тому самому місці, незалежно від довжини назви пісні/виконавця з обох
    боків. Замало місця для довгого тексту — рядок обрізається трикрапкою
