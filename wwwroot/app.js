@@ -2535,10 +2535,14 @@ function showBattleChampion(song){
   _battleConfetti();
   // Стрічка прогресу востаннє малювалась для матчу "2 → 1" (loadBattleMatch
   // більше не викликається після визначення чемпіона) — тож сегмент "1"
-  // ніколи не підсвічувався. Позначаємо його окремо переможним стилем.
-  document.querySelectorAll('#battle-progress-ribbon .battle-progress-seg').forEach(seg => seg.classList.remove('current'));
-  const lastSeg = document.querySelector('#battle-progress-ribbon .battle-progress-seg:last-child');
-  if(lastSeg){ lastSeg.classList.remove('done'); lastSeg.classList.add('winner'); }
+  // ніколи не підсвічувався, а "2" губив .current і лишався взагалі без
+  // класу (не позначений завершеним, на відміну від 16/8/4). Проставляємо
+  // все явно: усі, крім останнього, — .done; останній — .winner.
+  const segs = document.querySelectorAll('#battle-progress-ribbon .battle-progress-seg');
+  segs.forEach((seg, i) => {
+    if(i === segs.length - 1){ seg.classList.remove('current', 'done'); seg.classList.add('winner'); }
+    else { seg.classList.remove('current'); seg.classList.add('done'); }
+  });
 }
 // Невеликий конфеті-вибух над карткою чемпіона — той самий прийом, що й на
 // колесі фортуни (прості DOM-елементи з CSS-анімацією, самі прибираються).
