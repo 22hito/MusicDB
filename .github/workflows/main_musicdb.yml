@@ -52,14 +52,23 @@ jobs:
         with:
           name: .net-app
 
-      # Publish-profile замість OIDC/Service Principal — той federated-credential
-      # шлях виявився нестабільним (OneDeploy стабільно падав з Bad Request 400
-      # після кожного реконекту Deployment Center, крім одного разу відразу після).
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'musicDB'
-          slot-name: 'Production'
-          package: .
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+      # azure/webapps-deploy@v3 (і з OIDC, і з publish-profile) стабільно падав
+      # з "Bad Request (CODE: 400)" на своєму /api/publish (OneDeploy) виклику —
+      # без жодних деталей у відповіді. Прямий виклик класичного Kudu
+      # /api/zipdeploy з тими самими publish-profile креденшлами спрацював
+      # одразу й надійно, тож деплоїмо напряму, без стороннього екшена.
+      - name: Deploy via Kudu ZipDeploy
+        shell: pwsh
+        env:
+          PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        run: |
+          $profileXml = [xml]$env:PUBLISH_PROFILE
+          $zipProfile = $profileXml.publishData.publishProfile | Where-Object { $_.publishMethod -eq 'ZipDeploy' } | Select-Object -First 1
+          $pair = "$($zipProfile.userName):$($zipProfile.userPWD)"
+          $base64Auth = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($pair))
+
+          Compress-Archive -Path * -DestinationPath deploy.zip -Force
+
+          $headers = @{ Authorization = "Basic $base64Auth" }
+          Invoke-RestMethod -Uri "https://musicdb-b5c4grhhdjdjd5gv.scm.polandcentral-01.azurewebsites.net/api/zipdeploy" `
+            -Method Post -InFile deploy.zip -ContentType "application/zip" -Headers $headers -TimeoutSec 300
