@@ -110,6 +110,7 @@ const I18N = {
     'battle.privateBadge': 'приватний',
     'battle.togglePublicHint': "Клік перемикає приватний/публічний — публічний бачать інші на сторінці \"Батл рояль\"",
     'battle.championLabel': 'Переможець',
+    'battle.listenToWinnerBtn': 'Слухати переможця',
     'battle.videoNotFound': 'Відео не знайдено',
     'graph.openHint': 'Показати граф схожості',
     'graph.loading': 'Обчислюємо розташування…',
@@ -356,6 +357,7 @@ const I18N = {
     'battle.privateBadge': 'private',
     'battle.togglePublicHint': 'Click to toggle private/public — public playlists are visible to others on the "Battle royale" page',
     'battle.championLabel': 'Champion',
+    'battle.listenToWinnerBtn': 'Listen to the champion',
     'battle.videoNotFound': 'Video not found',
     'graph.openHint': 'Show similarity graph',
     'graph.loading': 'Computing layout…',
@@ -2052,6 +2054,9 @@ let battleMatchIndex = 0;
 let battleLeftPlayer = null, battleRightPlayer = null;
 let battlePlayersReady = false;
 let battleHoverModeActive = false;
+let battleInitialSize = 0;   // розмір турніру на старті — для стрічки прогресу
+let battleTransitioning = false; // йде анімація вибору — ігноруємо повторні кліки/клавіші
+let battleChampionSong = null;
 
 // Сторінка "Батл рояль" у навбарі: власні плейлисти (якщо залогінені) + публічні чужі.
 function openBattlePage(){
@@ -2063,8 +2068,11 @@ function openBattlePage(){
     fetch('/api/playlists').then(r=>r.ok?r.json():[]).then(list=>{
       ownEmpty.style.display = list.length ? 'none' : '';
       ownList.innerHTML = list.map(p=>`
-        <div class="ext-search-item" onclick="startBattleFromPlaylist(${p.id})">
-          <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span>${p.isPublic?`<span class="badge">${t('battle.publicBadge')}</span>`:''}</div>
+        <div class="battle-pl-card" onclick="startBattleFromPlaylist(${p.id})">
+          <div class="battle-pl-icon"><svg class="icon"><use href="#icon-headphones"/></svg></div>
+          <div class="battle-pl-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+          ${p.isPublic?`<span class="badge">${t('battle.publicBadge')}</span>`:''}
+          <svg class="icon battle-pl-arrow"><use href="#icon-arrow-right"/></svg>
         </div>`).join('');
     }).catch(()=>{});
   } else {
@@ -2075,8 +2083,10 @@ function openBattlePage(){
   fetch('/api/playlists/public').then(r=>r.ok?r.json():[]).then(list=>{
     document.getElementById('battle-page-public-empty').style.display = list.length ? 'none' : '';
     document.getElementById('battle-page-public-list').innerHTML = list.map(p=>`
-      <div class="ext-search-item" onclick="startBattleFromPlaylist(${p.id})">
-        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')} — ${esc(p.ownerLabel)}</span></div>
+      <div class="battle-pl-card battle-pl-card-community" onclick="startBattleFromPlaylist(${p.id})">
+        <div class="battle-pl-icon"><svg class="icon"><use href="#icon-globe"/></svg></div>
+        <div class="battle-pl-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')} — ${esc(p.ownerLabel)}</span></div>
+        <svg class="icon battle-pl-arrow"><use href="#icon-arrow-right"/></svg>
       </div>`).join('');
   }).catch(()=>{});
 }
@@ -2350,6 +2360,8 @@ function startBattleRoyale(size){
   battleRound = _shuffledCopy(currentPlaylistSongs).slice(0, size);
   battleWinners = [];
   battleMatchIndex = 0;
+  battleInitialSize = size;
+  battleTransitioning = false;
   // Ставимо головний плеєр на паузу на час турніру — щоб не було потрійного звуку.
   if(ytPlayer && ytReady){ try{ ytPlayer.pauseVideo(); }catch(e){} }
   document.getElementById('battle-champion').style.display = 'none';
@@ -2388,10 +2400,21 @@ function _onBattleStateChange(side, e){
   if(e.data === YT.PlayerState.CUED){
     try{ e.target.unMute(); e.target.setVolume(vol); }catch(err){}
   }
+  // Власний оверлей "play" показуємо для будь-якого стану, крім PLAYING —
+  // і на початковому CUED, і коли інший бік поставив цей на паузу нижче.
+  _updateBattlePlayOverlay(side, e.data === YT.PlayerState.PLAYING);
   // Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо другий на паузу.
   if(e.data !== YT.PlayerState.PLAYING) return;
   const other = side === 'a' ? battleRightPlayer : battleLeftPlayer;
   try{ other && other.pauseVideo(); }catch(err){}
+}
+function _updateBattlePlayOverlay(side, isPlaying){
+  document.getElementById(`battle-play-overlay-${side}`)?.classList.toggle('hidden', isPlaying);
+}
+// Клік по власному оверлею — той самий плеєр, що й hover-режим, просто без наведення.
+function _battleOverlayPlay(side){
+  const player = side === 'a' ? battleLeftPlayer : battleRightPlayer;
+  try{ player && player.playVideo(); }catch(e){}
 }
 
 // "Режим наведення": навів курсор на відео — грає, вивів — пауза.
@@ -2416,7 +2439,21 @@ function _wireBattleHoverListeners(){
   wire(wrapB, () => battleRightPlayer);
 }
 
+// Стрічка прогресу: сегмент на кожен розмір раунду від старту до фіналу
+// (16→8→4→2→1), поточний підсвічений, пройдені — позначені як завершені.
+function _renderBattleProgress(){
+  const el = document.getElementById('battle-progress-ribbon');
+  if(!el || !battleInitialSize) return;
+  const sizes = [];
+  for(let s = battleInitialSize; s >= 1; s = s/2) sizes.push(s);
+  el.innerHTML = sizes.map(s => {
+    const cls = s === battleRound.length ? 'current' : (s > battleRound.length ? 'done' : '');
+    return `<span class="battle-progress-seg ${cls}">${s}</span>`;
+  }).join('<span class="battle-progress-sep"></span>');
+}
+
 async function loadBattleMatch(){
+  _renderBattleProgress();
   const a = battleRound[battleMatchIndex*2];
   const b = battleRound[battleMatchIndex*2+1];
   document.getElementById('battle-round-label').textContent =
@@ -2453,28 +2490,80 @@ function _loadBattleSide(player, notFoundElId, vid){
 }
 
 function chooseBattleWinner(side){
+  if(battleTransitioning) return;
+  battleTransitioning = true;
+  const sides = document.querySelectorAll('#battle-split .battle-side');
+  sides[side]?.classList.add('battle-winner-flash');
+  sides[1-side]?.classList.add('battle-loser-fade');
+  try{ battleLeftPlayer && battleLeftPlayer.pauseVideo(); }catch(e){}
+  try{ battleRightPlayer && battleRightPlayer.pauseVideo(); }catch(e){}
+
   const winner = battleRound[battleMatchIndex*2 + side];
   battleWinners.push(winner);
   battleMatchIndex++;
-  if(battleMatchIndex*2 >= battleRound.length){
-    if(battleWinners.length === 1){
-      showBattleChampion(battleWinners[0]);
-      return;
+
+  setTimeout(()=>{
+    sides.forEach(el => el.classList.remove('battle-winner-flash','battle-loser-fade'));
+    battleTransitioning = false;
+    if(battleMatchIndex*2 >= battleRound.length){
+      if(battleWinners.length === 1){
+        showBattleChampion(battleWinners[0]);
+        return;
+      }
+      battleRound = battleWinners;
+      battleWinners = [];
+      battleMatchIndex = 0;
     }
-    battleRound = battleWinners;
-    battleWinners = [];
-    battleMatchIndex = 0;
-  }
-  loadBattleMatch();
+    loadBattleMatch();
+  }, 450);
 }
+// Клавіатура: ← / 1 — ліва пісня, → / 2 — права (лише поки турнір відкритий і йде матч, не чемпіон-екран).
+document.addEventListener('keydown', (e) => {
+  const overlay = document.getElementById('battle-modal-overlay');
+  if(!overlay || !overlay.classList.contains('open')) return;
+  if(document.getElementById('battle-champion').style.display !== 'none') return;
+  const tag = document.activeElement?.tagName;
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if(e.key === 'ArrowLeft' || e.key === '1'){ e.preventDefault(); chooseBattleWinner(0); }
+  else if(e.key === 'ArrowRight' || e.key === '2'){ e.preventDefault(); chooseBattleWinner(1); }
+});
 
 function showBattleChampion(song){
   try{ battleLeftPlayer && battleLeftPlayer.pauseVideo(); }catch(e){}
   try{ battleRightPlayer && battleRightPlayer.pauseVideo(); }catch(e){}
+  battleChampionSong = song;
   document.getElementById('battle-champion-artist').textContent = song.artist;
   document.getElementById('battle-champion-title').textContent = song.title;
   document.getElementById('battle-split').style.display = 'none';
   document.getElementById('battle-champion').style.display = 'block';
+  _battleConfetti();
+}
+// Невеликий конфеті-вибух над карткою чемпіона — той самий прийом, що й на
+// колесі фортуни (прості DOM-елементи з CSS-анімацією, самі прибираються).
+function _battleConfetti(){
+  const host = document.getElementById('battle-champion');
+  if(!host) return;
+  const colors = WHEEL_COLORS;
+  for(let i=0; i<40; i++){
+    const el = document.createElement('span');
+    const angle = Math.random()*360;
+    const dist = 80 + Math.random()*180;
+    const dx = Math.cos(angle*Math.PI/180)*dist;
+    const dy = Math.sin(angle*Math.PI/180)*dist;
+    el.className = 'battle-confetti-piece';
+    el.style.cssText = `top:38%;left:50%;width:${5+Math.random()*4}px;height:${5+Math.random()*4}px;` +
+      `background:${colors[i%colors.length]};border-radius:${Math.random()<0.5?'50%':'2px'};` +
+      `--dx:${dx}px;--dy:${dy}px;animation-duration:${0.7+Math.random()*0.5}s;`;
+    host.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+// "Слухати переможця" — закриває турнір і одразу вмикає переможну пісню в основному плеєрі.
+function playBattleChampion(){
+  if(!battleChampionSong) return;
+  const id = battleChampionSong.id;
+  closeBattle();
+  playSong(id);
 }
 
 function closeBattle(){
