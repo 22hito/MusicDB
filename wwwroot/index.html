@@ -847,28 +847,33 @@
     </div>
     <div id="battle-progress-ribbon" class="battle-progress-ribbon"></div>
     <div id="battle-split" class="battle-split">
-      <div class="battle-side">
+      <div class="battle-media-row">
         <div class="battle-video-wrap">
           <div id="battle-yt-a"></div>
         </div>
-        <div class="battle-side-info">
-          <div class="battle-side-artist" id="battle-a-artist"></div>
-          <div class="battle-side-title" id="battle-a-title"></div>
-          <div class="battle-side-notfound" id="battle-a-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
-        </div>
-        <button class="battle-choose-btn" onclick="chooseBattleWinner(0)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
-      </div>
-      <div class="battle-vs"><span data-i18n="battle.vs">VS</span></div>
-      <div class="battle-side">
+        <div class="battle-vs"><span data-i18n="battle.vs">VS</span></div>
         <div class="battle-video-wrap">
           <div id="battle-yt-b"></div>
         </div>
-        <div class="battle-side-info">
-          <div class="battle-side-artist" id="battle-b-artist"></div>
-          <div class="battle-side-title" id="battle-b-title"></div>
-          <div class="battle-side-notfound" id="battle-b-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
+      </div>
+      <div class="battle-details-row">
+        <div class="battle-side">
+          <div class="battle-side-info">
+            <div class="battle-side-artist" id="battle-a-artist"></div>
+            <div class="battle-side-title" id="battle-a-title"></div>
+            <div class="battle-side-notfound" id="battle-a-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
+          </div>
+          <button class="battle-choose-btn" onclick="chooseBattleWinner(0)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
         </div>
-        <button class="battle-choose-btn" onclick="chooseBattleWinner(1)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
+        <div class="battle-vs-spacer"></div>
+        <div class="battle-side">
+          <div class="battle-side-info">
+            <div class="battle-side-artist" id="battle-b-artist"></div>
+            <div class="battle-side-title" id="battle-b-title"></div>
+            <div class="battle-side-notfound" id="battle-b-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
+          </div>
+          <button class="battle-choose-btn" onclick="chooseBattleWinner(1)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
+        </div>
       </div>
     </div>
     <div id="battle-champion" class="battle-champion" style="display:none;">
