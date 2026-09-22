@@ -1086,7 +1086,15 @@ function renderWheelDisc(){
   if(!n){ disc.style.background = ''; disc.innerHTML = ''; return; }
   const segAngle = 360/n;
   const gradientParts = wheelGenres.map((g,i)=>`${_wheelSegColor(i,n)} ${i*segAngle}deg ${(i+1)*segAngle}deg`).join(', ');
-  disc.style.background = `conic-gradient(${gradientParts})`;
+  // Глянцева "куполоподібність" — світлова пляма зліва-згори й легке затемнення
+  // до країв. Шар у background, а не окремий елемент/псевдоелемент: фон
+  // ЗАВЖДИ позаду вмісту, тож підписи жанрів (діти #wheel-disc) лишаються
+  // читабельними без потреби узгоджувати z-index з ::after (той підхід
+  // ховав підписи повністю — overflow:hidden на диску перекреслював z-index).
+  disc.style.background =
+    `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%), ` +
+    `radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 62%, rgba(0,0,0,0.32) 100%), ` +
+    `conic-gradient(${gradientParts})`;
 
   // "По центру сектора" — кутове центрування (mid, бісектриса сектора), не радіальне.
   const hubR = (document.getElementById('wheel-hub')?.clientWidth || 0)/2;
