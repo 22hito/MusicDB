@@ -343,7 +343,11 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .wheel-wrap { position: relative; width: clamp(260px, 66vmin, 860px); height: clamp(260px, 66vmin, 860px); margin: 6px auto 18px; }
 .wheel-disc {
   width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden;
-  border: 4px solid var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  /* Подвійна рамка — вузьке темне обмеження ззовні + золота облямівка —
+     і м'яке навколишнє світіння замість плаского box-shadow дають ефект
+     "медальйона", а не наклейки на чорному тлі. */
+  border: 5px solid var(--accent);
+  box-shadow: 0 0 0 2px var(--surface2), 0 16px 46px rgba(0,0,0,0.55), 0 0 70px rgba(200,169,110,0.12);
   transition: transform 4s cubic-bezier(.17,.67,.32,1.01);
 }
 /* Розмиття диска, поки в центрі показано результат — фокус переходить на
@@ -353,11 +357,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
    не має жодного transition для filter у застосованих правилах — розмиття
    зникає миттєво, а не програє 0.5s назад. Плавною лишається тільки поява. */
 .wheel-disc.revealed { filter: blur(5px); transition: transform 4s cubic-bezier(.17,.67,.32,1.01), filter 0.4s ease; }
-.wheel-pointer {
-  position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
-  width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent;
-  border-top: 18px solid var(--accent); z-index: 5; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4));
-}
+/* Стрілка — краплеподібний "пін" (SVG, не CSS-трикутник) із золотим
+   градієнтом замість плоскої заливки. */
+.wheel-pointer { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); z-index: 5; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); }
+.wheel-pointer svg { display: block; width: 30px; height: 30px; }
 /* Хаб у центрі — однотонне коло поверх диска (сам диск обертається, хаб —
    ні, бо це окремий сусідній елемент, а не дитина #wheel-disc), закриває
    те місце, де всі сектори conic-gradient сходяться в одну точку. */
@@ -371,7 +374,8 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
      водяний знак у навбарі), на темному хабі просто губилось. Тло хаба —
      акцентний золотий, а сам силует перефарбовуємо у білий фільтром нижче —
      разом дають контраст, який видно на будь-якому кольорі колеса довкола. */
-  background: var(--accent); border: 3px solid var(--surface2); box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  background: radial-gradient(circle at 35% 28%, #ddc292, var(--accent) 72%);
+  border: 3px solid var(--surface2); box-shadow: 0 2px 10px rgba(0,0,0,0.4), inset 0 -3px 8px rgba(0,0,0,0.18);
   display: flex; align-items: center; justify-content: center; overflow: hidden; z-index: 4;
 }
 .wheel-hub img {
@@ -447,7 +451,7 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .wheel-legend { display: flex; flex-direction: column; gap: 3px; max-height: 460px; overflow-y: auto; padding-right: 4px; }
 .wheel-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text); padding: 3px 6px; border-radius: 5px; transition: background 0.15s ease; }
 .wheel-legend-item.winner { background: rgba(200,169,110,0.15); color: var(--accent); font-weight: 700; }
-.wheel-legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35); }
+.wheel-legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35); }
 
 /* Батл рояль */
 .battle-box {
