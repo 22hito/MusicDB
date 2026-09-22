@@ -342,14 +342,14 @@
       <div class="wheel-col wheel-playlist-col">
         <div class="wheel-duration-row">
           <span data-i18n="wheel.countLabel">Кількість жанрів на колесі:</span>
-          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onblur="_restoreIntInputIfEmpty(this)">
+          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); onWheelCountChange();">
           <span id="wheel-count-max" class="wheel-count-max"></span>
         </div>
         <div class="wheel-duration-row">
           <span data-i18n="wheel.durationLabel">Тривалість прокрутки, сек:</span>
-          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onblur="_restoreIntInputIfEmpty(this)">
+          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
           <span data-i18n="wheel.durationTo">—</span>
-          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onblur="_restoreIntInputIfEmpty(this)">
+          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
         </div>
         <div class="wheel-actions">
           <button class="modal-btn-confirm" id="wheel-spin-btn" style="background:var(--accent);" onclick="spinWheel()" data-i18n="wheel.spinBtn">Крутити</button>

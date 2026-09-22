@@ -996,6 +996,11 @@ function _eligibleWheelGenres(){
   return Object.keys(counts).filter(g => counts[g] >= 5);
 }
 
+// true лише після того, як користувач сам змінив поле (onWheelCountChange) —
+// без цього прапорця openWheelPage() щоразу бачив у полі вже НЕПОРОЖНЄ (хай і
+// дефолтне з HTML) значення "2" і ніколи не підставляв нормальний дефолт 10.
+let wheelCountTouched = false;
+
 function openWheelPage(){
   wheelAllGenres = _shuffledCopy(_eligibleWheelGenres());
   const countInput = document.getElementById('wheel-count');
@@ -1005,7 +1010,9 @@ function openWheelPage(){
   // більше (аж до всіх жанрів бази) — підкрутіть число самі.
   countInput.min = Math.min(2, total || 1);
   const defaultCount = Math.max(1, Math.min(10, total));
-  countInput.value = Math.min(Math.max(countInput.min, parseInt(countInput.value) || defaultCount), total || 1);
+  countInput.value = wheelCountTouched
+    ? Math.min(Math.max(countInput.min, parseInt(countInput.value) || defaultCount), total || 1)
+    : defaultCount;
   document.getElementById('wheel-count-max').textContent = `/ ${total}`;
   _applyWheelCount();
   wheelResultGenre = null;
@@ -1020,6 +1027,7 @@ function openWheelPage(){
 // самий перемішаний пул і перемальовує колесо (без нового спіну/результату).
 function onWheelCountChange(){
   if(wheelSpinning) return;
+  wheelCountTouched = true;
   const countInput = document.getElementById('wheel-count');
   const total = wheelAllGenres.length;
   const min = parseInt(countInput.min) || 1;
@@ -1083,8 +1091,11 @@ function renderWheelLegend(){
 }
 
 // Санітайзер для числових полів колеса (type="text", бо type="number" пропускає
-// невалідний проміжний ввід): викидає нецифрові символи, затискає в [min,max].
-// Порожній рядок лишає як є — дозаповнення на blur через _restoreIntInputIfEmpty.
+// невалідний проміжний ввід): викидає нецифрові символи, затискає ЛИШЕ зверху
+// (max) під час друку. Нижню межу (min) тут НЕ підіймаємо — інакше перша
+// цифра нижче min (напр. "1" при min=2) миттєво перетворювалась би на "2" ще
+// до того, як дописати другу цифру, і "12" ніколи не вдавалось би ввести.
+// Нижню межу перевіряємо остаточно на blur — _restoreIntInputIfEmpty.
 function _sanitizeIntInput(el, min, max){
   const digitsOnly = el.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
   if(digitsOnly === ''){
@@ -1093,14 +1104,15 @@ function _sanitizeIntInput(el, min, max){
   }
   let v = parseInt(digitsOnly, 10);
   if(v > max) v = max;
-  if(v < min) v = min;
   const str = String(v);
   if(el.value !== str) el.value = str;
   return v;
 }
 function _restoreIntInputIfEmpty(el){
-  if(el.value.trim() !== '') return;
-  el.value = el.min || '1';
+  const min = parseInt(el.min) || 1;
+  const max = parseInt(el.max) || 99;
+  const v = el.value.trim() === '' ? min : Math.max(min, Math.min(max, parseInt(el.value, 10) || min));
+  if(String(v) !== el.value) el.value = String(v);
 }
 function _clampWheelSecInput(el){
   _sanitizeIntInput(el, parseInt(el.min) || 1, parseInt(el.max) || 99);
