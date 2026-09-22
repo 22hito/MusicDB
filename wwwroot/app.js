@@ -2483,9 +2483,14 @@ function _loadBattleSide(player, notFoundElId, vid){
 function chooseBattleWinner(side){
   if(battleTransitioning) return;
   battleTransitioning = true;
+  // Відео (в .battle-media-row) і інфо/кнопка (в .battle-details-row) тепер
+  // окремі елементи для того самого боку — підсвічуємо/гасимо обидва разом.
+  const videos = document.querySelectorAll('#battle-split .battle-video-wrap');
   const sides = document.querySelectorAll('#battle-split .battle-side');
-  sides[side]?.classList.add('battle-winner-flash');
-  sides[1-side]?.classList.add('battle-loser-fade');
+  const flashEls = [videos[side], sides[side]];
+  const fadeEls = [videos[1-side], sides[1-side]];
+  flashEls.forEach(el => el?.classList.add('battle-winner-flash'));
+  fadeEls.forEach(el => el?.classList.add('battle-loser-fade'));
   try{ battleLeftPlayer && battleLeftPlayer.pauseVideo(); }catch(e){}
   try{ battleRightPlayer && battleRightPlayer.pauseVideo(); }catch(e){}
 
@@ -2494,7 +2499,7 @@ function chooseBattleWinner(side){
   battleMatchIndex++;
 
   setTimeout(()=>{
-    sides.forEach(el => el.classList.remove('battle-winner-flash','battle-loser-fade'));
+    [...videos, ...sides].forEach(el => el.classList.remove('battle-winner-flash','battle-loser-fade'));
     battleTransitioning = false;
     if(battleMatchIndex*2 >= battleRound.length){
       if(battleWinners.length === 1){

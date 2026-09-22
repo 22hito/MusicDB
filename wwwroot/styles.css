@@ -490,17 +490,28 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   border-color: transparent; font-weight: 700; box-shadow: 0 2px 10px rgba(200,169,110,0.35);
 }
 .battle-progress-sep { width: 16px; height: 1px; background: var(--border); flex-shrink: 0; }
-.battle-split { display: flex; align-items: stretch; gap: 0; }
+/* Два ряди: відео+VS (media-row) окремо від інфо+кнопки (details-row) —
+   так VS центрується по висоті САМЕ відео, а не всієї колонки разом з
+   текстом і кнопкою нижче (яка тягнула центр вниз). */
+.battle-split { display: flex; flex-direction: column; gap: 0; }
+.battle-media-row { display: flex; align-items: center; gap: 0; padding: 20px 20px 0; margin-bottom: 14px; }
+.battle-details-row { display: flex; align-items: stretch; gap: 0; padding: 0 20px 20px; }
 .battle-side {
   flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center;
-  padding: 20px; border-radius: 10px; transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
+  padding-top: 14px; border-radius: 10px; transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
 }
-/* Обрана сторона коротко спалахує золотим, програна — тьмяніє й трохи
-   стискається — щоб перехід між парами читався як явний результат, а не
-   миттєва підміна контенту. */
-.battle-side.battle-winner-flash { box-shadow: inset 0 0 0 2px var(--accent), 0 0 24px rgba(200,169,110,0.25); }
-.battle-side.battle-loser-fade { opacity: 0.35; transform: scale(0.96); }
-.battle-video-wrap { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+/* Порожній розпірник тієї ж ширини, що й .battle-vs — щоб дві сторони
+   details-row лишались вирівняні під своїми відео зверху. */
+.battle-vs-spacer { width: 76px; flex-shrink: 0; }
+/* Обрана сторона (і відео, і інфо+кнопка нижче) коротко спалахує золотим,
+   програна — тьмяніє й трохи стискається — щоб перехід між парами читався
+   як явний результат, а не миттєва підміна контенту. */
+.battle-video-wrap.battle-winner-flash, .battle-side.battle-winner-flash { box-shadow: inset 0 0 0 2px var(--accent), 0 0 24px rgba(200,169,110,0.25); }
+.battle-video-wrap.battle-loser-fade, .battle-side.battle-loser-fade { opacity: 0.35; transform: scale(0.96); }
+.battle-video-wrap {
+  flex: 1; min-width: 0; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden;
+  transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
+}
 .battle-video-wrap iframe { width: 100%; height: 100%; }
 /* Фіксована висота (не min-height) — щоб кнопка "Обрати цю" завжди сиділа на
    тому самому місці, незалежно від довжини назви пісні/виконавця з обох
@@ -524,16 +535,17 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   margin-top: auto; /* підстраховка: приклеює кнопку до низу навіть якщо висоти сторін розійдуться з іншої причини */
 }
 .battle-choose-btn:hover { box-shadow: 0 8px 22px rgba(200,169,110,0.38); transform: translateY(-2px); }
-/* Кругла золота емблема замість дрібного сірого тексту "VS". */
-.battle-vs {
-  display: flex; align-items: center; justify-content: center; width: 54px; flex-shrink: 0;
-}
+/* Кругла золота емблема замість дрібного сірого тексту "VS" — велика,
+   контрастна, з подвійним кільцем і легким пульсом для більшої "енергії". */
+.battle-vs { display: flex; align-items: center; justify-content: center; width: 76px; flex-shrink: 0; }
 .battle-vs span {
-  display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 28%, #ddc292, var(--accent) 72%); color: #0d0d0f;
-  font-family: var(--font-serif); font-weight: 700; font-size: 0.82rem;
-  box-shadow: 0 0 0 3px var(--surface), 0 4px 16px rgba(200,169,110,0.3);
+  display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 50%;
+  background: linear-gradient(135deg, #ddc292, var(--accent) 55%, #a9824c); color: #0d0d0f;
+  font-family: var(--font-serif); font-weight: 900; font-style: italic; font-size: 1.05rem; letter-spacing: 0.02em;
+  box-shadow: 0 0 0 4px var(--surface), 0 0 0 7px rgba(200,169,110,0.35), 0 6px 22px rgba(200,169,110,0.4);
+  animation: battleVsPulse 2.2s ease-in-out infinite;
 }
+@keyframes battleVsPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
 .battle-champion { text-align: center; padding: 50px 20px; position: relative; }
 .battle-champion-label { color: var(--accent); font-size: 1.1rem; margin-bottom: 14px; }
 .battle-champion-artist {
@@ -568,8 +580,9 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .battle-pl-main span { color: var(--muted); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .battle-pl-arrow { color: var(--muted); flex-shrink: 0; width: 16px; height: 16px; }
 @media (max-width: 720px) {
-  .battle-split { flex-direction: column; }
-  .battle-vs { width: 100%; height: 44px; }
+  .battle-media-row, .battle-details-row { flex-direction: column; padding-left: 16px; padding-right: 16px; }
+  .battle-vs { width: 100%; padding: 10px 0; }
+  .battle-vs-spacer { display: none; }
   .battle-choose-btn { padding: 1rem 1.2rem; font-size: 0.95rem; }
   .battle-progress-seg { font-size: 0.62rem; padding: 2px 7px; }
   .battle-progress-sep { width: 8px; }
