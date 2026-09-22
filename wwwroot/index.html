@@ -24,33 +24,69 @@
     document.documentElement.setAttribute('data-theme', saved);
   })();
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
 <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
+<!-- Спільний набір іконок (замість emoji-символів по всьому сайту) — один
+     спрайт, кожна іконка referенситься через <use href="#icon-NAME">, стиль
+     задається класом .icon (currentColor), а не тут. -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 5H5a2 2 0 0 0 0 4h1M16 5h3a2 2 0 0 1 0 4h-1"/><path d="M9 16h6M10 20h4M12 13v3"/></symbol>
+  <symbol id="icon-arrow-left" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+  <symbol id="icon-arrow-right" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+  <symbol id="icon-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8" stroke-dasharray="2.2 2.6"/></symbol>
+  <symbol id="icon-headphones" viewBox="0 0 24 24"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="4" height="7" rx="1.5"/><rect x="17" y="14" width="4" height="7" rx="1.5"/></symbol>
+  <symbol id="icon-wheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="5.6" y2="18.4"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="icon-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="19" r="1"/></symbol>
+  <symbol id="icon-shuffle" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></symbol>
+  <symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
+  <symbol id="icon-cursor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" opacity="0.4"/></symbol>
+  <symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="20" y2="12"/><line x1="5" y1="5" x2="6.5" y2="6.5"/><line x1="17.5" y1="17.5" x2="19" y2="19"/><line x1="5" y1="19" x2="6.5" y2="17.5"/><line x1="17.5" y1="6.5" x2="19" y2="5"/></symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a13 13 0 0 1 0 18a13 13 0 0 1 0-18"/></symbol>
+  <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="icon-menu" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+  <symbol id="icon-inbox" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h5l2 3h4l2-3h5"/></symbol>
+  <symbol id="icon-heart-broken" viewBox="0 0 24 24"><path d="M12 20s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6.5-8 11-8 11z"/><path d="M10 6l1.5 4-2 2 2.5 3.5-1.5 3"/></symbol>
+  <symbol id="icon-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="icon-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="icon-pencil" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></symbol>
+  <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="icon-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 19h16"/></symbol>
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+</svg>
+
 <nav>
   <span class="nav-brand" onclick="showPage('home')"><img src="/images/logo.png" alt="N'Owl logo">N'Owl</span>
   <div class="dropdown" id="nav-hamburger-dropdown">
-    <button class="nav-hamburger" onclick="toggleDropdown(event,'nav-hamburger-dropdown')" aria-label="Меню" data-i18n-title="nav.menu" title="Меню">☰</button>
+    <button class="nav-hamburger" onclick="toggleDropdown(event,'nav-hamburger-dropdown')" aria-label="Меню" data-i18n-title="nav.menu" title="Меню"><svg class="icon"><use href="#icon-menu"/></svg></button>
     <ul class="nav-tabs">
       <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
       <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 100</button></li>
-      <li><button id="tab-wheel" onclick="showPage('wheel')" data-i18n="nav.wheel">🎡 Колесо фортуни</button></li>
-      <li><button id="tab-battle" onclick="showPage('battle')" data-i18n="nav.battle">🏆 Батл рояль</button></li>
-      <li><button id="tab-artists" onclick="showPage('artists')" data-i18n="nav.artists">🎤 Виконавці</button></li>
+      <li><button id="tab-wheel" onclick="showPage('wheel')"><svg class="icon"><use href="#icon-wheel"/></svg> <span data-i18n="nav.wheel">Колесо фортуни</span></button></li>
+      <li><button id="tab-battle" onclick="showPage('battle')"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="nav.battle">Батл рояль</span></button></li>
+      <li><button id="tab-artists" onclick="showPage('artists')"><svg class="icon"><use href="#icon-mic"/></svg> <span data-i18n="nav.artists">Виконавці</span></button></li>
       <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
       <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
-      <li id="nav-admin-hub" style="display:none"><button id="tab-admin-hub" onclick="showPage('admin-hub')" data-i18n="nav.adminHub">⚙ Адмін-панель</button></li>
+      <li id="nav-admin-hub" style="display:none"><button id="tab-admin-hub" onclick="showPage('admin-hub')"><svg class="icon"><use href="#icon-settings"/></svg> <span data-i18n="nav.adminHub">Адмін-панель</span></button></li>
       <!-- Пряме посилання на файл релізу, не /latest/download/ — ім'я файлу
            містить номер версії (NOwl-Setup-X.Y.Z.exe), тож /latest/ однаково
            зламався б на наступному релізі з іншою версією в назві файлу. Тег
            і назва файлу мають збігатись із фактично опублікованим релізом на
            https://github.com/22hito/MusicDB/releases — оновлювати тут разом
            із кожним новим релізом десктоп-застосунку. -->
-      <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/v1.0.4/NOwl-Setup-1.0.4.exe" data-i18n="nav.desktopApp">⬇ Застосунок для ПК</a></li>
+      <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/v1.0.4/NOwl-Setup-1.0.4.exe"><svg class="icon"><use href="#icon-download"/></svg> <span data-i18n="nav.desktopApp">Застосунок для ПК</span></a></li>
       <script>
         // Electron-застосунок сам ставить цей прапорець — не пропонувати встановити його вже в ньому.
         if (localStorage.getItem('isDesktopApp') === '1') document.getElementById('nav-desktop-app').style.display = 'none';
@@ -59,18 +95,18 @@
     </ul>
   </div>
   <div class="dropdown" id="lang-dropdown" style="margin-left:auto;">
-    <button class="dropdown-toggle" onclick="toggleDropdown(event,'lang-dropdown')"><span id="lang-toggle-label">UA</span><span class="caret">▾</span></button>
+    <button class="dropdown-toggle" onclick="toggleDropdown(event,'lang-dropdown')"><span id="lang-toggle-label">UA</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
     <div class="dropdown-menu">
       <button data-lang-option="uk" onclick="selectLang('uk')">UA — Українська</button>
       <button data-lang-option="en" onclick="selectLang('en')">EN — English</button>
     </div>
   </div>
   <div class="dropdown" id="theme-dropdown" style="margin-left:0.5rem;margin-right:1rem;">
-    <button class="dropdown-toggle" onclick="toggleDropdown(event,'theme-dropdown')"><span id="theme-toggle-icon">🌙</span><span id="theme-toggle-label" data-i18n="theme.dark">Темна</span><span class="caret">▾</span></button>
+    <button class="dropdown-toggle" onclick="toggleDropdown(event,'theme-dropdown')"><span id="theme-toggle-icon"><svg class="icon"><use href="#icon-moon"/></svg></span><span id="theme-toggle-label" data-i18n="theme.dark">Темна</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
     <div class="dropdown-menu">
-      <button data-theme-option="dark" onclick="selectTheme('dark')">🌙 <span data-i18n="theme.dark">Темна</span></button>
-      <button data-theme-option="gray" onclick="selectTheme('gray')">◐ <span data-i18n="theme.gray">Сіра</span></button>
-      <button data-theme-option="light" onclick="selectTheme('light')">☀️ <span data-i18n="theme.light">Світла</span></button>
+      <button data-theme-option="dark" onclick="selectTheme('dark')"><svg class="icon"><use href="#icon-moon"/></svg> <span data-i18n="theme.dark">Темна</span></button>
+      <button data-theme-option="gray" onclick="selectTheme('gray')"><svg class="icon"><use href="#icon-contrast"/></svg> <span data-i18n="theme.gray">Сіра</span></button>
+      <button data-theme-option="light" onclick="selectTheme('light')"><svg class="icon"><use href="#icon-sun"/></svg> <span data-i18n="theme.light">Світла</span></button>
     </div>
   </div>
   <div id="auth-area" style="margin-right:1rem;display:flex;align-items:center;gap:0.7rem;">
@@ -91,7 +127,7 @@
       <div class="stat-card stat-card-clickable" onclick="openSimilarityGraph('singles')" title="" data-i18n-title="graph.openHint"><div class="label" data-i18n="stat.singles">Сінглів</div><div class="value" id="stat-singles">0</div></div>
     </div>
     <div id="admin-tools-row" style="display:none;margin-bottom:1.5rem;">
-      <button class="btn btn-outline" onclick="normalizeGenres()" id="normalize-genres-btn" data-i18n="admin.normalizeGenresBtn">🧹 Об'єднати дублікати жанрів</button>
+      <button class="btn btn-outline" onclick="normalizeGenres()" id="normalize-genres-btn"><svg class="icon"><use href="#icon-sparkle"/></svg> <span data-i18n="admin.normalizeGenresBtn">Об'єднати дублікати жанрів</span></button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
       <h2><span data-i18n="home.heading.pre">Опубліковані</span> <span class="hl" data-i18n="home.heading.accent">пісні</span></h2>
@@ -100,7 +136,7 @@
     <div class="filter-bar">
       <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="renderSongs()">
       <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
-      <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn" data-i18n="table.shuffle">🔀 Перемішати</button>
+      <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="table.shuffle">Перемішати</span></button>
     </div>
     <div class="table-wrap scroll-table mobile-cards">
       <table>
@@ -140,7 +176,7 @@
 <div id="page-request" class="page">
   <div class="container">
     <h2><span data-i18n="request.heading.pre">Запит на</span> <span class="hl" data-i18n="request.heading.accent">додавання пісні</span></h2>
-    <div id="req-alert" class="alert alert-success" data-i18n="request.successAlert">✓ Запит успішно надіслано! Очікуйте підтвердження адміністратора.</div>
+    <div id="req-alert" class="alert alert-success"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="request.successAlert">Запит успішно надіслано! Очікуйте підтвердження адміністратора.</span></div>
     <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;">
       <div class="form-card" style="flex:1 1 380px;">
         <div class="form-row">
@@ -178,7 +214,7 @@
     </div>
 
     <div id="admin-hub-requests-section">
-      <div id="requests-empty" class="empty" style="display:none;"><span class="icon">📭</span><span data-i18n="admin.empty">Немає нових запитів</span></div>
+      <div id="requests-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-inbox"/></svg><span data-i18n="admin.empty">Немає нових запитів</span></div>
       <div class="table-wrap mobile-cards" id="requests-table-wrap">
         <table>
           <thead><tr><th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th data-i18n="table.album">Альбом</th><th data-i18n="table.action">Дія</th></tr></thead>
@@ -188,7 +224,7 @@
     </div>
 
     <div id="admin-hub-add-section" style="display:none;">
-      <div id="add-alert" class="alert alert-success" data-i18n="add.successAlert">✓ Композицію успішно додано до бази даних!</div>
+      <div id="add-alert" class="alert alert-success"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="add.successAlert">Композицію успішно додано до бази даних!</span></div>
       <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;">
         <div class="form-card" style="flex:1 1 380px;">
           <div class="form-row">
@@ -222,14 +258,14 @@
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.5rem;">
       <div style="display:flex;align-items:center;gap:1rem;">
         <img id="profile-view-picture" src="" style="width:56px;height:56px;border-radius:50%;border:1px solid var(--border);object-fit:cover;display:none;">
-        <span id="profile-view-picture-ph" style="width:56px;height:56px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</span>
+        <span id="profile-view-picture-ph" style="width:56px;height:56px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--muted);"><svg class="icon"><use href="#icon-user"/></svg></span>
         <div>
           <h2 style="margin-bottom:2px;"><span data-i18n="profile.heading.pre">Мій</span> <span class="hl" data-i18n="profile.heading.accent">профіль</span></h2>
           <div id="profile-view-name" style="color:var(--text);font-size:0.95rem;font-weight:600;"></div>
           <div id="profile-view-email" style="color:var(--muted);font-size:0.78rem;"></div>
         </div>
       </div>
-      <button class="btn btn-outline" onclick="showPage('profile-settings')" data-i18n="nav.profileSettings">⚙ Налаштування</button>
+      <button class="btn btn-outline" onclick="showPage('profile-settings')"><svg class="icon"><use href="#icon-settings"/></svg> <span data-i18n="nav.profileSettings">Налаштування</span></button>
     </div>
 
     <div class="stats-row" style="margin-bottom:2rem;">
@@ -243,7 +279,7 @@
     </div>
 
     <h2 style="font-size:1.3rem;" data-i18n="profile.favoritesTitle">Улюблені пісні</h2>
-    <div id="profile-favorites-empty" class="empty" style="display:none;"><span class="icon">💔</span><span data-i18n="profile.favoritesEmpty">Ще немає улюблених пісень</span></div>
+    <div id="profile-favorites-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-heart-broken"/></svg><span data-i18n="profile.favoritesEmpty">Ще немає улюблених пісень</span></div>
     <div class="table-wrap mobile-cards" style="margin-bottom:2rem;">
       <table>
         <thead><tr><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
@@ -255,7 +291,7 @@
       <h2 style="font-size:1.3rem;margin-bottom:0;" data-i18n="profile.playlistsTitle">Мої плейлисти</h2>
       <button class="btn btn-outline" onclick="createPlaylist()" data-i18n="profile.newPlaylistBtn">+ Новий плейлист</button>
     </div>
-    <div id="profile-playlists-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.playlistsEmpty">Ще немає плейлистів</span></div>
+    <div id="profile-playlists-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="profile.playlistsEmpty">Ще немає плейлистів</span></div>
     <div id="profile-playlists-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
   </div>
 </div>
@@ -263,7 +299,7 @@
 <!-- PROFILE SETTINGS (нікнейм/аватарка — раніше було частиною page-profile) -->
 <div id="page-profile-settings" class="page">
   <div class="container">
-    <button class="btn btn-outline" onclick="showPage('profile')" style="margin-bottom:1rem;" data-i18n="profile.backToProfile">← До профілю</button>
+    <button class="btn btn-outline" onclick="showPage('profile')" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="profile.backToProfile">До профілю</span></button>
     <h2><span data-i18n="profileSettings.heading.pre">Налаштування</span> <span class="hl" data-i18n="profileSettings.heading.accent">профілю</span></h2>
 
     <div class="form-card" style="max-width:600px;">
@@ -294,15 +330,15 @@
 <!-- PLAYLIST DETAIL -->
 <div id="page-playlist" class="page">
   <div class="container">
-    <button class="btn btn-outline" onclick="showPage('profile')" style="margin-bottom:1rem;" data-i18n="profile.backToProfile">← До профілю</button>
+    <button class="btn btn-outline" onclick="showPage('profile')" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="profile.backToProfile">До профілю</span></button>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h2 id="playlist-detail-title" style="margin-bottom:0;"></h2>
       <div style="display:flex;gap:10px;">
-        <button class="btn btn-outline" onclick="openBattleSetup()" data-i18n="battle.openBtn">🏆 Батл рояль</button>
-        <button class="btn btn-primary" id="playlist-play-all-btn" onclick="playPlaylistFromStart()" data-i18n="profile.playAllBtn">▶ Слухати весь плейлист</button>
+        <button class="btn btn-outline" onclick="openBattleSetup()"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="battle.openBtn">Батл рояль</span></button>
+        <button class="btn btn-primary" id="playlist-play-all-btn" onclick="playPlaylistFromStart()"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="profile.playAllBtn">Слухати весь плейлист</span></button>
       </div>
     </div>
-    <div id="playlist-detail-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.playlistEmpty">У цьому плейлисті ще немає пісень</span></div>
+    <div id="playlist-detail-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="profile.playlistEmpty">У цьому плейлисті ще немає пісень</span></div>
     <div class="table-wrap mobile-cards">
       <table>
         <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
@@ -317,7 +353,7 @@
   <div class="container">
     <h2><span data-i18n="rec.heading.pre">Рекомендовано</span> <span class="hl" data-i18n="rec.heading.accent">для вас</span></h2>
     <div id="rec-loading" style="color:var(--muted);font-size:0.85rem;display:none;" data-i18n="rec.loading">Підбираємо рекомендації…</div>
-    <div id="rec-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="rec.empty">Послухайте кілька пісень, щоб отримати персональні рекомендації</span></div>
+    <div id="rec-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="rec.empty">Послухайте кілька пісень, щоб отримати персональні рекомендації</span></div>
     <div id="rec-list" style="display:flex;flex-direction:column;gap:0.8rem;"></div>
   </div>
 </div>
@@ -358,7 +394,7 @@
         <div id="wheel-playlist-wrap" style="display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;gap:10px;flex-wrap:wrap;">
             <h3 id="wheel-playlist-title" style="margin:0;font-size:1rem;"></h3>
-            <button class="btn btn-primary" onclick="playWheelFromStart()" data-i18n="wheel.playBtn">▶ Слухати</button>
+            <button class="btn btn-primary" onclick="playWheelFromStart()"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="wheel.playBtn">Слухати</span></button>
           </div>
           <div class="table-wrap mobile-cards">
             <table>
@@ -378,13 +414,13 @@
     <h2><span data-i18n="battle.heading.pre">Батл</span> <span class="hl" data-i18n="battle.heading.accent">рояль</span></h2>
     <div id="battle-page-own-section" style="margin-bottom:2rem;">
       <h3 style="font-size:1.1rem;margin-bottom:0.8rem;" data-i18n="battle.pageOwnHeading">Мої плейлисти</h3>
-      <div id="battle-page-own-login-hint" class="empty" style="display:none;"><span class="icon">🔒</span><span data-i18n="battle.pageOwnLoginHint">Увійдіть, щоб побачити тут свої плейлисти</span></div>
-      <div id="battle-page-own-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="battle.pageOwnEmpty">У вас ще немає плейлистів — створіть їх у профілі</span></div>
+      <div id="battle-page-own-login-hint" class="empty" style="display:none;"><svg class="icon"><use href="#icon-lock"/></svg><span data-i18n="battle.pageOwnLoginHint">Увійдіть, щоб побачити тут свої плейлисти</span></div>
+      <div id="battle-page-own-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="battle.pageOwnEmpty">У вас ще немає плейлистів — створіть їх у профілі</span></div>
       <div id="battle-page-own-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
     </div>
     <div>
       <h3 style="font-size:1.1rem;margin-bottom:0.8rem;" data-i18n="battle.pagePublicHeading">Плейлисти спільноти</h3>
-      <div id="battle-page-public-empty" class="empty" style="display:none;"><span class="icon">🌍</span><span data-i18n="battle.pagePublicEmpty">Ще немає публічних плейлистів — зробіть свій публічним у профілі</span></div>
+      <div id="battle-page-public-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-globe"/></svg><span data-i18n="battle.pagePublicEmpty">Ще немає публічних плейлистів — зробіть свій публічним у профілі</span></div>
       <div id="battle-page-public-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
     </div>
   </div>
@@ -397,7 +433,7 @@
     <div class="filter-bar">
       <input type="text" id="artists-search" data-i18n-placeholder="artists.searchPlaceholder" placeholder="Пошук виконавця…" oninput="onArtistsSearchInput()">
     </div>
-    <div id="artists-empty" class="empty" style="display:none;"><span class="icon">🎤</span><span data-i18n="artists.empty">Нічого не знайдено</span></div>
+    <div id="artists-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-mic"/></svg><span data-i18n="artists.empty">Нічого не знайдено</span></div>
     <div id="artists-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
   </div>
 </div>
@@ -405,7 +441,7 @@
 <!-- ARTIST: сторінка одного виконавця (id -> openArtistPage) -->
 <div id="page-artist" class="page">
   <div class="container">
-    <div id="artist-not-found" class="empty" style="display:none;"><span class="icon">🎤</span><span data-i18n="artist.notFound">Виконавця не знайдено</span></div>
+    <div id="artist-not-found" class="empty" style="display:none;"><svg class="icon"><use href="#icon-mic"/></svg><span data-i18n="artist.notFound">Виконавця не знайдено</span></div>
     <div id="artist-content" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.5rem;">
         <div>
@@ -461,12 +497,12 @@
 <!-- USER PROFILE: публічний профіль іншого користувача (id -> openUserProfilePage) -->
 <div id="page-user-profile" class="page">
   <div class="container">
-    <button class="btn btn-outline" onclick="showPage('friends')" style="margin-bottom:1rem;" data-i18n="profile.public.back">← До друзів</button>
+    <button class="btn btn-outline" onclick="showPage('friends')" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="profile.public.back">До друзів</span></button>
     <div id="user-profile-not-found" class="empty" style="display:none;"><span data-i18n="profile.public.notFound">Користувача не знайдено</span></div>
     <div id="user-profile-content" style="display:none;">
       <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
         <img id="user-profile-avatar" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid var(--border);display:none;">
-        <span id="user-profile-avatar-ph" style="width:64px;height:64px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.8rem;">👤</span>
+        <span id="user-profile-avatar-ph" style="width:64px;height:64px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--muted);"><svg class="icon"><use href="#icon-user"/></svg></span>
         <div>
           <h2 id="user-profile-name" style="margin-bottom:6px;"></h2>
           <div id="user-profile-member-since" style="color:var(--muted);font-size:0.78rem;margin-bottom:8px;"></div>
@@ -486,7 +522,7 @@
       </div>
 
       <h2 style="font-size:1.3rem;" data-i18n="profile.public.playlistsTitle">Публічні плейлисти</h2>
-      <div id="user-profile-playlists-empty" class="empty" style="display:none;"><span class="icon">🎧</span><span data-i18n="profile.public.playlistsEmpty">Немає публічних плейлистів</span></div>
+      <div id="user-profile-playlists-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="profile.public.playlistsEmpty">Немає публічних плейлистів</span></div>
       <div id="user-profile-playlists-list"></div>
     </div>
   </div>
@@ -502,7 +538,7 @@
   <div class="player-left">
     <div id="player-cover">
       <img id="player-cover-img" src="" alt="">
-      <span id="player-cover-ph">♪</span>
+      <span id="player-cover-ph"><svg class="icon"><use href="#icon-music"/></svg></span>
       <div id="player-cover-eq">
         <span></span><span></span><span></span><span></span>
       </div>
@@ -607,7 +643,7 @@
   </div>
   <div id="karaoke-body">
     <div id="karaoke-empty" class="empty" style="display:none;padding:2rem 1rem;">
-      <span class="icon">🎤</span><span data-i18n="player.karaokeEmpty">Для цієї пісні ще немає тексту</span>
+      <svg class="icon"><use href="#icon-mic"/></svg><span data-i18n="player.karaokeEmpty">Для цієї пісні ще немає тексту</span>
     </div>
     <pre id="karaoke-text"></pre>
   </div>
@@ -616,7 +652,7 @@
 <!-- VIDEO POPUP -->
 <div id="video-popup">
   <div id="video-popup-header">
-    <span data-i18n="videoPopup.title">▶ Відео</span>
+    <svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="videoPopup.title">Відео</span>
     <div class="video-popup-btns">
       <button id="video-popup-popout" onclick="popOutVideoPopup()" title="Перенести в окреме вікно" data-i18n-title="videoPopup.popout" style="display:none;">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -703,7 +739,7 @@
       <label data-i18n="admin.youtubeVideo">YouTube-відео (необов'язково)</label>
       <input type="text" id="edit-req-youtube" oninput="_updateEditReqYoutubeLink()" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео, або залиште порожнім">
       <a id="edit-req-youtube-link" href="#" target="_blank" rel="noopener" style="display:none;font-size:0.75rem;color:var(--accent);margin-top:0.4rem;">
-        ▶ <span data-i18n="admin.youtubeVideo.view">Переглянути на YouTube</span>
+        <svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="admin.youtubeVideo.view">Переглянути на YouTube</span>
       </a>
       <div class="hint" data-i18n="admin.youtubeVideo.hint">Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим</div>
     </div>
@@ -734,7 +770,7 @@
       <label data-i18n="admin.youtubeVideo">YouTube-відео (необов'язково)</label>
       <input type="text" id="edit-song-youtube" oninput="_updateEditSongYoutubeLink()" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео, або залиште порожнім">
       <a id="edit-song-youtube-link" href="#" target="_blank" rel="noopener" style="display:none;font-size:0.75rem;color:var(--accent);margin-top:0.4rem;">
-        ▶ <span data-i18n="admin.youtubeVideo.view">Переглянути на YouTube</span>
+        <svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="admin.youtubeVideo.view">Переглянути на YouTube</span>
       </a>
       <div class="hint" data-i18n="admin.youtubeVideo.hint">Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим</div>
     </div>
@@ -771,7 +807,7 @@
 <div class="modal-overlay" id="battle-setup-modal-overlay">
   <div class="modal-box" style="width:320px; text-align:center;">
     <div class="modal-title-row" style="justify-content:center;">
-      <span data-i18n="battle.setupTitle">🏆 Батл рояль</span>
+      <svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="battle.setupTitle">Батл рояль</span>
     </div>
     <div id="battle-setup-body"></div>
     <div class="modal-actions" style="justify-content:center;">
@@ -785,8 +821,8 @@
   <div class="battle-box">
     <div class="battle-header">
       <span id="battle-round-label"></span>
-      <button type="button" class="btn btn-outline battle-hover-toggle" id="battle-hover-toggle-btn" onclick="toggleBattleHoverMode()" data-i18n="battle.hoverModeBtn" title="Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза" data-i18n-title="battle.hoverModeHint">👆 Режим наведення</button>
-      <button class="battle-close-btn" onclick="closeBattle()">✕</button>
+      <button type="button" class="btn btn-outline battle-hover-toggle" id="battle-hover-toggle-btn" onclick="toggleBattleHoverMode()" title="Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза" data-i18n-title="battle.hoverModeHint"><svg class="icon"><use href="#icon-cursor"/></svg> <span data-i18n="battle.hoverModeBtn">Режим наведення</span></button>
+      <button class="battle-close-btn" onclick="closeBattle()"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
     <div id="battle-split" class="battle-split">
       <div class="battle-side">
@@ -796,7 +832,7 @@
           <div class="battle-side-title" id="battle-a-title"></div>
           <div class="battle-side-notfound" id="battle-a-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
         </div>
-        <button class="battle-choose-btn" onclick="chooseBattleWinner(0)" data-i18n="battle.chooseBtn">✓ Обрати цю</button>
+        <button class="battle-choose-btn" onclick="chooseBattleWinner(0)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
       </div>
       <div class="battle-vs" data-i18n="battle.vs">VS</div>
       <div class="battle-side">
@@ -806,11 +842,11 @@
           <div class="battle-side-title" id="battle-b-title"></div>
           <div class="battle-side-notfound" id="battle-b-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
         </div>
-        <button class="battle-choose-btn" onclick="chooseBattleWinner(1)" data-i18n="battle.chooseBtn">✓ Обрати цю</button>
+        <button class="battle-choose-btn" onclick="chooseBattleWinner(1)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
       </div>
     </div>
     <div id="battle-champion" class="battle-champion" style="display:none;">
-      <div class="battle-champion-label" data-i18n="battle.championLabel">🏆 Переможець</div>
+      <div class="battle-champion-label"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="battle.championLabel">Переможець</span></div>
       <div class="battle-champion-artist" id="battle-champion-artist"></div>
       <div class="battle-champion-title" id="battle-champion-title"></div>
       <button class="btn btn-primary" onclick="closeBattle()" data-i18n="player.close">Закрити</button>
@@ -823,7 +859,7 @@
   <div class="graph-box">
     <div class="battle-header">
       <span id="graph-title"></span>
-      <button class="battle-close-btn" onclick="closeGraph()">✕</button>
+      <button class="battle-close-btn" onclick="closeGraph()"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
     <div id="graph-loading" class="graph-loading" data-i18n="graph.loading">Обчислюємо розташування…</div>
     <div class="graph-canvas-wrap" id="graph-canvas-wrap">
