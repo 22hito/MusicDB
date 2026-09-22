@@ -1032,6 +1032,7 @@ function openWheelPage(){
   wheelResultGenre = null;
   wheelSpinning = false;
   document.getElementById('wheel-result').style.display = 'none';
+  document.getElementById('wheel-disc').classList.remove('revealed');
   document.getElementById('wheel-spin-btn').disabled = false;
   document.getElementById('wheel-playlist-empty').style.display = '';
   document.getElementById('wheel-playlist-wrap').style.display = 'none';
@@ -1049,6 +1050,7 @@ function onWheelCountChange(){
   _applyWheelCount();
   wheelResultGenre = null;
   document.getElementById('wheel-result').style.display = 'none';
+  document.getElementById('wheel-disc').classList.remove('revealed');
   document.getElementById('wheel-playlist-empty').style.display = '';
   document.getElementById('wheel-playlist-wrap').style.display = 'none';
 }
@@ -1086,8 +1088,10 @@ function renderWheelDisc(){
   const discR = disc.clientWidth/2;
   // Радіус підпису — частка від радіуса диска, а не від n (той старий розрахунок
   // n*2.6 давав абсолютні пікселі, що для типового n=5-15 завжди програвали
-  // порівнянню з discR*0.42 і "збивали" всі підписи впритул до хаба).
-  const startR = Math.max(hubR + 16, discR*0.6);
+  // порівнянню з discR*0.42 і "збивали" всі підписи впритул до хаба). Запас
+  // hubR+28 (замість +16) — додатковий буфер, щоб хаб гарантовано не заходив
+  // на перші символи підпису навіть на маленьких колесах.
+  const startR = Math.max(hubR + 28, discR*0.62);
   const fontSize = _wheelLabelFontSize(n);
   disc.innerHTML = wheelGenres.map((g,i)=>{
     const mid = i*segAngle + segAngle/2;
@@ -1155,6 +1159,7 @@ function spinWheel(){
   const mid = winnerIndex*segAngle + segAngle/2;
   const rotation = fullSpins*360 + (360 - mid);
   const disc = document.getElementById('wheel-disc');
+  disc.classList.remove('revealed'); // прибрати розмиття з попереднього результату на час нового обертання
   disc.style.transitionDuration = `${duration}s`;
   disc.style.transform = `rotate(${rotation}deg)`;
   setTimeout(()=>{
@@ -1162,7 +1167,8 @@ function spinWheel(){
     document.getElementById('wheel-spin-btn').disabled = false;
     wheelResultGenre = wheelGenres[winnerIndex];
     document.getElementById('wheel-result-genre').textContent = abbrGenre(wheelResultGenre);
-    document.getElementById('wheel-result').style.display = 'block';
+    document.getElementById('wheel-result').style.display = 'flex';
+    disc.classList.add('revealed'); // розмиває колесо, поки в центрі показано результат
     document.querySelectorAll('.wheel-legend-item.winner').forEach(el=>el.classList.remove('winner'));
     document.getElementById(`wheel-legend-item-${winnerIndex}`)?.classList.add('winner');
     renderWheelPlaylist();

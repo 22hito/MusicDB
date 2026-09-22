@@ -323,7 +323,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .btn-outline.active { border-color: var(--accent); color: var(--accent); background: rgba(200,169,110,0.1); }
 
 /* Колесо фортуни (сторінка page-wheel) */
-.wheel-page-layout { display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+/* space-between замість center — на широких екранах легенда й картка
+   параметрів роз'їжджаються до країв контейнера, лишаючи колесу більше
+   місця в центрі, щоб виросло за рахунок вищого стелі clamp() нижче. */
+.wheel-page-layout { display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; justify-content: space-between; }
 .wheel-col { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
 /* Легенда — окрема колонка зліва від колеса (а не список під ним), у тій самій
    картці, що й інші панелі сайту (form-card/ext-search-panel-box). */
@@ -332,14 +335,18 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1rem;
 }
 .wheel-legend-title { margin: 0 0 0.8rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
-/* Менший стелю (620px замість 1000px) — з легендою й параметрами обабіч
-   3-колонковий рядок краще збалансований, ніж диск-домінанта на всю ширину. */
-.wheel-wrap { position: relative; width: clamp(260px, 52vmin, 620px); height: clamp(260px, 52vmin, 620px); margin: 6px auto 18px; }
+/* Вища стеля (760px, 62vmin) — з елементами обабіч, розведеними по краях,
+   колесо тепер головний акцент по центру й може вирости помітно більшим. */
+.wheel-wrap { position: relative; width: clamp(260px, 62vmin, 760px); height: clamp(260px, 62vmin, 760px); margin: 6px auto 18px; }
 .wheel-disc {
   width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden;
   border: 4px solid var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,0.35);
-  transition: transform 4s cubic-bezier(.17,.67,.32,1.01);
+  transition: transform 4s cubic-bezier(.17,.67,.32,1.01), filter 0.5s ease;
 }
+/* Розмиття диска, поки в центрі показано результат — фокус переходить на
+   напис жанру, а не на строкатий диск позаду нього. Знімається класом
+   з JS одразу, як тільки користувач крутить наново. */
+.wheel-disc.revealed { filter: blur(5px); }
 .wheel-pointer {
   position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
   width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent;
@@ -350,7 +357,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
    те місце, де всі сектори conic-gradient сходяться в одну точку. */
 .wheel-hub {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 22%; height: 22%; min-width: 56px; min-height: 56px; border-radius: 50%;
+  /* max-width/height — на великому колесі 22% давало б хаб, що зжирає забагато
+     радіуса й підступає до підписів; стеля тримає його компактним незалежно
+     від розміру диска. */
+  width: 22%; height: 22%; min-width: 56px; min-height: 56px; max-width: 118px; max-height: 118px; border-radius: 50%;
   /* Лого — майже чорний силует на прозорому тлі (задумане як ледь помітний
      водяний знак у навбарі), на темному хабі просто губилось. Тло хаба —
      акцентний золотий, а сам силует перефарбовуємо у білий фільтром нижче —
@@ -372,9 +382,21 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
   white-space: nowrap; pointer-events: none;
 }
-.wheel-result { display: none; margin-bottom: 14px; text-align: center; }
-.wheel-result-label { color: var(--muted); font-size: 0.78rem; margin-bottom: 4px; }
-.wheel-result-genre { color: var(--accent); font-family: var(--font-serif); font-size: 1.4rem; font-weight: 700; }
+/* Результат тепер написаний прямо в центрі колеса (замість блоку під ним) —
+   кругла картка поверх хаба/диска, вищий z-index за все інше в .wheel-wrap.
+   Диск позаду розмивається класом .revealed (див. вище), тож текст лишається
+   читабельним незалежно від кольору сектора під ним. */
+.wheel-result {
+  display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 6; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  width: 62%; height: 62%; max-width: 240px; max-height: 240px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--accent);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5); text-align: center; padding: 0.8rem;
+  box-sizing: border-box; animation: wheelResultPop 0.35s cubic-bezier(.2,.9,.3,1.1);
+}
+@keyframes wheelResultPop { 0% { transform: translate(-50%, -50%) scale(0.75); opacity: 0; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+.wheel-result-label { color: var(--muted); font-size: 0.78rem; }
+.wheel-result-genre { color: var(--accent); font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700; line-height: 1.15; word-break: break-word; }
 /* Картка параметрів — той самий стиль поверхні, що й легенда/form-card,
    замість голих рядків одразу на тлі сторінки. */
 .wheel-params-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.3rem 1.4rem; margin-bottom: 1.2rem; width: 100%; box-sizing: border-box; }
