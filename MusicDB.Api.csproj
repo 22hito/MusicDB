@@ -19,4 +19,12 @@
     <Content Remove="Tests/**" />
     <None Remove="Tests/**" />
   </ItemGroup>
+
+  <!-- Локальні секрети (appsettings.Local.json) читаються з робочої теки
+       напряму в Program.cs — вони НЕ повинні потрапляти в publish/deploy
+       пакет, незалежно від того, хто й звідки запускає dotnet publish. -->
+  <ItemGroup>
+    <Content Remove="appsettings.Local.json" />
+    <None Remove="appsettings.Local.json" />
+  </ItemGroup>
 </Project>
