@@ -561,13 +561,17 @@ function showPage(n){
     document.getElementById('page-'+n).classList.add('active');
     const tab = document.getElementById('tab-'+n);
     if(tab) tab.classList.add('active');
+    // _updateNavIndicator() МАЄ бути всередині цього колбека: startViewTransition
+    // не гарантує виклик колбека в тому самому такті, тож індикатор, викликаний
+    // одразу ЗА межами if/else нижче, іноді встигав прочитати ще стару .active
+    // вкладку (звідси баг — підсвічена попередня вкладка замість щойно обраної).
+    _updateNavIndicator();
   };
   // View Transitions API — нативний крос-фейд між сторінками (Chrome/Edge,
   // а отже й Electron). Без підтримки (Firefox/Safari) просто миттєво
   // перемикає, як і раніше — жодного regressions, лише бонус там, де є.
   if(document.startViewTransition) document.startViewTransition(doSwitch);
   else doSwitch();
-  _updateNavIndicator();
   // Важкий перерендер відкладаємо на наступний кадр — інакше перехід між сторінками виглядає як підвисання.
   requestAnimationFrame(()=>{
     if(n==='home'){renderSongs();updateStats().catch(console.error);}
