@@ -2,6 +2,7 @@ bin/
 obj/
 .vs/
 *.user
+node_modules/
 
 # Реальні секрети (пароль БД, API-ключі) — тільки локально, ніколи в git.
 appsettings.Local.json
