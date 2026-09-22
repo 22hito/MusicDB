@@ -160,7 +160,10 @@ app.Use(async (ctx, next) =>
         "img-src 'self' data: https://img.youtube.com https://*.ytimg.com https://*.googleusercontent.com; " +
         "connect-src 'self' https://www.googleapis.com https://www.youtube.com; " +
         "frame-src https://www.youtube.com; " +
-        "media-src 'self' https://www.youtube.com; " +
+        // data: — беззвучний data:audio/wav-якір (#ms-anchor), що утримує media
+        // session на нашій сторінці, а не на чужому youtube.com iframe; без
+        // data: тут CSP блокував саме його завантаження.
+        "media-src 'self' data: https://www.youtube.com; " +
         "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
     await next();
 });
