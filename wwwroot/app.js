@@ -39,6 +39,7 @@ const I18N = {
     'wheel.spinBtn': 'Крутити',
     'wheel.playBtn': 'Слухати',
     'wheel.resultLabel': 'Випав жанр:',
+    'wheel.closeResult': 'Закрити',
     'wheel.legendTitle': 'Жанри на колесі',
     'wheel.countLabel': 'Кількість жанрів на колесі:',
     'wheel.durationLabel': 'Тривалість прокрутки, сек:',
@@ -284,6 +285,7 @@ const I18N = {
     'wheel.spinBtn': 'Spin',
     'wheel.playBtn': 'Play',
     'wheel.resultLabel': 'You got:',
+    'wheel.closeResult': 'Close',
     'wheel.legendTitle': 'Genres on the wheel',
     'wheel.countLabel': 'Genres on the wheel:',
     'wheel.durationLabel': 'Spin duration, sec:',
@@ -1036,6 +1038,13 @@ function openWheelPage(){
   document.getElementById('wheel-spin-btn').disabled = false;
   document.getElementById('wheel-playlist-empty').style.display = '';
   document.getElementById('wheel-playlist-wrap').style.display = 'none';
+}
+
+// Хрестик на картці результату — ховає її й миттєво знімає розмиття з диска
+// (сам .wheel-disc.revealed прибирає filter з transition саме для цього).
+function closeWheelResult(){
+  document.getElementById('wheel-result').style.display = 'none';
+  document.getElementById('wheel-disc').classList.remove('revealed');
 }
 
 // Викликається при зміні поля "Кількість жанрів на колесі" — обрізає той
