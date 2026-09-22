@@ -66,7 +66,6 @@
   <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 19h16"/></symbol>
   <symbol id="icon-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
   <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
-  <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor" stroke="none"/></symbol>
 </svg>
 
 <!-- Сплеш екрана завантаження — чистий HTML/CSS, малюється браузером одразу
@@ -851,8 +850,6 @@
       <div class="battle-side">
         <div class="battle-video-wrap">
           <div id="battle-yt-a"></div>
-          <button type="button" class="battle-play-overlay" id="battle-play-overlay-a" onclick="_battleTogglePlay('a')"><svg class="icon icon-filled"><use id="battle-play-icon-a" href="#icon-play"/></svg></button>
-          <div class="battle-video-progress" onclick="_battleSeek('a', event)"><div class="battle-video-progress-fill" id="battle-progress-fill-a"></div></div>
         </div>
         <div class="battle-side-info">
           <div class="battle-side-artist" id="battle-a-artist"></div>
@@ -865,8 +862,6 @@
       <div class="battle-side">
         <div class="battle-video-wrap">
           <div id="battle-yt-b"></div>
-          <button type="button" class="battle-play-overlay" id="battle-play-overlay-b" onclick="_battleTogglePlay('b')"><svg class="icon icon-filled"><use id="battle-play-icon-b" href="#icon-play"/></svg></button>
-          <div class="battle-video-progress" onclick="_battleSeek('b', event)"><div class="battle-video-progress-fill" id="battle-progress-fill-b"></div></div>
         </div>
         <div class="battle-side-info">
           <div class="battle-side-artist" id="battle-b-artist"></div>
