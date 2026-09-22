@@ -555,11 +555,18 @@ let requests = [];
 // NAVIGATION
 // ================================================================
 function showPage(n){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+n).classList.add('active');
-  const tab = document.getElementById('tab-'+n);
-  if(tab) tab.classList.add('active');
+  const doSwitch = () => {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('page-'+n).classList.add('active');
+    const tab = document.getElementById('tab-'+n);
+    if(tab) tab.classList.add('active');
+  };
+  // View Transitions API — нативний крос-фейд між сторінками (Chrome/Edge,
+  // а отже й Electron). Без підтримки (Firefox/Safari) просто миттєво
+  // перемикає, як і раніше — жодного regressions, лише бонус там, де є.
+  if(document.startViewTransition) document.startViewTransition(doSwitch);
+  else doSwitch();
   _updateNavIndicator();
   // Важкий перерендер відкладаємо на наступний кадр — інакше перехід між сторінками виглядає як підвисання.
   requestAnimationFrame(()=>{
@@ -842,8 +849,18 @@ function openAddToPlaylistModal(musicId){
     document.getElementById('add-to-playlist-modal-overlay').classList.add('open');
   }).catch(()=>{ alert(t('msg.connectionError')); });
 }
+// Симетричний вихід для всіх модалок сайту: додає .closing (запускає
+// modalOut-анімацію через CSS), і лише після її завершення знімає .open —
+// без цього display:none спрацював би миттєво, а анімація не встигла б програтись.
+function _closeModalAnimated(overlayId){
+  const overlay = document.getElementById(overlayId);
+  if(!overlay || !overlay.classList.contains('open')) return;
+  overlay.classList.add('closing');
+  setTimeout(() => overlay.classList.remove('open', 'closing'), 200);
+}
+
 function closeAddToPlaylistModal(){
-  document.getElementById('add-to-playlist-modal-overlay').classList.remove('open');
+  _closeModalAnimated('add-to-playlist-modal-overlay');
   addToPlaylistMusicId = null;
 }
 document.getElementById('add-to-playlist-modal-overlay').addEventListener('click', function(e){
@@ -1570,7 +1587,7 @@ function confirmDeleteSong(id){
   document.getElementById('delete-modal-overlay').classList.add('open');
 }
 function closeDeleteModal(){
-  document.getElementById('delete-modal-overlay').classList.remove('open');
+  _closeModalAnimated('delete-modal-overlay');
 }
 document.getElementById('delete-modal-overlay').addEventListener('click', function(e){
   if(e.target === this) closeDeleteModal();
@@ -1615,7 +1632,7 @@ function _updateEditReqYoutubeLink(){
   link.style.display = 'inline-block';
 }
 function closeEditRequestModal(){
-  document.getElementById('edit-request-modal-overlay').classList.remove('open');
+  _closeModalAnimated('edit-request-modal-overlay');
 }
 document.getElementById('edit-request-modal-overlay').addEventListener('click', function(e){
   if(e.target === this) closeEditRequestModal();
@@ -1685,7 +1702,7 @@ function _updateEditSongYoutubeLink(){
   link.style.display = 'inline-block';
 }
 function closeEditSongModal(){
-  document.getElementById('edit-song-modal-overlay').classList.remove('open');
+  _closeModalAnimated('edit-song-modal-overlay');
 }
 document.getElementById('edit-song-modal-overlay').addEventListener('click', function(e){
   if(e.target === this) closeEditSongModal();
@@ -1784,6 +1801,20 @@ let currentUser = null;
 let ytApiKeys = ['AIzaSyD5hFlUEq2bOv7r5XstBHKLUEND8E5ZThA', 'AIzaSyCKI5XDq_JwVrVK5tWjNC0Z9byuPijSLa4'];
 let ytApiKeyIdx = 0;
 
+// Мінімальний час показу сплешу — на швидкому з'єднанні дані готові за
+// лічені мс, і сплеш без цього блимнув би непомітною смугою замість того,
+// щоб просто плавно зникнути (миготіння відчувається гірше, ніж коротка затримка).
+const _splashStart = performance.now();
+function _hideSplash(){
+  const el = document.getElementById('app-splash');
+  if(!el) return;
+  const elapsed = performance.now() - _splashStart;
+  setTimeout(() => {
+    el.classList.add('hidden');
+    setTimeout(() => el.remove(), 450);
+  }, Math.max(0, 350 - elapsed));
+}
+
 async function initApp() {
   const [cfgRes, meRes] = await Promise.all([
     fetch('/config').then(r=>r.ok?r.json():{}).catch(()=>({})),
@@ -1805,6 +1836,7 @@ async function initApp() {
   renderAuthArea();
   renderSongs();
   await updateStats();
+  _hideSplash();
 }
 
 function renderAuthArea() {
@@ -2331,7 +2363,7 @@ function openBattleSetup(){
   document.getElementById('battle-setup-modal-overlay').classList.add('open');
 }
 function closeBattleSetup(){
-  document.getElementById('battle-setup-modal-overlay').classList.remove('open');
+  _closeModalAnimated('battle-setup-modal-overlay');
 }
 
 function startBattleRoyale(size){
@@ -2472,7 +2504,7 @@ function showBattleChampion(song){
 }
 
 function closeBattle(){
-  document.getElementById('battle-modal-overlay').classList.remove('open');
+  _closeModalAnimated('battle-modal-overlay');
   try{ battleLeftPlayer && battleLeftPlayer.stopVideo(); }catch(e){}
   try{ battleRightPlayer && battleRightPlayer.stopVideo(); }catch(e){}
 }
@@ -2643,7 +2675,7 @@ function openSimilarityGraph(kind){
 }
 
 function closeGraph(){
-  document.getElementById('graph-modal-overlay').classList.remove('open');
+  _closeModalAnimated('graph-modal-overlay');
   _graphNodeUnhover();
 }
 document.getElementById('graph-modal-overlay').addEventListener('click', function(e){
@@ -3463,7 +3495,11 @@ function _onVidReady(vid) {
 }
 
 // INIT
-initApp();
+// Жорсткий запобіжник: якщо initApp() з якоїсь причини впаде/зависне,
+// сплеш все одно ховається за 8с — інакше застряглий сплеш виглядав би
+// як повністю непрацюючий сайт, що набагато гірше за втрачений момент polish.
+setTimeout(_hideSplash, 8000);
+initApp().catch(err => { console.error('initApp error:', err); _hideSplash(); });
 applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 applyLang(currentLang);
 document.getElementById('vol-slider').value = vol;

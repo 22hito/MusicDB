@@ -67,6 +67,14 @@
   <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
 </svg>
 
+<!-- Сплеш екрана завантаження — чистий HTML/CSS, малюється браузером одразу
+     (до того, як завантажиться й виконається великий app.js), ховається
+     через #splash-hide, викликаний з initApp() коли перші дані готові. -->
+<div id="app-splash">
+  <img src="/images/logo.png" alt="" class="app-splash-logo">
+  <div class="app-splash-dots"><span></span><span></span><span></span></div>
+</div>
+
 <nav>
   <span class="nav-brand" onclick="showPage('home')"><img src="/images/logo.png" alt="N'Owl logo">N'Owl</span>
   <div class="dropdown" id="nav-hamburger-dropdown">
