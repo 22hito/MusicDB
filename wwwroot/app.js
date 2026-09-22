@@ -1165,6 +1165,20 @@ function _restoreIntInputIfEmpty(el){
 function _clampWheelSecInput(el){
   _sanitizeIntInput(el, parseInt(el.min) || 1, parseInt(el.max) || 99);
 }
+// На blur — якщо після редагування одного поля min > max, підтягуємо ІНШЕ
+// поле до відредагованого (а не просто відкидаємо/забороняємо ввід), щоб
+// діапазон завжди лишався коректним: "4 — 3" перетворюється на "4 — 4"
+// (якщо редагували min) або "3 — 3" (якщо редагували max).
+function _syncWheelSecRange(changedEl){
+  const minEl = document.getElementById('wheel-sec-min');
+  const maxEl = document.getElementById('wheel-sec-max');
+  const minV = parseInt(minEl.value, 10);
+  const maxV = parseInt(maxEl.value, 10);
+  if(!Number.isNaN(minV) && !Number.isNaN(maxV) && minV > maxV){
+    if(changedEl === minEl) maxEl.value = String(minV);
+    else minEl.value = String(maxV);
+  }
+}
 
 function spinWheel(){
   if(wheelSpinning || !wheelGenres.length) return;

@@ -402,9 +402,9 @@
           <div class="wheel-duration-row">
             <span data-i18n="wheel.durationLabel">Тривалість прокрутки, сек:</span>
             <span class="wheel-input-group">
-              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
+              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); _syncWheelSecRange(this)">
               <span data-i18n="wheel.durationTo">—</span>
-              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
+              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); _syncWheelSecRange(this)">
             </span>
           </div>
           <div class="wheel-actions">
