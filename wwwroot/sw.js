@@ -5,5 +5,14 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
+  // ЛИШЕ свій origin. fetch(), викликаний ЗСЕРЕДИНИ SW (як тут, у
+  // respondWith), підпадає під CSP connect-src, а не під img-src/style-src/
+  // script-src — тож крос-доменні ресурси (шрифти Google, мініатюри YouTube,
+  // signalr з jsdelivr), явно дозволені в img-src/style-src/script-src,
+  // однаково блокувались би вужчим connect-src, щойно SW їх перехоплював.
+  // Це й ламало відтворення музики та підвантаження шрифтів для будь-кого,
+  // чий SW уже встиг захопити контроль над сторінкою.
+  if (new URL(event.request.url).origin === self.location.origin) {
+    event.respondWith(fetch(event.request));
+  }
 });
