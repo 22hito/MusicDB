@@ -372,6 +372,10 @@
 <div id="page-wheel" class="page">
   <div class="container">
     <div class="wheel-page-layout">
+      <div class="wheel-legend-col">
+        <h3 class="wheel-legend-title" data-i18n="wheel.legendTitle">Жанри на колесі</h3>
+        <div id="wheel-legend" class="wheel-legend"></div>
+      </div>
       <div class="wheel-col">
         <div class="wheel-wrap">
           <div class="wheel-pointer"></div>
@@ -382,23 +386,27 @@
           <div class="wheel-result-label" data-i18n="wheel.resultLabel">Випав жанр:</div>
           <div id="wheel-result-genre" class="wheel-result-genre"></div>
         </div>
-        <h3 style="margin:0 0 0.6rem;font-size:0.9rem;color:var(--muted);" data-i18n="wheel.legendTitle">Жанри на колесі</h3>
-        <div id="wheel-legend" class="wheel-legend"></div>
       </div>
       <div class="wheel-col wheel-playlist-col">
-        <div class="wheel-duration-row">
-          <span data-i18n="wheel.countLabel">Кількість жанрів на колесі:</span>
-          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); onWheelCountChange();">
-          <span id="wheel-count-max" class="wheel-count-max"></span>
-        </div>
-        <div class="wheel-duration-row">
-          <span data-i18n="wheel.durationLabel">Тривалість прокрутки, сек:</span>
-          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
-          <span data-i18n="wheel.durationTo">—</span>
-          <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
-        </div>
-        <div class="wheel-actions">
-          <button class="modal-btn-confirm" id="wheel-spin-btn" style="background:var(--accent);" onclick="spinWheel()" data-i18n="wheel.spinBtn">Крутити</button>
+        <div class="wheel-params-card">
+          <div class="wheel-duration-row">
+            <span data-i18n="wheel.countLabel">Кількість жанрів на колесі:</span>
+            <span class="wheel-input-group">
+              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); onWheelCountChange();">
+              <span id="wheel-count-max" class="wheel-count-max"></span>
+            </span>
+          </div>
+          <div class="wheel-duration-row">
+            <span data-i18n="wheel.durationLabel">Тривалість прокрутки, сек:</span>
+            <span class="wheel-input-group">
+              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
+              <span data-i18n="wheel.durationTo">—</span>
+              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this)">
+            </span>
+          </div>
+          <div class="wheel-actions">
+            <button class="wheel-spin-btn" id="wheel-spin-btn" onclick="spinWheel()" data-i18n="wheel.spinBtn">Крутити</button>
+          </div>
         </div>
         <div id="wheel-playlist-empty" class="wheel-playlist-empty" data-i18n="wheel.playlistEmpty">Крутніть колесо, щоб сформувати плейлист із випадкового жанру</div>
         <div id="wheel-playlist-wrap" style="display:none;">
@@ -406,7 +414,7 @@
             <h3 id="wheel-playlist-title" style="margin:0;font-size:1rem;"></h3>
             <button class="btn btn-primary" onclick="playWheelFromStart()"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="wheel.playBtn">Слухати</span></button>
           </div>
-          <div class="table-wrap mobile-cards">
+          <div class="table-wrap scroll-table mobile-cards wheel-playlist-scroll">
             <table>
               <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th></tr></thead>
               <tbody id="wheel-playlist-body"></tbody>

@@ -1084,7 +1084,10 @@ function renderWheelDisc(){
   // "По центру сектора" — кутове центрування (mid, бісектриса сектора), не радіальне.
   const hubR = (document.getElementById('wheel-hub')?.clientWidth || 0)/2;
   const discR = disc.clientWidth/2;
-  const startR = Math.max(hubR + 14, Math.min(discR*0.42, n*2.6));
+  // Радіус підпису — частка від радіуса диска, а не від n (той старий розрахунок
+  // n*2.6 давав абсолютні пікселі, що для типового n=5-15 завжди програвали
+  // порівнянню з discR*0.42 і "збивали" всі підписи впритул до хаба).
+  const startR = Math.max(hubR + 16, discR*0.6);
   const fontSize = _wheelLabelFontSize(n);
   disc.innerHTML = wheelGenres.map((g,i)=>{
     const mid = i*segAngle + segAngle/2;
