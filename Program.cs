@@ -120,13 +120,46 @@ builder.Services.AddRateLimiter(opts =>
         }));
 });
 
+// Фронтенд завжди same-origin (той самий сервер віддає і API, і wwwroot) —
+// CORS тут лише про можливі майбутні сторонні клієнти, не про поточний сайт.
+var allowedOrigins = new[]
+{
+    "https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net",
+    "http://localhost:5000",
+};
 builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+        policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader()));
 
 var app = builder.Build();
 
 app.UseCors();
+
+// Базові security-заголовки. CSP тримає 'unsafe-inline' для script/style —
+// увесь UI побудований на inline onclick="..." і style="..." атрибутах
+// (одна сторінка, без збірника), тож строгий nonce-based CSP вимагав би
+// спершу прибрати їх усі. Навіть так CSP блокує сторонні домени/фрейми/
+// плагіни поза явним білим списком, чого не було раніше жодного заголовка.
+app.Use(async (ctx, next) =>
+{
+    var headers = ctx.Response.Headers;
+    headers.XContentTypeOptions = "nosniff";
+    headers.XFrameOptions = "DENY";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()";
+    headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
+    headers.ContentSecurityPolicy =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://www.youtube.com https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        "img-src 'self' data: https://img.youtube.com https://*.ytimg.com https://*.googleusercontent.com; " +
+        "connect-src 'self' https://www.googleapis.com; " +
+        "frame-src https://www.youtube.com; " +
+        "media-src 'self' https://www.youtube.com; " +
+        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+    await next();
+});
 
 if (app.Environment.IsDevelopment())
 {
