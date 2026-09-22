@@ -67,6 +67,9 @@ html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+  /* ::view-transition-* — окремий псевдоелементний простір (не *::before/::after),
+     тож правило вище його не зачіпає — вимикаємо явно. */
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
 }
 
 /* Перемикання теми має бути миттєвим — див. applyTheme(). */
@@ -88,6 +91,21 @@ html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .dropdown-menu button:hover { background: var(--surface2); }
 .dropdown-menu button.active { color: var(--accent); }
 .dropdown-menu button.active::after { content:'✓'; margin-left:auto; }
+/* Сплеш екрана завантаження — суто CSS/HTML (жодного app.js), малюється
+   браузером одразу; ховається через клас .hidden, який ставить initApp(). */
+#app-splash {
+  position: fixed; inset: 0; z-index: 9999; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.3rem;
+  transition: opacity 0.4s ease;
+}
+#app-splash.hidden { opacity: 0; pointer-events: none; }
+.app-splash-logo { width: 72px; height: auto; animation: splashPulse 1.6s ease-in-out infinite; filter: drop-shadow(0 4px 16px rgba(200,169,110,0.25)); }
+@keyframes splashPulse { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+.app-splash-dots { display: flex; gap: 6px; }
+.app-splash-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: ldot 1s ease-in-out infinite; }
+.app-splash-dots span:nth-child(2) { animation-delay: 0.15s; }
+.app-splash-dots span:nth-child(3) { animation-delay: 0.3s; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Sans (Inter) для основного тексту/таблиць — читабельніший на довгих
@@ -277,6 +295,12 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .btn-icon-fav svg { width: 16px; height: 16px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; z-index: 1000; }
 .modal-overlay.open { display: flex; }
+/* Симетричний вихід: .closing тримає display:flex (щоб анімація встигла
+   програтись), а вміст (перша дитина overlay — сам modal-box/battle-box/...)
+   затухає й зменшується. Клас знімає JS-хелпер _closeModalAnimated() після setTimeout. */
+.modal-overlay.closing { display: flex; animation: modalOverlayOut 0.2s ease forwards; }
+.modal-overlay.closing > * { animation: modalIn 0.2s ease reverse forwards; }
+@keyframes modalOverlayOut { to { background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); } }
 .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; width: 320px; max-width: 90vw; animation: modalIn 0.28s cubic-bezier(.2,.9,.3,1.1); }
 @keyframes modalIn { from { opacity: 0; transform: scale(0.94) translateY(10px); } to { opacity: 1; transform: none; } }
 .modal-icon-circle { width: 38px; height: 38px; border-radius: 50%; background: rgba(224,92,92,0.12); display: flex; align-items: center; justify-content: center; color: var(--red); flex-shrink: 0; }
