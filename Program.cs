@@ -150,11 +150,15 @@ app.Use(async (ctx, next) =>
     headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
     headers.ContentSecurityPolicy =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://www.youtube.com https://cdn.jsdelivr.net; " +
+        // s.ytimg.com — сюди YouTube IFrame Player API підвантажує свій
+        // www-widgetapi.js у батьківський документ (не у сам iframe); без
+        // нього YT.Player створюється, але керування (play/pause/стан) мовчки
+        // не працює, бо CSP блокує саме цей скрипт іншого походження.
+        "script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com https://cdn.jsdelivr.net; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "font-src 'self' https://fonts.gstatic.com; " +
         "img-src 'self' data: https://img.youtube.com https://*.ytimg.com https://*.googleusercontent.com; " +
-        "connect-src 'self' https://www.googleapis.com; " +
+        "connect-src 'self' https://www.googleapis.com https://www.youtube.com; " +
         "frame-src https://www.youtube.com; " +
         "media-src 'self' https://www.youtube.com; " +
         "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
