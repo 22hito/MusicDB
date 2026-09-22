@@ -328,22 +328,13 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 .wheel-wrap { position: relative; width: clamp(320px, 78vmin, 1000px); height: clamp(320px, 78vmin, 1000px); margin: 6px auto 18px; }
 .wheel-disc {
   width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden;
-  border: 4px solid var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 22px 54px rgba(0,0,0,0.28);
-  transition: transform 4s cubic-bezier(.17,.67,.32,1.01), box-shadow 0.4s ease;
+  border: 4px solid var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  transition: transform 4s cubic-bezier(.17,.67,.32,1.01);
 }
-/* Короткий спалах бордера в момент зупинки — вмикається/вимикається класом з JS. */
-.wheel-disc.landed { box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 22px 54px rgba(0,0,0,0.28), 0 0 0 10px rgba(200,169,110,0.35); }
 .wheel-pointer {
-  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-  width: 0; height: 0; border-left: 17px solid transparent; border-right: 17px solid transparent;
-  border-top: 30px solid var(--accent); z-index: 5; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5));
-}
-/* Кругла "вісь" у основи стрілки — читається як єдина деталь-покажчик,
-   а не тонкий трикутник, що губиться на великому колесі. */
-.wheel-pointer::after {
-  content: ''; position: absolute; top: -12px; left: -8px; width: 16px; height: 16px;
-  border-radius: 50%; background: var(--accent); border: 2px solid var(--surface2);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent;
+  border-top: 18px solid var(--accent); z-index: 5; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4));
 }
 /* Хаб у центрі — однотонне коло поверх диска (сам диск обертається, хаб —
    ні, бо це окремий сусідній елемент, а не дитина #wheel-disc), закриває
@@ -386,14 +377,10 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
 /* Список усіх жанрів колеса з підписами повністю — підписи НА самому колесі
    для читабельності скорочені й можуть просто не влізти при великій
    кількості секторів, а тут завжди видно все, незалежно від їх числа. */
-.wheel-legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px 10px; max-height: 260px; overflow-y: auto; margin-bottom: 1rem; padding-right: 4px; }
+.wheel-legend { display: flex; flex-direction: column; gap: 3px; max-height: 260px; overflow-y: auto; margin-bottom: 1rem; padding-right: 4px; }
 .wheel-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text); padding: 3px 6px; border-radius: 5px; transition: background 0.15s ease; }
 .wheel-legend-item.winner { background: rgba(200,169,110,0.15); color: var(--accent); font-weight: 700; }
 .wheel-legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35); }
-@keyframes wheelConfettiBurst {
-  0% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); opacity: 1; }
-  100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) rotate(360deg); opacity: 0; }
-}
 
 /* Батл рояль */
 .battle-box {
@@ -1006,9 +993,4 @@ tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.85rem; }
   #player-cover { width: 36px; height: 36px; }
   .player-center .pc-icon-btn { width: 30px; height: 30px; }
   .player-center .pc-main { width: 34px; height: 34px; }
-
-  /* Нижча підлога clamp() — на вузьких телефонах 320px-колесо з паддінгами
-     контейнера вже впритул до країв екрана. */
-  .wheel-wrap { width: clamp(260px, 84vmin, 1000px); height: clamp(260px, 84vmin, 1000px); }
-  .wheel-legend { grid-template-columns: 1fr; }
 }

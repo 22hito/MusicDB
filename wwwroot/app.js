@@ -977,13 +977,7 @@ function toggleShuffleTable(){
 // КОЛЕСО ФОРТУНИ: випадковий жанр -> перемішаний плейлист цього жанру
 // (окрема сторінка page-wheel, а не модалка — відкривається через showPage('wheel'))
 // ================================================================
-// 20 підібраних вручну кольорів (приглушені, в тон темно-золотій гамі сайту) —
-// решта (>20 жанрів) іде через HSL-фолбек у _wheelSegColor, теж приглушений,
-// щоб не зісковзувати в кислотні неонові відтінки на великих колесах.
-const WHEEL_COLORS = [
-  '#c8a96e','#7c6fcd','#4caf7d','#e05c5c','#5aa9e6','#e0a15c','#8ecae6','#f2a65a','#8a5cf2','#5ce0c0',
-  '#b85c8a','#6b8e4e','#d4874f','#5c7cc9','#c94f6b','#4fa89e','#9e7bc9','#c9a45c','#5c9e7c','#c96b4f',
-];
+const WHEEL_COLORS = ['#c8a96e','#7c6fcd','#4caf7d','#e05c5c','#5aa9e6','#e0a15c','#8ecae6','#f2a65a','#8a5cf2','#5ce0c0'];
 // wheelAllGenres — весь пул, перемішаний раз при відкритті; wheelGenres — перші N з нього.
 // Зміна кількості обрізає той самий порядок, а не перемішує наново.
 let wheelAllGenres = [];
@@ -1005,8 +999,7 @@ function _shuffledCopy(arr){
 // (~137.5°), щоб сусідні сектори не зливались, як при звичайному i/n*360.
 function _wheelSegColor(i, n){
   if(n <= WHEEL_COLORS.length) return WHEEL_COLORS[i % WHEEL_COLORS.length];
-  // 42%/44% замість кислотних 62%/52% — узгоджується з приглушеною кураторською палітрою вище.
-  return `hsl(${Math.round((i*137.508) % 360)}deg 42% 44%)`;
+  return `hsl(${Math.round((i*137.508) % 360)}deg 62% 52%)`;
 }
 
 // Жанр бере участь у колесі лише якщо в ньому є щонайменше 5 пісень — інакше
@@ -1086,15 +1079,7 @@ function renderWheelDisc(){
   if(!n){ disc.style.background = ''; disc.innerHTML = ''; return; }
   const segAngle = 360/n;
   const gradientParts = wheelGenres.map((g,i)=>`${_wheelSegColor(i,n)} ${i*segAngle}deg ${(i+1)*segAngle}deg`).join(', ');
-  // Глянцева "куполоподібність" — світлова пляма зліва-згори й легке затемнення
-  // до країв. Шар у background, а не окремий елемент/псевдоелемент: фон
-  // ЗАВЖДИ позаду вмісту, тож підписи жанрів (діти #wheel-disc) лишаються
-  // читабельними без потреби узгоджувати z-index з ::after (той підхід
-  // ховав підписи повністю — overflow:hidden на диску перекреслював z-index).
-  disc.style.background =
-    `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.20), rgba(255,255,255,0) 45%), ` +
-    `radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 62%, rgba(0,0,0,0.32) 100%), ` +
-    `conic-gradient(${gradientParts})`;
+  disc.style.background = `conic-gradient(${gradientParts})`;
 
   // "По центру сектора" — кутове центрування (mid, бісектриса сектора), не радіальне.
   const hubR = (document.getElementById('wheel-hub')?.clientWidth || 0)/2;
@@ -1147,72 +1132,6 @@ function _clampWheelSecInput(el){
   _sanitizeIntInput(el, parseInt(el.min) || 1, parseInt(el.max) || 99);
 }
 
-// Один спільний AudioContext на всі тіки/дзвінок — створювати новий на кожен
-// звук і дорого, і зайве; лежить ліниво, ініціалізується першим кліком "Крутити"
-// (браузери все одно вимагають user gesture для старту звуку).
-let _wheelAudioCtx = null;
-function _wheelTone(freq, duration, volume, delay){
-  try{
-    _wheelAudioCtx = _wheelAudioCtx || new (window.AudioContext||window.webkitAudioContext)();
-    const ctx = _wheelAudioCtx;
-    const t0 = ctx.currentTime + (delay||0);
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(volume, t0);
-    gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(t0);
-    osc.stop(t0 + duration);
-  }catch(e){}
-}
-// Тіки під час обертання: читаємо поточний кут диска прямо з CSS-transition
-// (matrix() у getComputedStyle), рахуємо, який сектор зараз під нерухомою
-// стрілкою (та сама формула, що й для фінального результату), і клацаємо
-// щоразу, як сектор під стрілкою змінюється — тобто тік синхронний з
-// easing-уповільненням самого обертання, а не за фіксованим таймером.
-function _wheelStartTicking(disc, n, segAngle){
-  let lastIndex = -1;
-  function frame(){
-    if(!wheelSpinning) return;
-    const tr = getComputedStyle(disc).transform;
-    const m = tr && tr !== 'none' ? tr.match(/matrix\(([^)]+)\)/) : null;
-    if(m){
-      const p = m[1].split(',').map(Number);
-      let angle = Math.atan2(p[1], p[0]) * 180/Math.PI;
-      if(angle < 0) angle += 360;
-      const topAngle = (360 - angle) % 360;
-      const idx = Math.floor(topAngle / segAngle) % n;
-      if(idx !== lastIndex){
-        lastIndex = idx;
-        _wheelTone(700, 0.045, 0.06);
-      }
-    }
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
-// Невеликий конфеті-вибух із хаба — прості DOM-елементи з CSS-анімацією
-// (без сторонньої бібліотеки), самі прибираються після завершення.
-function _wheelConfetti(){
-  const wrap = document.getElementById('wheel-disc')?.closest('.wheel-wrap');
-  if(!wrap) return;
-  const colors = WHEEL_COLORS;
-  for(let i=0; i<36; i++){
-    const el = document.createElement('span');
-    const angle = Math.random()*360;
-    const dist = 90 + Math.random()*160;
-    const dx = Math.cos(angle*Math.PI/180)*dist;
-    const dy = Math.sin(angle*Math.PI/180)*dist;
-    el.style.cssText = `position:absolute;top:50%;left:50%;width:${5+Math.random()*4}px;height:${5+Math.random()*4}px;` +
-      `background:${colors[i%colors.length]};border-radius:${Math.random()<0.5?'50%':'2px'};pointer-events:none;z-index:6;` +
-      `--dx:${dx}px;--dy:${dy}px;animation:wheelConfettiBurst ${0.7+Math.random()*0.5}s ease-out forwards;`;
-    wrap.appendChild(el);
-    el.addEventListener('animationend', () => el.remove());
-  }
-}
-
 function spinWheel(){
   if(wheelSpinning || !wheelGenres.length) return;
   const secMin = Math.max(1, Math.min(99, parseFloat(document.getElementById('wheel-sec-min').value) || 3));
@@ -1233,10 +1152,8 @@ function spinWheel(){
   const mid = winnerIndex*segAngle + segAngle/2;
   const rotation = fullSpins*360 + (360 - mid);
   const disc = document.getElementById('wheel-disc');
-  disc.classList.remove('landed');
   disc.style.transitionDuration = `${duration}s`;
   disc.style.transform = `rotate(${rotation}deg)`;
-  _wheelStartTicking(disc, n, segAngle);
   setTimeout(()=>{
     wheelSpinning = false;
     document.getElementById('wheel-spin-btn').disabled = false;
@@ -1245,10 +1162,6 @@ function spinWheel(){
     document.getElementById('wheel-result').style.display = 'block';
     document.querySelectorAll('.wheel-legend-item.winner').forEach(el=>el.classList.remove('winner'));
     document.getElementById(`wheel-legend-item-${winnerIndex}`)?.classList.add('winner');
-    disc.classList.add('landed');
-    _wheelTone(660, 0.18, 0.09);
-    _wheelTone(880, 0.28, 0.08, 0.09);
-    _wheelConfetti();
     renderWheelPlaylist();
   }, duration*1000 + 150);
 }
@@ -1260,8 +1173,7 @@ function renderWheelPlaylist(){
   if(!currentWheelSongs.length) return; // жанри колеса й так беруться лише з наявних пісень
   document.getElementById('wheel-playlist-empty').style.display = 'none';
   document.getElementById('wheel-playlist-wrap').style.display = '';
-  // Без назви жанру тут — вона вже велика й помітна у "Випав жанр" над колесом.
-  document.getElementById('wheel-playlist-title').textContent = `${currentWheelSongs.length} ${t('profile.songsWord')}`;
+  document.getElementById('wheel-playlist-title').textContent = `${abbrGenre(wheelResultGenre)} — ${currentWheelSongs.length}`;
   document.getElementById('wheel-playlist-body').innerHTML = currentWheelSongs.map(s=>`
     <tr>
       <td class="td-icon-lead" data-label=""><button class="btn-icon-fav" onclick="toggleOrPlay(${s.id}, playFromWheel)" title="${t('profile.playBtn')}">
