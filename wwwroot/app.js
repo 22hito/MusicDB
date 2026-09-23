@@ -2481,7 +2481,7 @@ function renderAuthArea() {
         </button>
         <div class="dropdown-menu">
           <button onclick="showPage('profile')" data-i18n="nav.profile">${t('nav.profile')}</button>
-          <button onclick="showPage('profile-settings')" data-i18n="nav.profileSettings">${t('nav.profileSettings')}</button>
+          <button onclick="showPage('settings')" id="tab-settings" class="nav-menu-item" data-i18n="nav.settings">${t('nav.settings')}</button>
           <button onclick="showPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
           <button onclick="openChatPage('dm')" data-i18n="nav.messages">${t('nav.messages')}</button>
           ${isAdmin?`<button onclick="showPage('admin-hub')" id="tab-admin-hub" class="nav-menu-item"><svg class="icon"><use href="#icon-settings"/></svg> ${t('nav.adminHub')}<span id="admin-requests-badge" class="badge" style="display:none;margin-left:auto;"></span></button>`:''}
