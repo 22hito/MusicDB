@@ -1533,6 +1533,35 @@ function ratingChipHtml(s){
   return `<button type="button" class="rating-chip${s.avgRating!=null?' has-rating':''}" onclick="openRatingModal(${s.id})" title="${t('rating.rateBtn')}"><svg class="icon"><use href="#icon-star"/></svg> ${label}</button>`;
 }
 
+const ROW_PAUSE_ICON=`<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+const ROW_PLAY_ICON=`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+// Зміна стану плеєра (play/pause/інша пісня) раніше перебудовувала ВСЮ таблицю
+// (сотні рядків через innerHTML) — кілька разів на кожну пісню. Тепер лише
+// перемикаємо клас рядка й іконку кнопки в уже намальованих таблицях.
+function refreshPlayingState(){
+  const curId = playerQueue.length && playerQueue[playerIndex] ? playerQueue[playerIndex].id : null;
+  const playing = isPlaying();
+  document.querySelectorAll('#songs-body tr[data-id], #top-songs-body tr[data-id]').forEach(tr => {
+    const isCur = Number(tr.dataset.id) === curId;
+    if(tr.classList.contains('playing-row') !== isCur) tr.classList.toggle('playing-row', isCur);
+    const btn = tr.firstElementChild?.firstElementChild;
+    if(!btn) return;
+    const icon = isCur && playing ? 'pause' : 'play';
+    if(btn.dataset.icon === icon && btn.classList.contains('is-playing') === isCur) return;
+    btn.innerHTML = icon === 'pause' ? ROW_PAUSE_ICON : ROW_PLAY_ICON;
+    btn.dataset.icon = icon;
+    btn.classList.toggle('is-playing', isCur);
+  });
+}
+
+// Пошук у таблиці: перемальовуємо сотні рядків, коли користувач зупинився
+// друкувати, а не на кожну клавішу.
+let _renderSongsTimer = null;
+function debouncedRenderSongs(){
+  clearTimeout(_renderSongsTimer);
+  _renderSongsTimer = setTimeout(renderSongs, 150);
+}
+
 function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
@@ -1563,12 +1592,10 @@ function renderSongs(){
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
   tbody.innerHTML=ordered.map((s,i)=>{
     const isPlay=s.id===curId;
-    const btnIcon=isPlay&&isPlaying()
-      ?`<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
-      :`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-    return `<tr class="${isPlay?'playing-row':''}">
+    const btnIcon=isPlay&&isPlaying()?ROW_PAUSE_ICON:ROW_PLAY_ICON;
+    return `<tr data-id="${s.id}" class="${isPlay?'playing-row':''}">
       <td class="td-icon-lead" data-label="" style="padding:0.7rem 0.5rem 0.7rem 1rem;">
-        <button class="play-row-btn${isPlay?' is-playing':''}" onclick="toggleOrPlay(${s.id}, playSong)">${btnIcon}</button>
+        <button class="play-row-btn${isPlay?' is-playing':''}" data-icon="${btnIcon===ROW_PAUSE_ICON?'pause':'play'}" onclick="toggleOrPlay(${s.id}, playSong)">${btnIcon}</button>
       </td>
       <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
       <td data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
@@ -2655,12 +2682,12 @@ fileAudio.addEventListener('playing', ()=>{
   userIntendedPlaying=true;
   setPP(true);startTick();setLoad(false);setEQ(true);
   document.getElementById('p-dur').textContent=fmtSec(_pDuration());
-  renderSongs();
+  refreshPlayingState();
 });
 fileAudio.addEventListener('pause', ()=>{
   if(playerMode!=='file' || fileAudio.ended) return;
   userIntendedPlaying=false;
-  setPP(false);stopTick();setEQ(false);renderSongs();
+  setPP(false);stopTick();setEQ(false);refreshPlayingState();
 });
 fileAudio.addEventListener('ended', ()=>{
   if(playerMode!=='file') return;
@@ -2677,9 +2704,12 @@ fileAudio.addEventListener('error', ()=>{
 });
 
 function onYouTubeIframeAPIReady(){
+  // Той самий плеєр і для звуку, і для відео в попапі (див. VIDEO POPUP) —
+  // розмір задає контейнер (#video-popup-frame), тож 100%/100%. Закритий попап
+  // лишає його 1px — YouTube тоді сам бере найнижчу якість (менше трафіку).
   ytPlayer=new YT.Player('yt-iframe',{
-    height:'1',width:'1',
-    playerVars:{autoplay:0,controls:0},
+    height:'100%',width:'100%',
+    playerVars:{autoplay:0,controls:0,disablekb:1,rel:0,modestbranding:1,iv_load_policy:3,playsinline:1},
     events:{
       onReady:()=>{
         ytReady=true;
@@ -2699,18 +2729,10 @@ function onState(e){
     userIntendedPlaying=true;
     setPP(true);startTick();setLoad(false);setEQ(true);
     document.getElementById('p-dur').textContent=fmtSec(ytPlayer.getDuration());
-    renderSongs();
-    // Попап може бути відкритий, а відео там на паузі (плеєр відновили не через попап) — доганяємо.
-    if(videoPopupOpen && popupPlayer && popupReady){
-      try{ if(popupPlayer.getPlayerState()!==S.PLAYING) popupPlayer.playVideo(); }catch(ex){}
-    }
+    refreshPlayingState();
   }else if(e.data===S.PAUSED){
     userIntendedPlaying=false;
-    setPP(false);stopTick();setEQ(false);renderSongs();
-    // Пауза на панелі має ставити на паузу й відео в попапі, інакше воно "оживить" звук назад.
-    if(videoPopupOpen && popupPlayer && popupReady){
-      try{ if(popupPlayer.getPlayerState()===S.PLAYING) popupPlayer.pauseVideo(); }catch(ex){}
-    }
+    setPP(false);stopTick();setEQ(false);refreshPlayingState();
   }else if(e.data===S.ENDED){
     setPP(false);stopTick();setEQ(false);
     if(repeat){ytPlayer.seekTo(0);ytPlayer.playVideo();}
@@ -3626,12 +3648,10 @@ async function loadTopSongsPage(){
     const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
     tbody.innerHTML=list.map((s,i)=>{
       const isPlay=s.id===curId;
-      const btnIcon=isPlay&&isPlaying()
-        ?`<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
-        :`<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-      return `<tr class="${isPlay?'playing-row':''}">
+      const btnIcon=isPlay&&isPlaying()?ROW_PAUSE_ICON:ROW_PLAY_ICON;
+      return `<tr data-id="${s.id}" class="${isPlay?'playing-row':''}">
         <td class="td-icon-lead" data-label="" style="padding:0.7rem 0.5rem 0.7rem 1rem;">
-          <button class="play-row-btn${isPlay?' is-playing':''}" onclick="toggleOrPlay(${s.id}, playFromTop)">${btnIcon}</button>
+          <button class="play-row-btn${isPlay?' is-playing':''}" data-icon="${btnIcon===ROW_PAUSE_ICON?'pause':'play'}" onclick="toggleOrPlay(${s.id}, playFromTop)">${btnIcon}</button>
         </td>
         <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
         <td data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
@@ -3677,7 +3697,7 @@ function _loadCurrent(){
     playerMode='file';
     currentVid=null;
     document.getElementById('btn-video').classList.add('disabled');
-    renderSongs();
+    refreshPlayingState();
     if(karaokeOpen) loadKaraokeLyrics();
     _updateMediaSessionMetadata(s, null);
     fileAudio.volume = vol/100;
@@ -3688,7 +3708,7 @@ function _loadCurrent(){
   if(playerMode==='file') _stopFileAudio();
   playerMode='yt';
   document.getElementById('btn-video').classList.remove('disabled');
-  renderSongs();
+  refreshPlayingState();
   if(karaokeOpen) loadKaraokeLyrics();
 
   // Якщо videoId вже закешовано в базі — беремо напряму, без нового запиту до YouTube Search API.
@@ -3871,7 +3891,7 @@ function playerClose(){
   _applyArtworkColor(null);
   document.documentElement.removeAttribute('data-playing');
   _setGlowProgress(0);
-  playerQueue=[];renderSongs();
+  playerQueue=[];refreshPlayingState();
   if('mediaSession' in navigator){ navigator.mediaSession.playbackState='none'; navigator.mediaSession.metadata=null; }
   const anchor = document.getElementById('ms-anchor');
   if(anchor) anchor.pause();
@@ -3887,8 +3907,6 @@ function setVolume(v){
   fileAudio.volume = vol/100;
   document.getElementById('vw1').style.display=vol===0?'none':'';
   document.getElementById('vw2').style.display=vol<50?'none':'';
-  // Взаємодія з контролами іноді "оживляє" гучність попап-плеєра назад — глушимо знову.
-  if(videoPopupOpen&&popupPlayer&&popupReady)try{popupPlayer.mute();}catch(e){}
   // Нативний попап (Electron) грає звук сам, окремим вікном/процесом — синхронізуємо його гучність теж.
   if(_electronPopoutActive&&window.electronAPI?.setPopoutVolume)window.electronAPI.setPopoutVolume(vol);
 }
@@ -3981,126 +3999,14 @@ function _setGlowProgress(pct){
 // ================================================================
 // VIDEO POPUP
 // ================================================================
-// Два плеєри: ytPlayer (аудіо, прихований, завжди грає) і popupPlayer (відео в попапі, синхронізоване, без звуку).
+// ОДИН плеєр: ytPlayer живе всередині #video-popup-frame і дає і звук, і
+// відео. Відкрити/закрити попап = лише показати/сховати його контейнер (CSS),
+// без другого плеєра й без синхронізації. Раніше тут був окремий беззвучний
+// popupPlayer, який кожні 5с перемотувався до ytPlayer: обидва тягнули те
+// саме відео (подвійний трафік), кожна перемотка перебуферизовувала відео,
+// воно відставало, його знову перемотували — звідси лаги й звуку, й відео.
 let videoPopupOpen = false;
 let currentVid = null;
-let popupPlayer = null;
-let popupReady = false;
-let popupSyncTicker = null;
-// true одразу після нашого ж programmatic seekTo() — YouTube може емітити короткий
-// спурний PLAYING, який не відрізнити від справжнього без цього прапорця.
-let _popupProgrammaticSeek = false;
-function _popupSeek(time){
-  _popupProgrammaticSeek = true;
-  try { popupPlayer.seekTo(time, true); } catch(e) {}
-  setTimeout(() => { _popupProgrammaticSeek = false; }, 400);
-}
-
-// Ініціалізуємо прихований div для popup-плеєра (вже є #video-popup-frame).
-function _initPopupPlayer(vid, startAt) {
-  const frame = document.getElementById('video-popup-frame');
-  const loading = document.getElementById('video-popup-loading');
-  loading.style.display = 'flex';
-
-  // Знищуємо попередній якщо є
-  if (popupPlayer) {
-    try { popupPlayer.destroy(); } catch(e) {}
-    popupPlayer = null;
-    popupReady = false;
-  }
-
-  // Контейнер для нового плеєра
-  let ph = document.getElementById('popup-player-ph');
-  if (!ph) {
-    ph = document.createElement('div');
-    ph.id = 'popup-player-ph';
-    frame.appendChild(ph);
-  }
-
-  popupPlayer = new YT.Player('popup-player-ph', {
-    width: '100%',
-    height: '100%',
-    videoId: vid,
-    // controls:0 — звук завжди йде з ytPlayer; нативний повзунок гучності міг
-    // розглушувати popupPlayer в обхід нашого mute(), тож прибираємо контроли взагалі.
-    playerVars: {
-      autoplay: userIntendedPlaying ? 1 : 0,
-      start: Math.floor(startAt || 0),
-      controls: 0,
-      disablekb: 1,
-      rel: 0,
-      modestbranding: 1,
-      iv_load_policy: 3
-    },
-    events: {
-      onReady: (e) => {
-        popupReady = true;
-        loading.style.display = 'none';
-        // Точне вирівнювання по секунді з основним плеєром
-        try {
-          const cur = ytPlayer.getCurrentTime();
-          _popupSeek(cur);
-          e.target.mute(); // відео без звуку — звук іде з ytPlayer (setVolume(0) саму по собі YouTube іноді "забуває")
-          e.target.setVolume(0);
-          // Якщо музика на паузі — не даємо autoplay стартувати попап.
-          if(!userIntendedPlaying) e.target.pauseVideo();
-        } catch(ex) {}
-        _startPopupSync();
-      },
-      onStateChange: (e) => {
-        // Якщо хтось натиснув паузу у відео — синхронізуємо основний плеєр
-        if (e.data === YT.PlayerState.PAUSED) {
-          userIntendedPlaying = false;
-          try { if(ytPlayer&&ytReady) ytPlayer.pauseVideo(); } catch(ex) {}
-          setPP(false); stopTick(); setEQ(false);
-        } else if (e.data === YT.PlayerState.PLAYING) {
-          if (_popupProgrammaticSeek) {
-            // Спурний PLAYING від НАШОГО Ж seekTo() (ініціалізація/синк), а не
-            // від користувача — повертаємо попап у той стан, що й мав бути.
-            if (!userIntendedPlaying) { try { popupPlayer.pauseVideo(); } catch(ex) {} }
-            return;
-          }
-          // Справжній клік користувача по відео — і перший play, і "продовжити" після паузи.
-          userIntendedPlaying = true;
-          try { if(ytPlayer&&ytReady) {
-            ytPlayer.seekTo(popupPlayer.getCurrentTime(), true);
-            ytPlayer.playVideo();
-          }} catch(ex) {}
-          try { popupPlayer.mute(); } catch(ex) {} // повторно глушимо — саме на PLAYING звук іноді "повертається"
-          setPP(true); startTick(); setEQ(true);
-        }
-      }
-    }
-  });
-}
-
-// Кожні 5 сек вирівнюємо popup по ytPlayer (компенсує дрейф)
-function _startPopupSync() {
-  _stopPopupSync();
-  popupSyncTicker = setInterval(() => {
-    if (!popupReady || !ytReady) return;
-    try {
-      // Якщо музика на паузі — попап теж має бути на паузі (без цього продовжував грати
-      // й через onStateChange "оживляв" звук назад).
-      if (!userIntendedPlaying) {
-        if (popupPlayer.getPlayerState() === YT.PlayerState.PLAYING) popupPlayer.pauseVideo();
-        return;
-      }
-      // Періодично перепідтверджуємо мут — за спостереженнями, після взаємодії
-      // зі слайдером гучності попап іноді "розглушується" сам по собі.
-      if (!popupPlayer.isMuted()) popupPlayer.mute();
-      const mainTime = ytPlayer.getCurrentTime();
-      const popTime  = popupPlayer.getCurrentTime();
-      if (Math.abs(mainTime - popTime) > 1.5) {
-        _popupSeek(mainTime);
-      }
-    } catch(e) {}
-  }, 5000);
-}
-
-function _stopPopupSync() {
-  if (popupSyncTicker) { clearInterval(popupSyncTicker); popupSyncTicker = null; }
-}
 
 function toggleVideoPopup() {
   if (playerMode === 'file') return; // файл пісні без відео
@@ -4319,10 +4225,6 @@ function openVideoPopup() {
   videoPopupOpen = true;
   document.getElementById('video-popup').classList.add('open');
   document.getElementById('btn-video').classList.add('active');
-
-  let startAt = 0;
-  try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
-  _initPopupPlayer(currentVid, startAt);
 }
 
 function closeVideoPopup() {
@@ -4342,32 +4244,14 @@ function closeVideoPopup() {
 }
 function _finishCloseVideoPopup() {
   videoPopupOpen = false;
+  // Лише ховаємо контейнер — плеєр і звук не чіпаємо.
   document.getElementById('video-popup').classList.remove('open');
   document.getElementById('btn-video').classList.remove('active');
-  _stopPopupSync();
-
-  // Зупиняємо popup-плеєр — основний ytPlayer НЕ чіпаємо
-  if (popupPlayer) {
-    try { popupPlayer.destroy(); } catch(e) {}
-    popupPlayer = null;
-    popupReady = false;
-  }
-
-  // Відновлюємо placeholder для наступного разу
-  const frame = document.getElementById('video-popup-frame');
-  let ph = document.getElementById('popup-player-ph');
-  if (!ph) { ph = document.createElement('div'); ph.id='popup-player-ph'; frame.appendChild(ph); }
-  document.getElementById('video-popup-loading').style.display = 'flex';
 }
 
 function _onVidReady(vid) {
+  // Відкритий попап показує той самий плеєр — нове відео з'явиться в ньому само.
   currentVid = vid;
-  // Якщо попап відкритий — оновлюємо відео в ньому з позиції 0
-  if (videoPopupOpen) {
-    let startAt = 0;
-    try { if (ytPlayer && ytReady) startAt = ytPlayer.getCurrentTime(); } catch(e) {}
-    _initPopupPlayer(vid, startAt);
-  }
 }
 
 // ================================================================

@@ -197,7 +197,7 @@
     </div>
     <div class="hint" id="home-community-hint" style="display:none;margin:-0.6rem 0 1.2rem;" data-i18n="home.communityHint">Власні пісні учасників спільноти — завантажені файлом або з посиланням на YouTube.</div>
     <div class="filter-bar">
-      <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="renderSongs()">
+      <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="debouncedRenderSongs()">
       <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="table.shuffle">Перемішати</span></button>
       <!-- Дії над таблицею — в одному рядку з фільтрами, притиснуті праворуч.
@@ -1031,10 +1031,13 @@
       </button>
     </div>
   </div>
+  <!-- ЄДИНИЙ YouTube-плеєр сайту живе тут постійно: і звук, і відео — з нього.
+       Закритий попап не ховається через display:none, а зсувається за екран
+       розміром 1px (див. #video-popup:not(.open)) — iframe ніколи не
+       переміщується в DOM (це перезавантажило б його) і не дублюється
+       другим плеєром, тож синхронізувати/перемотувати нема чого. -->
   <div id="video-popup-frame">
-    <div id="video-popup-loading">
-      <span class="loading-dot"></span> <span data-i18n="videoPopup.loading">Завантаження…</span>
-    </div>
+    <div id="yt-wrap"><div id="yt-iframe"></div></div>
   </div>
   <div class="vp-resize vp-resize-n" data-dir="n"></div>
   <div class="vp-resize vp-resize-s" data-dir="s"></div>
@@ -1046,7 +1049,6 @@
   <div class="vp-resize vp-resize-sw" data-dir="sw"></div>
 </div>
 
-<div id="yt-wrap"><div id="yt-iframe"></div></div>
 <!-- Плеєр для завантажених файлів пісень ком'юніті (таблиця_2) — замість YouTube. -->
 <audio id="file-audio" preload="auto"></audio>
 <!-- "Якір" media session: реальне аудіо саме грає всередині чужого (youtube.com)

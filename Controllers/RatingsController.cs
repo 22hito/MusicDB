@@ -13,7 +13,7 @@ namespace MusicDB.Api.Controllers;
 // Один рядок на (користувач, пісня); рецензія без оцінки неможлива.
 [ApiController]
 [Route("api/songs/{musicId:int}/ratings")]
-public class RatingsController(MusicDbContext db, UserDirectoryService userDirectory, MusicService musicService, IHubContext<MusicHub> hub) : ControllerBase
+public class RatingsController(MusicDbContext db, UserDirectoryService userDirectory, MusicService musicService, CatalogCache catalogCache, IHubContext<MusicHub> hub) : ControllerBase
 {
     public const int MaxReviewLength = 5000;
 
@@ -86,6 +86,7 @@ public class RatingsController(MusicDbContext db, UserDirectoryService userDirec
     // Точкове оновлення середнього в таблицях замість повного songsChanged.
     private async Task BroadcastSummaryAsync(int musicId)
     {
+        catalogCache.Invalidate();
         var summary = (await musicService.GetRatingSummariesAsync([musicId])).GetValueOrDefault(musicId);
         await hub.Clients.All.SendAsync("ratingChanged", musicId, summary.Avg, summary.Count);
     }

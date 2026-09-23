@@ -15,7 +15,7 @@ namespace MusicDB.Api.Controllers;
 public class RequestsController(
     MusicDbContext db, MusicService musicService, TranslationService translationService,
     ArtistActivityService artistActivity, AdminActivityService adminActivity,
-    UserDirectoryService userDirectory, IAudioStorage audioStorage, IHubContext<MusicHub> hub) : ControllerBase
+    UserDirectoryService userDirectory, IAudioStorage audioStorage, CatalogCache catalogCache, IHubContext<MusicHub> hub) : ControllerBase
 {
     [Authorize, AdminOnly]
     [HttpGet]
@@ -269,6 +269,7 @@ public class RequestsController(
         await adminActivity.RecordAsync(await userDirectory.GetCurrentUserIdAsync(User),
             AdminActivityService.RequestApproved, $"{req.Artist} — {req.Title}", req.Kind);
         await hub.Clients.All.SendAsync("requestsChanged");
+        catalogCache.Invalidate();
         await hub.Clients.All.SendAsync("songsChanged");
         return Ok(new { message = wasDuplicate ? "merged" : "approved", songId, merged = wasDuplicate });
     }

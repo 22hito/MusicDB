@@ -29,6 +29,8 @@ builder.Services.AddScoped<MusicService>();
 builder.Services.AddScoped<UserDirectoryService>();
 builder.Services.AddScoped<ArtistActivityService>();
 builder.Services.AddScoped<AdminActivityService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<CatalogCache>();
 // Файли пісень ком'юніті: Cloudflare R2, якщо заповнено Uploads:R2 (прод —
 // через App Settings Azure, напр. Uploads__R2__SecretAccessKey), інакше диск.
 var r2Options = builder.Configuration.GetSection("Uploads:R2").Get<R2Options>() ?? new R2Options();

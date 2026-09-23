@@ -12,7 +12,7 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GenresController(MusicDbContext db, GenreNormalizationService genreNormalizer, IHubContext<MusicHub> hub) : ControllerBase
+public class GenresController(MusicDbContext db, GenreNormalizationService genreNormalizer, CatalogCache catalogCache, IHubContext<MusicHub> hub) : ControllerBase
 {
     // GET /api/genres
     [HttpGet]
@@ -79,7 +79,11 @@ public class GenresController(MusicDbContext db, GenreNormalizationService genre
         }
 
         await db.SaveChangesAsync();
-        if (mergedPairs.Count > 0) await hub.Clients.All.SendAsync("songsChanged");
+        if (mergedPairs.Count > 0)
+        {
+            catalogCache.Invalidate();
+            await hub.Clients.All.SendAsync("songsChanged");
+        }
         return Ok(new NormalizeGenresResultDto(mergedPairs.Count, mergedPairs, null));
     }
 }
