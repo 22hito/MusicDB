@@ -12,6 +12,9 @@
 </head>
 <body>
 <div id="player-container"><div id="yt"></div></div>
+<!-- Файли пісень ком'юніті (таблиця_2) — грає цей <audio> замість YouTube,
+     з тим самим протоколом подій (state/time), тож React-сторона їх не розрізняє. -->
+<audio id="au" preload="auto"></audio>
 <script>
   // Реальна сторінка нашого ж домену для мобільного WebView-плеєра (замість
   // джерела source={{html}} із підробним baseUrl) — YouTube відхиляв
@@ -80,8 +83,46 @@
     });
   }
 
+  // 'yt' | 'audio' — хто зараз грає; команди play/pause/seek/... йдуть активному.
+  var mode = 'yt';
+  var au = document.getElementById('au');
+  var auVolume = 0.8;
+  au.addEventListener('playing', function () { if (mode === 'audio') { post({ type: 'state', state: 'playing' }); startAudioTicker(); } });
+  au.addEventListener('pause', function () { if (mode === 'audio' && !au.ended) { post({ type: 'state', state: 'paused' }); stopTicker(); } });
+  au.addEventListener('ended', function () { if (mode === 'audio') { post({ type: 'state', state: 'ended' }); stopTicker(); } });
+  au.addEventListener('waiting', function () { if (mode === 'audio') post({ type: 'state', state: 'buffering' }); });
+  au.addEventListener('error', function () { if (mode === 'audio' && au.getAttribute('src')) post({ type: 'error', code: 'audio' }); });
+  function startAudioTicker() {
+    stopTicker();
+    ticker = setInterval(function () {
+      post({ type: 'time', current: au.currentTime || 0, duration: isFinite(au.duration) ? au.duration : 0 });
+    }, 500);
+  }
+  function handleAudioCommand(cmd) {
+    if (cmd.cmd === 'play') au.play().catch(function () {});
+    else if (cmd.cmd === 'pause') au.pause();
+    else if (cmd.cmd === 'stop') { au.pause(); au.removeAttribute('src'); au.load(); }
+    else if (cmd.cmd === 'seekTo') au.currentTime = cmd.seconds;
+  }
+
   function handleCommand(cmd) {
     if (!cmd) return;
+    if (cmd.cmd === 'setVolume') { auVolume = cmd.volume / 100; au.volume = auVolume; }
+    if (cmd.cmd === 'loadAudio') {
+      mode = 'audio';
+      try { if (player && ready) player.stopVideo(); } catch (e) {}
+      au.volume = auVolume;
+      au.src = cmd.url;
+      if (cmd.autoplay !== false) au.play().catch(function () {});
+      return;
+    }
+    if (cmd.cmd === 'load' && mode === 'audio') { mode = 'yt'; handleAudioCommand({ cmd: 'stop' }); }
+    if (mode === 'audio') {
+      // Гучність — і YouTube теж (якщо вже створений), щоб після повернення до відео вона збігалась.
+      if (cmd.cmd === 'setVolume') { try { if (player && ready) player.setVolume(cmd.volume); } catch (e) {} }
+      else handleAudioCommand(cmd);
+      return;
+    }
     if (cmd.cmd === 'load') {
       if (!window.YT || !window.YT.Player) { pendingCmd = cmd; return; }
       if (!player) { createPlayer(cmd.videoId, cmd.autoplay !== false); return; }

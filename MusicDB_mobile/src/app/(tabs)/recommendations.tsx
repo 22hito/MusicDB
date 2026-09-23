@@ -5,7 +5,7 @@ import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
-import { Badge, EmptyState, Heading } from '@/components/UI';
+import { Badge, EmptyState, ErrorState, Heading } from '@/components/UI';
 import { SPACING } from '@/constants/theme';
 import type { Recommendation } from '@/api/types';
 
@@ -17,14 +17,18 @@ export default function RecommendationsScreen() {
 
   const [items, setItems] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(() => {
     if (!currentUser?.authenticated) return;
     setLoading(true);
     api
       .getRecommendations(lang)
-      .then(setItems)
-      .catch(() => setItems([]))
+      .then((res) => {
+        setItems(res);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [api, currentUser?.authenticated, lang]);
 
@@ -42,6 +46,8 @@ export default function RecommendationsScreen() {
         <EmptyState icon="🔒" label={t('auth.loginRequiredGeneric')} />
       ) : loading ? (
         <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
+      ) : loadError ? (
+        <ErrorState label={t('error.loadFailed')} onRetry={load} />
       ) : (
         <FlatList
           data={items}

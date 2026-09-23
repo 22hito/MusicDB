@@ -5,7 +5,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
-import { Button, EmptyState } from '@/components/UI';
+import { Button, EmptyState, ErrorState } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
 import { SPACING } from '@/constants/theme';
 import type { PlaylistDetail } from '@/api/types';
@@ -20,13 +20,17 @@ export default function PlaylistDetailScreen() {
 
   const [detail, setDetail] = useState<PlaylistDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const d = await api.getPlaylist(playlistId);
       setDetail(d);
+      setLoadError(false);
       navigation.setOptions({ title: d.name });
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -46,6 +50,14 @@ export default function PlaylistDetailScreen() {
     return (
       <SafeAreaView style={[styles.screen, { backgroundColor: theme.bg }]}>
         <ActivityIndicator color={theme.accent} style={{ marginTop: 40 }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.bg }]}>
+        <ErrorState label={t('error.loadFailed')} onRetry={load} />
       </SafeAreaView>
     );
   }

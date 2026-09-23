@@ -12,32 +12,27 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SongsController(MusicDbContext db, MusicService musicService, ArtistActivityService artistActivity, IHubContext<MusicHub> hub) : ControllerBase
+public class SongsController(
+    MusicDbContext db, MusicService musicService, ArtistActivityService artistActivity,
+    AdminActivityService adminActivity, UserDirectoryService userDirectory, IAudioStorage audioStorage,
+    IHubContext<MusicHub> hub) : ControllerBase
 {
+    // source: "catalog" (головна таблиця_1, за замовчуванням — так старі клієнти,
+    // зокрема мобільний, і далі бачать лише каталог), "community" (таблиця_2) або "all".
     [HttpGet]
-    public async Task<IEnumerable<SongDto>> GetAll()
+    public async Task<ActionResult<IEnumerable<SongDto>>> GetAll([FromQuery] string source = SongSources.Catalog)
     {
+        if (source != "all" && !SongSources.IsValid(source)) return BadRequest("Unknown source.");
+
+        var query = db.Songs.Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
+        if (source != "all") query = query.Where(m => m.Source == source);
+
         // .ToLower() — інакше велика/мала літери сортуються окремими блоками (A-Z, a-z).
-        var songs = await db.Songs
-            .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
+        var songs = await query
             .OrderBy(m => m.Artist.ToLower()).ThenBy(m => m.Title.ToLower())
             .ToListAsync();
 
-        // Завантажуємо всі потрібні альбоми одним запитом
-        var albumIds = songs
-            .Where(m => m.AlbumIds is { Length: > 0 })
-            .Select(m => m.AlbumIds![0])
-            .Distinct()
-            .ToList();
-
-        var albums = albumIds.Count > 0
-            ? await db.Albums.Where(a => albumIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name)
-            : new Dictionary<int, string>();
-
-        var playCounts = await musicService.GetPlayCountsAsync(songs.Select(m => m.Id));
-        var artistsBySong = await musicService.GetSongArtistsAsync(songs.Select(m => m.Id));
-
-        return songs.Select(m => ToDto(m, albums, playCounts.GetValueOrDefault(m.Id, 0), artistsBySong.GetValueOrDefault(m.Id)));
+        return Ok(await musicService.BuildSongDtosAsync(songs));
     }
 
     [HttpGet("{id}")]
@@ -48,31 +43,60 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
             .FirstOrDefaultAsync(m => m.Id == id);
 
         if (song is null) return NotFound();
-
-        string? albumName = null;
-        if (song.AlbumIds is { Length: > 0 })
-            albumName = (await db.Albums.FindAsync(song.AlbumIds[0]))?.Name;
-
-        var playCounts = await musicService.GetPlayCountsAsync([id]);
-        var artistsBySong = await musicService.GetSongArtistsAsync([id]);
-        return ToDto(song, albumName, playCounts.GetValueOrDefault(id, 0), artistsBySong.GetValueOrDefault(id));
+        return (await musicService.BuildSongDtosAsync([song]))[0];
     }
 
     [Authorize, AdminOnly]
     [HttpPost]
     public async Task<ActionResult<SongDto>> Create([FromBody] CreateSongDto dto)
     {
-        var genreIds = await musicService.ResolveGenresAsync(dto.Genres);
-        var albumId = await musicService.ResolveAlbumAsync(dto.Album);
-
         var music = new Music
         {
             Artist = dto.Artist.Trim(),
             Title = dto.Title.Trim(),
             Release = DateOnly.Parse(dto.Release),
             Duration = DurationParser.Parse(dto.Duration, TimeSpan.FromMinutes(3)),
-            AlbumIds = albumId.HasValue ? [albumId.Value] : null
         };
+        return await CreateSongAsync(music, dto.Genres, dto.Album);
+    }
+
+    // Пряме додавання адміном у головну таблицю_2 — як і заявка, потребує
+    // файл пісні або YouTube-посилання. Автором вважається сам адмін.
+    [Authorize, AdminOnly]
+    [HttpPost("community")]
+    [RequestSizeLimit(AudioFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = AudioFiles.MaxRequestBytes)]
+    public async Task<ActionResult<SongDto>> CreateCommunity([FromForm] CommunitySongForm form)
+    {
+        if (!CommunitySongInput.TryParse(form, out var input, out var error)) return BadRequest(error);
+
+        string? audioFile = null;
+        if (form.Audio is not null)
+        {
+            (audioFile, error) = await audioStorage.SaveAsync(form.Audio);
+            if (audioFile is null) return BadRequest(error);
+        }
+
+        var music = new Music
+        {
+            Artist = input!.Artist,
+            Title = input.Title,
+            Release = input.Release,
+            Duration = DurationParser.Parse(input.Duration, TimeSpan.FromMinutes(3)),
+            YoutubeVideoId = input.YoutubeVideoId,
+            Source = SongSources.Community,
+            SubmittedByUserId = await userDirectory.GetCurrentUserIdAsync(User),
+            AudioFile = audioFile
+        };
+        return await CreateSongAsync(music, input.Genres, input.Album);
+    }
+
+    private async Task<ActionResult<SongDto>> CreateSongAsync(Music music, IEnumerable<string> genres, string? album)
+    {
+        var genreIds = await musicService.ResolveGenresAsync(genres);
+        var albumId = await musicService.ResolveAlbumAsync(album);
+        music.AlbumIds = albumId.HasValue ? [albumId.Value] : null;
+
         db.Songs.Add(music);
         await db.SaveChangesAsync();
 
@@ -88,14 +112,11 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
             .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
             .FirstAsync(m => m.Id == music.Id);
 
-        string? createdAlbumName = albumId.HasValue
-            ? (await db.Albums.FindAsync(albumId.Value))?.Name
-            : null;
-        var createdArtists = (await musicService.GetSongArtistsAsync([music.Id])).GetValueOrDefault(music.Id);
-
-        await artistActivity.RecordEventAsync(artistIds, "song_added", music.Id, $"{music.Artist} — {music.Title}");
+        var label = $"{music.Artist} — {music.Title}";
+        await artistActivity.RecordEventAsync(artistIds, "song_added", music.Id, label);
+        await adminActivity.RecordAsync(await userDirectory.GetCurrentUserIdAsync(User), AdminActivityService.SongAdded, label, music.Source);
         await hub.Clients.All.SendAsync("songsChanged");
-        return CreatedAtAction(nameof(GetById), new { id = music.Id }, ToDto(created, createdAlbumName, 0, createdArtists));
+        return CreatedAtAction(nameof(GetById), new { id = music.Id }, (await musicService.BuildSongDtosAsync([created]))[0]);
     }
 
     [Authorize, AdminOnly]
@@ -108,12 +129,46 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
         // Знімаємо artist_id-и й підпис ДО видалення — каскад зітре music_artists разом із піснею.
         var artistIds = await db.MusicArtists.Where(ma => ma.MusicId == id).Select(ma => ma.ArtistId).ToListAsync();
         var label = $"{song.Artist} — {song.Title}";
+        var audioFile = song.AudioFile;
 
         db.Songs.Remove(song);
         await db.SaveChangesAsync();
+        await audioStorage.DeleteAsync(audioFile);
         await artistActivity.RecordEventAsync(artistIds, "song_removed", null, label);
         await hub.Clients.All.SendAsync("songsChanged");
         return NoContent();
+    }
+
+    // Файл ком'юніті-пісні. Локально — сам файл із Range (перемотування без
+    // повного завантаження); з R2 — редирект на підписане посилання, тож аудіо
+    // йде напряму з Cloudflare. Публічний, як і сам список пісень.
+    [HttpGet("{id}/audio")]
+    public async Task<IActionResult> GetAudio(int id)
+    {
+        var fileName = await db.Songs.Where(m => m.Id == id).Select(m => m.AudioFile).FirstOrDefaultAsync();
+        return this.ToResult(await audioStorage.OpenAsync(fileName));
+    }
+
+    // Заміна файлу ком'юніті-пісні адміном (з модалки редагування).
+    [Authorize, AdminOnly]
+    [HttpPut("{id}/audio")]
+    [RequestSizeLimit(AudioFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = AudioFiles.MaxRequestBytes)]
+    public async Task<IActionResult> ReplaceAudio(int id, IFormFile audio)
+    {
+        var song = await db.Songs.FindAsync(id);
+        if (song is null) return NotFound();
+        if (song.Source != SongSources.Community) return BadRequest("Audio files are only for community songs.");
+
+        var (fileName, error) = await audioStorage.SaveAsync(audio);
+        if (fileName is null) return BadRequest(error);
+
+        var old = song.AudioFile;
+        song.AudioFile = fileName;
+        await db.SaveChangesAsync();
+        await audioStorage.DeleteAsync(old);
+        await hub.Clients.All.SendAsync("songsChanged");
+        return Ok();
     }
 
     // Кешує підтверджений YouTube videoId для повторних відтворень без нового
@@ -126,7 +181,8 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
 
         var song = await db.Songs.FindAsync(id);
         if (song is null) return NotFound();
-        if (song.YoutubeVideoId is not null) return Ok();
+        // Ком'юніті-пісні не автопошукуються: відео до них вказує лише автор чи адмін.
+        if (song.YoutubeVideoId is not null || song.Source == SongSources.Community) return Ok();
 
         song.YoutubeVideoId = dto.VideoId;
         await db.SaveChangesAsync();
@@ -181,6 +237,10 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
             .FirstOrDefaultAsync(m => m.Id == id);
         if (song is null) return NotFound();
 
+        // Ком'юніті-пісня без файлу тримається лише на відео — його не можна просто стерти.
+        if (song.Source == SongSources.Community && shouldUpdateVideo && youtubeVideoId is null && song.AudioFile is null)
+            return BadRequest("A community song needs an audio file or a YouTube video.");
+
         song.Artist = dto.Artist.Trim();
         song.Title = dto.Title.Trim();
         song.Release = DateOnly.Parse(dto.Release);
@@ -205,32 +265,7 @@ public class SongsController(MusicDbContext db, MusicService musicService, Artis
             .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
             .FirstAsync(m => m.Id == song.Id);
 
-        var playCounts = await musicService.GetPlayCountsAsync([song.Id]);
-        string? updatedAlbumName = albumId.HasValue
-            ? (await db.Albums.FindAsync(albumId.Value))?.Name
-            : null;
-        var updatedArtists = (await musicService.GetSongArtistsAsync([song.Id])).GetValueOrDefault(song.Id);
-
         await hub.Clients.All.SendAsync("songsChanged");
-        return Ok(ToDto(updated, updatedAlbumName, playCounts.GetValueOrDefault(song.Id, 0), updatedArtists));
-    }
-
-    private static SongDto ToDto(Music m, Dictionary<int, string> albums, int playCount, ArtistRefDto[]? artists = null)
-    {
-        var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
-        var albumName = m.AlbumIds is { Length: > 0 } && albums.TryGetValue(m.AlbumIds[0], out var n) ? n : null;
-        return new SongDto(m.Id, m.Artist, m.Title,
-            m.Release.ToString("yyyy-MM-dd"),
-            m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName, playCount, m.YoutubeVideoId, artists);
-    }
-
-    private static SongDto ToDto(Music m, string? albumName, int playCount, ArtistRefDto[]? artists = null)
-    {
-        var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
-        return new SongDto(m.Id, m.Artist, m.Title,
-            m.Release.ToString("yyyy-MM-dd"),
-            m.Duration.ToString(@"hh\:mm\:ss"),
-            genres, albumName, playCount, m.YoutubeVideoId, artists);
+        return Ok((await musicService.BuildSongDtosAsync([updated]))[0]);
     }
 }

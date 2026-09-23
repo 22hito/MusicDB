@@ -24,7 +24,59 @@ const I18N = {
     'theme.toggle': 'Змінити тему',
     'theme.dark': 'Темна',
     'theme.gray': 'Сіра',
+    'theme.system': 'Системна',
+    'nav.settings': 'Налаштування',
+    'settings.heading.pre': 'Налаштування',
+    'settings.heading.accent': 'інтерфейсу',
+    'settings.lead': 'Зберігаються на цьому пристрої й діють одразу, без перезавантаження.',
+    'settings.appearance': 'Вигляд',
+    'settings.appearance.sub': 'Тема, колір, розмір і щільність',
+    'settings.theme': 'Тема',
+    'settings.accent': 'Акцентний колір',
+    'settings.accent.hint': 'Кнопки, посилання, цифри статистики. Контраст підлаштовується під тему автоматично.',
+    'settings.accent.amber': 'Бурштин',
+    'settings.accent.coral': 'Корал',
+    'settings.accent.rose': 'Троянда',
+    'settings.accent.lavender': 'Лаванда',
+    'settings.accent.ocean': 'Океан',
+    'settings.accent.emerald': 'Смарагд',
+    'settings.fontScale': 'Розмір тексту',
+    'settings.density': 'Щільність таблиць',
+    'settings.density.hint': 'Компактна вміщує більше пісень на екрані.',
+    'settings.density.comfortable': 'Комфортна',
+    'settings.density.compact': 'Компактна',
+    'settings.contrast': 'Високий контраст',
+    'settings.contrast.hint': 'Яскравіший другорядний текст і чіткіші межі.',
+    'settings.motion.title': 'Рух і ефекти',
+    'settings.motion.sub': 'Анімації та сяйво від обкладинки',
+    'settings.motion': 'Анімації',
+    'settings.motion.hint': '"Системні" — як у налаштуваннях доступності ОС. "Зменшені" — без руху й переходів.',
+    'settings.motion.system': 'Системні',
+    'settings.motion.full': 'Увімкнені',
+    'settings.motion.reduced': 'Зменшені',
+    'settings.artColors': 'Кольори з обкладинки',
+    'settings.artColors.hint': 'Сяйво й плеєр підфарбовуються палітрою пісні, що грає.',
+    'settings.glowFollow': 'Сяйво йде за піснею',
+    'settings.glowFollow.hint': 'Світла пляма пливе сторінкою зліва направо разом із прогресом треку.',
+    'settings.glow': 'Інтенсивність сяйва',
+    'settings.grain': 'Плівкова зернистість',
+    'settings.grain.hint': 'Ледь помітна текстура фону.',
+    'settings.language': 'Мова',
+    'settings.language.sub': 'Мова інтерфейсу',
+    'settings.keyboard': 'Клавіатура',
+    'settings.keyboard.sub': 'Швидкі клавіші',
+    'settings.playerKeys': 'Керування плеєром з клавіатури',
+    'settings.playerKeys.hint': 'Не спрацьовують, поки ви друкуєте в полі вводу.',
+    'settings.key.search': 'Пошук',
+    'settings.key.play': 'Відтворення / пауза',
+    'settings.key.space': 'Пробіл',
+    'settings.key.next': 'Наступна пісня',
+    'settings.key.prev': 'Попередня пісня',
+    'settings.key.mute': 'Вимкнути / увімкнути звук',
+    'settings.profileLink': 'Нікнейм і аватар',
+    'settings.reset': 'Скинути до стандартних',
     'theme.light': 'Світла',
+    'a11y.skip': 'Перейти до вмісту',
     'stat.songs': 'Композицій',
     'stat.genres': 'Жанрів',
     'stat.albums': 'Альбомів',
@@ -250,7 +302,95 @@ const I18N = {
     'msg.errorDelete': 'Помилка видалення',
     'msg.errorReject': 'Помилка відхилення',
     'msg.needAdminRights': 'Потрібні права адміна',
-    'msg.errorAddSong': 'Помилка додавання пісні'
+    'msg.errorAddSong': 'Помилка додавання пісні',
+    'nav.community': 'Пісні ком\'юніті',
+    'nav.discussions': 'Обговорення',
+    'nav.messages': 'Повідомлення',
+    'navSearch.placeholder': 'Пісні, виконавці, люди…',
+    'navSearch.songs': 'Пісні',
+    'navSearch.artists': 'Виконавці',
+    'navSearch.users': 'Люди',
+    'navSearch.empty': 'Нічого не знайдено',
+    'navSearch.loginForUsers': 'Увійдіть, щоб шукати людей',
+    'home.source.catalog': 'Каталог',
+    'home.source.community': 'Ком\'юніті',
+    'home.communityHint': 'Власні пісні учасників спільноти — завантажені файлом або з посиланням на YouTube.',
+    'home.heading.communityPre': 'Пісні від',
+    'home.heading.communityAccent': 'ком\'юніті',
+    'home.addOwnSongBtn': '+ Додати свою пісню',
+    'table.rating': 'Оцінка',
+    'table.submittedBy': 'Додав',
+    'table.source': 'Таблиця',
+    'table.communityEmpty': 'Тут ще немає пісень від ком\'юніті — додайте свою першою',
+    'request.kind.catalog': 'Пісня до каталогу',
+    'request.kind.community': 'Власна пісня (ком\'юніті)',
+    'form.audioFile': 'Файл пісні',
+    'form.audioFile.hint': 'MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов\'язково, якщо вказано YouTube-відео.',
+    'form.youtube': 'Посилання на YouTube-відео',
+    'admin.audioReplaceHint': 'Оберіть файл, щоб замінити поточний',
+    'msg.communityNeedsFileOrVideo': 'Додайте файл пісні або посилання на YouTube-відео.',
+    'msg.audioTooLarge': 'Файл більший за 25 МБ.',
+    'msg.uploading': 'Завантаження…',
+    'audio.notFoundSuffix': ' — файл недоступний',
+    'adminNotif.sectionTitle': 'Адміністрування',
+    'notif.sectionTitle': 'Підписки й друзі',
+    'adminNotif.someone': 'Хтось',
+    'adminNotif.request_submitted': 'надсилає запит',
+    'adminNotif.request_approved': 'схвалює запит',
+    'adminNotif.request_rejected': 'відхиляє запит',
+    'adminNotif.song_added': 'додав',
+    'chat.heading.pre': 'Спілкування',
+    'chat.heading.accent': 'ком\'юніті',
+    'chat.tab.dm': 'Особисті повідомлення',
+    'chat.tab.threads': 'Обговорення',
+    'chat.loginHint': 'Увійдіть, щоб листуватися',
+    'chat.newHint': 'Нова розмова — через пошук людей угорі або кнопку «Написати» в профілі.',
+    'chat.noConversations': 'Ще немає розмов',
+    'chat.pickConversation': 'Оберіть розмову ліворуч',
+    'chat.inputPlaceholder': 'Напишіть повідомлення… (Enter — надіслати, Shift+Enter — новий рядок)',
+    'chat.sendBtn': 'Надіслати',
+    'chat.writeBtn': 'Написати',
+    'chat.you': 'Ви',
+    'chat.newConversation': 'Нова розмова',
+    'chat.startConversation': 'Напишіть перше повідомлення',
+    'threads.searchPlaceholder': 'Пошук гілки…',
+    'threads.newBtn': '+ Нова гілка',
+    'threads.titleLabel': 'Тема *',
+    'threads.bodyLabel': 'Повідомлення *',
+    'threads.createBtn': 'Створити гілку',
+    'threads.empty': 'Ще немає обговорень — почніть перше',
+    'threads.back': 'До всіх обговорень',
+    'threads.loginToReply': 'Увійдіть, щоб відповісти',
+    'threads.replyPlaceholder': 'Ваша відповідь…',
+    'threads.replyBtn': 'Відповісти',
+    'threads.deletedUser': 'видалений користувач',
+    'threads.by': 'від',
+    'threads.lastActivity': 'активність:',
+    'threads.confirmDeleteThread': 'Видалити цю гілку разом з усіма відповідями?',
+    'threads.confirmDeletePost': 'Видалити цю відповідь?',
+    'rating.title': 'Оцінка пісні',
+    'rating.yourScore': 'Ваша оцінка (0–100)',
+    'rating.review': 'Рецензія (необов\'язково)',
+    'rating.reviewPlaceholder': 'Що зачепило, що ні…',
+    'rating.deleteBtn': 'Прибрати оцінку',
+    'rating.loginHint': 'Увійдіть, щоб оцінити пісню й написати рецензію',
+    'rating.reviewsTitle': 'Рецензії',
+    'rating.rateBtn': 'Оцінити',
+    'rating.summary': 'Середня оцінка: {avg} / 100 · оцінок: {count}',
+    'rating.noRatings': 'Ще ніхто не оцінив',
+    'rating.noReviews': 'Рецензій ще немає',
+    'rating.confirmAdminDelete': 'Видалити цю оцінку й рецензію користувача?',
+    'chat.tab.requests': 'Запити на листування',
+    'chat.requestsHint': 'Друзі пишуть вам напряму. Інші люди можуть надіслати одне повідомлення — листування відкриється, лише якщо ви схвалите запит.',
+    'chat.requestsEmpty': 'Немає нових запитів на листування',
+    'chat.acceptRequest': 'Схвалити',
+    'chat.declineRequest': 'Відхилити',
+    'chat.pendingLabel': 'запит надіслано',
+    'chat.state.none': 'Ви ще не друзі — перше повідомлення надійде як запит на листування. Далі писати можна буде після схвалення.',
+    'chat.state.pendingOutgoing': 'Запит на листування надіслано. Писати далі можна буде, щойно співрозмовник його схвалить.',
+    'chat.state.declined': 'Співрозмовник відхилив запит на листування.',
+    'chat.state.pendingIncoming': 'Це запит на листування. Відповідь автоматично його схвалить.',
+    'battle.communityTrack': "Трек ком'юніті"
   },
   en: {
     'nav.home': 'Home',
@@ -271,7 +411,59 @@ const I18N = {
     'theme.toggle': 'Switch theme',
     'theme.dark': 'Dark',
     'theme.gray': 'Gray',
+    'theme.system': 'System',
+    'nav.settings': 'Settings',
+    'settings.heading.pre': 'Interface',
+    'settings.heading.accent': 'settings',
+    'settings.lead': 'Saved on this device and applied instantly, no reload needed.',
+    'settings.appearance': 'Appearance',
+    'settings.appearance.sub': 'Theme, color, size and density',
+    'settings.theme': 'Theme',
+    'settings.accent': 'Accent color',
+    'settings.accent.hint': 'Buttons, links, stat numbers. Contrast adapts to the theme automatically.',
+    'settings.accent.amber': 'Amber',
+    'settings.accent.coral': 'Coral',
+    'settings.accent.rose': 'Rose',
+    'settings.accent.lavender': 'Lavender',
+    'settings.accent.ocean': 'Ocean',
+    'settings.accent.emerald': 'Emerald',
+    'settings.fontScale': 'Text size',
+    'settings.density': 'Table density',
+    'settings.density.hint': 'Compact fits more songs on screen.',
+    'settings.density.comfortable': 'Comfortable',
+    'settings.density.compact': 'Compact',
+    'settings.contrast': 'High contrast',
+    'settings.contrast.hint': 'Brighter secondary text and crisper borders.',
+    'settings.motion.title': 'Motion & effects',
+    'settings.motion.sub': 'Animations and the artwork glow',
+    'settings.motion': 'Animations',
+    'settings.motion.hint': '"System" follows your OS accessibility setting. "Reduced" removes motion and transitions.',
+    'settings.motion.system': 'System',
+    'settings.motion.full': 'On',
+    'settings.motion.reduced': 'Reduced',
+    'settings.artColors': 'Colors from artwork',
+    'settings.artColors.hint': 'The glow and the player take on the palette of the playing song.',
+    'settings.glowFollow': 'Glow follows the song',
+    'settings.glowFollow.hint': 'A light spot drifts across the page left to right with the track progress.',
+    'settings.glow': 'Glow intensity',
+    'settings.grain': 'Film grain',
+    'settings.grain.hint': 'A barely visible background texture.',
+    'settings.language': 'Language',
+    'settings.language.sub': 'Interface language',
+    'settings.keyboard': 'Keyboard',
+    'settings.keyboard.sub': 'Shortcuts',
+    'settings.playerKeys': 'Control the player with the keyboard',
+    'settings.playerKeys.hint': 'Disabled while you are typing in a field.',
+    'settings.key.search': 'Search',
+    'settings.key.play': 'Play / pause',
+    'settings.key.space': 'Space',
+    'settings.key.next': 'Next song',
+    'settings.key.prev': 'Previous song',
+    'settings.key.mute': 'Mute / unmute',
+    'settings.profileLink': 'Nickname & avatar',
+    'settings.reset': 'Reset to defaults',
     'theme.light': 'Light',
+    'a11y.skip': 'Skip to content',
     'stat.songs': 'Songs',
     'stat.genres': 'Genres',
     'stat.albums': 'Albums',
@@ -497,7 +689,95 @@ const I18N = {
     'msg.errorDelete': 'Deletion error',
     'msg.errorReject': 'Rejection error',
     'msg.needAdminRights': 'Admin rights required',
-    'msg.errorAddSong': 'Error adding the song'
+    'msg.errorAddSong': 'Error adding the song',
+    'nav.community': 'Community songs',
+    'nav.discussions': 'Discussions',
+    'nav.messages': 'Messages',
+    'navSearch.placeholder': 'Songs, artists, people…',
+    'navSearch.songs': 'Songs',
+    'navSearch.artists': 'Artists',
+    'navSearch.users': 'People',
+    'navSearch.empty': 'Nothing found',
+    'navSearch.loginForUsers': 'Sign in to search for people',
+    'home.source.catalog': 'Catalog',
+    'home.source.community': 'Community',
+    'home.communityHint': 'Original songs by community members — uploaded as a file or linked from YouTube.',
+    'home.heading.communityPre': 'Songs from the',
+    'home.heading.communityAccent': 'community',
+    'home.addOwnSongBtn': '+ Add your song',
+    'table.rating': 'Rating',
+    'table.submittedBy': 'Added by',
+    'table.source': 'Table',
+    'table.communityEmpty': 'No community songs yet — be the first to add yours',
+    'request.kind.catalog': 'Song for the catalog',
+    'request.kind.community': 'My own song (community)',
+    'form.audioFile': 'Song file',
+    'form.audioFile.hint': 'MP3, M4A, OGG, WAV, FLAC — up to 25 MB. Optional if a YouTube video is given.',
+    'form.youtube': 'YouTube video link',
+    'admin.audioReplaceHint': 'Choose a file to replace the current one',
+    'msg.communityNeedsFileOrVideo': 'Add a song file or a YouTube video link.',
+    'msg.audioTooLarge': 'The file is larger than 25 MB.',
+    'msg.uploading': 'Uploading…',
+    'audio.notFoundSuffix': ' — file unavailable',
+    'adminNotif.sectionTitle': 'Administration',
+    'notif.sectionTitle': 'Follows & friends',
+    'adminNotif.someone': 'Someone',
+    'adminNotif.request_submitted': 'submitted a request',
+    'adminNotif.request_approved': 'approved a request',
+    'adminNotif.request_rejected': 'rejected a request',
+    'adminNotif.song_added': 'added',
+    'chat.heading.pre': 'Community',
+    'chat.heading.accent': 'chat',
+    'chat.tab.dm': 'Direct messages',
+    'chat.tab.threads': 'Discussions',
+    'chat.loginHint': 'Sign in to send messages',
+    'chat.newHint': 'Start a new conversation via people search above or the “Message” button on a profile.',
+    'chat.noConversations': 'No conversations yet',
+    'chat.pickConversation': 'Pick a conversation on the left',
+    'chat.inputPlaceholder': 'Write a message… (Enter to send, Shift+Enter for a new line)',
+    'chat.sendBtn': 'Send',
+    'chat.writeBtn': 'Message',
+    'chat.you': 'You',
+    'chat.newConversation': 'New conversation',
+    'chat.startConversation': 'Write the first message',
+    'threads.searchPlaceholder': 'Search threads…',
+    'threads.newBtn': '+ New thread',
+    'threads.titleLabel': 'Topic *',
+    'threads.bodyLabel': 'Message *',
+    'threads.createBtn': 'Create thread',
+    'threads.empty': 'No discussions yet — start the first one',
+    'threads.back': 'All discussions',
+    'threads.loginToReply': 'Sign in to reply',
+    'threads.replyPlaceholder': 'Your reply…',
+    'threads.replyBtn': 'Reply',
+    'threads.deletedUser': 'deleted user',
+    'threads.by': 'by',
+    'threads.lastActivity': 'active:',
+    'threads.confirmDeleteThread': 'Delete this thread with all replies?',
+    'threads.confirmDeletePost': 'Delete this reply?',
+    'rating.title': 'Rate the song',
+    'rating.yourScore': 'Your score (0–100)',
+    'rating.review': 'Review (optional)',
+    'rating.reviewPlaceholder': 'What worked, what didn’t…',
+    'rating.deleteBtn': 'Remove rating',
+    'rating.loginHint': 'Sign in to rate the song and write a review',
+    'rating.reviewsTitle': 'Reviews',
+    'rating.rateBtn': 'Rate',
+    'rating.summary': 'Average score: {avg} / 100 · ratings: {count}',
+    'rating.noRatings': 'No ratings yet',
+    'rating.noReviews': 'No reviews yet',
+    'rating.confirmAdminDelete': 'Delete this user\'s rating and review?',
+    'chat.tab.requests': 'Message requests',
+    'chat.requestsHint': 'Friends message you directly. Other people can send one message — the conversation opens only if you accept the request.',
+    'chat.requestsEmpty': 'No new message requests',
+    'chat.acceptRequest': 'Accept',
+    'chat.declineRequest': 'Decline',
+    'chat.pendingLabel': 'request sent',
+    'chat.state.none': 'You are not friends yet — your first message will arrive as a message request. You can keep writing once it is accepted.',
+    'chat.state.pendingOutgoing': 'Message request sent. You can write more once it is accepted.',
+    'chat.state.declined': 'This person declined your message request.',
+    'chat.state.pendingIncoming': 'This is a message request. Replying accepts it automatically.',
+    'battle.communityTrack': 'Community track'
   }
 };
 let currentLang = localStorage.getItem('lang') || 'uk';
@@ -535,6 +815,10 @@ function applyLang(lang){
   if(document.getElementById('page-battle')?.classList.contains('active')) openBattlePage();
   if(wheelResultGenre && document.getElementById('page-wheel')?.classList.contains('active')) renderWheelPlaylist();
   if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
+  _applyHomeSourceUi();
+  if(document.getElementById('page-chat')?.classList.contains('active')) loadChatPage();
+  if(document.getElementById('rating-modal-overlay')?.classList.contains('open') && ratingMusicId!=null) _loadRatingModal();
+  syncSettingsUI();
 }
 function selectLang(lang){
   applyLang(lang);
@@ -548,12 +832,22 @@ function toggleDropdown(evt, id){
   document.querySelectorAll('.dropdown.open').forEach(d=>{ if(d.id !== id) d.classList.remove('open'); });
   document.getElementById(id).classList.toggle('open');
 }
-document.addEventListener('click', ()=>{
+document.addEventListener('click', (e)=>{
   document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));
+  if(!e.target.closest('#nav-search')) _hideNavSearch();
 });
 
-let songs = [];
+let songs = [];          // головна таблиця_1 (каталог)
+let communitySongs = []; // головна таблиця_2 (пісні від ком'юніті)
+let homeSource = 'catalog';
 let requests = [];
+// Пісні таблиці, що зараз відкрита на "Головній".
+function activeSongs(){ return homeSource === 'community' ? communitySongs : songs; }
+// Пошук пісні в обох таблицях — для модалок редагування/видалення/оцінки.
+function _findSong(id){
+  return songs.find(x=>x.id===id) || communitySongs.find(x=>x.id===id)
+    || playerQueue.find(x=>x.id===id) || currentTopSongs.find(x=>x.id===id) || null;
+}
 
 // ================================================================
 // NAVIGATION
@@ -561,20 +855,18 @@ let requests = [];
 function showPage(n){
   const doSwitch = () => {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.nav-menu-item, #tab-home').forEach(b=>b.classList.remove('active'));
     document.getElementById('page-'+n).classList.add('active');
-    const tab = document.getElementById('tab-'+n);
+    // Таблиця_2 живе на тій самій сторінці "Головна" — підсвічуємо її пункт меню.
+    const tab = document.getElementById(n==='home' && homeSource==='community' ? 'tab-community' : 'tab-'+n);
     if(tab) tab.classList.add('active');
-    // _updateNavIndicator() МАЄ бути всередині цього колбека: startViewTransition
-    // не гарантує виклик колбека в тому самому такті, тож індикатор, викликаний
-    // одразу ЗА межами if/else нижче, іноді встигав прочитати ще стару .active
-    // вкладку (звідси баг — підсвічена попередня вкладка замість щойно обраної).
-    _updateNavIndicator();
   };
+  _hideNavSearch();
+  document.documentElement.setAttribute('data-page', n);
   // View Transitions API — нативний крос-фейд між сторінками (Chrome/Edge,
   // а отже й Electron). Без підтримки (Firefox/Safari) просто миттєво
   // перемикає, як і раніше — жодного regressions, лише бонус там, де є.
-  if(document.startViewTransition) document.startViewTransition(doSwitch);
+  if(document.startViewTransition && !_reducedMotion()) document.startViewTransition(doSwitch);
   else doSwitch();
   // Важкий перерендер відкладаємо на наступний кадр — інакше перехід між сторінками виглядає як підвисання.
   requestAnimationFrame(()=>{
@@ -590,35 +882,10 @@ function showPage(n){
     if(n==='artist') loadArtistPage();
     if(n==='friends') loadFriendsPage();
     if(n==='user-profile') loadUserProfilePage();
+    if(n==='settings') loadSettingsPage();
+    if(n==='chat') loadChatPage();
   });
 }
-// Плавний індикатор активної вкладки — рахує позицію/ширину кнопки й "їде"
-// туди замість миттєвого перескоку border-bottom.
-function _updateNavIndicator(){
-  const active = document.querySelector('.nav-tabs li button.active');
-  const indicator = document.getElementById('nav-tab-indicator');
-  if(!indicator) return;
-  if(!active){ indicator.style.opacity = '0'; return; }
-  indicator.style.left = active.offsetLeft + 'px';
-  indicator.style.width = active.offsetWidth + 'px';
-  indicator.style.opacity = '1';
-  // Підкручуємо активну вкладку в зону видимості, якщо нав скролиться.
-  active.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
-}
-window.addEventListener('resize', _updateNavIndicator);
-if (document.fonts?.ready) document.fonts.ready.then(_updateNavIndicator);
-
-// Перенаправляє вертикальний скрол колеса миші в горизонтальний над смугою вкладок.
-(function(){
-  const navTabs = document.querySelector('.nav-tabs');
-  if(!navTabs) return;
-  navTabs.addEventListener('wheel', function(e){
-    if(e.deltaY === 0 || navTabs.scrollWidth <= navTabs.clientWidth) return;
-    e.preventDefault();
-    navTabs.scrollLeft += e.deltaY;
-  }, { passive: false });
-})();
-
 // ================================================================
 // RENDER SONGS
 // ================================================================
@@ -648,6 +915,8 @@ function _sortVal(s, key){
     case 'genres': return s.genres.length?s.genres[0].toLowerCase():'';
     case 'album': return (s.album||'').toLowerCase();
     case 'plays': return s.playCount ?? 0;
+    case 'rating': return s.avgRating ?? -1;
+    case 'submitter': return (s.submittedBy?.displayName || '').toLowerCase();
     case 'artist': case 'title': return s[key].toLowerCase();
     default: return s[key];
   }
@@ -963,7 +1232,7 @@ function toggleShuffleTable(){
   shuffleActive = !shuffleActive;
   const btn = document.getElementById('shuffle-table-btn');
   if(shuffleActive){
-    const ids = songs.map(s=>s.id);
+    const ids = activeSongs().map(s=>s.id);
     for(let i=ids.length-1;i>0;i--){
       const j = Math.floor(Math.random()*(i+1));
       [ids[i], ids[j]] = [ids[j], ids[i]];
@@ -1254,11 +1523,23 @@ function artistLinksHtml(s){
     : esc(s.artist);
 }
 
+// Нік автора пісні (таблиця_2) — веде на його публічний профіль.
+function submitterLinkHtml(s){
+  if(!s.submittedBy) return `<span style="color:var(--muted)">—</span>`;
+  return `<a href="#" class="artist-link submitter-link" onclick="openUserProfileOrLogin(${s.submittedBy.userId});return false;"><svg class="icon"><use href="#icon-user"/></svg> ${esc(s.submittedBy.displayName)}</a>`;
+}
+function ratingChipHtml(s){
+  const label = s.avgRating != null ? `${s.avgRating}<small>·${s.ratingCount}</small>` : '—';
+  return `<button type="button" class="rating-chip${s.avgRating!=null?' has-rating':''}" onclick="openRatingModal(${s.id})" title="${t('rating.rateBtn')}"><svg class="icon"><use href="#icon-star"/></svg> ${label}</button>`;
+}
+
 function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
-  const filtered=songs.filter(s=>{
-    const mt=!srch||s.artist.toLowerCase().includes(srch)||s.title.toLowerCase().includes(srch)||(s.album&&s.album.toLowerCase().includes(srch));
+  const isCommunity = homeSource === 'community';
+  const filtered=activeSongs().filter(s=>{
+    const mt=!srch||s.artist.toLowerCase().includes(srch)||s.title.toLowerCase().includes(srch)||(s.album&&s.album.toLowerCase().includes(srch))
+      ||(isCommunity&&s.submittedBy&&s.submittedBy.displayName.toLowerCase().includes(srch));
     const mg=!gf||s.genres.includes(gf);
     return mt&&mg;
   });
@@ -1276,7 +1557,7 @@ function renderSongs(){
   displayedSongs = ordered;
   const tbody=document.getElementById('songs-body');
   if(!ordered.length){
-    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t('table.empty')}</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="13"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t(isCommunity?'table.communityEmpty':'table.empty')}</div></td></tr>`;
     return;
   }
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
@@ -1297,6 +1578,8 @@ function renderSongs(){
       <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
       <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
       <td class="duration-col" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
+      <td class="duration-col" data-label="${t('table.rating')}">${ratingChipHtml(s)}</td>
+      ${isCommunity?`<td data-label="${t('table.submittedBy')}">${submitterLinkHtml(s)}</td>`:''}
       ${currentUser?.authenticated?`<td class="td-icon-trail" data-label=""><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
       ${currentUser?.isAdmin?`<td class="td-actions" data-label="${t('table.action')}"><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
     </tr>`;
@@ -1304,6 +1587,7 @@ function renderSongs(){
 }
 
 function isPlaying(){
+  if(playerMode==='file') return !fileAudio.paused && !fileAudio.ended;
   try{return ytPlayer&&ytReady&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING;}catch(e){return false;}
 }
 
@@ -1327,22 +1611,23 @@ function _animateCount(id, target){
 }
 
 async function updateStats(){
-  const ag=new Set(songs.flatMap(s=>s.genres));
+  const list=activeSongs();
+  const ag=new Set(list.flatMap(s=>s.genres));
   const sel=document.getElementById('filter-genre');
   const cur=sel.value;
   sel.innerHTML=`<option value="">${t('filter.allGenres')}</option>`+[...ag].sort(_textSortCmp).map(g=>`<option value="${esc(g)}"${g===cur?' selected':''}>${esc(abbrGenre(g))}</option>`).join('');
   try {
-    const st = await fetch('/api/stats').then(r=>r.json());
+    const st = await fetch(`/api/stats?source=${homeSource}`).then(r=>r.json());
     _animateCount('stat-songs', st.totalSongs);
     _animateCount('stat-genres', st.totalGenres);
     _animateCount('stat-albums', st.totalAlbums);
     _animateCount('stat-singles', st.singles);
   } catch {
-    const aa=new Set(songs.filter(s=>s.album).map(s=>s.album));
-    _animateCount('stat-songs', songs.length);
+    const aa=new Set(list.filter(s=>s.album).map(s=>s.album));
+    _animateCount('stat-songs', list.length);
     _animateCount('stat-genres', ag.size);
     _animateCount('stat-albums', aa.size);
-    _animateCount('stat-singles', songs.filter(s=>!s.album).length);
+    _animateCount('stat-singles', list.filter(s=>!s.album).length);
   }
 }
 
@@ -1359,12 +1644,67 @@ document.querySelectorAll('.stat-card').forEach(card => {
 // FORMS
 // ================================================================
 // Форма заявки доступна лише авторизованим — інакше пропонуємо спочатку увійти.
-function openRequestPage(){
+// kind ('catalog'|'community') — з якої таблиці прийшли; без нього лишається попередній вибір.
+function openRequestPage(kind){
   if(!currentUser?.authenticated){
     if(confirm(t('msg.confirmLoginForRequest'))) login();
     return;
   }
+  if(kind) setSongFormKind('req', kind);
   showPage('request');
+}
+
+// Форми заявки ('req') і адмінського додавання ('add'): таблиця_1 чи таблиця_2.
+const songFormKind = { req: 'catalog', add: 'catalog' };
+function setSongFormKind(prefix, kind){
+  songFormKind[prefix] = kind === 'community' ? 'community' : 'catalog';
+  const isCommunity = songFormKind[prefix] === 'community';
+  document.getElementById(`${prefix}-kind-catalog`).classList.toggle('active', !isCommunity);
+  document.getElementById(`${prefix}-kind-community`).classList.toggle('active', isCommunity);
+  document.getElementById(`${prefix}-community-fields`).style.display = isCommunity ? '' : 'none';
+}
+// Тривалість (і назва, якщо порожня) — одразу з самого файлу, щоб не вводити вручну.
+function onCommunityAudioSelected(prefix){
+  const file = document.getElementById(`${prefix}-audio`).files[0];
+  if(!file) return;
+  const titleEl = document.getElementById(`${prefix}-title`);
+  if(!titleEl.value.trim()) titleEl.value = file.name.replace(/\.[^.]+$/, '');
+  const url = URL.createObjectURL(file);
+  const probe = new Audio();
+  probe.preload = 'metadata';
+  probe.onloadedmetadata = () => {
+    const d = Math.round(probe.duration);
+    if(isFinite(d) && d > 0){
+      const hh = String(Math.floor(d/3600)).padStart(2,'0'), mm = String(Math.floor(d%3600/60)).padStart(2,'0'), ss = String(d%60).padStart(2,'0');
+      document.getElementById(`${prefix}-duration`).value = `${hh}:${mm}:${ss}`;
+    }
+    URL.revokeObjectURL(url);
+  };
+  probe.onerror = () => URL.revokeObjectURL(url);
+  probe.src = url;
+}
+// multipart-тіло для /api/requests/community і /api/songs/community; null — не вистачає файлу/відео.
+function _buildCommunityForm(prefix, fields){
+  const file = document.getElementById(`${prefix}-audio`).files[0];
+  const youtube = document.getElementById(`${prefix}-youtube`).value.trim();
+  if(!file && !youtube){ alert(t('msg.communityNeedsFileOrVideo')); return null; }
+  if(file && file.size > 25*1024*1024){ alert(t('msg.audioTooLarge')); return null; }
+  const fd = new FormData();
+  Object.entries(fields).forEach(([k,v])=>{ if(v!=null) fd.append(k, v); });
+  if(youtube) fd.append('youtubeVideo', youtube);
+  if(file) fd.append('audio', file);
+  return fd;
+}
+function _clearCommunityFields(prefix){
+  document.getElementById(`${prefix}-audio`).value = '';
+  document.getElementById(`${prefix}-youtube`).value = '';
+}
+// Кнопка на час завантаження файлу — fetch не дає прогресу, тож хоча б явний стан.
+function _setBusy(btnId, busy){
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  if(busy){ btn.dataset.label = btn.textContent; btn.textContent = t('msg.uploading'); btn.disabled = true; }
+  else { if(btn.dataset.label) btn.textContent = btn.dataset.label; btn.disabled = false; }
 }
 // ================================================================
 // EXTERNAL SEARCH (iTunes) — автозаповнення форми запиту/додавання
@@ -1473,19 +1813,31 @@ function submitRequest(){
   const al=document.getElementById('req-album').value.trim();
   const gr=document.getElementById('req-genres').value.trim();
   if(!a||!t2||!r||!d||!gr){alert(t('msg.fillRequiredFields'));return;}
-  const body={artist:a,title:t2,release:r,duration:d,genres:gr.split(',').map(g=>g.trim()).filter(Boolean),albumTitle:al||null};
+  const isCommunity = songFormKind.req === 'community';
+  let request;
+  if(isCommunity){
+    const fd = _buildCommunityForm('req', {artist:a,title:t2,release:r,duration:d,genres:gr,album:al||null});
+    if(!fd) return;
+    request = {method:'POST',body:fd};
+  } else {
+    const body={artist:a,title:t2,release:r,duration:d,genres:gr.split(',').map(g=>g.trim()).filter(Boolean),albumTitle:al||null};
+    request = {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+  }
   const clearReq = () => {
     ['req-artist','req-title','req-release','req-duration','req-album','req-genres'].forEach(i=>document.getElementById(i).value='');
+    _clearCommunityFields('req');
     document.getElementById('ext-search-panel').style.display = 'none';
   };
   const showReqOk = () => { const el=document.getElementById('req-alert');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500); };
-  fetch('/api/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(res=>{
+  _setBusy('req-submit-btn', true);
+  fetch(isCommunity ? '/api/requests/community' : '/api/requests', request)
+    .then(async res=>{
       if(res.status===401){alert(t('msg.needLoginGeneric'));login();return;}
-      if(!res.ok){alert(t('msg.errorSubmittingRequest'));return;}
+      if(!res.ok){alert(t('msg.errorSubmittingRequest') + (res.status===400 ? '\n' + await res.text() : ''));return;}
       clearReq(); showReqOk();
     })
-    .catch(()=>{ alert(t('msg.connectionError')); });
+    .catch(()=>{ alert(t('msg.connectionError')); })
+    .finally(()=>_setBusy('req-submit-btn', false));
 }
 
 // Підтаби всередині "Адмін-панелі" — перемикають ті самі блоки, що раніше були окремими вкладками навбару.
@@ -1520,6 +1872,12 @@ function renderRequests(){
         <td class="duration-col" data-label="${t('table.release')}">${fmtDate(r.release)}</td><td class="duration-col" data-label="${t('table.duration')}">${r.duration}</td>
         <td data-label="${t('table.genres')}">${r.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}${r.genreNamesOriginal?`<div style="color:var(--muted);font-size:0.7rem;margin-top:4px;">(${esc(r.genreNamesOriginal)})</div>`:''}</td>
         <td data-label="${t('table.album')}">${r.albumTitle?`<span class="badge album">${esc(r.albumTitle)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+        <td data-label="${t('table.source')}"><div class="req-source-cell">
+          <span class="badge${r.kind==='community'?' source-community':''}">${t(r.kind==='community'?'home.source.community':'home.source.catalog')}</span>
+          ${r.requester?`<div class="hint">${t('table.submittedBy')}: <a href="#" class="artist-link" onclick="openUserProfilePage(${r.requester.userId});return false;">${esc(r.requester.displayName)}</a></div>`:''}
+          ${r.audioUrl?`<audio controls preload="none" src="${esc(r.audioUrl)}" class="req-audio"></audio>`:''}
+          ${r.kind==='community'&&r.youtubeVideoId?`<a class="artist-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(r.youtubeVideoId)}" target="_blank" rel="noopener"><svg class="icon icon-filled"><use href="#icon-play"/></svg> YouTube</a>`:''}
+        </div></td>
         <td class="td-actions" data-label="${t('table.action')}"><div class="actions-td">
           <button class="btn btn-outline" onclick="openEditRequestModal(${r.id})" title="${t('admin.editBtn')}"><svg class="icon"><use href="#icon-pencil"/></svg></button>
           <button class="btn btn-success" onclick="approveRequest(${r.id})">${t('admin.approveBtn')}</button>
@@ -1551,7 +1909,7 @@ function deleteSong(id){
 }
 // Кастомне модальне вікно підтвердження видалення (замість браузерного confirm()).
 function confirmDeleteSong(id){
-  const song = songs.find(x=>x.id===id);
+  const song = _findSong(id);
   const label = song ? `${song.artist} — ${song.title}` : t('modal.deleteDefaultLabel');
   document.getElementById('delete-modal-text').textContent =
     t('modal.deleteBodyTemplate').replace('{label}', label);
@@ -1650,8 +2008,15 @@ function editCurrentSong(){
   openEditSongModal(s.id);
 }
 function openEditSongModal(id){
-  const s = songs.find(x=>x.id===id);
+  const s = _findSong(id);
   if(!s) return;
+  // Заміна файлу — лише для пісень таблиці_2.
+  const audioGroup = document.getElementById('edit-song-audio-group');
+  const audioPreview = document.getElementById('edit-song-audio-preview');
+  audioGroup.style.display = s.source === 'community' ? '' : 'none';
+  document.getElementById('edit-song-audio').value = '';
+  if(s.audioUrl){ audioPreview.src = s.audioUrl; audioPreview.style.display = ''; }
+  else { audioPreview.removeAttribute('src'); audioPreview.style.display = 'none'; }
   document.getElementById('edit-song-artist').value = s.artist || '';
   document.getElementById('edit-song-title').value = s.title || '';
   document.getElementById('edit-song-release').value = s.release || '';
@@ -1700,11 +2065,17 @@ function saveEditSong(id){
     youtubeVideoId
   };
   const lyrics = document.getElementById('edit-song-lyrics').value;
+  const newAudio = document.getElementById('edit-song-audio').files[0];
   fetch(`/api/songs/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>{
-      if(!r.ok){alert(t('msg.errorEditSong'));return;}
+    .then(async r=>{
+      if(!r.ok){alert(t('msg.errorEditSong') + (r.status===400 ? '\n' + await r.text() : ''));return;}
       // Окремий ендпоінт — текст пісні не є частиною основного DTO.
       fetch(`/api/songs/${id}/lyrics`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({lyrics})}).catch(()=>{});
+      if(newAudio){
+        const fd = new FormData(); fd.append('audio', newAudio);
+        const ar = await fetch(`/api/songs/${id}/audio`,{method:'PUT',body:fd});
+        if(!ar.ok) alert(t('msg.errorEditSong') + '\n' + await ar.text());
+      }
       closeEditSongModal();
       loadSongs().then(()=>{renderSongs();updateStats();});
     })
@@ -1719,21 +2090,33 @@ function addSong(){
   const al=document.getElementById('add-album').value.trim();
   const gr=document.getElementById('add-genres').value.trim();
   if(!a||!t2||!r||!d||!gr){alert(t('msg.fillRequiredFields'));return;}
-  const body={artist:a,title:t2,release:r,duration:d,
-    genres:gr.split(',').map(g=>g.trim()).filter(Boolean),album:al||null};
+  const isCommunity = songFormKind.add === 'community';
+  let request;
+  if(isCommunity){
+    const fd = _buildCommunityForm('add', {artist:a,title:t2,release:r,duration:d,genres:gr,album:al||null});
+    if(!fd) return;
+    request = {method:'POST',body:fd};
+  } else {
+    const body={artist:a,title:t2,release:r,duration:d,
+      genres:gr.split(',').map(g=>g.trim()).filter(Boolean),album:al||null};
+    request = {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+  }
   const clearForm = () => {
     ['add-artist','add-title','add-release','add-duration','add-album','add-genres'].forEach(i=>document.getElementById(i).value='');
+    _clearCommunityFields('add');
     document.getElementById('add-ext-search-panel').style.display = 'none';
   };
   const showOk = () => { const el=document.getElementById('add-alert');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500); };
-  fetch('/api/songs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(res=>{
+  _setBusy('add-submit-btn', true);
+  fetch(isCommunity ? '/api/songs/community' : '/api/songs', request)
+    .then(async res=>{
       if(res.status===401||res.status===403){alert(t('msg.needAdminRights'));return;}
-      if(!res.ok){alert(t('msg.errorAddSong'));return;}
+      if(!res.ok){alert(t('msg.errorAddSong') + (res.status===400 ? '\n' + await res.text() : ''));return;}
       clearForm(); showOk();
       loadSongs().then(()=>{renderSongs();updateStats();});
     })
-    .catch(()=>{ alert(t('msg.connectionError')); });
+    .catch(()=>{ alert(t('msg.connectionError')); })
+    .finally(()=>_setBusy('add-submit-btn', false));
 }
 
 // ================================================================
@@ -1746,12 +2129,22 @@ function abbrGenre(name){return String(name).replace(/alternative/gi,'alt');}
 // ================================================================
 // THEME (світла/темна)
 // ================================================================
-const THEME_ICONS = { dark: 'moon', gray: 'contrast', light: 'sun' };
+const THEME_ICONS = { dark: 'moon', gray: 'contrast', light: 'sun', system: 'monitor' };
+// "Системна" — не окрема палітра, а вибір світлої/темної за налаштуванням ОС.
+const _systemLightMq = window.matchMedia('(prefers-color-scheme: light)');
+function _resolveTheme(theme){ return theme === 'system' ? (_systemLightMq.matches ? 'light' : 'dark') : theme; }
+_systemLightMq.addEventListener?.('change', () => { if(localStorage.getItem('theme') === 'system') selectTheme('system'); });
 function applyTheme(theme){
+  const resolved = _resolveTheme(theme);
   // Тимчасово вимикаємо всі hover-transition, щоб зміна теми клацала миттєво.
   document.documentElement.classList.add('theme-switching');
-  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', resolved);
   localStorage.setItem('theme', theme);
+  // Колір рядка стану браузера/PWA — під фон активної теми, а не завжди чорний.
+  // Hex, а не значення --bg: воно в oklch(), який meta theme-color розуміють не всі браузери.
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  if(themeMeta) themeMeta.setAttribute('content', THEME_META_COLORS[resolved] || THEME_META_COLORS.dark);
+  _paintArtworkColor();
   requestAnimationFrame(() => requestAnimationFrame(() => {
     document.documentElement.classList.remove('theme-switching');
   }));
@@ -1762,10 +2155,238 @@ function applyTheme(theme){
   document.querySelectorAll('#theme-dropdown [data-theme-option]').forEach(b=>{
     b.classList.toggle('active', b.getAttribute('data-theme-option') === theme);
   });
+  syncSettingsUI();
 }
+const THEME_META_COLORS = { dark: '#090c14', gray: '#474c56', light: '#f8f4ec' };
+// Остання точка натискання — з неї "розкривається" нова тема колом.
+let _lastPointer = null;
+document.addEventListener('pointerdown', e => { _lastPointer = { x: e.clientX, y: e.clientY }; }, true);
 function selectTheme(theme){
-  applyTheme(theme);
+  if(!document.startViewTransition || _reducedMotion() || _resolveTheme(theme) === document.documentElement.getAttribute('data-theme')){
+    applyTheme(theme);
+    return;
+  }
+  const { x, y } = _lastPointer || { x: window.innerWidth - 120, y: 28 };
+  const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+  document.documentElement.classList.add('theme-vt');
+  const vt = document.startViewTransition(() => applyTheme(theme));
+  vt.ready.then(() => {
+    document.documentElement.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+      { duration: 620, easing: 'cubic-bezier(.2,.8,.2,1)', pseudoElement: '::view-transition-new(root)' }
+    );
+  }).catch(()=>{});
+  vt.finished.finally(() => document.documentElement.classList.remove('theme-vt'));
 }
+
+// ================================================================
+// КОЛІР ОБКЛАДИНКИ → інтерфейс (як Apple Music / Spotify)
+// Беремо домінантний "живий" відтінок мініатюри YouTube (i.ytimg.com
+// віддає Access-Control-Allow-Origin: *, тож canvas не "брудниться") і
+// підфарбовуємо ним сяйво сторінки, плеєр і рядок, що грає. Зберігаємо
+// лише відтінок (hue), а яскравість/насиченість бере тема — інакше на
+// світлій темі колір з темної обкладинки був би нечитабельним.
+// ================================================================
+let _artHue = null;   // [основний, другий, третій] відтінки палітри обкладинки
+let _lastArtVid = null;
+function _rgbToOklchHue(r, g, b){
+  const lin = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const R = lin(r), G = lin(g), B = lin(b);
+  const l = Math.cbrt(0.4122214708*R + 0.5363325363*G + 0.0514459929*B);
+  const m = Math.cbrt(0.2119034982*R + 0.6806995451*G + 0.1073969566*B);
+  const s = Math.cbrt(0.0883024619*R + 0.2817188376*G + 0.6299787005*B);
+  const A = 1.9779984951*l - 2.4285922050*m + 0.4505937099*s;
+  const Bb = 0.0259040371*l + 0.7827717662*m - 0.8086757660*s;
+  return { hue: (Math.atan2(Bb, A) * 180 / Math.PI + 360) % 360, chroma: Math.hypot(A, Bb) };
+}
+function _paintArtworkColor(){
+  const root = document.documentElement;
+  if(_artHue == null || !PREFS.artColors){
+    ['--art', '--art2', '--art3'].forEach(p => root.style.removeProperty(p));
+    return;
+  }
+  const theme = root.getAttribute('data-theme');
+  const lc = theme === 'light' ? '0.58 0.15' : theme === 'gray' ? '0.86 0.11' : '0.76 0.14';
+  root.style.setProperty('--art', `oklch(${lc} ${_artHue[0].toFixed(1)})`);
+  root.style.setProperty('--art2', `oklch(${lc} ${_artHue[1].toFixed(1)})`);
+  root.style.setProperty('--art3', `oklch(${lc} ${_artHue[2].toFixed(1)})`);
+}
+function _applyArtworkColor(vid){
+  _lastArtVid = vid || null;
+  if(!vid){ _artHue = null; _paintArtworkColor(); return; }
+  const im = new Image();
+  im.crossOrigin = 'anonymous';
+  im.onload = () => {
+    try{
+      const c = document.createElement('canvas'); c.width = 32; c.height = 18;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(im, 0, 0, 32, 18);
+      const px = g.getImageData(0, 0, 32, 18).data;
+      // 24 кошики відтінку, вага = насиченість × "не надто темний/світлий".
+      const bins = new Array(24).fill(0), hueSum = new Array(24).fill(0);
+      for(let i = 0; i < px.length; i += 4){
+        const { hue, chroma } = _rgbToOklchHue(px[i], px[i+1], px[i+2]);
+        const lum = (px[i]*0.299 + px[i+1]*0.587 + px[i+2]*0.114) / 255;
+        const w = chroma * Math.max(0, 1 - Math.abs(lum - 0.55) * 1.6);
+        const b = Math.floor(hue / 15) % 24;
+        bins[b] += w; hueSum[b] += hue * w;
+      }
+      // Палітра з трьох кольорів: найсильніший кошик + наступні, що відстоять
+      // від уже вибраних щонайменше на 45° (інакше це "той самий" колір).
+      // Бракує контрастних відтінків — добудовуємо аналогічні (±40°).
+      const order = bins.map((w, i) => i).sort((a, b) => bins[b] - bins[a]);
+      const picked = [];
+      for(const b of order){
+        if(bins[b] < bins[order[0]] * 0.18) break;
+        const h = hueSum[b] / bins[b];
+        if(picked.every(p => Math.min(Math.abs(p - h), 360 - Math.abs(p - h)) >= 45)) picked.push(h);
+        if(picked.length === 3) break;
+      }
+      // Майже монохромна обкладинка — лишаємо фірмовий акцент.
+      if(!picked.length || bins[order[0]] <= 1.2){ _artHue = null; }
+      else {
+        const h0 = picked[0];
+        _artHue = [h0, picked[1] ?? (h0 + 40) % 360, picked[2] ?? (h0 + 320) % 360];
+      }
+    }catch(e){ _artHue = null; }
+    _paintArtworkColor();
+  };
+  im.onerror = () => { _artHue = null; _paintArtworkColor(); };
+  im.src = 'https://i.ytimg.com/vi/' + encodeURIComponent(vid) + '/mqdefault.jpg';
+}
+
+// ================================================================
+// НАЛАШТУВАННЯ ІНТЕРФЕЙСУ (сторінка page-settings)
+// Зберігаються одним JSON у localStorage('prefs') — лише цей пристрій.
+// Перше застосування (до відмальовки) робить inline-скрипт у <head>,
+// тут — повторне застосування + синхронізація контролів сторінки.
+// Тема й мова лишаються в окремих ключах 'theme'/'lang' (як і раніше).
+// ================================================================
+const PREF_DEFAULTS = {
+  motion: 'system', artColors: true, glowFollow: true, glow: 100, grain: true,
+  accent: 'amber', fontScale: 100, density: 'comfortable', highContrast: false, playerKeys: true,
+};
+const ACCENT_HUES = { amber: 78, coral: 38, rose: 5, lavender: 295, ocean: 235, emerald: 158 };
+let PREFS = (() => {
+  try { return { ...PREF_DEFAULTS, ...JSON.parse(localStorage.getItem('prefs') || '{}') }; }
+  catch(e){ return { ...PREF_DEFAULTS }; }
+})();
+function _reducedMotion(){
+  if(PREFS.motion === 'reduced') return true;
+  if(PREFS.motion === 'full') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function applyPrefs(){
+  const root = document.documentElement;
+  const setAttr = (name, val) => val == null ? root.removeAttribute(name) : root.setAttribute(name, val);
+  setAttr('data-motion', PREFS.motion === 'system' ? null : PREFS.motion);
+  setAttr('data-density', PREFS.density === 'compact' ? 'compact' : null);
+  setAttr('data-contrast', PREFS.highContrast ? 'high' : null);
+  setAttr('data-grain', PREFS.grain ? null : 'off');
+  setAttr('data-glow-follow', PREFS.glowFollow ? '' : null);
+  if(PREFS.fontScale !== 100) root.style.setProperty('--font-scale', PREFS.fontScale / 100);
+  else root.style.removeProperty('--font-scale');
+  root.style.setProperty('--ah', ACCENT_HUES[PREFS.accent] ?? ACCENT_HUES.amber);
+  root.style.setProperty('--glow-k', PREFS.glow / 100);
+  _paintArtworkColor();
+}
+function setPref(key, value){
+  if(key === 'theme'){ selectTheme(value); return; }
+  if(key === 'lang'){ selectLang(value); return; }
+  PREFS[key] = value;
+  try { localStorage.setItem('prefs', JSON.stringify(PREFS)); } catch(e){}
+  applyPrefs();
+  syncSettingsUI();
+}
+function resetPrefs(){
+  PREFS = { ...PREF_DEFAULTS };
+  try { localStorage.removeItem('prefs'); } catch(e){}
+  applyPrefs();
+  syncSettingsUI();
+}
+function syncSettingsUI(){
+  const page = document.getElementById('page-settings');
+  if(!page) return;
+  const values = { ...PREFS, theme: localStorage.getItem('theme') || 'dark', lang: currentLang };
+  page.querySelectorAll('[data-pref]').forEach(el => {
+    const key = el.getAttribute('data-pref');
+    const val = values[key];
+    if(el.type === 'checkbox') el.checked = !!val;
+    else if(el.type === 'range'){
+      el.value = val;
+      el.style.setProperty('--fill', ((val - el.min) / (el.max - el.min) * 100) + '%');
+      const out = document.getElementById('pref-' + key + '-out');
+      if(out) out.textContent = val + '%';
+    } else {
+      el.querySelectorAll('[data-value]').forEach(b => {
+        const on = String(val) === b.getAttribute('data-value');
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+  });
+}
+function loadSettingsPage(){
+  const link = document.getElementById('settings-profile-link');
+  if(link) link.style.display = currentUser?.authenticated ? '' : 'none';
+  syncSettingsUI();
+}
+// Делегування: один обробник на всю сторінку замість onclick на кожному контролі.
+(() => {
+  const page = document.getElementById('page-settings');
+  if(!page) return;
+  page.addEventListener('click', e => {
+    const btn = e.target.closest('[data-pref] [data-value]');
+    if(!btn) return;
+    const key = btn.closest('[data-pref]').getAttribute('data-pref');
+    const raw = btn.getAttribute('data-value');
+    setPref(key, /^\d+$/.test(raw) ? parseInt(raw, 10) : raw);
+  });
+  page.addEventListener('change', e => {
+    const el = e.target;
+    if(el.type === 'checkbox' && el.dataset.pref) setPref(el.dataset.pref, el.checked);
+  });
+  page.addEventListener('input', e => {
+    const el = e.target;
+    if(el.type === 'range' && el.dataset.pref) setPref(el.dataset.pref, parseInt(el.value, 10));
+  });
+})();
+applyPrefs();
+
+// Клавіші плеєра: пробіл — пауза, Shift+←/→ — попередня/наступна, M — звук.
+let _volBeforeMute = null;
+document.addEventListener('keydown', e => {
+  if(!PREFS.playerKeys || e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+  if(!document.getElementById('player-bar')?.classList.contains('visible')) return;
+  // Відкрите модальне вікно (батл тощо) має власні клавіші — не заважаємо.
+  if(document.querySelector('.modal-overlay.open')) return;
+  if(e.code === 'Space' && tag !== 'button' && tag !== 'a'){ e.preventDefault(); playerToggle(); }
+  else if(e.shiftKey && e.key === 'ArrowRight'){ e.preventDefault(); playerNext(); }
+  else if(e.shiftKey && e.key === 'ArrowLeft'){ e.preventDefault(); playerPrev(); }
+  else if(!e.shiftKey && (e.key === 'm' || e.key === 'M' || e.code === 'KeyM')){
+    e.preventDefault();
+    if(vol > 0){ _volBeforeMute = vol; setVolume(0); }
+    else setVolume(_volBeforeMute || 80);
+    const slider = document.getElementById('vol-slider');
+    if(slider) slider.value = vol;
+  }
+});
+
+// "/" або Ctrl/⌘+K — фокус на глобальний пошук (як у GitHub/Linear).
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+  const isK = (e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K' || e.code === 'KeyK');
+  if(isK || (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey)){
+    const input = document.getElementById('nav-search-input');
+    if(!input) return;
+    e.preventDefault();
+    input.focus();
+    input.select();
+  }
+});
 function fmtDate(d){const[y,m,day]=d.split('-');return`${day}.${m}.${y}`;}
 function fmtSec(s){s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 
@@ -1822,20 +2443,18 @@ function renderAuthArea() {
   document.body.classList.toggle('admin-mode', !!isAdmin);
   document.body.classList.toggle('authed-mode', !!authed);
 
-  // Show/hide admin tabs
-  document.getElementById('nav-admin-hub').style.display = isAdmin ? '' : 'none';
-  document.getElementById('nav-request').style.display = authed ? '' : 'none';
-  document.getElementById('nav-recommendations').style.display = authed ? '' : 'none';
-  // Показ/приховування вкладок зсуває позиції сусідніх — перерахувати індикатор.
-  setTimeout(_updateNavIndicator, 0);
+  document.getElementById('tab-request').style.display = authed ? '' : 'none';
+  document.getElementById('tab-recommendations').style.display = authed ? '' : 'none';
   const thAction = document.getElementById('th-action');
   if(thAction) thAction.style.display = isAdmin ? '' : 'none';
   const thFav = document.getElementById('th-fav');
   if(thFav) thFav.style.display = authed ? '' : 'none';
-  const adminTools = document.getElementById('admin-tools-row');
-  if(adminTools) adminTools.style.display = isAdmin ? 'block' : 'none';
+  const normalizeBtn = document.getElementById('normalize-genres-btn');
+  if(normalizeBtn) normalizeBtn.style.display = isAdmin ? '' : 'none';
   const btnEditCurrent = document.getElementById('btn-edit-current');
   if(btnEditCurrent) btnEditCurrent.style.display = (isAdmin && playerQueue[playerIndex]) ? '' : 'none';
+  const btnRateCurrent = document.getElementById('btn-rate-current');
+  if(btnRateCurrent) btnRateCurrent.style.display = playerQueue[playerIndex] ? '' : 'none';
 
   if(authed) loadFavoriteIds(); else favoriteIds = new Set();
 
@@ -1850,26 +2469,33 @@ function renderAuthArea() {
         <button class="dropdown-toggle" onclick="toggleDropdown(event,'notif-dropdown'); onOpenNotifDropdown();" title="${t('notif.bellTitle')}">
           <svg class="icon"><use href="#icon-bell"/></svg><span id="notif-badge" class="badge" style="display:none;margin-left:2px;"></span>
         </button>
-        <div class="dropdown-menu" id="notif-list" style="min-width:300px;max-height:360px;overflow-y:auto;"></div>
+        <div class="dropdown-menu" id="notif-list" style="min-width:320px;max-height:420px;overflow-y:auto;"></div>
       </div>
+      <button class="dropdown-toggle" onclick="openChatPage('dm')" title="${t('chat.tab.dm')}" style="margin-right:0.3rem;">
+        <svg class="icon"><use href="#icon-chat"/></svg><span id="dm-badge" class="badge" style="display:none;margin-left:2px;"></span>
+      </button>
       <div class="dropdown" id="profile-dropdown">
         <button class="dropdown-toggle" onclick="toggleDropdown(event,'profile-dropdown')" title="${t('nav.profile')}" style="height:auto;padding:0.25rem 0.6rem 0.25rem 0.3rem;">
           ${pic}
-          <span style="color:var(--muted);font-size:0.78rem;font-family:var(--font-mono);">${esc(displayLabel)}</span>
+          <span style="color:var(--muted);font-size:0.78rem;font-family:var(--font-ui);">${esc(displayLabel)}</span>
         </button>
         <div class="dropdown-menu">
           <button onclick="showPage('profile')" data-i18n="nav.profile">${t('nav.profile')}</button>
           <button onclick="showPage('profile-settings')" data-i18n="nav.profileSettings">${t('nav.profileSettings')}</button>
           <button onclick="showPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
+          <button onclick="openChatPage('dm')" data-i18n="nav.messages">${t('nav.messages')}</button>
+          ${isAdmin?`<button onclick="showPage('admin-hub')" id="tab-admin-hub" class="nav-menu-item"><svg class="icon"><use href="#icon-settings"/></svg> ${t('nav.adminHub')}<span id="admin-requests-badge" class="badge" style="display:none;margin-left:auto;"></span></button>`:''}
         </div>
       </div>
-      ${isAdmin?'<span style="background:var(--accent);color:#0d0d0f;font-size:0.65rem;font-family:var(--font-mono);padding:0.15rem 0.5rem;border-radius:4px;font-weight:700;">ADMIN</span>':''}
-      <button onclick="logout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.72rem;font-family:var(--font-mono);cursor:pointer;">${t('auth.logout')}</button>
+      ${isAdmin?'<span style="background:var(--accent);color:var(--on-accent);font-size:0.65rem;font-family:var(--font-ui);padding:0.15rem 0.5rem;border-radius:4px;font-weight:700;">ADMIN</span>':''}
+      <button onclick="logout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.72rem;font-family:var(--font-ui);cursor:pointer;">${t('auth.logout')}</button>
     `;
     refreshNotifBadge();
+    refreshDmBadge();
+    if(isAdmin) refreshAdminRequestsBadge();
   } else {
     area.innerHTML = `
-      <button onclick="login()" style="background:var(--accent);border:none;color:#0d0d0f;border-radius:6px;padding:0.35rem 0.9rem;font-size:0.75rem;font-family:var(--font-mono);font-weight:700;cursor:pointer;letter-spacing:0.06em;">
+      <button onclick="login()" class="nav-login-btn">
         ${t('auth.loginBtn')}
       </button>
     `;
@@ -1885,9 +2511,10 @@ function refreshNotifBadge(){
   if(!badge) return;
   Promise.all([
     fetch('/api/notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null),
-    fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).catch(()=>[])
-  ]).then(([notif, incoming])=>{
-    const count = (notif?.unreadCount || 0) + (incoming?.length || 0);
+    fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).catch(()=>[]),
+    currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null)
+  ]).then(([notif, incoming, adminNotif])=>{
+    const count = (notif?.unreadCount || 0) + (incoming?.length || 0) + (adminNotif?.unreadCount || 0);
     if(count > 0){ badge.textContent = count > 99 ? '99+' : count; badge.style.display = ''; }
     else { badge.style.display = 'none'; }
   });
@@ -1898,15 +2525,25 @@ function _notifEventText(type){
   if(type === 'lyrics_added') return t('notif.event.lyricsAdded');
   return type;
 }
+// "hito схвалює запит", "hito додав" — дієслово залежить від типу події адмін-журналу.
+function _adminEventText(n){
+  const actor = n.actor ? `<strong>${esc(n.actor.displayName)}</strong>` : `<strong>${esc(t('adminNotif.someone'))}</strong>`;
+  const verb = t('adminNotif.' + n.eventType);
+  const src = n.source === 'community' ? ` <span class="badge source-community">${t('home.source.community')}</span>` : '';
+  return `${actor} ${esc(verb)}${src}`;
+}
 function onOpenNotifDropdown(){
   const list = document.getElementById('notif-list');
   list.innerHTML = `<div style="padding:0.8rem;color:var(--muted);font-size:0.8rem;">${t('notif.loading')}</div>`;
   Promise.all([
     fetch('/api/notifications?limit=30').then(r=>r.ok?r.json():null).catch(()=>null),
-    fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).catch(()=>[])
-  ]).then(([d, incoming])=>{
+    fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).catch(()=>[]),
+    currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=30').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null)
+  ]).then(([d, incoming, adminData])=>{
     const recent = d?.recent || [];
-    if(!recent.length && !incoming.length){
+    const adminRecent = adminData?.recent || [];
+    const adminUnread = adminData?.unreadCount || 0;
+    if(!recent.length && !incoming.length && !adminRecent.length){
       list.innerHTML = `<div style="padding:0.8rem;color:var(--muted);font-size:0.8rem;">${t('notif.empty')}</div>`;
       return;
     }
@@ -1927,16 +2564,38 @@ function onOpenNotifDropdown(){
         </div>
         <button class="btn btn-outline" style="font-size:0.7rem;padding:0.15rem 0.4rem;flex-shrink:0;" title="${t('notif.markOneRead')}" onclick="event.stopPropagation();markOneNotificationRead(${n.id})"><svg class="icon"><use href="#icon-check"/></svg></button>
       </div>`).join('');
+    // Непрочитані адмін-події йдуть першими в списку (сортування — новіші вгорі).
+    const adminHtml = adminRecent.length ? `
+      <div class="notif-section-title">${t('adminNotif.sectionTitle')}</div>
+      ${adminRecent.map((n,i)=>`
+      <div class="notif-item${i<adminUnread?' unread':''}" onclick="showPage('admin-hub')">
+        <div style="font-size:0.8rem;">${_adminEventText(n)}</div>
+        <div style="font-size:0.75rem;color:var(--muted);">${esc(n.label)}</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${esc(n.createdAt)}</div>
+      </div>`).join('')}
+      ${(recent.length || incoming.length) ? `<div class="notif-section-title">${t('notif.sectionTitle')}</div>` : ''}` : '';
     list.innerHTML = `
-      ${recent.length ? `<div style="display:flex;justify-content:flex-end;padding:0.3rem 0.5rem;">
+      ${(recent.length || adminUnread) ? `<div style="display:flex;justify-content:flex-end;padding:0.3rem 0.5rem;">
         <button class="btn btn-outline" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="markAllNotificationsRead()">${t('notif.markAllRead')}</button>
       </div>` : ''}
-      ${incomingHtml}${notifHtml}
+      ${adminHtml}${incomingHtml}${notifHtml}
     `;
   });
 }
 function markAllNotificationsRead(){
-  fetch('/api/notifications/mark-read', { method:'POST' }).then(()=>{ refreshNotifBadge(); onOpenNotifDropdown(); }).catch(()=>{});
+  Promise.all([
+    fetch('/api/notifications/mark-read', { method:'POST' }),
+    currentUser?.isAdmin ? fetch('/api/admin-notifications/mark-read', { method:'POST' }) : Promise.resolve()
+  ]).then(()=>{ refreshNotifBadge(); onOpenNotifDropdown(); }).catch(()=>{});
+}
+// Кількість заявок, що чекають розгляду — біля пункту "Адмін-панель" у меню профілю.
+function refreshAdminRequestsBadge(){
+  const badge = document.getElementById('admin-requests-badge');
+  if(!badge || !currentUser?.isAdmin) return;
+  fetch('/api/requests').then(r=>r.ok?r.json():[]).then(list=>{
+    badge.textContent = list.length > 99 ? '99+' : list.length;
+    badge.style.display = list.length ? '' : 'none';
+  }).catch(()=>{});
 }
 function markOneNotificationRead(eventId){
   fetch(`/api/notifications/${eventId}/mark-read`, { method:'POST' }).then(()=>{ refreshNotifBadge(); onOpenNotifDropdown(); }).catch(()=>{});
@@ -1944,15 +2603,20 @@ function markOneNotificationRead(eventId){
 
 function login() { window.location.href = '/auth/login'; }
 
+// Обидві головні таблиці разом — будь-яка мутація (підтвердження заявки,
+// редагування) може зачепити будь-яку з них.
 async function loadSongs() {
-  const res = await fetch('/api/songs');
+  const [res, communityRes] = await Promise.all([fetch('/api/songs'), fetch('/api/songs?source=community')]);
   if (!res.ok) throw new Error('songs fetch failed');
   songs = await res.json();
+  if (communityRes.ok) communitySongs = await communityRes.json();
 }
 
 async function logout() {
   await fetch('/auth/logout', {method:'POST'});
   currentUser = {authenticated:false};
+  // Перепідключення — щоб сервер вивів з'єднання з групи користувача/адмінів.
+  if(rtConn) rtConn.stop().then(()=>rtConn.start()).catch(()=>{});
   renderAuthArea();
   // Go to home, re-render
   showPage('home');
@@ -1973,6 +2637,44 @@ let shuffle=false,repeat=false,seekDrag=false;
 // Гучність зберігається в localStorage — інакше плеєр щоразу стартував на 80%.
 const _savedVol = localStorage.getItem('volume');
 let vol = _savedVol !== null ? parseInt(_savedVol) : 80;
+// 'yt' — прихований YouTube-плеєр; 'file' — <audio> для завантажених файлів
+// пісень ком'юніті. Усе керування (пауза, перемотка, гучність, тікер) іде
+// через хелпери _p*(), які звертаються до активного з двох.
+let playerMode = 'yt';
+const fileAudio = document.getElementById('file-audio');
+function _pReady(){ return playerMode==='file' ? !!fileAudio.src : (ytPlayer&&ytReady); }
+function _pTime(){ return playerMode==='file' ? (fileAudio.currentTime||0) : ytPlayer.getCurrentTime(); }
+function _pDuration(){ return playerMode==='file' ? (isFinite(fileAudio.duration)?fileAudio.duration:0) : ytPlayer.getDuration(); }
+function _pSeek(sec){ if(playerMode==='file') fileAudio.currentTime = sec; else ytPlayer.seekTo(sec,true); }
+function _pPlay(){ try{ if(playerMode==='file') fileAudio.play().catch(()=>{}); else if(ytPlayer&&ytReady) ytPlayer.playVideo(); }catch(e){} }
+function _pPause(){ try{ if(playerMode==='file') fileAudio.pause(); else if(ytPlayer&&ytReady) ytPlayer.pauseVideo(); }catch(e){} }
+function _stopFileAudio(){ fileAudio.pause(); fileAudio.removeAttribute('src'); fileAudio.load(); }
+
+fileAudio.addEventListener('playing', ()=>{
+  if(playerMode!=='file') return;
+  userIntendedPlaying=true;
+  setPP(true);startTick();setLoad(false);setEQ(true);
+  document.getElementById('p-dur').textContent=fmtSec(_pDuration());
+  renderSongs();
+});
+fileAudio.addEventListener('pause', ()=>{
+  if(playerMode!=='file' || fileAudio.ended) return;
+  userIntendedPlaying=false;
+  setPP(false);stopTick();setEQ(false);renderSongs();
+});
+fileAudio.addEventListener('ended', ()=>{
+  if(playerMode!=='file') return;
+  setPP(false);stopTick();setEQ(false);
+  if(repeat){ fileAudio.currentTime=0; fileAudio.play().catch(()=>{}); }
+  else playerNext();
+});
+fileAudio.addEventListener('waiting', ()=>{ if(playerMode==='file') setLoad(true); });
+fileAudio.addEventListener('error', ()=>{
+  if(playerMode!=='file' || !fileAudio.getAttribute('src')) return;
+  setLoad(false);
+  const s=playerQueue[playerIndex];
+  if(s) document.getElementById('p-title').textContent=s.title+t('audio.notFoundSuffix');
+});
 
 function onYouTubeIframeAPIReady(){
   ytPlayer=new YT.Player('yt-iframe',{
@@ -1990,6 +2692,8 @@ function onYouTubeIframeAPIReady(){
 }
 
 function onState(e){
+  // stopVideo() при переході на файловий плеєр теж дає події — вони вже не про поточну пісню.
+  if(playerMode!=='yt') return;
   const S=YT.PlayerState;
   if(e.data===S.PLAYING){
     userIntendedPlaying=true;
@@ -2310,6 +3014,7 @@ function loadUserProfilePage(){
         <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
       </div>`).join('');
 
+    document.getElementById('user-profile-message-btn').style.display = u.relationshipStatus === 'self' ? 'none' : '';
     const btn = document.getElementById('user-profile-action-btn');
     if(u.relationshipStatus === 'self'){
       btn.style.display = 'none';
@@ -2364,6 +3069,7 @@ function startBattleRoyale(size){
   battleTransitioning = false;
   // Ставимо головний плеєр на паузу на час турніру — щоб не було потрійного звуку.
   if(ytPlayer && ytReady){ try{ ytPlayer.pauseVideo(); }catch(e){} }
+  if(playerMode === 'file') _pPause();
   document.getElementById('battle-champion').style.display = 'none';
   document.getElementById('battle-split').style.display = 'flex';
   document.getElementById('battle-modal-overlay').classList.add('open');
@@ -2406,6 +3112,7 @@ function _onBattleStateChange(side, e){
   if(e.data !== YT.PlayerState.PLAYING) return;
   const other = side === 'a' ? battleRightPlayer : battleLeftPlayer;
   try{ other && other.pauseVideo(); }catch(err){}
+  _stopBattleMinis();
 }
 
 // "Режим наведення": навів курсор на відео — грає, вивів — пауза.
@@ -2416,18 +3123,20 @@ function toggleBattleHoverMode(){
 function _wireBattleHoverListeners(){
   const wrapA = document.querySelector('#battle-yt-a').closest('.battle-video-wrap');
   const wrapB = document.querySelector('#battle-yt-b').closest('.battle-video-wrap');
-  const wire = (wrap, getPlayer) => {
+  const wire = (wrap, getPlayer, side) => {
     wrap.addEventListener('mouseenter', () => {
       if(!battleHoverModeActive) return;
+      if(_isBattleAudioSide(side)){ _battleAudio(side).play().catch(()=>{}); return; }
       try{ getPlayer().playVideo(); }catch(e){}
     });
     wrap.addEventListener('mouseleave', () => {
       if(!battleHoverModeActive) return;
+      if(_isBattleAudioSide(side)){ _battleAudio(side).pause(); return; }
       try{ getPlayer().pauseVideo(); }catch(e){}
     });
   };
-  wire(wrapA, () => battleLeftPlayer);
-  wire(wrapB, () => battleRightPlayer);
+  wire(wrapA, () => battleLeftPlayer, 'a');
+  wire(wrapB, () => battleRightPlayer, 'b');
 }
 
 // Стрічка прогресу: сегмент на кожен розмір раунду від старту до фіналу
@@ -2456,20 +3165,70 @@ async function loadBattleMatch(){
   document.getElementById('battle-a-notfound').style.display = 'none';
   document.getElementById('battle-b-notfound').style.display = 'none';
 
+  _stopBattleMinis();
   const [vidA, vidB] = await Promise.all([_resolveBattleVid(a), _resolveBattleVid(b)]);
-  _loadBattleSide(battleLeftPlayer, 'battle-a-notfound', vidA);
-  _loadBattleSide(battleRightPlayer, 'battle-b-notfound', vidB);
+  _loadBattleSide(battleLeftPlayer, 'battle-a-notfound', vidA, 'a', a);
+  _loadBattleSide(battleRightPlayer, 'battle-b-notfound', vidB, 'b', b);
 }
+
+// ─── Міні-плеєр батлу для треків ком'юніті без відео ─────────────────────
+function _battleAudio(side){ return document.getElementById(`battle-audio-${side}`); }
+function _battleWrap(side){ return document.getElementById(`battle-mini-${side}`).closest('.battle-video-wrap'); }
+function _isBattleAudioSide(side){ return _battleWrap(side).classList.contains('audio-mode'); }
+function _setBattleMiniMode(side, audioUrl){
+  const audio = _battleAudio(side);
+  _battleWrap(side).classList.toggle('audio-mode', !!audioUrl);
+  if(audioUrl){ audio.src = audioUrl; audio.volume = vol/100; }
+  else { audio.pause(); audio.removeAttribute('src'); audio.load(); }
+  _renderBattleMini(side);
+}
+function _stopBattleMinis(){ ['a','b'].forEach(s=>{ const au=_battleAudio(s); au.pause(); }); }
+function _renderBattleMini(side){
+  const audio = _battleAudio(side);
+  const mini = document.getElementById(`battle-mini-${side}`);
+  const d = isFinite(audio.duration) ? audio.duration : 0;
+  mini.querySelector('.battle-mini-fill').style.width = d ? `${audio.currentTime/d*100}%` : '0%';
+  mini.querySelector('.battle-mini-time').textContent = `${fmtSec(audio.currentTime)} / ${fmtSec(d)}`;
+  mini.querySelector('.battle-mini-play use').setAttribute('href', audio.paused ? '#icon-play' : '#icon-pause');
+  mini.classList.toggle('playing', !audio.paused);
+}
+function toggleBattleMini(side){
+  const audio = _battleAudio(side);
+  if(audio.paused) audio.play().catch(()=>{}); else audio.pause();
+}
+function seekBattleMini(side, e){
+  const audio = _battleAudio(side);
+  if(!isFinite(audio.duration)) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  audio.currentTime = Math.max(0, Math.min(1, (e.clientX-rect.left)/rect.width)) * audio.duration;
+}
+['a','b'].forEach(side=>{
+  const audio = _battleAudio(side);
+  ['timeupdate','pause','loadedmetadata','ended'].forEach(ev=>audio.addEventListener(ev, ()=>_renderBattleMini(side)));
+  // Як і з відео: грає лише один бік — інший (відео чи міні-плеєр) на паузу.
+  audio.addEventListener('play', ()=>{
+    _renderBattleMini(side);
+    const other = side === 'a' ? 'b' : 'a';
+    _battleAudio(other).pause();
+    try{ (side === 'a' ? battleRightPlayer : battleLeftPlayer)?.pauseVideo(); }catch(e){}
+  });
+});
 
 async function _resolveBattleVid(song){
   if(song.youtubeVideoId) return song.youtubeVideoId;
+  if(song.source === 'community') return null;
   const vid = await fetchVid(song.artist, song.title);
   if(vid) _cacheYoutubeVideo(song.id, vid);
   return vid;
 }
 
-function _loadBattleSide(player, notFoundElId, vid){
+function _loadBattleSide(player, notFoundElId, vid, side, song){
+  // Трек ком'юніті лише з файлом — міні-плеєр замість "відео не знайдено".
+  const audioOnly = !vid && song?.audioUrl;
+  _setBattleMiniMode(side, audioOnly ? song.audioUrl : null);
+  if(audioOnly){ try{ player.stopVideo(); }catch(e){} return; }
   if(!vid){
+    try{ player.stopVideo(); }catch(e){}
     document.getElementById(notFoundElId).style.display = 'block';
     return;
   }
@@ -2493,6 +3252,7 @@ function chooseBattleWinner(side){
   fadeEls.forEach(el => el?.classList.add('battle-loser-fade'));
   try{ battleLeftPlayer && battleLeftPlayer.pauseVideo(); }catch(e){}
   try{ battleRightPlayer && battleRightPlayer.pauseVideo(); }catch(e){}
+  _stopBattleMinis();
 
   const winner = battleRound[battleMatchIndex*2 + side];
   battleWinners.push(winner);
@@ -2567,15 +3327,20 @@ function _battleConfetti(){
 // "Слухати переможця" — закриває турнір і одразу вмикає переможну пісню в основному плеєрі.
 function playBattleChampion(){
   if(!battleChampionSong) return;
-  const id = battleChampionSong.id;
+  const champion = battleChampionSong;
   closeBattle();
-  playSong(id);
+  // Не playSong(id): той шукає пісню в поточній таблиці, а переможець —
+  // з плейлиста й може бути з будь-якої таблиці (або з жодної відкритої).
+  playerQueue = [champion];
+  playerIndex = 0;
+  _loadCurrent();
 }
 
 function closeBattle(){
   _closeModalAnimated('battle-modal-overlay');
   try{ battleLeftPlayer && battleLeftPlayer.stopVideo(); }catch(e){}
   try{ battleRightPlayer && battleRightPlayer.stopVideo(); }catch(e){}
+  _stopBattleMinis();
 }
 document.getElementById('battle-modal-overlay').addEventListener('click', function(e){
   if(e.target === this) closeBattle();
@@ -2898,17 +3663,39 @@ function _loadCurrent(){
   plBtn.style.display = currentUser?.authenticated ? '' : 'none';
   favBtn.classList.toggle('active', favoriteIds.has(s.id));
   favBtn.querySelector('svg').setAttribute('fill', favoriteIds.has(s.id) ? 'currentColor' : 'none');
+  document.getElementById('btn-rate-current').style.display = '';
   setLoad(true);setEQ(false);setPP(false);
   document.getElementById('player-seek-filled').style.width='0%';
   document.getElementById('player-seek-thumb').style.left='0%';
   document.getElementById('p-cur').textContent='0:00';
   document.getElementById('p-dur').textContent='0:00';
+
+  // Пісня таблиці_2 з завантаженим файлом — грає власний <audio>, без YouTube.
+  if(s.audioUrl){
+    if(playerMode==='yt'){ try{ if(ytPlayer&&ytReady) ytPlayer.stopVideo(); }catch(e){} }
+    if(videoPopupOpen) closeVideoPopup();
+    playerMode='file';
+    currentVid=null;
+    document.getElementById('btn-video').classList.add('disabled');
+    renderSongs();
+    if(karaokeOpen) loadKaraokeLyrics();
+    _updateMediaSessionMetadata(s, null);
+    fileAudio.volume = vol/100;
+    fileAudio.src = s.audioUrl;
+    fileAudio.play().catch(()=>{ setLoad(false); setPP(false); });
+    return;
+  }
+  if(playerMode==='file') _stopFileAudio();
+  playerMode='yt';
+  document.getElementById('btn-video').classList.remove('disabled');
   renderSongs();
   if(karaokeOpen) loadKaraokeLyrics();
 
   // Якщо videoId вже закешовано в базі — беремо напряму, без нового запиту до YouTube Search API.
+  // Ком'юніті-пісні не шукаємо автоматично: відео до них вказує лише автор/адмін.
   const vidPromise = s.youtubeVideoId
     ? Promise.resolve(s.youtubeVideoId)
+    : s.source === 'community' ? Promise.resolve(null)
     : fetchVid(s.artist,s.title).then(vid=>{
         if(vid) _cacheYoutubeVideo(s.id, vid);
         return vid;
@@ -2923,6 +3710,7 @@ function _loadCurrent(){
     const img=document.getElementById('player-cover-img');
     img.src='https://img.youtube.com/vi/'+vid+'/mqdefault.jpg';
     img.style.display='block';
+    _applyArtworkColor(vid);
     document.getElementById('player-cover-ph').style.display='none';
     _updateMediaSessionMetadata(s, vid);
     if(ytReady)_load(vid);else pendingVid=vid;
@@ -3025,6 +3813,7 @@ function _load(vid){
 }
 
 function playerToggle(){
+  if(playerMode==='file'){ if(fileAudio.paused) _pPlay(); else _pPause(); return; }
   if(!ytPlayer||!ytReady)return;
   const st=ytPlayer.getPlayerState();
   if(st===YT.PlayerState.PLAYING)ytPlayer.pauseVideo();
@@ -3040,7 +3829,7 @@ function playerNext(){
 
 function playerPrev(){
   if(!playerQueue.length)return;
-  try{if(ytPlayer&&ytReady&&ytPlayer.getCurrentTime()>3){ytPlayer.seekTo(0);return;}}catch(e){}
+  try{if(_pReady()&&_pTime()>3){_pSeek(0);return;}}catch(e){}
   playerIndex=(playerIndex-1+playerQueue.length)%playerQueue.length;
   _loadCurrent();
 }
@@ -3049,8 +3838,8 @@ function playerPrev(){
 // MEDIA SESSION (апаратні клавіші відтворення, системний "зараз грає" оверлей ОС) — працює навіть поза фокусом.
 // ================================================================
 if('mediaSession' in navigator){
-  navigator.mediaSession.setActionHandler('play', ()=>{ try{ytPlayer&&ytReady&&ytPlayer.playVideo();}catch(e){} });
-  navigator.mediaSession.setActionHandler('pause', ()=>{ try{ytPlayer&&ytReady&&ytPlayer.pauseVideo();}catch(e){} });
+  navigator.mediaSession.setActionHandler('play', _pPlay);
+  navigator.mediaSession.setActionHandler('pause', _pPause);
   navigator.mediaSession.setActionHandler('previoustrack', playerPrev);
   navigator.mediaSession.setActionHandler('nexttrack', playerNext);
   navigator.mediaSession.setActionHandler('stop', playerClose);
@@ -3072,10 +3861,16 @@ function playerClose(){
   if(videoPopupOpen) closeVideoPopup();
   if(karaokeOpen) toggleKaraoke();
   try{if(ytPlayer&&ytReady)ytPlayer.stopVideo();}catch(e){}
+  _stopFileAudio();
+  playerMode='yt';
   stopTick();setEQ(false);
   currentVid = null;
+  document.getElementById('btn-rate-current').style.display = 'none';
   document.getElementById('player-bar').classList.remove('visible');
   document.body.classList.remove('player-open');
+  _applyArtworkColor(null);
+  document.documentElement.removeAttribute('data-playing');
+  _setGlowProgress(0);
   playerQueue=[];renderSongs();
   if('mediaSession' in navigator){ navigator.mediaSession.playbackState='none'; navigator.mediaSession.metadata=null; }
   const anchor = document.getElementById('ms-anchor');
@@ -3089,6 +3884,7 @@ function setVolume(v){
   vol=parseInt(v);
   localStorage.setItem('volume', vol);
   if(ytPlayer&&ytReady)try{ytPlayer.setVolume(vol);}catch(e){}
+  fileAudio.volume = vol/100;
   document.getElementById('vw1').style.display=vol===0?'none':'';
   document.getElementById('vw2').style.display=vol<50?'none':'';
   // Взаємодія з контролами іноді "оживляє" гучність попап-плеєра назад — глушимо знову.
@@ -3114,7 +3910,7 @@ function seekMove(e){
   const pct=Math.max(0,Math.min(1,(cx-rect.left)/rect.width))*100;
   document.getElementById('player-seek-filled').style.width=pct+'%';
   document.getElementById('player-seek-thumb').style.left=pct+'%';
-  try{if(ytPlayer&&ytReady)document.getElementById('p-cur').textContent=fmtSec(ytPlayer.getDuration()*pct/100);}catch(e){}
+  try{if(_pReady())document.getElementById('p-cur').textContent=fmtSec(_pDuration()*pct/100);}catch(e){}
 }
 function seekEnd(e){
   seekDrag=false;
@@ -3122,25 +3918,26 @@ function seekEnd(e){
   document.removeEventListener('mouseup',seekEnd);
   document.removeEventListener('touchmove',seekMove);
   document.removeEventListener('touchend',seekEnd);
-  if(!ytPlayer||!ytReady)return;
+  if(!_pReady())return;
   const wrap=document.getElementById('player-seek-wrap');
   const rect=wrap.getBoundingClientRect();
   const cx=e.changedTouches?e.changedTouches[0].clientX:(e.clientX||0);
   const pct=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
-  try{ytPlayer.seekTo(ytPlayer.getDuration()*pct,true);}catch(ex){}
+  try{_pSeek(_pDuration()*pct);}catch(ex){}
 }
 
 function startTick(){
   stopTick();
   ticker=setInterval(()=>{
-    if(!ytPlayer||!ytReady||seekDrag)return;
+    if(!_pReady()||seekDrag)return;
     try{
-      const c=ytPlayer.getCurrentTime(),d=ytPlayer.getDuration();
+      const c=_pTime(),d=_pDuration();
       if(d>0){
         const p=(c/d*100).toFixed(2);
         document.getElementById('player-seek-filled').style.width=p+'%';
         document.getElementById('player-seek-thumb').style.left=p+'%';
         document.getElementById('p-cur').textContent=fmtSec(c);
+        _setGlowProgress(p);
 
         // Зараховуємо як прослухану після 20с або половини тривалості (що раніше).
         if(!listenLogged && currentUser?.authenticated){
@@ -3169,6 +3966,15 @@ function setLoad(on){document.getElementById('p-loading').style.display=on?'inli
 function setEQ(on){
   document.getElementById('player-cover-eq').classList.toggle('on',on);
   document.getElementById('player-cover').classList.toggle('glow',on);
+  // Сяйво сторінки "дихає", поки грає, і тьмяніє на паузі.
+  document.documentElement.toggleAttribute('data-playing', !!on);
+}
+// Прогрес пісні → "комета" в плеєрі (--p) і в сяйві сторінки (--pn, 0..1).
+function _setGlowProgress(pct){
+  const bar = document.getElementById('player-bar');
+  if(bar) bar.style.setProperty('--p', pct + '%');
+  const amb = document.getElementById('ambient');
+  if(amb) amb.style.setProperty('--pn', (pct / 100).toFixed(4));
 }
 
 
@@ -3297,6 +4103,7 @@ function _stopPopupSync() {
 }
 
 function toggleVideoPopup() {
+  if (playerMode === 'file') return; // файл пісні без відео
   if (videoPopupOpen) closeVideoPopup();
   else openVideoPopup();
 }
@@ -3563,6 +4370,488 @@ function _onVidReady(vid) {
   }
 }
 
+// ================================================================
+// ГОЛОВНА ТАБЛИЦЯ_2 (пісні від ком'юніті) — та сама сторінка "Головна",
+// перемикач лише змінює, яку з двох таблиць показувати.
+// ================================================================
+function showHome(source){
+  source = source === 'community' ? 'community' : 'catalog';
+  if(source !== homeSource){
+    homeSource = source;
+    // Перемішування — порядок конкретної таблиці, в іншій воно не має сенсу.
+    if(shuffleActive) toggleShuffleTable();
+    document.getElementById('filter-genre').value = '';
+  }
+  _applyHomeSourceUi();
+  showPage('home');
+}
+function _applyHomeSourceUi(){
+  const isCommunity = homeSource === 'community';
+  document.getElementById('home-source-catalog').classList.toggle('active', !isCommunity);
+  document.getElementById('home-source-community').classList.toggle('active', isCommunity);
+  document.getElementById('th-submitter').style.display = isCommunity ? '' : 'none';
+  document.getElementById('home-community-hint').style.display = isCommunity ? '' : 'none';
+  const pre = document.getElementById('home-heading-pre');
+  const accent = document.getElementById('home-heading-accent');
+  const addBtn = document.getElementById('home-add-btn');
+  pre.setAttribute('data-i18n', isCommunity ? 'home.heading.communityPre' : 'home.heading.pre');
+  accent.setAttribute('data-i18n', isCommunity ? 'home.heading.communityAccent' : 'home.heading.accent');
+  addBtn.setAttribute('data-i18n', isCommunity ? 'home.addOwnSongBtn' : 'home.addRequestBtn');
+  pre.textContent = t(pre.getAttribute('data-i18n'));
+  accent.textContent = t(accent.getAttribute('data-i18n'));
+  addBtn.textContent = t(addBtn.getAttribute('data-i18n'));
+}
+
+// Публічні профілі — лише для залогінених (UsersController [Authorize]).
+function openUserProfileOrLogin(userId){
+  if(!currentUser?.authenticated){
+    if(confirm(t('msg.confirmLoginGeneric'))) login();
+    return;
+  }
+  openUserProfilePage(userId);
+}
+
+// ================================================================
+// ОСОБИСТІ ПОВІДОМЛЕННЯ + ОБГОВОРЕННЯ (сторінка "Спілкування")
+// ================================================================
+let chatTab = 'threads';
+let currentChatUserId = null;
+let _chatPartnerName = '';
+let currentThreadId = null;
+
+function openChatPage(tab){
+  if(tab) chatTab = tab;
+  showPage('chat');
+}
+function loadChatPage(){ switchChatTab(chatTab); }
+function switchChatTab(tab){
+  const authed = !!currentUser?.authenticated;
+  if(tab==='requests' && !authed) tab = 'dm'; // там же й підказка "увійдіть"
+  chatTab = tab;
+  ['dm','requests','threads'].forEach(k=>{
+    document.getElementById(`chat-tab-${k}`).classList.toggle('active', tab===k);
+    document.getElementById(`chat-${k}-section`).style.display = tab===k ? '' : 'none';
+  });
+  document.getElementById('chat-tab-requests').style.display = authed ? '' : 'none';
+  if(tab==='dm'){
+    document.getElementById('chat-dm-login-hint').style.display = authed ? 'none' : '';
+    document.getElementById('chat-dm-layout').style.display = authed ? '' : 'none';
+    if(!authed) return;
+    loadConversations();
+    if(currentChatUserId != null) loadDmThread();
+  } else if(tab==='requests'){
+    loadDmRequests();
+  } else {
+    if(currentThreadId != null) loadThreadDetail(); else closeThreadDetail();
+  }
+}
+function openDirectChat(userId){
+  if(!currentUser?.authenticated){
+    if(confirm(t('msg.confirmLoginGeneric'))) login();
+    return;
+  }
+  if(userId == null) return;
+  if(currentChatUserId !== userId) _chatPartnerName = '';
+  currentChatUserId = userId;
+  openChatPage('dm');
+}
+function refreshDmBadge(){
+  if(!currentUser?.authenticated) return;
+  const setBadge = (id, n) => {
+    const b = document.getElementById(id);
+    if(!b) return;
+    b.textContent = n > 99 ? '99+' : n;
+    b.style.display = n > 0 ? '' : 'none';
+  };
+  fetch('/api/messages/unread-count').then(r=>r.ok?r.json():null).then(d=>{
+    if(!d) return;
+    setBadge('dm-badge', d.unread + d.requests);
+    setBadge('chat-tab-dm-badge', d.unread);
+    setBadge('chat-tab-requests-badge', d.requests);
+  }).catch(()=>{});
+}
+// SignalR: новий/схвалений/відхилений запит на листування.
+function onDmRequestsEvent(otherUserId){
+  refreshDmBadge();
+  if(!document.getElementById('page-chat')?.classList.contains('active')) return;
+  if(chatTab==='requests') loadDmRequests();
+  if(chatTab==='dm'){ loadConversations(); if(currentChatUserId === otherUserId) loadDmThread(); }
+}
+function loadDmRequests(){
+  fetch('/api/messages/requests').then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('chat-requests-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('chat-requests-list').innerHTML = list.map(r=>`
+      <div class="dm-request-card">
+        ${r.avatarUrl ? `<img src="${esc(r.avatarUrl)}" alt="">` : `<span class="chat-conv-ph"><svg class="icon"><use href="#icon-user"/></svg></span>`}
+        <div class="dm-request-main">
+          <div><a href="#" class="artist-link" onclick="openUserProfilePage(${r.userId});return false;"><strong>${esc(r.displayName)}</strong></a> <span class="hint">· ${esc(r.createdAt)}</span></div>
+          <div class="dm-request-preview">${esc(r.preview)}</div>
+        </div>
+        <div class="dm-request-actions">
+          <button class="btn btn-primary" onclick="respondDmRequest(${r.userId}, true)">${t('chat.acceptRequest')}</button>
+          <button class="btn btn-outline" onclick="respondDmRequest(${r.userId}, false)">${t('chat.declineRequest')}</button>
+        </div>
+      </div>`).join('');
+    refreshDmBadge();
+  }).catch(()=>{});
+}
+function respondDmRequest(userId, accept){
+  fetch(`/api/messages/requests/${userId}/${accept ? 'accept' : 'decline'}`, { method:'POST' })
+    .then(r=>{
+      if(!r.ok){ alert(t('msg.connectionError')); return; }
+      if(accept){ _chatPartnerName = ''; currentChatUserId = userId; switchChatTab('dm'); }
+      else loadDmRequests();
+      refreshDmBadge();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+// SignalR: нове повідомлення в будь-якому діалозі (моє з іншої вкладки або вхідне).
+function onDirectMessageEvent(otherUserId){
+  const chatOpen = document.getElementById('page-chat')?.classList.contains('active') && chatTab==='dm';
+  if(chatOpen){
+    loadConversations();
+    if(currentChatUserId === otherUserId) loadDmThread(); // він і позначить прочитаним
+    else refreshDmBadge();
+  } else refreshDmBadge();
+}
+function loadConversations(){
+  fetch('/api/messages/conversations').then(r=>r.ok?r.json():[]).then(list=>{
+    const wrap = document.getElementById('chat-conversations');
+    // Щойно відкрита з профілю розмова ще без повідомлень — показуємо її першою.
+    const showPending = currentChatUserId != null && !list.some(c=>c.userId===currentChatUserId);
+    document.getElementById('chat-conversations-empty').style.display = (list.length || showPending) ? 'none' : '';
+    const item = c => `
+      <div class="chat-conv${c.userId===currentChatUserId?' active':''}" onclick="selectConversation(${c.userId})">
+        ${c.avatarUrl ? `<img src="${esc(c.avatarUrl)}" alt="">` : `<span class="chat-conv-ph"><svg class="icon"><use href="#icon-user"/></svg></span>`}
+        <div class="chat-conv-main">
+          <div class="chat-conv-top"><strong>${esc(c.displayName)}</strong>${c.unreadCount?`<span class="count-badge">${c.unreadCount}</span>`:''}</div>
+          <div class="chat-conv-last">${c.state==='pending_outgoing'?`<span class="badge">${esc(t('chat.pendingLabel'))}</span> `:''}${c.lastFromMe?`${esc(t('chat.you'))}: `:''}${esc(c.lastMessage)}</div>
+        </div>
+      </div>`;
+    wrap.innerHTML = (showPending ? item({userId:currentChatUserId, displayName:_chatPartnerName||'…', avatarUrl:null, lastMessage:t('chat.newConversation'), lastFromMe:false, unreadCount:0}) : '')
+      + list.map(item).join('');
+    const current = list.find(c=>c.userId===currentChatUserId);
+    if(current){ _chatPartnerName = current.displayName; document.getElementById('chat-dm-partner').textContent = current.displayName; }
+  }).catch(()=>{});
+}
+function selectConversation(userId){
+  if(currentChatUserId !== userId) _chatPartnerName = '';
+  currentChatUserId = userId;
+  document.querySelectorAll('.chat-conv').forEach(el=>el.classList.remove('active'));
+  loadDmThread();
+  loadConversations();
+}
+function loadDmThread(){
+  const id = currentChatUserId;
+  if(id == null) return;
+  document.getElementById('chat-dm-empty').style.display = 'none';
+  document.getElementById('chat-dm-panel').style.display = '';
+  const partner = document.getElementById('chat-dm-partner');
+  partner.onclick = (e)=>{ e.preventDefault(); openUserProfilePage(id); };
+  if(_chatPartnerName) partner.textContent = _chatPartnerName;
+  else fetch(`/api/users/${id}`).then(r=>r.ok?r.json():null).then(u=>{
+    if(u && currentChatUserId===id){ _chatPartnerName = u.displayName; partner.textContent = u.displayName; loadConversations(); }
+  }).catch(()=>{});
+  fetch(`/api/messages/${id}`).then(r=>r.ok?r.json():null).then(thread=>{
+    if(!thread || currentChatUserId !== id) return;
+    const list = thread.messages;
+    // Не-другу: перше повідомлення — запит; далі чекаємо схвалення.
+    const hint = document.getElementById('chat-dm-state-hint');
+    const hintKey = { none: 'chat.state.none', pending_outgoing: 'chat.state.pendingOutgoing', declined: 'chat.state.declined', pending_incoming: 'chat.state.pendingIncoming' }[thread.state];
+    hint.textContent = hintKey ? t(hintKey) : '';
+    hint.style.display = hintKey ? '' : 'none';
+    document.getElementById('chat-dm-input-row').style.display = thread.canSend ? '' : 'none';
+    const box = document.getElementById('chat-dm-messages');
+    box.innerHTML = list.length
+      ? list.map(m=>`<div class="chat-msg${m.isMine?' mine':''}"><div class="chat-msg-body">${esc(m.body)}</div><div class="chat-msg-time">${esc(m.createdAt)}</div></div>`).join('')
+      : `<div class="empty" style="padding:2rem 1rem;">${t('chat.startConversation')}</div>`;
+    box.scrollTop = box.scrollHeight;
+    refreshDmBadge();
+  }).catch(()=>{});
+}
+function onChatInputKeydown(e){
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendDirectMessage(); }
+}
+function sendDirectMessage(){
+  const input = document.getElementById('chat-dm-input');
+  const body = input.value.trim();
+  if(!body || currentChatUserId == null) return;
+  fetch(`/api/messages/${currentChatUserId}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body }) })
+    .then(r=>{
+      if(r.status === 409 || r.status === 403){ loadDmThread(); return; } // запит ще не схвалено / відхилено — підказка вже пояснить
+      if(!r.ok){ alert(t('msg.connectionError')); return; }
+      input.value = '';
+      loadDmThread();
+      loadConversations();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+// ─── Гілки обговорень ────────────────────────────────────────────────────
+let threadsSearchTimer = null;
+function onThreadsSearchInput(){
+  clearTimeout(threadsSearchTimer);
+  threadsSearchTimer = setTimeout(loadThreads, 300);
+}
+function _userLinkHtml(u){
+  if(!u) return `<span style="color:var(--muted)">${esc(t('threads.deletedUser'))}</span>`;
+  return `<a href="#" class="artist-link" onclick="event.stopPropagation();openUserProfileOrLogin(${u.userId});return false;">${esc(u.displayName)}</a>`;
+}
+function loadThreads(){
+  const q = document.getElementById('threads-search').value.trim();
+  document.getElementById('threads-new-btn').style.display = currentUser?.authenticated ? '' : 'none';
+  fetch(`/api/threads${q ? `?q=${encodeURIComponent(q)}` : ''}`).then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('threads-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('threads-list').innerHTML = list.map(th=>`
+      <div class="ext-search-item thread-card" onclick="openThread(${th.id})">
+        <div class="es-main">
+          <strong>${esc(th.title)}</strong>
+          <span>${t('threads.by')} ${_userLinkHtml(th.author)} · ${esc(th.createdAt)}</span>
+        </div>
+        <div class="es-meta">
+          <span class="es-year"><svg class="icon"><use href="#icon-chat"/></svg> ${th.postCount}</span>
+          <span class="es-year">${t('threads.lastActivity')} ${esc(th.lastPostAt)}</span>
+        </div>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+function toggleNewThreadForm(){
+  if(!currentUser?.authenticated){ if(confirm(t('msg.confirmLoginGeneric'))) login(); return; }
+  const form = document.getElementById('thread-new-form');
+  form.style.display = form.style.display === 'none' ? '' : 'none';
+  if(form.style.display === '') document.getElementById('thread-new-title').focus();
+}
+function createThread(){
+  const title = document.getElementById('thread-new-title').value.trim();
+  const body = document.getElementById('thread-new-body').value.trim();
+  if(!title || !body){ alert(t('msg.fillRequiredFields')); return; }
+  fetch('/api/threads', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, body }) })
+    .then(r=>r.ok?r.json():null)
+    .then(th=>{
+      if(!th){ alert(t('msg.connectionError')); return; }
+      document.getElementById('thread-new-title').value = '';
+      document.getElementById('thread-new-body').value = '';
+      document.getElementById('thread-new-form').style.display = 'none';
+      openThread(th.id);
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function openThread(id){
+  currentThreadId = id;
+  chatTab = 'threads';
+  if(!document.getElementById('page-chat').classList.contains('active')) showPage('chat');
+  else loadThreadDetail();
+}
+function closeThreadDetail(){
+  currentThreadId = null;
+  document.getElementById('thread-detail-view').style.display = 'none';
+  document.getElementById('threads-list-view').style.display = '';
+  loadThreads();
+}
+function _canModerate(author){
+  return !!currentUser?.isAdmin || (!!author && author.userId === currentUser?.userId);
+}
+function _deleteBtnHtml(onclick){
+  return `<button class="btn-icon-danger" onclick="event.stopPropagation();${onclick}" title="${t('modal.confirmDelete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg></button>`;
+}
+function loadThreadDetail(){
+  const id = currentThreadId;
+  if(id == null) return;
+  document.getElementById('threads-list-view').style.display = 'none';
+  document.getElementById('thread-detail-view').style.display = '';
+  const authed = !!currentUser?.authenticated;
+  document.getElementById('thread-reply-row').style.display = authed ? '' : 'none';
+  document.getElementById('thread-reply-login-hint').style.display = authed ? 'none' : '';
+  fetch(`/api/threads/${id}`).then(r=>r.ok?r.json():null).then(th=>{
+    if(currentThreadId !== id) return;
+    if(!th){ closeThreadDetail(); return; }
+    document.getElementById('thread-detail-title').textContent = th.title;
+    document.getElementById('thread-detail-meta').innerHTML = `${_userLinkHtml(th.author)} · ${esc(th.createdAt)}`;
+    document.getElementById('thread-detail-body').textContent = th.body;
+    document.getElementById('thread-detail-actions').innerHTML = _canModerate(th.author) ? _deleteBtnHtml(`deleteThread(${th.id})`) : '';
+    document.getElementById('thread-posts').innerHTML = th.posts.map(p=>`
+      <div class="thread-post">
+        <div class="thread-post-head"><div class="thread-post-meta">${_userLinkHtml(p.author)} · ${esc(p.createdAt)}</div>${_canModerate(p.author) ? _deleteBtnHtml(`deleteThreadPost(${p.id})`) : ''}</div>
+        <div class="thread-post-body">${esc(p.body)}</div>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+function replyToThread(){
+  const input = document.getElementById('thread-reply-input');
+  const body = input.value.trim();
+  if(!body || currentThreadId == null) return;
+  fetch(`/api/threads/${currentThreadId}/posts`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body }) })
+    .then(r=>{
+      if(!r.ok){ alert(t('msg.connectionError')); return; }
+      input.value = '';
+      loadThreadDetail();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function deleteThread(id){
+  if(!confirm(t('threads.confirmDeleteThread'))) return;
+  fetch(`/api/threads/${id}`, { method:'DELETE' }).then(r=>{ if(r.ok) closeThreadDetail(); else alert(t('msg.connectionError')); }).catch(()=>{});
+}
+function deleteThreadPost(postId){
+  if(!confirm(t('threads.confirmDeletePost'))) return;
+  fetch(`/api/threads/posts/${postId}`, { method:'DELETE' }).then(r=>{ if(r.ok) loadThreadDetail(); else alert(t('msg.connectionError')); }).catch(()=>{});
+}
+
+// ================================================================
+// ОЦІНКИ (0–100, тимчасово) І РЕЦЕНЗІЇ
+// ================================================================
+let ratingMusicId = null;
+function openRatingModal(id){
+  if(id == null) return;
+  ratingMusicId = id;
+  const s = _findSong(id);
+  document.getElementById('rating-song-label').textContent = s ? `${s.artist} — ${s.title}` : '';
+  document.getElementById('rating-summary').textContent = t('notif.loading');
+  document.getElementById('rating-reviews').innerHTML = '';
+  document.getElementById('rating-modal-overlay').classList.add('open');
+  _loadRatingModal();
+}
+function closeRatingModal(){
+  _closeModalAnimated('rating-modal-overlay');
+  ratingMusicId = null;
+}
+document.getElementById('rating-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeRatingModal();
+});
+function _syncRatingNumber(el){
+  let v = parseInt(el.value, 10);
+  if(isNaN(v)) return;
+  v = Math.max(0, Math.min(100, v));
+  document.getElementById('rating-score').value = v;
+}
+function _setRatingInputs(score, review){
+  document.getElementById('rating-score').value = score;
+  document.getElementById('rating-score-num').value = score;
+  document.getElementById('rating-review').value = review || '';
+}
+function _loadRatingModal(){
+  const id = ratingMusicId;
+  const authed = !!currentUser?.authenticated;
+  document.getElementById('rating-form').style.display = authed ? '' : 'none';
+  document.getElementById('rating-login-hint').style.display = authed ? 'none' : '';
+  fetch(`/api/songs/${id}/ratings`).then(r=>r.ok?r.json():null).then(d=>{
+    if(!d || ratingMusicId !== id) return;
+    document.getElementById('rating-summary').textContent = d.avgRating != null
+      ? t('rating.summary').replace('{avg}', d.avgRating).replace('{count}', d.ratingCount)
+      : t('rating.noRatings');
+    if(d.mine) _setRatingInputs(d.mine.score, d.mine.review);
+    else _setRatingInputs(70, '');
+    document.getElementById('rating-delete-btn').style.display = d.mine ? '' : 'none';
+    document.getElementById('rating-reviews').innerHTML = d.reviews.length
+      ? d.reviews.map(rv=>`
+        <div class="rating-review">
+          <div class="rating-review-head">
+            ${_userLinkHtml(rv.user)}
+            <span class="rating-chip has-rating"><svg class="icon"><use href="#icon-star"/></svg> ${rv.score}</span>
+            <span class="rating-review-date">${esc(rv.updatedAt)}</span>
+            ${currentUser?.isAdmin && rv.user.userId !== currentUser?.userId ? _deleteBtnHtml(`adminDeleteReview(${rv.user.userId})`) : ''}
+          </div>
+          <div class="rating-review-body">${esc(rv.review)}</div>
+        </div>`).join('')
+      : `<div class="hint">${t('rating.noReviews')}</div>`;
+    _applyRatingSummary(id, d.avgRating, d.ratingCount);
+  }).catch(()=>{});
+}
+function saveRating(){
+  const id = ratingMusicId;
+  const score = Math.max(0, Math.min(100, parseInt(document.getElementById('rating-score-num').value, 10) || 0));
+  const review = document.getElementById('rating-review').value.trim();
+  fetch(`/api/songs/${id}/ratings`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ score, review: review || null }) })
+    .then(r=>{
+      if(r.status===401){ login(); return; }
+      if(!r.ok){ alert(t('msg.connectionError')); return; }
+      _loadRatingModal();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+function deleteMyRating(){
+  fetch(`/api/songs/${ratingMusicId}/ratings`, { method:'DELETE' })
+    .then(r=>{ if(r.ok || r.status===404) _loadRatingModal(); })
+    .catch(()=>{});
+}
+function adminDeleteReview(userId){
+  if(!confirm(t('rating.confirmAdminDelete'))) return;
+  fetch(`/api/songs/${ratingMusicId}/ratings?userId=${userId}`, { method:'DELETE' })
+    .then(r=>{ if(r.ok) _loadRatingModal(); })
+    .catch(()=>{});
+}
+// Нове середнє (з модалки чи SignalR ratingChanged) — точково в обох таблицях.
+function _applyRatingSummary(musicId, avg, count){
+  let changed = false;
+  [songs, communitySongs, playerQueue, currentTopSongs].forEach(list=>list.forEach(s=>{
+    if(s.id === musicId && (s.avgRating !== avg || s.ratingCount !== count)){ s.avgRating = avg; s.ratingCount = count; changed = true; }
+  }));
+  if(changed) renderSongs();
+  if(ratingMusicId === musicId && document.getElementById('rating-modal-overlay').classList.contains('open')){
+    const summary = document.getElementById('rating-summary');
+    summary.textContent = avg != null ? t('rating.summary').replace('{avg}', avg).replace('{count}', count) : t('rating.noRatings');
+  }
+}
+
+// ================================================================
+// ГЛОБАЛЬНИЙ ПОШУК У НАВБАРІ: пісні (обидві таблиці), виконавці, люди
+// ================================================================
+let navSearchTimer = null;
+let navSearchSeq = 0;
+let navSearchSongs = [];
+function _hideNavSearch(){
+  document.getElementById('nav-search-results')?.classList.remove('open');
+}
+function onNavSearchInput(){
+  clearTimeout(navSearchTimer);
+  const q = document.getElementById('nav-search-input').value.trim();
+  if(q.length < 2){ navSearchSeq++; _hideNavSearch(); return; }
+  navSearchTimer = setTimeout(()=>runNavSearch(q), 220);
+}
+function onNavSearchKeydown(e){
+  if(e.key === 'Escape'){ _hideNavSearch(); e.target.blur(); }
+  if(e.key === 'Enter'){ document.querySelector('#nav-search-results .nav-search-item')?.click(); }
+}
+async function runNavSearch(q){
+  const seq = ++navSearchSeq;
+  const ql = q.toLowerCase();
+  navSearchSongs = [...songs, ...communitySongs].filter(s=>
+    s.title.toLowerCase().includes(ql) || s.artist.toLowerCase().includes(ql) || (s.album||'').toLowerCase().includes(ql)
+  ).slice(0, 6);
+  const [artists, users] = await Promise.all([
+    fetch(`/api/artists?q=${encodeURIComponent(q)}`).then(r=>r.ok?r.json():[]).catch(()=>[]),
+    currentUser?.authenticated ? fetch(`/api/users/search?q=${encodeURIComponent(q)}&limit=5`).then(r=>r.ok?r.json():[]).catch(()=>[]) : Promise.resolve([])
+  ]);
+  if(seq !== navSearchSeq) return; // встигли надрукувати далі — ці результати застарілі
+  const section = (title, html) => html ? `<div class="nav-search-section">${title}</div>${html}` : '';
+  const songsHtml = navSearchSongs.map(s=>`
+    <button type="button" class="nav-search-item" onclick="navSearchPlay(${s.id})">
+      <svg class="icon icon-filled"><use href="#icon-play"/></svg>
+      <span class="nsi-main"><strong>${esc(s.title)}</strong><span>${esc(s.artist)}</span></span>
+      ${s.source==='community'?`<span class="badge source-community">${t('home.source.community')}</span>`:''}
+    </button>`).join('');
+  const artistsHtml = artists.slice(0, 5).map(a=>`
+    <button type="button" class="nav-search-item" onclick="_hideNavSearch();openArtistPage(${a.id})">
+      <svg class="icon"><use href="#icon-mic"/></svg>
+      <span class="nsi-main"><strong>${esc(a.name)}</strong><span>${a.songCount} ${t('profile.songsWord')}</span></span>
+    </button>`).join('');
+  const usersHtml = users.map(u=>`
+    <button type="button" class="nav-search-item" onclick="_hideNavSearch();openUserProfilePage(${u.userId})">
+      ${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" alt="">` : `<svg class="icon"><use href="#icon-user"/></svg>`}
+      <span class="nsi-main"><strong>${esc(u.displayName)}</strong></span>
+    </button>`).join('');
+  const html = section(t('navSearch.songs'), songsHtml) + section(t('navSearch.artists'), artistsHtml) + section(t('navSearch.users'), usersHtml);
+  const box = document.getElementById('nav-search-results');
+  box.innerHTML = html || `<div class="nav-search-empty">${t('navSearch.empty')}${currentUser?.authenticated ? '' : `<div class="hint">${t('navSearch.loginForUsers')}</div>`}</div>`;
+  box.classList.add('open');
+}
+function navSearchPlay(id){
+  _hideNavSearch();
+  playerQueue = navSearchSongs.slice();
+  playerIndex = Math.max(0, playerQueue.findIndex(s=>s.id===id));
+  _loadCurrent();
+}
+
 // INIT
 // Жорсткий запобіжник: якщо initApp() з якоїсь причини впаде/зависне,
 // сплеш все одно ховається за 8с — інакше застряглий сплеш виглядав би
@@ -3574,14 +4863,14 @@ applyLang(currentLang);
 document.getElementById('vol-slider').value = vol;
 document.getElementById('vw1').style.display = vol===0?'none':'';
 document.getElementById('vw2').style.display = vol<50?'none':'';
-_updateNavIndicator();
 _updatePopoutBtnVisibility();
 
 // ================================================================
 // REALTIME (SignalR) — усі відкриті вкладки перезавантажують дані при мутації пісні/заявки.
 // ================================================================
+let rtConn = null;
 if (window.signalR) {
-  const rtConn = new signalR.HubConnectionBuilder()
+  rtConn = new signalR.HubConnectionBuilder()
     .withUrl('/hubs/music')
     .withAutomaticReconnect()
     .build();
@@ -3592,8 +4881,22 @@ if (window.signalR) {
     if(currentUser?.authenticated) refreshNotifBadge();
   });
   rtConn.on('requestsChanged', () => {
-    if (currentUser?.isAdmin) renderRequests();
+    if (currentUser?.isAdmin){ renderRequests(); refreshAdminRequestsBadge(); }
   });
+  // Нова заявка / дія іншого адміна — лише для групи адмінів (MusicHub.AdminsGroup).
+  rtConn.on('adminNotification', () => {
+    refreshNotifBadge();
+    if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
+  });
+  rtConn.on('dmReceived', (fromUserId) => onDirectMessageEvent(fromUserId));
+  rtConn.on('dmSent', (toUserId) => onDirectMessageEvent(toUserId));
+  rtConn.on('dmRequestsChanged', (otherUserId) => onDmRequestsEvent(otherUserId));
+  rtConn.on('threadsChanged', (threadId) => {
+    if(!document.getElementById('page-chat')?.classList.contains('active') || chatTab !== 'threads') return;
+    if(currentThreadId === threadId) loadThreadDetail();
+    else if(currentThreadId == null) loadThreads();
+  });
+  rtConn.on('ratingChanged', (musicId, avg, count) => _applyRatingSummary(musicId, avg, count));
 
   rtConn.start().catch(() => {});
 }

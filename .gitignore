@@ -8,3 +8,12 @@ node_modules/
 appsettings.Local.json
 .gh-token.local
 .azure-publish-profile.local.xml
+
+# Завантажені файли пісень ком'юніті (локальне сховище) — не код.
+App_Data/
+
+# Налаштування IDE мобільного застосунку.
+MusicDB_mobile/.idea/
+
+# Разові службові скрипти з рядком підключення до прод-БД (з паролем) — ніколи в git.
+Tests/MusicDB.Api.Tests/_*.cs

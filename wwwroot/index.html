@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">N'Owl</title>
 <meta name="description" content="N'Owl — музична база з пошуком, плейлистами, рекомендаціями та іграми (колесо фортуни, батл рояль) для спільноти меломанів.">
-<meta name="theme-color" content="#0d0d0f">
+<meta name="theme-color" content="#090c14">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net/">
 <meta property="og:title" content="N'Owl">
@@ -22,15 +22,38 @@
   // Застосовуємо збережену тему одразу, до відмальовки сторінки, щоб не було "блимання" темою.
   (function(){
     var saved = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
+    if (saved === 'system') saved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    var root = document.documentElement;
+    root.setAttribute('data-theme', saved);
+    // Налаштування інтерфейсу (див. PREFS в app.js) — теж до першої відмальовки, без "стрибка".
+    try {
+      var p = JSON.parse(localStorage.getItem('prefs') || '{}');
+      var hues = { amber: 78, coral: 38, rose: 5, lavender: 295, ocean: 235, emerald: 158 };
+      if (p.motion && p.motion !== 'system') root.setAttribute('data-motion', p.motion);
+      if (p.density === 'compact') root.setAttribute('data-density', 'compact');
+      if (p.highContrast) root.setAttribute('data-contrast', 'high');
+      if (p.grain === false) root.setAttribute('data-grain', 'off');
+      if (p.fontScale && p.fontScale !== 100) root.style.setProperty('--font-scale', p.fontScale / 100);
+      if (p.accent && hues[p.accent] != null) root.style.setProperty('--ah', hues[p.accent]);
+      if (p.glow != null) root.style.setProperty('--glow-k', p.glow / 100);
+    } catch (e) {}
+    // Колір рядка стану браузера — одразу під фон теми (hex, бо meta не розуміє oklch у всіх браузерах).
+    var tc = { dark: '#090c14', gray: '#474c56', light: '#f8f4ec' }[saved];
+    if (tc) document.querySelector('meta[name="theme-color"]').setAttribute('content', tc);
   })();
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
 <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+<a href="#main-content" class="skip-link" data-i18n="a11y.skip">Перейти до вмісту</a>
+<!-- Сяйво на всю ширину сторінки: три плями палітри обкладинки + "комета",
+     що рухається зліва направо разом із прогресом пісні (--p ставить app.js). -->
+<div id="ambient" aria-hidden="true"><div class="ambient-band"></div><div class="ambient-comet"></div></div>
 
 <!-- Спільний набір іконок (замість emoji-символів по всьому сайту) — один
      спрайт, кожна іконка referенситься через <use href="#icon-NAME">, стиль
@@ -66,6 +89,16 @@
   <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 19h16"/></symbol>
   <symbol id="icon-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
   <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="icon-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="icon-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></symbol>
+  <symbol id="icon-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></symbol>
+  <symbol id="icon-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></symbol>
+  <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.7 3.5 2.8 3.5 5.7"/></symbol>
+  <symbol id="icon-star" viewBox="0 0 24 24"><polygon points="12 3 14.8 8.9 21 9.6 16.4 13.9 17.6 20.1 12 17 6.4 20.1 7.6 13.9 3 9.6 9.2 8.9 12 3"/></symbol>
+  <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V4"/><polyline points="7 8 12 3 17 8"/><path d="M4 19h16"/></symbol>
 </svg>
 
 <!-- Сплеш екрана завантаження — чистий HTML/CSS, малюється браузером одразу
@@ -78,33 +111,47 @@
 </div>
 
 <nav>
+  <div class="nav-left">
   <span class="nav-brand" onclick="showPage('home')"><img src="/images/logo.png" alt="N'Owl logo">N'Owl</span>
-  <div class="dropdown" id="nav-hamburger-dropdown">
-    <button class="nav-hamburger" onclick="toggleDropdown(event,'nav-hamburger-dropdown')" aria-label="Меню" data-i18n-title="nav.menu" title="Меню"><svg class="icon"><use href="#icon-menu"/></svg></button>
-    <ul class="nav-tabs">
-      <li><button id="tab-home" class="active" onclick="showPage('home')" data-i18n="nav.home">Головна</button></li>
-      <li><button id="tab-top" onclick="showPage('top')" data-i18n="nav.top">Топ 100</button></li>
-      <li><button id="tab-wheel" onclick="showPage('wheel')"><svg class="icon"><use href="#icon-wheel"/></svg> <span data-i18n="nav.wheel">Колесо фортуни</span></button></li>
-      <li><button id="tab-battle" onclick="showPage('battle')"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="nav.battle">Батл рояль</span></button></li>
-      <li><button id="tab-artists" onclick="showPage('artists')"><svg class="icon"><use href="#icon-mic"/></svg> <span data-i18n="nav.artists">Виконавці</span></button></li>
-      <li id="nav-request"><button id="tab-request" onclick="openRequestPage()" data-i18n="nav.request">Надіслати запит</button></li>
-      <li id="nav-recommendations" style="display:none"><button id="tab-recommendations" onclick="openRecommendationsPage()" data-i18n="nav.recommendations">Рекомендовано для вас</button></li>
-      <li id="nav-admin-hub" style="display:none"><button id="tab-admin-hub" onclick="showPage('admin-hub')"><svg class="icon"><use href="#icon-settings"/></svg> <span data-i18n="nav.adminHub">Адмін-панель</span></button></li>
+  <!-- "Головна" лишається окремою кнопкою; решта розділів — у випадаючому
+       "Меню" (id tab-* збережені — showPage() підсвічує активний пункт).
+       Адмін-панель переїхала в меню профілю (див. renderAuthArea). -->
+  <button id="tab-home" class="nav-home-btn active" onclick="showHome('catalog')"><svg class="icon"><use href="#icon-home"/></svg><span data-i18n="nav.home">Головна</span></button>
+  <div class="dropdown" id="nav-menu-dropdown">
+    <button class="dropdown-toggle nav-menu-toggle" onclick="toggleDropdown(event,'nav-menu-dropdown')" aria-label="Меню" data-i18n-title="nav.menu" title="Меню"><svg class="icon"><use href="#icon-menu"/></svg><span class="nav-menu-label" data-i18n="nav.menu">Меню</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
+    <div class="dropdown-menu nav-menu">
+      <button id="tab-community" class="nav-menu-item" onclick="showHome('community')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="nav.community">Пісні ком'юніті</span></button>
+      <button id="tab-top" class="nav-menu-item" onclick="showPage('top')"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="nav.top">Топ 100</span></button>
+      <button id="tab-artists" class="nav-menu-item" onclick="showPage('artists')"><svg class="icon"><use href="#icon-mic"/></svg> <span data-i18n="nav.artists">Виконавці</span></button>
+      <button id="tab-chat" class="nav-menu-item" onclick="openChatPage('threads')"><svg class="icon"><use href="#icon-chat"/></svg> <span data-i18n="nav.discussions">Обговорення</span></button>
+      <button id="tab-wheel" class="nav-menu-item" onclick="showPage('wheel')"><svg class="icon"><use href="#icon-wheel"/></svg> <span data-i18n="nav.wheel">Колесо фортуни</span></button>
+      <button id="tab-battle" class="nav-menu-item" onclick="showPage('battle')"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="nav.battle">Батл рояль</span></button>
+      <button id="tab-request" class="nav-menu-item" onclick="openRequestPage()" style="display:none"><svg class="icon"><use href="#icon-plus"/></svg> <span data-i18n="nav.request">Надіслати запит</span></button>
+      <button id="tab-recommendations" class="nav-menu-item" onclick="openRecommendationsPage()" style="display:none"><svg class="icon"><use href="#icon-sparkle"/></svg> <span data-i18n="nav.recommendations">Рекомендовано для вас</span></button>
       <!-- Пряме посилання на файл релізу, не /latest/download/ — ім'я файлу
            містить номер версії (NOwl-Setup-X.Y.Z.exe), тож /latest/ однаково
            зламався б на наступному релізі з іншою версією в назві файлу. Тег
            і назва файлу мають збігатись із фактично опублікованим релізом на
            https://github.com/22hito/MusicDB/releases — оновлювати тут разом
            із кожним новим релізом десктоп-застосунку. -->
-      <li id="nav-desktop-app"><a href="https://github.com/22hito/MusicDB/releases/download/v1.0.4/NOwl-Setup-1.0.4.exe"><svg class="icon"><use href="#icon-download"/></svg> <span data-i18n="nav.desktopApp">Застосунок для ПК</span></a></li>
+      <button id="tab-settings" class="nav-menu-item" onclick="showPage('settings')"><svg class="icon"><use href="#icon-sliders"/></svg> <span data-i18n="nav.settings">Налаштування</span></button>
+      <a id="nav-desktop-app" class="nav-menu-item" href="https://github.com/22hito/MusicDB/releases/download/v1.0.4/NOwl-Setup-1.0.4.exe"><svg class="icon"><use href="#icon-download"/></svg> <span data-i18n="nav.desktopApp">Застосунок для ПК</span></a>
       <script>
         // Electron-застосунок сам ставить цей прапорець — не пропонувати встановити його вже в ньому.
         if (localStorage.getItem('isDesktopApp') === '1') document.getElementById('nav-desktop-app').style.display = 'none';
       </script>
-      <span class="nav-tab-indicator" id="nav-tab-indicator"></span>
-    </ul>
+    </div>
   </div>
-  <div class="dropdown" id="lang-dropdown" style="margin-left:auto;">
+  </div>
+  <!-- Глобальний пошук: пісні (обидві таблиці), виконавці, користувачі — без переходу на окремі вкладки. -->
+  <div class="nav-search" id="nav-search">
+    <svg class="icon nav-search-icon"><use href="#icon-search"/></svg>
+    <input type="search" id="nav-search-input" autocomplete="off" data-i18n-placeholder="navSearch.placeholder" placeholder="Пісні, виконавці, люди…" oninput="onNavSearchInput()" onfocus="onNavSearchInput()" onkeydown="onNavSearchKeydown(event)">
+    <kbd class="nav-search-kbd" aria-hidden="true">/</kbd>
+    <div class="nav-search-results" id="nav-search-results"></div>
+  </div>
+  <div class="nav-right">
+  <div class="dropdown" id="lang-dropdown">
     <button class="dropdown-toggle" onclick="toggleDropdown(event,'lang-dropdown')"><span id="lang-toggle-label">UA</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
     <div class="dropdown-menu">
       <button data-lang-option="uk" onclick="selectLang('uk')">UA — Українська</button>
@@ -117,10 +164,13 @@
       <button data-theme-option="dark" onclick="selectTheme('dark')"><svg class="icon"><use href="#icon-moon"/></svg> <span data-i18n="theme.dark">Темна</span></button>
       <button data-theme-option="gray" onclick="selectTheme('gray')"><svg class="icon"><use href="#icon-contrast"/></svg> <span data-i18n="theme.gray">Сіра</span></button>
       <button data-theme-option="light" onclick="selectTheme('light')"><svg class="icon"><use href="#icon-sun"/></svg> <span data-i18n="theme.light">Світла</span></button>
+      <button data-theme-option="system" onclick="selectTheme('system')"><svg class="icon"><use href="#icon-monitor"/></svg> <span data-i18n="theme.system">Системна</span></button>
     </div>
   </div>
+  <button class="nav-icon-btn" id="nav-settings-btn" onclick="showPage('settings')" aria-label="Налаштування" title="Налаштування" data-i18n-title="nav.settings"><svg class="icon"><use href="#icon-sliders"/></svg></button>
   <div id="auth-area" style="margin-right:1rem;display:flex;align-items:center;gap:0.7rem;">
     <!-- filled by initAuth() -->
+  </div>
   </div>
 </nav>
 
@@ -128,6 +178,7 @@
 </div>
 
 <!-- HOME -->
+<span id="main-content" tabindex="-1"></span>
 <div id="page-home" class="page active">
   <div class="container">
     <div class="stats-row">
@@ -136,17 +187,26 @@
       <div class="stat-card stat-card-clickable" onclick="openSimilarityGraph('albums')" title="" data-i18n-title="graph.openHint"><div class="label" data-i18n="stat.albums">Альбомів</div><div class="value" id="stat-albums">0</div></div>
       <div class="stat-card stat-card-clickable" onclick="openSimilarityGraph('singles')" title="" data-i18n-title="graph.openHint"><div class="label" data-i18n="stat.singles">Сінглів</div><div class="value" id="stat-singles">0</div></div>
     </div>
-    <div id="admin-tools-row" style="display:none;margin-bottom:1.5rem;">
-      <button class="btn btn-outline" onclick="normalizeGenres()" id="normalize-genres-btn"><svg class="icon"><use href="#icon-sparkle"/></svg> <span data-i18n="admin.normalizeGenresBtn">Об'єднати дублікати жанрів</span></button>
+    <!-- Дві головні таблиці: 1 — каталог, 2 — пісні від ком'юніті (та сама
+         розмітка й функціонал, у таблиці_2 додатково видно, хто додав). -->
+    <div class="seg-switch" id="home-source-switch" style="margin-bottom:1rem;">
+      <button type="button" id="home-source-catalog" class="active" onclick="showHome('catalog')"><svg class="icon"><use href="#icon-disc"/></svg> <span data-i18n="home.source.catalog">Каталог</span></button>
+      <button type="button" id="home-source-community" onclick="showHome('community')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="home.source.community">Пісні ком'юніті</span></button>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
-      <h2><span data-i18n="home.heading.pre">Опубліковані</span> <span class="hl" data-i18n="home.heading.accent">пісні</span></h2>
-      <button class="btn btn-outline" onclick="openRequestPage()" data-i18n="home.addRequestBtn">+ Надіслати запит</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;"><span id="home-heading-pre" data-i18n="home.heading.pre">Опубліковані</span> <span class="hl" id="home-heading-accent" data-i18n="home.heading.accent">пісні</span></h2>
     </div>
+    <div class="hint" id="home-community-hint" style="display:none;margin:-0.6rem 0 1.2rem;" data-i18n="home.communityHint">Власні пісні учасників спільноти — завантажені файлом або з посиланням на YouTube.</div>
     <div class="filter-bar">
       <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="renderSongs()">
       <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="table.shuffle">Перемішати</span></button>
+      <!-- Дії над таблицею — в одному рядку з фільтрами, притиснуті праворуч.
+           "Об'єднати жанри" — лише для адмінів (показує renderAuthArea, ендпоінт теж [AdminOnly]). -->
+      <div class="home-actions">
+        <button class="btn btn-outline" onclick="normalizeGenres()" id="normalize-genres-btn" style="display:none;"><svg class="icon"><use href="#icon-sparkle"/></svg> <span data-i18n="admin.normalizeGenresBtn">Об'єднати дублікати жанрів</span></button>
+        <button class="btn btn-outline" onclick="openRequestPage(homeSource)" id="home-add-btn" data-i18n="home.addRequestBtn">+ Надіслати запит</button>
+      </div>
     </div>
     <div class="table-wrap scroll-table mobile-cards">
       <table>
@@ -154,7 +214,7 @@
           <tr>
             <th style="width:40px"></th>
             <th data-i18n="table.number">№</th><th class="sortable" data-sort-key="artist" onclick="sortSongs('artist')" data-i18n="table.artist">Виконавець</th><th class="sortable" data-sort-key="title" onclick="sortSongs('title')" data-i18n="table.title">Назва</th>
-            <th class="sortable" data-sort-key="release" onclick="sortSongs('release')" data-i18n="table.release">Дата релізу</th><th class="sortable" data-sort-key="duration" onclick="sortSongs('duration')" data-i18n="table.duration">Тривалість</th><th class="sortable" data-sort-key="genres" onclick="sortSongs('genres')" data-i18n="table.genres">Жанри</th><th class="sortable" style="width:280px" data-sort-key="album" onclick="sortSongs('album')" data-i18n="table.album">Альбом</th><th class="sortable duration-col" style="width:110px" data-sort-key="plays" onclick="sortSongs('plays')" data-i18n="table.plays">Прослух.</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
+            <th class="sortable" data-sort-key="release" onclick="sortSongs('release')" data-i18n="table.release">Дата релізу</th><th class="sortable" data-sort-key="duration" onclick="sortSongs('duration')" data-i18n="table.duration">Тривалість</th><th class="sortable" data-sort-key="genres" onclick="sortSongs('genres')" data-i18n="table.genres">Жанри</th><th class="sortable" style="width:280px" data-sort-key="album" onclick="sortSongs('album')" data-i18n="table.album">Альбом</th><th class="sortable duration-col" style="width:110px" data-sort-key="plays" onclick="sortSongs('plays')" data-i18n="table.plays">Прослух.</th><th class="sortable duration-col" style="width:100px" data-sort-key="rating" onclick="sortSongs('rating')" data-i18n="table.rating">Оцінка</th><th id="th-submitter" class="sortable" style="display:none" data-sort-key="submitter" onclick="sortSongs('submitter')" data-i18n="table.submittedBy">Додав</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
           </tr>
         </thead>
         <tbody id="songs-body"></tbody>
@@ -187,6 +247,10 @@
   <div class="container">
     <h2><span data-i18n="request.heading.pre">Запит на</span> <span class="hl" data-i18n="request.heading.accent">додавання пісні</span></h2>
     <div id="req-alert" class="alert alert-success"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="request.successAlert">Запит успішно надіслано! Очікуйте підтвердження адміністратора.</span></div>
+    <div class="seg-switch" style="margin-bottom:1.2rem;">
+      <button type="button" id="req-kind-catalog" class="active" onclick="setSongFormKind('req','catalog')"><svg class="icon"><use href="#icon-disc"/></svg> <span data-i18n="request.kind.catalog">Пісня до каталогу</span></button>
+      <button type="button" id="req-kind-community" onclick="setSongFormKind('req','community')"><svg class="icon"><use href="#icon-upload"/></svg> <span data-i18n="request.kind.community">Власна пісня (ком'юніті)</span></button>
+    </div>
     <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;">
       <div class="form-card" style="flex:1 1 380px;">
         <div class="form-row">
@@ -199,7 +263,19 @@
         </div>
         <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="req-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу" oninput="onRequestSearchInput()"></div>
         <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="req-genres" data-i18n-placeholder="form.genres.placeholder" placeholder="Рок, Поп, Джаз"><div class="hint" id="req-genres-hint" data-i18n="form.genres.hint">Через кому</div></div>
-        <button class="btn btn-primary" onclick="submitRequest()" data-i18n="request.submitBtn">Надіслати запит</button>
+        <!-- Лише для таблиці_2: файл пісні обов'язковий, якщо нема посилання на YouTube. -->
+        <div id="req-community-fields" class="community-fields" style="display:none;">
+          <div class="form-group">
+            <label data-i18n="form.audioFile">Файл пісні</label>
+            <input type="file" id="req-audio" accept="audio/*,.mp3,.m4a,.ogg,.opus,.wav,.flac,.aac,.webm" onchange="onCommunityAudioSelected('req')">
+            <div class="hint" data-i18n="form.audioFile.hint">MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов'язково, якщо вказано YouTube-відео.</div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="form.youtube">Посилання на YouTube-відео</label>
+            <input type="text" id="req-youtube" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео">
+          </div>
+        </div>
+        <button class="btn btn-primary" id="req-submit-btn" onclick="submitRequest()" data-i18n="request.submitBtn">Надіслати запит</button>
       </div>
 
       <!-- Панель результатів зовнішнього пошуку (iTunes) для автозаповнення форми. -->
@@ -227,7 +303,7 @@
       <div id="requests-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-inbox"/></svg><span data-i18n="admin.empty">Немає нових запитів</span></div>
       <div class="table-wrap mobile-cards" id="requests-table-wrap">
         <table>
-          <thead><tr><th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th data-i18n="table.album">Альбом</th><th data-i18n="table.action">Дія</th></tr></thead>
+          <thead><tr><th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.release">Дата релізу</th><th data-i18n="table.duration">Тривалість</th><th data-i18n="table.genres">Жанри</th><th data-i18n="table.album">Альбом</th><th data-i18n="table.source">Таблиця</th><th data-i18n="table.action">Дія</th></tr></thead>
           <tbody id="requests-body"></tbody>
         </table>
       </div>
@@ -235,6 +311,10 @@
 
     <div id="admin-hub-add-section" style="display:none;">
       <div id="add-alert" class="alert alert-success"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="add.successAlert">Композицію успішно додано до бази даних!</span></div>
+      <div class="seg-switch" style="margin-bottom:1.2rem;">
+        <button type="button" id="add-kind-catalog" class="active" onclick="setSongFormKind('add','catalog')"><svg class="icon"><use href="#icon-disc"/></svg> <span data-i18n="home.source.catalog">Каталог</span></button>
+        <button type="button" id="add-kind-community" onclick="setSongFormKind('add','community')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="home.source.community">Пісні ком'юніті</span></button>
+      </div>
       <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;">
         <div class="form-card" style="flex:1 1 380px;">
           <div class="form-row">
@@ -247,7 +327,19 @@
           </div>
           <div class="form-group"><label data-i18n="form.genres">Жанри *</label><input type="text" id="add-genres" data-i18n-placeholder="form.genres.placeholder" placeholder="Рок, Поп, Джаз"><div class="hint" id="add-genres-hint" data-i18n="form.genres.hint">Через кому</div></div>
           <div class="form-group"><label data-i18n="form.album">Альбом (необов'язково)</label><input type="text" id="add-album" data-i18n-placeholder="form.album.placeholder" placeholder="Назва альбому або залиште порожнім для сінглу" oninput="onAddSearchInput()"></div>
-          <button class="btn btn-primary" onclick="addSong()" data-i18n="add.submitBtn">Додати до бази</button>
+          <!-- Лише для таблиці_2: файл пісні обов'язковий, якщо нема посилання на YouTube. -->
+          <div id="add-community-fields" class="community-fields" style="display:none;">
+            <div class="form-group">
+              <label data-i18n="form.audioFile">Файл пісні</label>
+              <input type="file" id="add-audio" accept="audio/*,.mp3,.m4a,.ogg,.opus,.wav,.flac,.aac,.webm" onchange="onCommunityAudioSelected('add')">
+              <div class="hint" data-i18n="form.audioFile.hint">MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов'язково, якщо вказано YouTube-відео.</div>
+            </div>
+            <div class="form-group">
+              <label data-i18n="form.youtube">Посилання на YouTube-відео</label>
+              <input type="text" id="add-youtube" data-i18n-placeholder="admin.youtubeVideo.placeholder" placeholder="ID або посилання на відео">
+            </div>
+          </div>
+          <button class="btn btn-primary" id="add-submit-btn" onclick="addSong()" data-i18n="add.submitBtn">Додати до бази</button>
         </div>
 
         <!-- Панель результатів зовнішнього пошуку (iTunes) для автозаповнення форми. -->
@@ -379,7 +471,7 @@
       <div class="wheel-col">
         <div class="wheel-wrap">
           <div class="wheel-pointer">
-            <svg viewBox="0 0 24 24"><defs><linearGradient id="wheelPointerGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ddc292"/><stop offset="100%" stop-color="#c8a96e"/></linearGradient></defs><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="url(#wheelPointerGrad)" stroke="#1c1c1f" stroke-width="1.2"/></svg>
+            <svg viewBox="0 0 24 24"><defs><linearGradient id="wheelPointerGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:var(--accent-hi)"/><stop offset="100%" style="stop-color:var(--accent)"/></linearGradient></defs><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="url(#wheelPointerGrad)" stroke="#1c1c1f" stroke-width="1.2"/></svg>
           </div>
           <div id="wheel-disc" class="wheel-disc"></div>
           <div class="wheel-hub" id="wheel-hub"><img src="/images/logo.png" alt="N'Owl"></div>
@@ -528,6 +620,7 @@
           <h2 id="user-profile-name" style="margin-bottom:6px;"></h2>
           <div id="user-profile-member-since" style="color:var(--muted);font-size:0.78rem;margin-bottom:8px;"></div>
           <button type="button" class="btn btn-outline" id="user-profile-action-btn" onclick="onUserProfileActionClick()"></button>
+          <button type="button" class="btn btn-outline" id="user-profile-message-btn" onclick="openDirectChat(currentProfileUserId)"><svg class="icon"><use href="#icon-chat"/></svg> <span data-i18n="chat.writeBtn">Написати</span></button>
         </div>
       </div>
 
@@ -545,6 +638,245 @@
       <h2 style="font-size:1.3rem;" data-i18n="profile.public.playlistsTitle">Публічні плейлисти</h2>
       <div id="user-profile-playlists-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="profile.public.playlistsEmpty">Немає публічних плейлистів</span></div>
       <div id="user-profile-playlists-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT: особисті повідомлення + гілки обговорень ком'юніті -->
+<!-- SETTINGS — налаштування інтерфейсу (для всіх, зберігаються на пристрої).
+     Кожен контрол прив'язаний до ключа через data-pref; логіка — PREFS у app.js. -->
+<div id="page-settings" class="page">
+  <div class="container">
+    <h2><span data-i18n="settings.heading.pre">Налаштування</span> <span class="hl" data-i18n="settings.heading.accent">інтерфейсу</span></h2>
+    <p class="settings-lead" data-i18n="settings.lead">Зберігаються на цьому пристрої й діють одразу, без перезавантаження.</p>
+
+    <div class="settings-grid">
+      <!-- ВИГЛЯД -->
+      <section class="settings-card">
+        <header class="settings-card-head">
+          <span class="settings-card-icon"><svg class="icon"><use href="#icon-contrast"/></svg></span>
+          <div><h3 data-i18n="settings.appearance">Вигляд</h3><p data-i18n="settings.appearance.sub">Тема, колір, розмір і щільність</p></div>
+        </header>
+
+        <div class="setting-row setting-row-stack">
+          <div class="setting-text"><div class="setting-label" data-i18n="settings.theme">Тема</div></div>
+          <div class="seg-switch seg-full" data-pref="theme">
+            <button type="button" data-value="dark"><svg class="icon"><use href="#icon-moon"/></svg> <span data-i18n="theme.dark">Темна</span></button>
+            <button type="button" data-value="gray"><svg class="icon"><use href="#icon-contrast"/></svg> <span data-i18n="theme.gray">Сіра</span></button>
+            <button type="button" data-value="light"><svg class="icon"><use href="#icon-sun"/></svg> <span data-i18n="theme.light">Світла</span></button>
+            <button type="button" data-value="system"><svg class="icon"><use href="#icon-monitor"/></svg> <span data-i18n="theme.system">Системна</span></button>
+          </div>
+        </div>
+
+        <div class="setting-row setting-row-stack">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.accent">Акцентний колір</div>
+            <div class="setting-hint" data-i18n="settings.accent.hint">Кнопки, посилання, цифри статистики. Контраст підлаштовується під тему автоматично.</div>
+          </div>
+          <div class="accent-swatches" data-pref="accent" role="radiogroup">
+            <button type="button" data-value="amber" style="--sw-h:78" data-i18n-title="settings.accent.amber" title="Бурштин"></button>
+            <button type="button" data-value="coral" style="--sw-h:38" data-i18n-title="settings.accent.coral" title="Корал"></button>
+            <button type="button" data-value="rose" style="--sw-h:5" data-i18n-title="settings.accent.rose" title="Троянда"></button>
+            <button type="button" data-value="lavender" style="--sw-h:295" data-i18n-title="settings.accent.lavender" title="Лаванда"></button>
+            <button type="button" data-value="ocean" style="--sw-h:235" data-i18n-title="settings.accent.ocean" title="Океан"></button>
+            <button type="button" data-value="emerald" style="--sw-h:158" data-i18n-title="settings.accent.emerald" title="Смарагд"></button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-text"><div class="setting-label" data-i18n="settings.fontScale">Розмір тексту</div></div>
+          <div class="seg-switch" data-pref="fontScale">
+            <button type="button" data-value="90">90%</button>
+            <button type="button" data-value="100">100%</button>
+            <button type="button" data-value="110">110%</button>
+            <button type="button" data-value="120">120%</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.density">Щільність таблиць</div>
+            <div class="setting-hint" data-i18n="settings.density.hint">Компактна вміщує більше пісень на екрані.</div>
+          </div>
+          <div class="seg-switch" data-pref="density">
+            <button type="button" data-value="comfortable" data-i18n="settings.density.comfortable">Комфортна</button>
+            <button type="button" data-value="compact" data-i18n="settings.density.compact">Компактна</button>
+          </div>
+        </div>
+
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.contrast">Високий контраст</div>
+            <div class="setting-hint" data-i18n="settings.contrast.hint">Яскравіший другорядний текст і чіткіші межі.</div>
+          </div>
+          <span class="switch"><input type="checkbox" data-pref="highContrast"><span class="switch-track"></span></span>
+        </label>
+      </section>
+
+      <!-- РУХ І ЕФЕКТИ -->
+      <section class="settings-card">
+        <header class="settings-card-head">
+          <span class="settings-card-icon"><svg class="icon"><use href="#icon-sparkle"/></svg></span>
+          <div><h3 data-i18n="settings.motion.title">Рух і ефекти</h3><p data-i18n="settings.motion.sub">Анімації та сяйво від обкладинки</p></div>
+        </header>
+
+        <div class="setting-row setting-row-stack">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.motion">Анімації</div>
+            <div class="setting-hint" data-i18n="settings.motion.hint">"Системні" — як у налаштуваннях доступності ОС. "Зменшені" — без руху й переходів.</div>
+          </div>
+          <div class="seg-switch seg-full" data-pref="motion">
+            <button type="button" data-value="system" data-i18n="settings.motion.system">Системні</button>
+            <button type="button" data-value="full" data-i18n="settings.motion.full">Увімкнені</button>
+            <button type="button" data-value="reduced" data-i18n="settings.motion.reduced">Зменшені</button>
+          </div>
+        </div>
+
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.artColors">Кольори з обкладинки</div>
+            <div class="setting-hint" data-i18n="settings.artColors.hint">Сяйво й плеєр підфарбовуються палітрою пісні, що грає.</div>
+          </div>
+          <span class="switch"><input type="checkbox" data-pref="artColors"><span class="switch-track"></span></span>
+        </label>
+
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.glowFollow">Сяйво йде за піснею</div>
+            <div class="setting-hint" data-i18n="settings.glowFollow.hint">Світла пляма пливе сторінкою зліва направо разом із прогресом треку.</div>
+          </div>
+          <span class="switch"><input type="checkbox" data-pref="glowFollow"><span class="switch-track"></span></span>
+        </label>
+
+        <div class="setting-row setting-row-stack">
+          <div class="setting-text">
+            <div class="setting-label"><span data-i18n="settings.glow">Інтенсивність сяйва</span> <output class="setting-value" id="pref-glow-out">100%</output></div>
+          </div>
+          <input type="range" class="range" data-pref="glow" min="0" max="150" step="10">
+        </div>
+
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.grain">Плівкова зернистість</div>
+            <div class="setting-hint" data-i18n="settings.grain.hint">Ледь помітна текстура фону.</div>
+          </div>
+          <span class="switch"><input type="checkbox" data-pref="grain"><span class="switch-track"></span></span>
+        </label>
+      </section>
+
+      <!-- МОВА -->
+      <section class="settings-card">
+        <header class="settings-card-head">
+          <span class="settings-card-icon"><svg class="icon"><use href="#icon-globe"/></svg></span>
+          <div><h3 data-i18n="settings.language">Мова</h3><p data-i18n="settings.language.sub">Мова інтерфейсу</p></div>
+        </header>
+        <div class="setting-row">
+          <div class="setting-text"><div class="setting-label" data-i18n="settings.language">Мова</div></div>
+          <div class="seg-switch" data-pref="lang">
+            <button type="button" data-value="uk">Українська</button>
+            <button type="button" data-value="en">English</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- КЛАВІАТУРА -->
+      <section class="settings-card">
+        <header class="settings-card-head">
+          <span class="settings-card-icon"><svg class="icon"><use href="#icon-keyboard"/></svg></span>
+          <div><h3 data-i18n="settings.keyboard">Клавіатура</h3><p data-i18n="settings.keyboard.sub">Швидкі клавіші</p></div>
+        </header>
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.playerKeys">Керування плеєром з клавіатури</div>
+            <div class="setting-hint" data-i18n="settings.playerKeys.hint">Не спрацьовують, поки ви друкуєте в полі вводу.</div>
+          </div>
+          <span class="switch"><input type="checkbox" data-pref="playerKeys"><span class="switch-track"></span></span>
+        </label>
+        <ul class="shortcut-list">
+          <li><span data-i18n="settings.key.search">Пошук</span><span><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></span></li>
+          <li><span data-i18n="settings.key.play">Відтворення / пауза</span><span><kbd data-i18n="settings.key.space">Пробіл</kbd></span></li>
+          <li><span data-i18n="settings.key.next">Наступна пісня</span><span><kbd>Shift</kbd>+<kbd>→</kbd></span></li>
+          <li><span data-i18n="settings.key.prev">Попередня пісня</span><span><kbd>Shift</kbd>+<kbd>←</kbd></span></li>
+          <li><span data-i18n="settings.key.mute">Вимкнути / увімкнути звук</span><span><kbd>M</kbd></span></li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="settings-footer">
+      <button class="btn btn-outline" id="settings-profile-link" onclick="showPage('profile-settings')" style="display:none"><svg class="icon"><use href="#icon-user"/></svg> <span data-i18n="settings.profileLink">Нікнейм і аватар</span></button>
+      <button class="btn btn-outline" onclick="resetPrefs()"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="settings.reset">Скинути до стандартних</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="page-chat" class="page">
+  <div class="container">
+    <h2><span data-i18n="chat.heading.pre">Спілкування</span> <span class="hl" data-i18n="chat.heading.accent">ком'юніті</span></h2>
+    <div class="seg-switch" style="margin-bottom:1.5rem;">
+      <button type="button" id="chat-tab-dm" onclick="switchChatTab('dm')"><svg class="icon"><use href="#icon-chat"/></svg> <span data-i18n="chat.tab.dm">Особисті повідомлення</span><span class="count-badge" id="chat-tab-dm-badge" style="display:none;"></span></button>
+      <button type="button" id="chat-tab-requests" onclick="switchChatTab('requests')"><svg class="icon"><use href="#icon-inbox"/></svg> <span data-i18n="chat.tab.requests">Запити на листування</span><span class="count-badge" id="chat-tab-requests-badge" style="display:none;"></span></button>
+      <button type="button" id="chat-tab-threads" class="active" onclick="switchChatTab('threads')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="chat.tab.threads">Обговорення</span></button>
+    </div>
+
+    <!-- Вхідні запити на листування: не-друзі можуть написати лише одне
+         повідомлення, далі — тільки якщо отримувач схвалить. -->
+    <div id="chat-requests-section" style="display:none;">
+      <div class="hint" style="margin-bottom:1rem;" data-i18n="chat.requestsHint">Друзі пишуть вам напряму. Інші люди можуть надіслати одне повідомлення — листування відкриється, лише якщо ви схвалите запит.</div>
+      <div id="chat-requests-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-inbox"/></svg><span data-i18n="chat.requestsEmpty">Немає нових запитів на листування</span></div>
+      <div id="chat-requests-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+    </div>
+
+    <div id="chat-dm-section" style="display:none;">
+      <div id="chat-dm-login-hint" class="empty" style="display:none;"><svg class="icon"><use href="#icon-lock"/></svg><span data-i18n="chat.loginHint">Увійдіть, щоб листуватися</span></div>
+      <div class="chat-layout" id="chat-dm-layout">
+        <div class="chat-sidebar">
+          <div class="hint" style="margin:0 0 0.6rem;" data-i18n="chat.newHint">Нова розмова — через пошук людей угорі або кнопку «Написати» в профілі.</div>
+          <div id="chat-conversations-empty" class="empty" style="display:none;padding:1.5rem 0.5rem;"><span data-i18n="chat.noConversations">Ще немає розмов</span></div>
+          <div id="chat-conversations"></div>
+        </div>
+        <div class="chat-main">
+          <div id="chat-dm-empty" class="empty"><svg class="icon"><use href="#icon-chat"/></svg><span data-i18n="chat.pickConversation">Оберіть розмову ліворуч</span></div>
+          <div id="chat-dm-panel" style="display:none;">
+            <div class="chat-header"><a href="#" id="chat-dm-partner" class="artist-link"></a></div>
+            <div id="chat-dm-messages" class="chat-messages"></div>
+            <div id="chat-dm-state-hint" class="chat-state-hint" style="display:none;"></div>
+            <div class="chat-input-row" id="chat-dm-input-row">
+              <textarea id="chat-dm-input" rows="2" maxlength="4000" data-i18n-placeholder="chat.inputPlaceholder" placeholder="Напишіть повідомлення… (Enter — надіслати, Shift+Enter — новий рядок)" onkeydown="onChatInputKeydown(event)"></textarea>
+              <button class="btn btn-primary" onclick="sendDirectMessage()" data-i18n="chat.sendBtn">Надіслати</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="chat-threads-section">
+      <div id="threads-list-view">
+        <div class="filter-bar">
+          <input type="text" id="threads-search" data-i18n-placeholder="threads.searchPlaceholder" placeholder="Пошук гілки…" oninput="onThreadsSearchInput()">
+          <button type="button" class="btn btn-primary" id="threads-new-btn" onclick="toggleNewThreadForm()" data-i18n="threads.newBtn">+ Нова гілка</button>
+        </div>
+        <div class="form-card" id="thread-new-form" style="display:none;max-width:none;margin-bottom:1.5rem;">
+          <div class="form-group"><label data-i18n="threads.titleLabel">Тема *</label><input type="text" id="thread-new-title" maxlength="200"></div>
+          <div class="form-group"><label data-i18n="threads.bodyLabel">Повідомлення *</label><textarea id="thread-new-body" rows="5" maxlength="10000" style="resize:vertical;"></textarea></div>
+          <button class="btn btn-primary" onclick="createThread()" data-i18n="threads.createBtn">Створити гілку</button>
+        </div>
+        <div id="threads-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-users"/></svg><span data-i18n="threads.empty">Ще немає обговорень — почніть перше</span></div>
+        <div id="threads-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+      </div>
+      <div id="thread-detail-view" style="display:none;">
+        <button class="btn btn-outline" onclick="closeThreadDetail()" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="threads.back">До всіх обговорень</span></button>
+        <div class="thread-post thread-op">
+          <div class="thread-post-head"><h3 id="thread-detail-title" style="margin:0;font-size:1.25rem;"></h3><span id="thread-detail-actions"></span></div>
+          <div class="thread-post-meta" id="thread-detail-meta"></div>
+          <div class="thread-post-body" id="thread-detail-body"></div>
+        </div>
+        <div id="thread-posts" style="display:flex;flex-direction:column;gap:0.6rem;margin:1rem 0;"></div>
+        <div id="thread-reply-login-hint" class="hint" style="display:none;" data-i18n="threads.loginToReply">Увійдіть, щоб відповісти</div>
+        <div class="chat-input-row" id="thread-reply-row">
+          <textarea id="thread-reply-input" rows="3" maxlength="10000" data-i18n-placeholder="threads.replyPlaceholder" placeholder="Ваша відповідь…"></textarea>
+          <button class="btn btn-primary" onclick="replyToThread()" data-i18n="threads.replyBtn">Відповісти</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -605,7 +937,7 @@
     <div class="time-row">
       <span id="p-cur">0:00</span>
       <span id="p-loading" style="display:none"><span class="loading-dot"></span></span>
-      <span style="color:#2a2a2e">—</span>
+      <span style="color:var(--border-strong)">—</span>
       <span id="p-dur">0:00</span>
     </div>
   </div>
@@ -629,6 +961,9 @@
     </button>
     <button class="pc-icon-btn" id="btn-fav-current" style="display:none" onclick="toggleFavorite(playerQueue[playerIndex]?.id, this)" title="Улюблене" data-i18n-title="profile.favToggle">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+    </button>
+    <button class="pc-icon-btn" id="btn-rate-current" style="display:none" onclick="openRatingModal(playerQueue[playerIndex]?.id)" title="Оцінити" data-i18n-title="rating.rateBtn">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><use href="#icon-star"/></svg>
     </button>
     <button class="pc-icon-btn" id="btn-playlist-current" style="display:none" onclick="openAddToPlaylistModal(playerQueue[playerIndex]?.id)" title="Додати в плейлист" data-i18n-title="player.addToPlaylist">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -713,6 +1048,8 @@
 </div>
 
 <div id="yt-wrap"><div id="yt-iframe"></div></div>
+<!-- Плеєр для завантажених файлів пісень ком'юніті (таблиця_2) — замість YouTube. -->
+<audio id="file-audio" preload="auto"></audio>
 <!-- "Якір" media session: реальне аудіо саме грає всередині чужого (youtube.com)
      iframe, тож без локального елемента, що теж грає, браузер віддає активну
      media session (і апаратні клавіші наступна/попередня) саме тому iframe, а
@@ -766,7 +1103,7 @@
     </div>
     <div class="form-group">
       <label data-i18n="admin.lyrics">Текст пісні (необов'язково)</label>
-      <textarea id="edit-req-lyrics" rows="6" style="resize:vertical;font-family:var(--font-mono);font-size:0.8rem;" data-i18n-placeholder="admin.lyrics.placeholder" placeholder="Вставте текст пісні рядок за рядком, або залиште порожнім"></textarea>
+      <textarea id="edit-req-lyrics" rows="6" style="resize:vertical;font-family:var(--font-ui);font-size:0.8rem;" data-i18n-placeholder="admin.lyrics.placeholder" placeholder="Вставте текст пісні рядок за рядком, або залиште порожнім"></textarea>
     </div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeEditRequestModal()" data-i18n="modal.cancel">Скасувати</button>
@@ -795,14 +1132,50 @@
       </a>
       <div class="hint" data-i18n="admin.youtubeVideo.hint">Автоматично підібране й закешоване відео можна замінити чи очистити тут, якщо воно виявилось не тим</div>
     </div>
+    <div class="form-group" id="edit-song-audio-group" style="display:none;">
+      <label data-i18n="form.audioFile">Файл пісні</label>
+      <audio id="edit-song-audio-preview" controls preload="none" style="width:100%;margin-bottom:0.4rem;"></audio>
+      <input type="file" id="edit-song-audio" accept="audio/*,.mp3,.m4a,.ogg,.opus,.wav,.flac,.aac,.webm">
+      <div class="hint" data-i18n="admin.audioReplaceHint">Оберіть файл, щоб замінити поточний</div>
+    </div>
     <div class="form-group">
       <label data-i18n="admin.lyrics">Текст пісні (необов'язково)</label>
-      <textarea id="edit-song-lyrics" rows="6" style="resize:vertical;font-family:var(--font-mono);font-size:0.8rem;" data-i18n-placeholder="admin.lyrics.placeholder" placeholder="Вставте текст пісні рядок за рядком, або залиште порожнім"></textarea>
+      <textarea id="edit-song-lyrics" rows="6" style="resize:vertical;font-family:var(--font-ui);font-size:0.8rem;" data-i18n-placeholder="admin.lyrics.placeholder" placeholder="Вставте текст пісні рядок за рядком, або залиште порожнім"></textarea>
     </div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeEditSongModal()" data-i18n="modal.cancel">Скасувати</button>
       <button class="modal-btn-confirm" id="edit-song-save-btn" style="background:var(--accent);" data-i18n="admin.saveBtn">Зберегти</button>
     </div>
+  </div>
+</div>
+
+<!-- Оцінка пісні (0–100) і рецензії -->
+<div class="modal-overlay" id="rating-modal-overlay">
+  <div class="modal-box" style="width:480px;max-height:88vh;overflow-y:auto;">
+    <div class="modal-title-row"><svg class="icon"><use href="#icon-star"/></svg> <span data-i18n="rating.title">Оцінка пісні</span></div>
+    <div id="rating-song-label" style="font-weight:600;margin-bottom:0.3rem;"></div>
+    <div id="rating-summary" class="hint" style="margin-bottom:1rem;"></div>
+    <div id="rating-form">
+      <div class="form-group">
+        <label data-i18n="rating.yourScore">Ваша оцінка (0–100)</label>
+        <div class="rating-input-row">
+          <input type="range" id="rating-score" min="0" max="100" value="70" oninput="document.getElementById('rating-score-num').value=this.value">
+          <input type="number" id="rating-score-num" min="0" max="100" value="70" oninput="_syncRatingNumber(this)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="rating.review">Рецензія (необов'язково)</label>
+        <textarea id="rating-review" rows="4" maxlength="5000" style="resize:vertical;" data-i18n-placeholder="rating.reviewPlaceholder" placeholder="Що зачепило, що ні…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" id="rating-delete-btn" onclick="deleteMyRating()" style="display:none;" data-i18n="rating.deleteBtn">Прибрати оцінку</button>
+        <button class="modal-btn-cancel" onclick="closeRatingModal()" data-i18n="modal.cancel">Скасувати</button>
+        <button class="modal-btn-confirm" style="background:var(--accent);" onclick="saveRating()" data-i18n="admin.saveBtn">Зберегти</button>
+      </div>
+    </div>
+    <div id="rating-login-hint" class="hint" style="display:none;margin-bottom:1rem;" data-i18n="rating.loginHint">Увійдіть, щоб оцінити пісню й написати рецензію</div>
+    <div class="rating-reviews-title" data-i18n="rating.reviewsTitle">Рецензії</div>
+    <div id="rating-reviews" class="rating-reviews"></div>
   </div>
 </div>
 
@@ -850,10 +1223,27 @@
       <div class="battle-media-row">
         <div class="battle-video-wrap">
           <div id="battle-yt-a"></div>
+          <!-- Міні-плеєр для треку ком'юніті без YouTube-відео (лише файл). -->
+          <div class="battle-mini" id="battle-mini-a">
+            <div class="battle-mini-cover"><svg class="icon"><use href="#icon-music"/></svg></div>
+            <button type="button" class="battle-mini-play" onclick="toggleBattleMini('a')"><svg class="icon icon-filled"><use href="#icon-play"/></svg></button>
+            <div class="battle-mini-seek" onclick="seekBattleMini('a', event)"><div class="battle-mini-fill"></div></div>
+            <div class="battle-mini-time">0:00 / 0:00</div>
+            <div class="battle-mini-label"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="battle.communityTrack">Трек ком'юніті</span></div>
+            <audio id="battle-audio-a" preload="metadata"></audio>
+          </div>
         </div>
         <div class="battle-vs"><span data-i18n="battle.vs">VS</span></div>
         <div class="battle-video-wrap">
           <div id="battle-yt-b"></div>
+          <div class="battle-mini" id="battle-mini-b">
+            <div class="battle-mini-cover"><svg class="icon"><use href="#icon-music"/></svg></div>
+            <button type="button" class="battle-mini-play" onclick="toggleBattleMini('b')"><svg class="icon icon-filled"><use href="#icon-play"/></svg></button>
+            <div class="battle-mini-seek" onclick="seekBattleMini('b', event)"><div class="battle-mini-fill"></div></div>
+            <div class="battle-mini-time">0:00 / 0:00</div>
+            <div class="battle-mini-label"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="battle.communityTrack">Трек ком'юніті</span></div>
+            <audio id="battle-audio-b" preload="metadata"></audio>
+          </div>
         </div>
       </div>
       <div class="battle-details-row">

@@ -12,14 +12,19 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RequestsController(MusicDbContext db, MusicService musicService, TranslationService translationService, ArtistActivityService artistActivity, IHubContext<MusicHub> hub) : ControllerBase
+public class RequestsController(
+    MusicDbContext db, MusicService musicService, TranslationService translationService,
+    ArtistActivityService artistActivity, AdminActivityService adminActivity,
+    UserDirectoryService userDirectory, IAudioStorage audioStorage, IHubContext<MusicHub> hub) : ControllerBase
 {
     [Authorize, AdminOnly]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<RequestDto>>> GetAll()
     {
         var reqs = await db.Requests.OrderByDescending(r => r.CreatedAt).ToListAsync();
-        return Ok(reqs.Select(ToDto));
+        var requesters = await userDirectory.GetUserCardsAsync(
+            reqs.Where(r => r.RequesterUserId.HasValue).Select(r => r.RequesterUserId!.Value));
+        return Ok(reqs.Select(r => ToDto(r, requesters)));
     }
 
     [Authorize]
@@ -54,12 +59,62 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
             GenreNames = string.Join(", ", translatedGenres),
             GenreNamesOriginal = wasAnyTranslated ? string.Join(", ", originalGenres) : null,
             AlbumTitle = dto.AlbumTitle?.Trim(),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            RequesterUserId = await userDirectory.GetCurrentUserIdAsync(User)
         };
+        return await SaveNewRequestAsync(req);
+    }
+
+    // Заявка у головну таблицю_2: власна пісня від ком'юніті. Файл пісні
+    // обов'язковий, якщо не вказано посилання на YouTube-відео.
+    [Authorize]
+    [HttpPost("community")]
+    [RequestSizeLimit(AudioFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = AudioFiles.MaxRequestBytes)]
+    public async Task<ActionResult<RequestDto>> CreateCommunity([FromForm] CommunitySongForm form)
+    {
+        if (!CommunitySongInput.TryParse(form, out var input, out var error)) return BadRequest(error);
+
+        string? audioFile = null;
+        if (form.Audio is not null)
+        {
+            (audioFile, error) = await audioStorage.SaveAsync(form.Audio);
+            if (audioFile is null) return BadRequest(error);
+        }
+
+        var req = new MusicRequest
+        {
+            Artist = input!.Artist,
+            Title = input.Title,
+            Release = input.Release,
+            Duration = DurationParser.ParseToString(input.Duration),
+            GenreNames = string.Join(", ", input.Genres),
+            AlbumTitle = input.Album,
+            CreatedAt = DateTime.UtcNow,
+            YoutubeVideoId = input.YoutubeVideoId,
+            Kind = SongSources.Community,
+            RequesterUserId = await userDirectory.GetCurrentUserIdAsync(User),
+            AudioFile = audioFile
+        };
+        return await SaveNewRequestAsync(req);
+    }
+
+    private async Task<ActionResult<RequestDto>> SaveNewRequestAsync(MusicRequest req)
+    {
         db.Requests.Add(req);
         await db.SaveChangesAsync();
+        await adminActivity.RecordAsync(req.RequesterUserId, AdminActivityService.RequestSubmitted, $"{req.Artist} — {req.Title}", req.Kind);
         await hub.Clients.All.SendAsync("requestsChanged");
-        return Ok(ToDto(req));
+        return Ok(ToDto(req, await userDirectory.GetUserCardsAsync(req.RequesterUserId is int id ? [id] : [])));
+    }
+
+    // Прослуховування файлу заявки адміном перед підтвердженням.
+    [Authorize, AdminOnly]
+    [HttpGet("{id}/audio")]
+    public async Task<IActionResult> GetAudio(int id)
+    {
+        var fileName = await db.Requests.Where(r => r.Id == id).Select(r => r.AudioFile).FirstOrDefaultAsync();
+        return this.ToResult(await audioStorage.OpenAsync(fileName));
     }
 
     // Дозволяє адміну відредагувати будь-яке поле заявки перед підтвердженням
@@ -73,6 +128,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
 
         var req = await db.Requests.FindAsync(id);
         if (req is null) return NotFound();
+        if (req.Kind == SongSources.Community && shouldUpdateVideo && youtubeVideoId is null && req.AudioFile is null)
+            return BadRequest("A community song needs an audio file or a YouTube video.");
 
         req.Artist = dto.Artist.Trim();
         req.Title = dto.Title.Trim();
@@ -87,7 +144,7 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
 
         await db.SaveChangesAsync();
         await hub.Clients.All.SendAsync("requestsChanged");
-        return Ok(ToDto(req));
+        return Ok(ToDto(req, await userDirectory.GetUserCardsAsync(req.RequesterUserId is int rid ? [rid] : [])));
     }
 
     // Текст пісні заявки — окремим ендпоінтом, як і /api/songs/{id}/lyrics.
@@ -125,7 +182,11 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
 
         // Дублікат за виконавцем+назвою (без регістру/пробілів) — не створюємо
         // новий запис, а доєднуємо жанри до наявного.
-        var existing = await db.Songs.FirstOrDefaultAsync(m =>
+        // Лише в каталозі: у таблиці_2 кожна пісня — чиясь власна, дві однакові
+        // назви від різних людей — різні записи.
+        var isCommunity = req.Kind == SongSources.Community;
+        var existing = isCommunity ? null : await db.Songs.FirstOrDefaultAsync(m =>
+            m.Source == SongSources.Catalog &&
             m.Artist.Trim().ToLower() == req.Artist.Trim().ToLower() &&
             m.Title.Trim().ToLower() == req.Title.Trim().ToLower());
 
@@ -166,7 +227,11 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
                 Duration = DurationParser.Parse(req.Duration, TimeSpan.FromMinutes(3)),
                 AlbumIds = albumId.HasValue ? [albumId.Value] : null,
                 YoutubeVideoId = req.YoutubeVideoId,
-                Lyrics = req.Lyrics
+                Lyrics = req.Lyrics,
+                Source = req.Kind,
+                SubmittedByUserId = isCommunity ? req.RequesterUserId : null,
+                // Файл не копіюємо — пісня переймає вже збережений файл заявки.
+                AudioFile = req.AudioFile
             };
             db.Songs.Add(music);
             await db.SaveChangesAsync();
@@ -201,6 +266,8 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
             await artistActivity.RecordEventAsync(newSongArtistIds, "song_added", songId, $"{req.Artist} — {req.Title}");
         }
 
+        await adminActivity.RecordAsync(await userDirectory.GetCurrentUserIdAsync(User),
+            AdminActivityService.RequestApproved, $"{req.Artist} — {req.Title}", req.Kind);
         await hub.Clients.All.SendAsync("requestsChanged");
         await hub.Clients.All.SendAsync("songsChanged");
         return Ok(new { message = wasDuplicate ? "merged" : "approved", songId, merged = wasDuplicate });
@@ -214,11 +281,14 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         if (req is null) return NotFound();
         db.Requests.Remove(req);
         await db.SaveChangesAsync();
+        await audioStorage.DeleteAsync(req.AudioFile);
+        await adminActivity.RecordAsync(await userDirectory.GetCurrentUserIdAsync(User),
+            AdminActivityService.RequestRejected, $"{req.Artist} — {req.Title}", req.Kind);
         await hub.Clients.All.SendAsync("requestsChanged");
         return NoContent();
     }
 
-    private static RequestDto ToDto(MusicRequest r) => new(
+    private static RequestDto ToDto(MusicRequest r, Dictionary<int, UserDirectoryService.UserCard> requesters) => new(
         r.Id, r.Artist, r.Title,
         r.Release.ToString("yyyy-MM-dd"),
         r.Duration ?? "",
@@ -226,6 +296,9 @@ public class RequestsController(MusicDbContext db, MusicService musicService, Tr
         r.GenreNamesOriginal,
         r.AlbumTitle,
         r.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
-        r.YoutubeVideoId
+        r.YoutubeVideoId,
+        r.Kind,
+        r.RequesterUserId is int uid && requesters.TryGetValue(uid, out var card) ? card.ToRef() : null,
+        r.AudioFile is null ? null : $"/api/requests/{r.Id}/audio"
     );
 }

@@ -73,6 +73,17 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             .Where(m => idList.Contains(m.Id))
             .ToListAsync();
 
+        return await BuildSongDtosAsync(songs);
+    }
+
+    // Єдине місце, де Music -> SongDto: альбоми, прослуховування, виконавці,
+    // автор (ком'юніті), оцінки — кожне одним батч-запитом на весь список.
+    // Порядок результату = порядок songs. MusicGenres мають бути вже завантажені.
+    public async Task<List<SongDto>> BuildSongDtosAsync(List<Music> songs)
+    {
+        if (songs.Count == 0) return [];
+        var idList = songs.Select(m => m.Id).ToList();
+
         var albumIds = songs
             .Where(m => m.AlbumIds is { Length: > 0 })
             .Select(m => m.AlbumIds![0])
@@ -85,17 +96,39 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
 
         var playCounts = await GetPlayCountsAsync(idList);
         var artistsBySong = await GetSongArtistsAsync(idList);
+        var ratings = await GetRatingSummariesAsync(idList);
+        var submitters = await UserDirectoryService.GetUserCardsAsync(db,
+            songs.Where(m => m.SubmittedByUserId.HasValue).Select(m => m.SubmittedByUserId!.Value));
 
         return songs.Select(m =>
         {
             var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
             var albumName = m.AlbumIds is { Length: > 0 } && albums.TryGetValue(m.AlbumIds[0], out var n) ? n : null;
+            var rating = ratings.GetValueOrDefault(m.Id);
+            var submitter = m.SubmittedByUserId is int uid && submitters.TryGetValue(uid, out var card) ? card.ToRef() : null;
             return new SongDto(m.Id, m.Artist, m.Title,
                 m.Release.ToString("yyyy-MM-dd"),
                 m.Duration.ToString(@"hh\:mm\:ss"),
                 genres, albumName, playCounts.GetValueOrDefault(m.Id, 0), m.YoutubeVideoId,
-                artistsBySong.GetValueOrDefault(m.Id));
+                artistsBySong.GetValueOrDefault(m.Id),
+                m.Source, submitter,
+                m.AudioFile is null ? null : $"/api/songs/{m.Id}/audio",
+                rating.Avg, rating.Count);
         }).ToList();
+    }
+
+    public async Task<Dictionary<int, (double? Avg, int Count)>> GetRatingSummariesAsync(IEnumerable<int> musicIds)
+    {
+        var idList = musicIds.Distinct().ToList();
+        if (idList.Count == 0) return [];
+
+        var rows = await db.SongRatings
+            .Where(r => idList.Contains(r.MusicId))
+            .GroupBy(r => r.MusicId)
+            .Select(g => new { g.Key, Avg = g.Average(r => (double)r.Score), Count = g.Count() })
+            .ToListAsync();
+
+        return rows.ToDictionary(r => r.Key, r => ((double?)Math.Round(r.Avg, 1), r.Count));
     }
 
     // Кількість унікальних слухачів на пісню (1 запис в listening_history = 1

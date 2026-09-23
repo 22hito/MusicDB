@@ -177,12 +177,72 @@ export function ShieldIcon({ size = 18, color = '#000' }: IconProps) {
   );
 }
 
+export function SortIcon({ size = 15, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Line x1={4} y1={6} x2={14} y2={6} />
+      <Line x1={4} y1={12} x2={11} y2={12} />
+      <Line x1={4} y1={18} x2={8} y2={18} />
+      <Polyline points="17 4 17 20" />
+      <Polyline points="13 16 17 20 21 16" />
+    </Svg>
+  );
+}
+
 export function VolumeIcon({ size = 14, color = '#000' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <Polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
       <Path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
       <Path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </Svg>
+  );
+}
+
+// ─── Ком'юніті (ті самі шляхи, що й у спрайті сайту) ────────────────────────
+
+export function ChatIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" />
+    </Svg>
+  );
+}
+
+export function SearchIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z" />
+      <Line x1={21} y1={21} x2={16.2} y2={16.2} />
+    </Svg>
+  );
+}
+
+export function UsersIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M9 4.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7z" />
+      <Path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+      <Path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.7 3.5 2.8 3.5 5.7" />
+    </Svg>
+  );
+}
+
+export function BellIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <Path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </Svg>
+  );
+}
+
+export function UploadIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 16V4" />
+      <Polyline points="7 8 12 3 17 8" />
+      <Path d="M4 19h16" />
     </Svg>
   );
 }

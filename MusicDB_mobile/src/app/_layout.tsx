@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Dimensions, Text, View, useWindowDimensions } from 'react-native';
-import { enableScreens } from 'react-native-screens';
-import { Stack } from 'expo-router';
+import { Modal, View } from 'react-native';
+import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -17,14 +16,29 @@ import { FavoritesProvider } from '@/state/FavoritesContext';
 import { PlayerProvider } from '@/player/PlayerContext';
 import { ServerSettingsScreen } from '@/screens/ServerSettingsScreen';
 
-// Має виконатись синхронно на рівні модуля, ДО першого рендеру будь-якого
-// навігатора (Stack/Tabs) — інакше нативні Screen-контейнери вже створяться
-// зі стандартною поведінкою. На деяких Android-прошивках (MIUI зокрема) саме
-// ці контейнери в парі з edge-to-edge неправильно рахують висоту вікна,
-// через що контент займає лише верхню половину екрана.
-enableScreens(false);
+// Раніше тут був expo-router-івський <Stack> ((tabs) + модальний "settings").
+// Виміри (onLayout-логи на кожному рівні дерева) показали, що ЛИШЕ контент
+// усередині <Stack> отримував рівно ПОЛОВИНУ висоти екрана — усе нижче
+// ((tabs), Tabs, самі екрани) рахувало свій layout правильно відносно того,
+// що йому дали. Причина: <Stack> у expo-router — це native-stack, який
+// побудований на react-native-screens; на Fabric/New Architecture (Android)
+// у ньому є активний, ще не випущений у стабільну версію баг, коли Screen-
+// компонент після монтування комітить у Shadow Tree вдвічі менший розмір
+// (детально: github.com/software-mansion/react-native-screens/issues/2933,
+// підтверджено багатьма незалежними командами, "half screen blank/black").
+// Спільнота підтверджує: баг є ТІЛЬКИ в native-stack, не в звичайному
+// (не-screens) навігаторі. Ми не використовуємо жодних push/pop-переходів
+// на цьому рівні (лише "показати вкладки" і "показати налаштування" —
+// останнє тепер звичайний <Modal>, як логін чи підтвердження видалення в
+// цьому проєкті), тож <Stack> тут був не потрібен — <Slot /> рендерить
+// поточний маршрут узагалі без native Screen-контейнера.
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Друкується одразу при завантаженні бандла (ще до першого рендеру) — щоб
+// однозначно бачити в терміналі, що телефон виконує САМЕ цей, щойно
+// перезібраний код, а не застарілий закешований бандл.
+console.log('[DBG2] _layout.tsx module loaded — build marker v2 (Slot, no root Stack)');
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -44,9 +58,8 @@ export default function RootLayout() {
 }
 
 function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
-  const { ready, apiBase, theme } = useSettings();
+  const { ready, apiBase, theme, settingsModalOpen, closeSettingsModal } = useSettings();
   const [hidden, setHidden] = useState(false);
-  const winDims = useWindowDimensions();
 
   const maybeHideSplash = useCallback(async () => {
     if (fontsLoaded && ready && !hidden) {
@@ -73,63 +86,23 @@ function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
   }
 
   return (
-    <>
-      <DebugDimensionsOverlay />
-      {/* Явний піксельний розмір замість покладання на те, що flex:1 десь
-          вище (Stack/native-screens) коректно розв'яжеться до реального
-          вікна — на деяких пристроях/версіях Android з примусовим
-          edge-to-edge цей ланцюжок обривається, і контент займає лише
-          частину екрана, а решта лишається непрофарбованою. */}
-      <View style={{ width: winDims.width, height: winDims.height, backgroundColor: theme.bg }}>
-        <ApiBridgeProvider>
-          <FavoritesProvider>
-            <PlayerProvider>
-              <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
-              <Stack
-                screenOptions={{ headerShown: false }}
-                screenLayout={({ children }) => (
-                  <View style={{ flex: 1, borderWidth: 3, borderColor: 'cyan' }}>{children}</View>
-                )}
-              >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="settings"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-              </Stack>
-            </PlayerProvider>
-          </FavoritesProvider>
-        </ApiBridgeProvider>
-      </View>
-    </>
-  );
-}
-
-// ТИМЧАСОВА діагностика half-screen бага — плаваючий оверлей поверх усього,
-// щоб побачити реальні виміри незалежно від того, де саме ламається layout.
-// Прибрати після знаходження причини.
-function DebugDimensionsOverlay() {
-  const win = Dimensions.get('window');
-  const scr = Dimensions.get('screen');
-  const hookDims = useWindowDimensions();
-  return (
     <View
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 99999,
-        elevation: 999,
-        backgroundColor: '#ff00ff',
-        padding: 6,
-      }}
+      style={{ flex: 1, backgroundColor: theme.bg }}
+      onLayout={(e) => console.log('[DBG2] RootInner outer View', e.nativeEvent.layout)}
     >
-      <Text style={{ fontSize: 12, color: '#000', fontWeight: '700' }}>
-        window={Math.round(win.width)}x{Math.round(win.height)} screen={Math.round(scr.width)}x{Math.round(scr.height)} hook=
-        {Math.round(hookDims.width)}x{Math.round(hookDims.height)}
-      </Text>
+      <ApiBridgeProvider>
+        <FavoritesProvider>
+          <PlayerProvider>
+            <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
+            <View style={{ flex: 1 }} onLayout={(e) => console.log('[DBG2] Slot wrapper View', e.nativeEvent.layout)}>
+              <Slot />
+            </View>
+            <Modal visible={settingsModalOpen} animationType="slide" onRequestClose={closeSettingsModal}>
+              <ServerSettingsScreen onSaved={closeSettingsModal} onCancel={closeSettingsModal} />
+            </Modal>
+          </PlayerProvider>
+        </FavoritesProvider>
+      </ApiBridgeProvider>
     </View>
   );
 }

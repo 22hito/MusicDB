@@ -12,8 +12,15 @@ public record SongDto(
     string?  Album,
     int      PlayCount = 0,   // кількість унікальних слухачів, з listening_history
     string?  YoutubeVideoId = null,   // кеш підтвердженого відео — економить YouTube API квоту
-    ArtistRefDto[]? Artists = null    // розбір Artist на окремих виконавців, для посилань на їхні сторінки
+    ArtistRefDto[]? Artists = null,   // розбір Artist на окремих виконавців, для посилань на їхні сторінки
+    string   Source = "catalog",      // "catalog" (таблиця_1) | "community" (таблиця_2)
+    UserRefDto? SubmittedBy = null,   // хто додав — лише для ком'юніті-пісень
+    string?  AudioUrl = null,         // завантажений файл пісні (ком'юніті), грає замість YouTube
+    double?  AvgRating = null,        // середня оцінка 0–100
+    int      RatingCount = 0
 );
+
+public record UserRefDto(int UserId, string DisplayName);
 
 public record SetYoutubeVideoDto(string VideoId);
 
@@ -40,6 +47,21 @@ public record UpdateSongDto(
     string?  YoutubeVideoId = null   // на відміну від PUT .../youtube-video, тут можна й очистити, й замінити
 );
 
+// Пісня для головної таблиці_2 (ком'юніті) — multipart/form-data, бо з файлом.
+// Потрібен або файл пісні, або посилання на YouTube-відео (тоді файл не обов'язковий).
+// Використовується і заявкою користувача, і прямим додаванням адміном.
+public class CommunitySongForm
+{
+    public string  Artist { get; set; } = "";
+    public string  Title { get; set; } = "";
+    public string  Release { get; set; } = "";
+    public string  Duration { get; set; } = "";
+    public string  Genres { get; set; } = "";         // через кому
+    public string? Album { get; set; }
+    public string? YoutubeVideo { get; set; }         // ID або посилання
+    public IFormFile? Audio { get; set; }
+}
+
 // ─── Genres ───────────────────────────────────────────────────────────────────
 
 public record GenreDto(int Id, string Name);
@@ -59,7 +81,10 @@ public record RequestDto(
     string?  GenreNamesOriginal,
     string?  AlbumTitle,
     string   CreatedAt,
-    string?  YoutubeVideoId = null
+    string?  YoutubeVideoId = null,
+    string   Kind = "catalog",
+    UserRefDto? Requester = null,
+    string?  AudioUrl = null
 );
 
 public record CreateRequestDto(
@@ -144,3 +169,49 @@ public record UserSearchResultDto(int UserId, string DisplayName, string? Avatar
 public record FriendRequestDto(int RequestId, int UserId, string DisplayName, string? AvatarUrl, string CreatedAt);
 
 public record SendFriendRequestDto(int TargetUserId);
+
+// ─── Сповіщення адмінів ─────────────────────────────────────────────────────
+
+// EventType: "request_submitted" | "request_approved" | "request_rejected" | "song_added"
+public record AdminNotificationDto(int Id, UserRefDto? Actor, string EventType, string Label, string Source, string CreatedAt);
+
+public record AdminNotificationsSummaryDto(int UnreadCount, List<AdminNotificationDto> Recent);
+
+// ─── Особисті повідомлення ──────────────────────────────────────────────────
+
+// State — стосунок до співрозмовника щодо листування:
+// "friends" | "accepted" (схвалений запит) | "pending_outgoing" (мій запит чекає) |
+// "pending_incoming" (запит мені) | "declined" (мені відмовили) |
+// "declined_by_me" | "none" (ще нічого — перше повідомлення стане запитом).
+public record ConversationDto(int UserId, string DisplayName, string? AvatarUrl, string LastMessage, bool LastFromMe, string LastAt, int UnreadCount, string State = "friends");
+
+public record DirectMessageDto(int Id, int SenderId, int RecipientId, string Body, string CreatedAt, bool IsMine);
+
+public record DmThreadDto(string State, bool CanSend, List<DirectMessageDto> Messages);
+
+public record DmUnreadDto(int Unread, int Requests);
+
+// Вхідний запит на листування від не-друга.
+public record DmRequestDto(int UserId, string DisplayName, string? AvatarUrl, string Preview, int MessageCount, string CreatedAt);
+
+public record SendMessageDto(string Body);
+
+// ─── Обговорення ────────────────────────────────────────────────────────────
+
+public record ThreadSummaryDto(int Id, string Title, UserRefDto? Author, string CreatedAt, string LastPostAt, int PostCount);
+
+public record ThreadPostDto(int Id, UserRefDto? Author, string Body, string CreatedAt);
+
+public record ThreadDetailDto(int Id, string Title, string Body, UserRefDto? Author, string CreatedAt, List<ThreadPostDto> Posts);
+
+public record CreateThreadDto(string Title, string Body);
+
+public record CreatePostDto(string Body);
+
+// ─── Оцінки / рецензії ─────────────────────────────────────────────────────
+
+public record RatingDto(UserRefDto User, int Score, string? Review, string UpdatedAt);
+
+public record SongRatingsDto(int MusicId, double? AvgRating, int RatingCount, RatingDto? Mine, List<RatingDto> Reviews);
+
+public record SaveRatingDto(int Score, string? Review);

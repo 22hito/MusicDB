@@ -9,13 +9,19 @@ namespace MusicDB.Api.Controllers;
 [Route("api/[controller]")]
 public class StatsController(MusicDbContext db, MusicService musicService) : ControllerBase
 {
+    // source — яка головна таблиця: "catalog" (за замовчуванням) або "community".
     [HttpGet]
-    public async Task<object> Get()
+    public async Task<object> Get([FromQuery] string source = SongSources.Catalog)
     {
-        var totalSongs = await db.Songs.CountAsync();
-        var totalGenres = await db.MusicGenres.Select(mg => mg.GenreId).Distinct().CountAsync();
-        var totalAlbums = await db.Albums.CountAsync();
-        var singles = await db.Songs
+        var songs = db.Songs.Where(m => m.Source == source);
+        var totalSongs = await songs.CountAsync();
+        var totalGenres = await db.MusicGenres.Where(mg => mg.Music.Source == source).Select(mg => mg.GenreId).Distinct().CountAsync();
+        var totalAlbums = await songs
+            .Where(m => m.AlbumIds != null && m.AlbumIds.Length > 0)
+            .Select(m => m.AlbumIds![0])
+            .Distinct()
+            .CountAsync();
+        var singles = await songs
             .CountAsync(m => m.AlbumIds == null || m.AlbumIds.Length == 0);
 
         return new { totalSongs, totalGenres, totalAlbums, singles };

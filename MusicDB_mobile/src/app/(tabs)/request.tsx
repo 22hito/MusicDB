@@ -9,12 +9,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { Button, Field, Heading } from '@/components/UI';
+import { Button, Field, Heading, SegmentedPicker } from '@/components/UI';
+import { CommunityFields } from '@/components/CommunityFields';
 import { SPACING } from '@/constants/theme';
-import type { ExternalSongResult } from '@/api/types';
+import type { ExternalSongResult, PickedAudio, SongSource } from '@/api/types';
 
 const EMPTY = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
 
@@ -23,6 +25,15 @@ export default function RequestScreen() {
   const api = useMusicApi();
   const requireAuth = useRequireAuth();
 
+  // Як на сайті: пісня до каталогу (таблиця_1) або власна пісня (таблиця_2).
+  const params = useLocalSearchParams<{ kind?: string }>();
+  const [kind, setKind] = useState<SongSource>('catalog');
+  useEffect(() => {
+    if (params.kind === 'community' || params.kind === 'catalog') setKind(params.kind);
+  }, [params.kind]);
+  const [audio, setAudio] = useState<PickedAudio | null>(null);
+  const [youtube, setYoutube] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [extResults, setExtResults] = useState<ExternalSongResult[]>([]);
   const [genresHint, setGenresHint] = useState<string | null>(null);
@@ -78,20 +89,44 @@ export default function RequestScreen() {
       if (!form.artist || !form.title || !form.release || !form.duration || !form.genres) {
         return;
       }
+      if (kind === 'community' && !audio && !youtube.trim()) {
+        setError(t('msg.communityNeedsFileOrVideo'));
+        return;
+      }
+      setError(null);
       setSubmitting(true);
       try {
-        await api.createRequest({
-          artist: form.artist.trim(),
-          title: form.title.trim(),
-          release: form.release.trim(),
-          duration: form.duration.trim(),
-          genres: form.genres.split(',').map((g) => g.trim()).filter(Boolean),
-          albumTitle: form.album.trim() || null,
-        });
+        if (kind === 'community') {
+          await api.createCommunityRequest({
+            artist: form.artist.trim(),
+            title: form.title.trim(),
+            release: form.release.trim(),
+            duration: form.duration.trim(),
+            genres: form.genres,
+            album: form.album.trim() || null,
+            youtubeVideo: youtube.trim() || null,
+            audio,
+          });
+        } else {
+          await api.createRequest({
+            artist: form.artist.trim(),
+            title: form.title.trim(),
+            release: form.release.trim(),
+            duration: form.duration.trim(),
+            genres: form.genres.split(',').map((g) => g.trim()).filter(Boolean),
+            albumTitle: form.album.trim() || null,
+          });
+        }
         setForm(EMPTY);
+        setAudio(null);
+        setYoutube('');
         setExtResults([]);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3500);
+      } catch (e) {
+        const body = (e as { body?: string }).body;
+        setError(`${t('msg.errorSubmittingRequest')}${body ? `
+${body}` : ''}`);
       } finally {
         setSubmitting(false);
       }
@@ -105,6 +140,16 @@ export default function RequestScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Heading pre={t('request.heading.pre')} accent={t('request.heading.accent')} />
+          <View style={{ marginBottom: SPACING.lg }}>
+            <SegmentedPicker<SongSource>
+              options={[
+                { value: 'catalog', label: t('request.kind.catalog') },
+                { value: 'community', label: t('request.kind.community') },
+              ]}
+              value={kind}
+              onChange={setKind}
+            />
+          </View>
 
           {success ? (
             <View style={[styles.alert, { backgroundColor: `${theme.green}26`, borderColor: `${theme.green}4d` }]}>
@@ -150,6 +195,11 @@ export default function RequestScreen() {
             placeholder={t('form.genres.placeholder')}
             hint={genresHint || t('form.genres.hint')}
           />
+
+          {kind === 'community' ? (
+            <CommunityFields audio={audio} youtube={youtube} onAudioChange={setAudio} onYoutubeChange={setYoutube} />
+          ) : null}
+          {error ? <Text style={{ color: theme.red, fontSize: 13, marginBottom: SPACING.md }}>{error}</Text> : null}
 
           <Button label={t('request.submitBtn')} onPress={submit} loading={submitting} disabled={missingRequired} style={{ marginTop: 10 }} />
         </ScrollView>

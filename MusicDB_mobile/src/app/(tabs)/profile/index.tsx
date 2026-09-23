@@ -18,14 +18,14 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
-import { Badge, Button, EmptyState, Field, Heading, StatCard } from '@/components/UI';
+import { Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
 import { TrashIcon } from '@/components/Icons';
 import { RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, Profile, Song } from '@/api/types';
 
 export default function ProfileScreen() {
-  const { theme, t } = useSettings();
+  const { theme, t, openSettingsModal } = useSettings();
   const { currentUser, authChecked, openLogin, logout, refreshCurrentUser } = useApiBridge();
   const api = useMusicApi();
   const { favoriteIds, toggleFavorite, reload: reloadFavorites } = useFavorites();
@@ -35,6 +35,7 @@ export default function ProfileScreen() {
   const [favorites, setFavorites] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [avatarValue, setAvatarValue] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -58,6 +59,9 @@ export default function ProfileScreen() {
       setAvatarValue(p.avatarUrl || null);
       setFavorites(favs);
       setPlaylists(pls);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -139,10 +143,26 @@ export default function ProfileScreen() {
             {t('auth.loginRequiredGeneric')}
           </Text>
           <Button label={t('auth.loginBtn')} onPress={openLogin} />
-          <TouchableOpacity onPress={() => router.push('/settings')} style={styles.settingsLink} hitSlop={6}>
+          <TouchableOpacity onPress={openSettingsModal} style={styles.settingsLink} hitSlop={6}>
             <Text style={{ color: theme.muted, fontSize: 13 }}>{t('settings.change')}</Text>
           </TouchableOpacity>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loading && !profile) {
+    return (
+      <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
+        <ActivityIndicator color={theme.accent} style={{ marginTop: 40 }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError && !profile) {
+    return (
+      <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
+        <ErrorState label={t('error.loadFailed')} onRetry={loadAll} />
       </SafeAreaView>
     );
   }
@@ -261,7 +281,7 @@ export default function ProfileScreen() {
         )}
 
         <Button label={t('auth.logout')} variant="outline" onPress={logout} style={{ marginTop: 26 }} />
-        <TouchableOpacity onPress={() => router.push('/settings')} style={styles.settingsLink} hitSlop={6}>
+        <TouchableOpacity onPress={openSettingsModal} style={styles.settingsLink} hitSlop={6}>
           <Text style={{ color: theme.muted, fontSize: 13 }}>{t('settings.change')}</Text>
         </TouchableOpacity>
       </ScrollView>

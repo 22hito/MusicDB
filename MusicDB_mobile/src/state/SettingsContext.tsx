@@ -8,6 +8,12 @@ const KEY_API_BASE = 'musicdb.apiBase';
 const KEY_THEME = 'musicdb.theme';
 const KEY_LANG = 'musicdb.lang';
 
+// Той самий бекенд, що й у веб- і десктоп-версіях (SITE_URL у MusicDB_desktop/main.js) —
+// застосунок має працювати "з коробки", без ручного налаштування адреси сервера
+// при першому запуску. Екран налаштувань (@/screens/ServerSettingsScreen) лишається
+// доступним для розробки/локального бекенду.
+const DEFAULT_API_BASE = 'https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net';
+
 function normalizeBaseUrl(raw: string): string | null {
   let v = raw.trim();
   if (!v) return null;
@@ -34,6 +40,15 @@ interface SettingsState {
   lang: Lang;
   setLang: (lang: Lang) => void;
   t: (key: keyof typeof I18N['uk'], vars?: Record<string, string | number>) => string;
+  // Екран налаштувань показується як звичайний <Modal>, а не окремий route —
+  // навмисно уникаємо expo-router-івського <Stack> (native-stack) тут: у ньому є
+  // активний і поки не випущений у стабільну версію upstream-баг у
+  // react-native-screens на Fabric/New Architecture (Android), через який
+  // контент native-stack-сцени займає лише половину екрана
+  // (github.com/software-mansion/react-native-screens/issues/2933).
+  settingsModalOpen: boolean;
+  openSettingsModal: () => void;
+  closeSettingsModal: () => void;
 }
 
 const SettingsContext = createContext<SettingsState | null>(null);
@@ -44,6 +59,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [apiBase, setApiBaseState] = useState<string | null>(null);
   const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
   const [lang, setLangState] = useState<Lang>('uk');
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const openSettingsModal = useCallback(() => setSettingsModalOpen(true), []);
+  const closeSettingsModal = useCallback(() => setSettingsModalOpen(false), []);
 
   useEffect(() => {
     (async () => {
@@ -54,6 +72,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem(KEY_LANG),
         ]);
         if (savedBase) setApiBaseState(savedBase);
+        else setApiBaseState(DEFAULT_API_BASE);
         if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'gray') setThemeModeState(savedTheme);
         else if (systemScheme === 'light') setThemeModeState('light');
         if (savedLang === 'uk' || savedLang === 'en') setLangState(savedLang);
@@ -113,8 +132,24 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       lang,
       setLang,
       t,
+      settingsModalOpen,
+      openSettingsModal,
+      closeSettingsModal,
     }),
-    [ready, apiBase, setApiBase, clearApiBase, themeMode, setThemeMode, lang, setLang, t],
+    [
+      ready,
+      apiBase,
+      setApiBase,
+      clearApiBase,
+      themeMode,
+      setThemeMode,
+      lang,
+      setLang,
+      t,
+      settingsModalOpen,
+      openSettingsModal,
+      closeSettingsModal,
+    ],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

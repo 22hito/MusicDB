@@ -189,10 +189,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setState('loading');
       setCurrentTime(0);
       setDuration(0);
+      // Пісня таблиці_2 з завантаженим файлом — грає <audio> у тій самій
+      // сторінці-плеєрі (mobile-player.html), з тими самими подіями state/time.
+      if (song.audioUrl) {
+        setVideoPopupOpen(false);
+        postCommand({ cmd: 'loadAudio', url: `${apiBase}${song.audioUrl}`, autoplay: true });
+        return;
+      }
       // Закешований раніше videoId (уже підтверджений — будь-яким клієнтом)
       // рятує від нового звернення до YouTube Search API (100 одиниць квоти).
+      // Ком'юніті-пісні не шукаємо: відео до них вказує лише автор чи адмін.
       let vid = song.youtubeVideoId;
-      if (!vid) {
+      if (!vid && song.source !== 'community') {
         vid = await fetchVideoId(song.artist, song.title, ytApiKeys, ytKeyIdxRef);
         if (vid) api.setYoutubeVideo(song.id, vid).catch(() => {});
       }
@@ -205,7 +213,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setVideoId(vid);
       postCommand({ cmd: 'load', videoId: vid, autoplay: true });
     },
-    [ytApiKeys, api, postCommand],
+    [ytApiKeys, api, postCommand, apiBase],
   );
 
   useEffect(() => {
