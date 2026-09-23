@@ -15,7 +15,7 @@ namespace MusicDB.Api.Controllers;
 public class SongsController(
     MusicDbContext db, MusicService musicService, ArtistActivityService artistActivity,
     AdminActivityService adminActivity, UserDirectoryService userDirectory, IAudioStorage audioStorage,
-    IHubContext<MusicHub> hub) : ControllerBase
+    CatalogCache catalogCache, IHubContext<MusicHub> hub) : ControllerBase
 {
     // source: "catalog" (головна таблиця_1, за замовчуванням — так старі клієнти,
     // зокрема мобільний, і далі бачать лише каталог), "community" (таблиця_2) або "all".
@@ -24,15 +24,20 @@ public class SongsController(
     {
         if (source != "all" && !SongSources.IsValid(source)) return BadRequest("Unknown source.");
 
-        var query = db.Songs.Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
-        if (source != "all") query = query.Where(m => m.Source == source);
+        // Кеш: список — 6 послідовних запитів до БД, і після кожної зміни каталогу
+        // його разом перезапитують усі відкриті вкладки (див. CatalogCache).
+        return Ok(await catalogCache.GetOrCreateAsync($"songs:{source}", async () =>
+        {
+            var query = db.Songs.Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
+            if (source != "all") query = query.Where(m => m.Source == source);
 
-        // .ToLower() — інакше велика/мала літери сортуються окремими блоками (A-Z, a-z).
-        var songs = await query
-            .OrderBy(m => m.Artist.ToLower()).ThenBy(m => m.Title.ToLower())
-            .ToListAsync();
+            // .ToLower() — інакше велика/мала літери сортуються окремими блоками (A-Z, a-z).
+            var songs = await query
+                .OrderBy(m => m.Artist.ToLower()).ThenBy(m => m.Title.ToLower())
+                .ToListAsync();
 
-        return Ok(await musicService.BuildSongDtosAsync(songs));
+            return await musicService.BuildSongDtosAsync(songs);
+        }));
     }
 
     [HttpGet("{id}")]
@@ -115,6 +120,7 @@ public class SongsController(
         var label = $"{music.Artist} — {music.Title}";
         await artistActivity.RecordEventAsync(artistIds, "song_added", music.Id, label);
         await adminActivity.RecordAsync(await userDirectory.GetCurrentUserIdAsync(User), AdminActivityService.SongAdded, label, music.Source);
+        catalogCache.Invalidate();
         await hub.Clients.All.SendAsync("songsChanged");
         return CreatedAtAction(nameof(GetById), new { id = music.Id }, (await musicService.BuildSongDtosAsync([created]))[0]);
     }
@@ -135,6 +141,7 @@ public class SongsController(
         await db.SaveChangesAsync();
         await audioStorage.DeleteAsync(audioFile);
         await artistActivity.RecordEventAsync(artistIds, "song_removed", null, label);
+        catalogCache.Invalidate();
         await hub.Clients.All.SendAsync("songsChanged");
         return NoContent();
     }
@@ -167,6 +174,7 @@ public class SongsController(
         song.AudioFile = fileName;
         await db.SaveChangesAsync();
         await audioStorage.DeleteAsync(old);
+        catalogCache.Invalidate();
         await hub.Clients.All.SendAsync("songsChanged");
         return Ok();
     }
@@ -186,6 +194,7 @@ public class SongsController(
 
         song.YoutubeVideoId = dto.VideoId;
         await db.SaveChangesAsync();
+        catalogCache.Invalidate(); // інакше інші клієнти ще 30с шукали б це відео самі (квота YouTube)
         return Ok();
     }
 
@@ -265,6 +274,7 @@ public class SongsController(
             .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
             .FirstAsync(m => m.Id == song.Id);
 
+        catalogCache.Invalidate();
         await hub.Clients.All.SendAsync("songsChanged");
         return Ok((await musicService.BuildSongDtosAsync([updated]))[0]);
     }

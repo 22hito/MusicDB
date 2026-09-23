@@ -13,7 +13,7 @@ public class StatsControllerTests
         var db = TestDb.Create();
         var musicService = new MusicService(db, new GenreNormalizationService(new HttpClient(),
             new ConfigurationBuilder().Build(), NullLogger<GenreNormalizationService>.Instance));
-        return (new StatsController(db, musicService), db);
+        return (new StatsController(db, musicService, new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()))), db);
     }
 
     [Fact]

@@ -1001,10 +1001,18 @@ tbody tr:last-child td { border-bottom: none; }
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(var(--shadow-rgb), calc(0.7 * var(--shadow-k)));
   z-index: 300;
-  display: none;
+  display: flex;
   flex-direction: column;
 }
-#video-popup.open { display: flex; }
+/* Закритий попап НЕ display:none: усередині живе єдиний YouTube-плеєр сайту,
+   який має грати звук і тоді, коли відео не видно. Зсуваємо за екран 1px —
+   той самий прийом, що раніше був у окремого прихованого #yt-wrap.
+   !important — перебиває inline left/top/width/height після перетягування. */
+#video-popup:not(.open) {
+  left: -9999px !important; top: auto !important; right: auto !important; bottom: -9999px !important;
+  width: 1px !important; height: 1px !important; min-width: 0 !important; min-height: 0 !important;
+  opacity: 0; pointer-events: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
 /* Справжній повноекранний режим через Fullscreen API (кнопка ⛶) — попап
    заповнює весь екран. */
 #video-popup:fullscreen {
@@ -1064,7 +1072,7 @@ tbody tr:last-child td { border-bottom: none; }
 #video-popup-fullscreen:hover, #video-popup-expand:hover, #video-popup-popout:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 #video-popup-fullscreen.active, #video-popup-expand.active { color: var(--accent); }
 #video-popup-close:hover { color: var(--red); background: color-mix(in srgb, var(--red) 10%, transparent); }
-/* Відео-область попапу — тут буде переміщено #yt-wrap */
+/* Відео-область попапу — тут постійно живе #yt-wrap з єдиним YouTube-плеєром */
 #video-popup-frame {
   position: relative;
   width: 100%;
@@ -1122,20 +1130,11 @@ tbody tr:last-child td { border-bottom: none; }
   margin: 0; color: var(--text); font-family: var(--font-ui); font-size: 0.82rem;
   line-height: 1.7; white-space: pre-wrap; word-break: break-word;
 }
-#video-popup-loading {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: #000;
-  color: var(--muted); font-size: 0.75rem; font-family: var(--font-ui);
-  gap: 8px;
-}
 .pc-icon-btn.video-btn { color: var(--muted); }
 .pc-icon-btn.video-btn.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 #btn-fav-current.active { color: var(--red); }
 #btn-fav-current.active svg { fill: currentColor; }
 
-/* Hidden YT */
-#yt-wrap { position:fixed; bottom:-9999px; left:-9999px; width:1px; height:1px; overflow:hidden; }
 
 /* ================================================================
    ГНУЧКИЙ NAV: у адміна/авторизованого користувача до 7 вкладок разом з

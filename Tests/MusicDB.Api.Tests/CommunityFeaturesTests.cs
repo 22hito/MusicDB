@@ -65,7 +65,7 @@ public class CommunityFeaturesTests
     {
         var dir = new UserDirectoryService(db);
         return WithUser(new RequestsController(db, CreateMusicService(db), new TranslationService(new HttpClient()),
-            new ArtistActivityService(db), new AdminActivityService(db, Hub), dir, storage ?? CreateAudioStorage(), Hub), email, admin);
+            new ArtistActivityService(db), new AdminActivityService(db, Hub), dir, storage ?? CreateAudioStorage(), new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())), Hub), email, admin);
     }
 
     private static IFormFile FakeMp3() =>
@@ -273,9 +273,9 @@ public class CommunityFeaturesTests
         var dir = new UserDirectoryService(db);
         var ms = CreateMusicService(db);
 
-        await WithUser(new RatingsController(db, dir, ms, Hub), "a@x.com").Save(1, new SaveRatingDto(80, "Сильно"));
-        await WithUser(new RatingsController(db, dir, ms, Hub), "b@x.com").Save(1, new SaveRatingDto(61, null));
-        var c = WithUser(new RatingsController(db, dir, ms, Hub), "a@x.com");
+        await WithUser(new RatingsController(db, dir, ms, new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())), Hub), "a@x.com").Save(1, new SaveRatingDto(80, "Сильно"));
+        await WithUser(new RatingsController(db, dir, ms, new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())), Hub), "b@x.com").Save(1, new SaveRatingDto(61, null));
+        var c = WithUser(new RatingsController(db, dir, ms, new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())), Hub), "a@x.com");
         var result = Assert.IsType<SongRatingsDto>(((await c.Get(1)).Result as OkObjectResult)!.Value);
 
         Assert.Equal(70.5, result.AvgRating);
@@ -294,11 +294,11 @@ public class CommunityFeaturesTests
         await db.SaveChangesAsync();
         var dir = new UserDirectoryService(db);
         var ms = CreateMusicService(db);
-        await WithUser(new RatingsController(db, dir, ms, Hub), "a@x.com").Save(1, new SaveRatingDto(50, "ok"));
+        await WithUser(new RatingsController(db, dir, ms, new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())), Hub), "a@x.com").Save(1, new SaveRatingDto(50, "ok"));
         var aId = db.Users.Single(u => u.Email == "a@x.com").Id;
 
-        Assert.IsType<ForbidResult>(await WithUser(new RatingsController(db, dir, ms, Hub), "b@x.com").Delete(1, aId));
-        Assert.IsType<NoContentResult>(await WithUser(new RatingsController(db, dir, ms, Hub), "admin@x.com", admin: true).Delete(1, aId));
+        Assert.IsType<ForbidResult>(await WithUser(new RatingsController(db, dir, ms, new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())), Hub), "b@x.com").Delete(1, aId));
+        Assert.IsType<NoContentResult>(await WithUser(new RatingsController(db, dir, ms, new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())), Hub), "admin@x.com", admin: true).Delete(1, aId));
         Assert.Empty(db.SongRatings);
     }
 }
