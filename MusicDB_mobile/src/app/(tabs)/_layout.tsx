@@ -1,47 +1,59 @@
-import React, { useState } from 'react';
-import { Dimensions, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
+import { useMusicApi } from '@/api/endpoints';
 import { MiniPlayerBar } from '@/player/MiniPlayerBar';
 import { BrandHeader } from '@/components/BrandHeader';
-import { NoteIcon, PersonIcon, SendIcon, ShieldIcon, StarIcon, TrophyIcon } from '@/components/Icons';
+import { ChatIcon, NoteIcon, PersonIcon, SendIcon, ShieldIcon, StarIcon, TrophyIcon } from '@/components/Icons';
 
 // Трохи вище за типовий (49-50px), щоб іконки й підписи мали комфортну зону дотику.
 const TAB_BAR_CONTENT_HEIGHT = 58;
 
 export default function TabsLayout() {
   const { theme, t } = useSettings();
-  const { currentUser } = useApiBridge();
+  const { currentUser, subscribeRealtime } = useApiBridge();
+  const api = useMusicApi();
   const isAdmin = !!currentUser?.isAdmin;
+  const authed = !!currentUser?.authenticated;
+
+  // Лічильники на вкладках: непрочитані ЛС + запити на листування; нові сповіщення адміна.
+  const [communityBadge, setCommunityBadge] = useState(0);
+  const [adminBadge, setAdminBadge] = useState(0);
+  const refreshBadges = useCallback(() => {
+    if (!authed) {
+      setCommunityBadge(0);
+      setAdminBadge(0);
+      return;
+    }
+    api.getDmUnread().then((d) => setCommunityBadge(d.unread + d.requests)).catch(() => {});
+    if (isAdmin) api.getAdminNotifications(1).then((d) => setAdminBadge(d.unreadCount)).catch(() => {});
+  }, [api, authed, isAdmin]);
+  useEffect(() => {
+    refreshBadges();
+  }, [refreshBadges]);
+  useEffect(
+    () =>
+      subscribeRealtime((event) => {
+        if (event === 'dmReceived' || event === 'dmSent' || event === 'dmRequestsChanged' || event === 'adminNotification') refreshBadges();
+      }),
+    [subscribeRealtime, refreshBadges],
+  );
   const insets = useSafeAreaInsets();
   const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + insets.bottom;
 
-  // ТИМЧАСОВА діагностика для half-screen бага — прибрати після знаходження причини.
-  const [rootH, setRootH] = useState(0);
-  const [wrapH, setWrapH] = useState(0);
-  const winH = Dimensions.get('window').height;
-
   return (
     <View
-      style={{ flex: 1, backgroundColor: theme.bg, borderWidth: 3, borderColor: 'red' }}
-      onLayout={(e) => setRootH(e.nativeEvent.layout.height)}
+      style={{ flex: 1, backgroundColor: theme.bg }}
+      onLayout={(e) => console.log('[DBG2] (tabs) outer View', e.nativeEvent.layout)}
     >
-      {/* absolute, а не звичайна дитина у flow — щоб гарантовано бути видимим
-          незалежно від того, де саме ламається layout (звичайний варіант
-          цього напису раніше не показувався взагалі, на відміну від
-          рожевого оверлею в app/_layout.tsx, який теж absolute). */}
-      <View style={{ position: 'absolute', top: 30, left: 0, right: 0, zIndex: 99998, elevation: 998, backgroundColor: '#ff0', padding: 4 }} pointerEvents="none">
-        <Text style={{ fontSize: 11, color: '#000' }}>
-          window={Math.round(winH)} root={Math.round(rootH)} wrap={Math.round(wrapH)} insetsTop={Math.round(insets.top)} insetsBottom={Math.round(insets.bottom)}
-        </Text>
-      </View>
       <BrandHeader />
       {/* <Tabs> не бере flex:1 сам по собі, коли він більше не єдина дитина
           (з'явився BrandHeader-сусід) — без цієї обгортки контент і таббар
           стискались у верхню половину екрана, а решта лишалась порожньою. */}
-      <View style={{ flex: 1, borderWidth: 3, borderColor: 'lime' }} onLayout={(e) => setWrapH(e.nativeEvent.layout.height)}>
+      <View style={{ flex: 1 }} onLayout={(e) => console.log('[DBG2] Tabs wrapper View', e.nativeEvent.layout)}>
         <Tabs
           screenOptions={{
             headerShown: false,
@@ -71,8 +83,20 @@ export default function TabsLayout() {
             }}
           />
           <Tabs.Screen
+            name="community"
+            options={{
+              title: t('nav.community'),
+              tabBarBadge: communityBadge > 0 ? (communityBadge > 99 ? '99+' : communityBadge) : undefined,
+              tabBarBadgeStyle: { backgroundColor: theme.accent, color: theme.onAccent },
+              tabBarIcon: ({ color, size }) => <ChatIcon color={String(color)} size={size ?? 20} />,
+            }}
+            listeners={{ tabPress: refreshBadges }}
+          />
+          {/* Заявка відкривається кнопкою "+ Надіслати запит" у бібліотеці (як на сайті) — у таббарі не показуємо. */}
+          <Tabs.Screen
             name="request"
             options={{
+              href: null,
               title: t('nav.request'),
               tabBarIcon: ({ color, size }) => <SendIcon color={String(color)} size={size ?? 20} />,
             }}
@@ -96,6 +120,8 @@ export default function TabsLayout() {
             options={{
               title: t('nav.admin.tab'),
               href: isAdmin ? undefined : null,
+              tabBarBadge: adminBadge > 0 ? (adminBadge > 99 ? '99+' : adminBadge) : undefined,
+              tabBarBadgeStyle: { backgroundColor: theme.accent, color: theme.onAccent },
               tabBarIcon: ({ color, size }) => <ShieldIcon color={String(color)} size={size ?? 20} />,
             }}
           />

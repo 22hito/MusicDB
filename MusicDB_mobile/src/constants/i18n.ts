@@ -173,6 +173,91 @@ export const I18N = {
     'player.nowPlaying': 'Зараз грає',
     'player.videoNotFound': 'Відео не знайдено',
     'player.openInVideo': 'Показати відео',
+    'error.loadFailed': "Не вдалося завантажити дані. Перевірте з'єднання.",
+    'sort.button': 'Сортувати',
+    'sort.default': 'За замовчуванням',
+    'sort.plays': 'Прослуховувань',
+
+    // Ком'юніті: таблиця_2, оцінки, листування, обговорення, пошук
+    'nav.community': 'Спільнота', // NEW
+    'home.source.catalog': 'Каталог', // NEW
+    'home.source.community': 'Ком\'юніті', // NEW
+    'home.heading.communityPre': 'Пісні від', // NEW
+    'home.heading.communityAccent': 'ком\'юніті', // NEW
+    'home.communityHint': 'Власні пісні учасників спільноти — завантажені файлом або з посиланням на YouTube.', // NEW
+    'home.addOwnSongBtn': '+ Додати свою пісню', // NEW
+    'table.communityEmpty': 'Тут ще немає пісень від ком\'юніті — додайте свою першою', // NEW
+    'table.rating': 'Оцінка', // NEW
+    'table.submittedBy': 'Додав', // NEW
+    'request.kind.catalog': 'До каталогу', // NEW
+    'request.kind.community': 'Власна пісня', // NEW
+    'form.audioFile': 'Файл пісні', // NEW
+    'form.audioPick': 'Обрати файл…', // NEW
+    'form.audioFile.hint': 'MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов\'язково, якщо вказано YouTube-відео.', // NEW
+    'form.youtube': 'Посилання на YouTube-відео', // NEW
+    'form.youtube.placeholder': 'ID або посилання на відео', // NEW
+    'msg.audioTooLarge': 'Файл більший за 25 МБ.', // NEW
+    'msg.communityNeedsFileOrVideo': 'Додайте файл пісні або посилання на YouTube-відео.', // NEW
+    'admin.hasAudioFile': 'є файл пісні', // NEW
+    'adminNotif.tab': 'Сповіщення', // NEW
+    'adminNotif.someone': 'Хтось', // NEW
+    'adminNotif.request_submitted': 'надсилає запит', // NEW
+    'adminNotif.request_approved': 'схвалює запит', // NEW
+    'adminNotif.request_rejected': 'відхиляє запит', // NEW
+    'adminNotif.song_added': 'додав', // NEW
+    'notif.markAllRead': 'Позначити все прочитаним', // NEW
+    'notif.empty': 'Немає нових сповіщень', // NEW
+    'rating.title': 'Оцінка пісні', // NEW
+    'rating.summary': 'Середня оцінка: {avg} / 100 · оцінок: {count}', // NEW
+    'rating.noRatings': 'Ще ніхто не оцінив', // NEW
+    'rating.yourScore': 'Ваша оцінка (0–100)', // NEW
+    'rating.review': 'Рецензія (необов\'язково)', // NEW
+    'rating.reviewPlaceholder': 'Що зачепило, що ні…', // NEW
+    'rating.deleteBtn': 'Прибрати оцінку', // NEW
+    'rating.loginHint': 'Увійдіть, щоб оцінити пісню й написати рецензію', // NEW
+    'rating.reviewsTitle': 'Рецензії', // NEW
+    'rating.noReviews': 'Рецензій ще немає', // NEW
+    'chat.heading.pre': 'Спілкування', // NEW
+    'chat.heading.accent': 'ком\'юніті', // NEW
+    'chat.tab.dm': 'Особисті', // NEW
+    'chat.tab.requests': 'Запити', // NEW
+    'chat.tab.threads': 'Обговорення', // NEW
+    'chat.loginHint': 'Увійдіть, щоб листуватися', // NEW
+    'chat.newHintMobile': 'Нова розмова — через пошук людей (іконка лупи вгорі).', // NEW
+    'chat.noConversations': 'Ще немає розмов', // NEW
+    'chat.pendingLabel': 'запит надіслано', // NEW
+    'chat.you': 'Ви', // NEW
+    'chat.requestsHint': 'Друзі пишуть вам напряму. Інші люди можуть надіслати одне повідомлення — листування відкриється, лише якщо ви схвалите запит.', // NEW
+    'chat.requestsEmpty': 'Немає нових запитів на листування', // NEW
+    'chat.acceptRequest': 'Схвалити', // NEW
+    'chat.declineRequest': 'Відхилити', // NEW
+    'chat.startConversation': 'Напишіть перше повідомлення', // NEW
+    'chat.inputPlaceholderMobile': 'Повідомлення…', // NEW
+    'chat.sendBtn': 'Надіслати', // NEW
+    'chat.writeBtn': 'Написати', // NEW
+    'chat.state.none': 'Ви ще не друзі — перше повідомлення надійде як запит на листування. Далі писати можна буде після схвалення.', // NEW
+    'chat.state.pendingOutgoing': 'Запит на листування надіслано. Писати далі можна буде, щойно співрозмовник його схвалить.', // NEW
+    'chat.state.declined': 'Співрозмовник відхилив запит на листування.', // NEW
+    'chat.state.pendingIncoming': 'Це запит на листування. Відповідь автоматично його схвалить.', // NEW
+    'threads.searchPlaceholder': 'Пошук гілки…', // NEW
+    'threads.newBtn': '+ Нова гілка', // NEW
+    'threads.titleLabel': 'Тема', // NEW
+    'threads.bodyLabel': 'Повідомлення', // NEW
+    'threads.createBtn': 'Створити гілку', // NEW
+    'threads.empty': 'Ще немає обговорень — почніть перше', // NEW
+    'threads.by': 'від', // NEW
+    'threads.deletedUser': 'видалений користувач', // NEW
+    'threads.confirmDeleteThread': 'Видалити цю гілку разом з усіма відповідями?', // NEW
+    'threads.confirmDeletePost': 'Видалити цю відповідь?', // NEW
+    'threads.replyPlaceholder': 'Ваша відповідь…', // NEW
+    'threads.replyBtn': 'Відповісти', // NEW
+    'modal.deleteTitleGeneric': 'Видалити?', // NEW
+    'navSearch.placeholder': 'Пісні, виконавці, люди…', // NEW
+    'navSearch.songs': 'Пісні', // NEW
+    'navSearch.artists': 'Виконавці', // NEW
+    'navSearch.users': 'Люди', // NEW
+    'navSearch.empty': 'Нічого не знайдено', // NEW
+    'navSearch.loginForUsers': 'Увійдіть, щоб шукати людей', // NEW
   },
   en: {
     'nav.home': 'Home',
@@ -346,6 +431,91 @@ export const I18N = {
     'player.nowPlaying': 'Now playing',
     'player.videoNotFound': 'Video not found',
     'player.openInVideo': 'Show video',
+    'error.loadFailed': 'Failed to load data. Check your connection.',
+    'sort.button': 'Sort',
+    'sort.default': 'Default',
+    'sort.plays': 'Plays',
+
+    // Ком'юніті: таблиця_2, оцінки, листування, обговорення, пошук
+    'nav.community': 'Community', // NEW
+    'home.source.catalog': 'Catalog', // NEW
+    'home.source.community': 'Community', // NEW
+    'home.heading.communityPre': 'Songs from the', // NEW
+    'home.heading.communityAccent': 'community', // NEW
+    'home.communityHint': 'Original songs by community members — uploaded as a file or linked from YouTube.', // NEW
+    'home.addOwnSongBtn': '+ Add your song', // NEW
+    'table.communityEmpty': 'No community songs yet — be the first to add yours', // NEW
+    'table.rating': 'Rating', // NEW
+    'table.submittedBy': 'Added by', // NEW
+    'request.kind.catalog': 'For the catalog', // NEW
+    'request.kind.community': 'My own song', // NEW
+    'form.audioFile': 'Song file', // NEW
+    'form.audioPick': 'Choose a file…', // NEW
+    'form.audioFile.hint': 'MP3, M4A, OGG, WAV, FLAC — up to 25 MB. Optional if a YouTube video is given.', // NEW
+    'form.youtube': 'YouTube video link', // NEW
+    'form.youtube.placeholder': 'Video ID or link', // NEW
+    'msg.audioTooLarge': 'The file is larger than 25 MB.', // NEW
+    'msg.communityNeedsFileOrVideo': 'Add a song file or a YouTube video link.', // NEW
+    'admin.hasAudioFile': 'has a song file', // NEW
+    'adminNotif.tab': 'Notifications', // NEW
+    'adminNotif.someone': 'Someone', // NEW
+    'adminNotif.request_submitted': 'submitted a request', // NEW
+    'adminNotif.request_approved': 'approved a request', // NEW
+    'adminNotif.request_rejected': 'rejected a request', // NEW
+    'adminNotif.song_added': 'added', // NEW
+    'notif.markAllRead': 'Mark all as read', // NEW
+    'notif.empty': 'No new notifications', // NEW
+    'rating.title': 'Rate the song', // NEW
+    'rating.summary': 'Average score: {avg} / 100 · ratings: {count}', // NEW
+    'rating.noRatings': 'No ratings yet', // NEW
+    'rating.yourScore': 'Your score (0–100)', // NEW
+    'rating.review': 'Review (optional)', // NEW
+    'rating.reviewPlaceholder': 'What worked, what didn’t…', // NEW
+    'rating.deleteBtn': 'Remove rating', // NEW
+    'rating.loginHint': 'Sign in to rate the song and write a review', // NEW
+    'rating.reviewsTitle': 'Reviews', // NEW
+    'rating.noReviews': 'No reviews yet', // NEW
+    'chat.heading.pre': 'Community', // NEW
+    'chat.heading.accent': 'chat', // NEW
+    'chat.tab.dm': 'Messages', // NEW
+    'chat.tab.requests': 'Requests', // NEW
+    'chat.tab.threads': 'Discussions', // NEW
+    'chat.loginHint': 'Sign in to send messages', // NEW
+    'chat.newHintMobile': 'Start a new conversation via people search (the magnifier icon at the top).', // NEW
+    'chat.noConversations': 'No conversations yet', // NEW
+    'chat.pendingLabel': 'request sent', // NEW
+    'chat.you': 'You', // NEW
+    'chat.requestsHint': 'Friends message you directly. Other people can send one message — the conversation opens only if you accept the request.', // NEW
+    'chat.requestsEmpty': 'No new message requests', // NEW
+    'chat.acceptRequest': 'Accept', // NEW
+    'chat.declineRequest': 'Decline', // NEW
+    'chat.startConversation': 'Write the first message', // NEW
+    'chat.inputPlaceholderMobile': 'Message…', // NEW
+    'chat.sendBtn': 'Send', // NEW
+    'chat.writeBtn': 'Message', // NEW
+    'chat.state.none': 'You are not friends yet — your first message will arrive as a message request. You can keep writing once it is accepted.', // NEW
+    'chat.state.pendingOutgoing': 'Message request sent. You can write more once it is accepted.', // NEW
+    'chat.state.declined': 'This person declined your message request.', // NEW
+    'chat.state.pendingIncoming': 'This is a message request. Replying accepts it automatically.', // NEW
+    'threads.searchPlaceholder': 'Search threads…', // NEW
+    'threads.newBtn': '+ New thread', // NEW
+    'threads.titleLabel': 'Topic', // NEW
+    'threads.bodyLabel': 'Message', // NEW
+    'threads.createBtn': 'Create thread', // NEW
+    'threads.empty': 'No discussions yet — start the first one', // NEW
+    'threads.by': 'by', // NEW
+    'threads.deletedUser': 'deleted user', // NEW
+    'threads.confirmDeleteThread': 'Delete this thread with all replies?', // NEW
+    'threads.confirmDeletePost': 'Delete this reply?', // NEW
+    'threads.replyPlaceholder': 'Your reply…', // NEW
+    'threads.replyBtn': 'Reply', // NEW
+    'modal.deleteTitleGeneric': 'Delete?', // NEW
+    'navSearch.placeholder': 'Songs, artists, people…', // NEW
+    'navSearch.songs': 'Songs', // NEW
+    'navSearch.artists': 'Artists', // NEW
+    'navSearch.users': 'People', // NEW
+    'navSearch.empty': 'Nothing found', // NEW
+    'navSearch.loginForUsers': 'Sign in to search for people', // NEW
   },
 } as const;
 

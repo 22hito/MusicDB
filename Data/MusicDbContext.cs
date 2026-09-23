@@ -42,7 +42,19 @@ public class Music
     [Column("youtube_video_id")] public string? YoutubeVideoId { get; set; }
     // Текст пісні для режиму караоке — вводиться вручну адміном, не через стороннє API.
     [Column("lyrics")] public string? Lyrics { get; set; }
+    // "catalog" — головна таблиця_1, "community" — таблиця_2 (пісні від користувачів).
+    [Column("source")] public string Source { get; set; } = SongSources.Catalog;
+    [Column("submitted_by_user_id")] public int? SubmittedByUserId { get; set; }
+    // Ім'я файлу в AudioStorageService — лише для ком'юніті-пісень.
+    [Column("audio_file")] public string? AudioFile { get; set; }
     public ICollection<MusicGenre> MusicGenres { get; set; } = [];
+}
+
+public static class SongSources
+{
+    public const string Catalog = "catalog";
+    public const string Community = "community";
+    public static bool IsValid(string? s) => s is Catalog or Community;
 }
 
 [Table("music_genre", Schema = "lab")]
@@ -74,6 +86,10 @@ public class MusicRequest
     // Текст пісні, який адмін може вставити ще на етапі розгляду заявки —
     // переноситься на саму пісню при підтвердженні (див. RequestsController.Approve).
     [Column("lyrics")] public string? Lyrics { get; set; }
+    // "catalog" | "community" — у яку головну таблицю піде пісня після підтвердження.
+    [Column("kind")] public string Kind { get; set; } = SongSources.Catalog;
+    [Column("requester_user_id")] public int? RequesterUserId { get; set; }
+    [Column("audio_file")] public string? AudioFile { get; set; }
 }
 
 // ─── Профіль / улюблені / плейлисти / історія прослуховувань ──────────────
@@ -205,6 +221,87 @@ public class FriendRequest
     [Column("responded_at")] public DateTime? RespondedAt { get; set; }
 }
 
+// ─── Сповіщення адмінів ─────────────────────────────────────────────────────
+// Один рядок на подію для всіх адмінів; прочитане — AdminNotificationRead.LastReadAt.
+[Table("admin_events", Schema = "lab")]
+public class AdminEvent
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("actor_user_id")] public int? ActorUserId { get; set; }
+    [Required, Column("event_type")] public string EventType { get; set; } = "";
+    [Required, Column("label")] public string Label { get; set; } = "";
+    [Column("source")] public string Source { get; set; } = SongSources.Catalog;
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+[Table("admin_notification_reads", Schema = "lab")]
+public class AdminNotificationRead
+{
+    [Key, Column("user_id")] public int UserId { get; set; }
+    [Column("last_read_at")] public DateTime LastReadAt { get; set; } = DateTime.UtcNow;
+}
+
+// ─── Особисті повідомлення / обговорення ────────────────────────────────────
+[Table("direct_messages", Schema = "lab")]
+public class DirectMessage
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("sender_id")] public int SenderId { get; set; }
+    [Column("recipient_id")] public int RecipientId { get; set; }
+    [Required, Column("body")] public string Body { get; set; } = "";
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("read_at")] public DateTime? ReadAt { get; set; }
+}
+
+// Дозвіл на листування між не-друзями. pair_low/pair_high — генеровані
+// колонки Postgres (унікальність пари), в EF не мапляться — як у FriendRequest.
+[Table("dm_requests", Schema = "lab")]
+public class DmRequest
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("requester_id")] public int RequesterId { get; set; }
+    [Column("addressee_id")] public int AddresseeId { get; set; }
+    [Required, Column("status")] public string Status { get; set; } = "pending"; // pending | accepted | declined
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("responded_at")] public DateTime? RespondedAt { get; set; }
+}
+
+[Table("discussion_threads", Schema = "lab")]
+public class DiscussionThread
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("author_id")] public int? AuthorId { get; set; }
+    [Required, Column("title")] public string Title { get; set; } = "";
+    [Required, Column("body")] public string Body { get; set; } = "";
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("last_post_at")] public DateTime LastPostAt { get; set; } = DateTime.UtcNow;
+    public ICollection<DiscussionPost> Posts { get; set; } = [];
+}
+
+[Table("discussion_posts", Schema = "lab")]
+public class DiscussionPost
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("thread_id")] public int ThreadId { get; set; }
+    [Column("author_id")] public int? AuthorId { get; set; }
+    [Required, Column("body")] public string Body { get; set; } = "";
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DiscussionThread Thread { get; set; } = null!;
+}
+
+// ─── Оцінки / рецензії ─────────────────────────────────────────────────────
+// Шкала 0–100 — тимчасова заглушка, рецензія можлива лише разом з оцінкою.
+[Table("song_ratings", Schema = "lab")]
+public class SongRating
+{
+    [Column("user_id")] public int UserId { get; set; }
+    [Column("music_id")] public int MusicId { get; set; }
+    [Column("score")] public short Score { get; set; }
+    [Column("review")] public string? Review { get; set; }
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("updated_at")] public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
 public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(opts)
 {
     public DbSet<Music> Songs { get; set; }
@@ -224,6 +321,13 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
     public DbSet<ArtistFollow> ArtistFollows { get; set; }
     public DbSet<ArtistEvent> ArtistEvents { get; set; }
     public DbSet<FriendRequest> FriendRequests { get; set; }
+    public DbSet<AdminEvent> AdminEvents { get; set; }
+    public DbSet<AdminNotificationRead> AdminNotificationReads { get; set; }
+    public DbSet<DirectMessage> DirectMessages { get; set; }
+    public DbSet<DmRequest> DmRequests { get; set; }
+    public DbSet<DiscussionThread> DiscussionThreads { get; set; }
+    public DbSet<DiscussionPost> DiscussionPosts { get; set; }
+    public DbSet<SongRating> SongRatings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -278,5 +382,12 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
             .HasForeignKey(ma => ma.ArtistId);
 
         mb.Entity<ArtistFollow>().HasKey(f => new { f.UserId, f.ArtistId });
+
+        mb.Entity<SongRating>().HasKey(r => new { r.UserId, r.MusicId });
+
+        mb.Entity<DiscussionPost>()
+            .HasOne(p => p.Thread)
+            .WithMany(t => t.Posts)
+            .HasForeignKey(p => p.ThreadId);
     }
 }

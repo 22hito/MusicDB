@@ -31,6 +31,23 @@ export interface RequestOptions {
   query?: Record<string, string | number | undefined | null>;
 }
 
+export type RealtimeEvent =
+  | 'songsChanged'
+  | 'requestsChanged'
+  | 'adminNotification'
+  | 'dmReceived'
+  | 'dmSent'
+  | 'dmRequestsChanged'
+  | 'threadsChanged'
+  | 'ratingChanged';
+
+// Ті самі SignalR-події, що слухає сайт (wwwroot/app.js); args — аргументи події
+// (напр. userId співрозмовника для dm*, id гілки, [musicId, avg, count] для оцінки).
+const REALTIME_EVENTS: RealtimeEvent[] = [
+  'songsChanged', 'requestsChanged', 'adminNotification', 'dmReceived', 'dmSent',
+  'dmRequestsChanged', 'threadsChanged', 'ratingChanged',
+];
+
 interface ApiBridgeState {
   bridgeReady: boolean;
   currentUser: CurrentUser | null;
@@ -40,7 +57,40 @@ interface ApiBridgeState {
   refreshCurrentUser: () => Promise<void>;
   openLogin: () => void;
   logout: () => Promise<void>;
+  // Живі оновлення (SignalR) — той самий канал songsChanged/requestsChanged, що
+  // й у веб-версії, тож відкриті екрани самі перезавантажують дані, коли
+  // хтось інший (адмін, інший пристрій) щось змінив.
+  subscribeRealtime: (handler: (event: RealtimeEvent, args: unknown[]) => void) => () => void;
 }
+
+// Виконується у прихованому WebView (той самий origin/сесія, що й у fetch-мосту
+// вище) — index.html вже підвантажує signalR глобально (CDN <script>) для
+// власного (невидимого нам) підключення, тож просто відкриваємо ДРУГЕ
+// з'єднання й пересилаємо події назад у RN через postMessage. Не потребує
+// окремої бібліотеки чи налаштування cookie — той самий трюк, що й для fetch().
+const REALTIME_BRIDGE_SCRIPT = `(function(){
+  if (window.__mdbRealtimeStarted) return;
+  window.__mdbRealtimeStarted = true;
+  function post(ev, args){
+    try { window.ReactNativeWebView.postMessage(JSON.stringify({ __mdbRealtime: true, event: ev, args: args || [] })); } catch(e) {}
+  }
+  function start(attempt){
+    if (!window.signalR) {
+      if ((attempt || 0) > 20) return;
+      setTimeout(function(){ start((attempt || 0) + 1); }, 500);
+      return;
+    }
+    try {
+      var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/music').withAutomaticReconnect().build();
+      ${JSON.stringify(REALTIME_EVENTS)}.forEach(function(ev){
+        conn.on(ev, function(){ post(ev, Array.prototype.slice.call(arguments)); });
+      });
+      conn.start().catch(function(){});
+    } catch(e) {}
+  }
+  start(0);
+  true;
+})();`;
 
 const ApiBridgeCtx = createContext<ApiBridgeState | null>(null);
 
@@ -60,6 +110,7 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
   const [bridgeReady, setBridgeReady] = useState(false);
   const pending = useRef<Map<string, PendingRequest>>(new Map());
   const reqCounter = useRef(0);
+  const realtimeListeners = useRef<Set<(event: RealtimeEvent, args: unknown[]) => void>>(new Set());
 
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -195,12 +246,20 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
   const onBridgeMessage = useCallback((event: { nativeEvent: { data: string } }) => {
     try {
       const data = JSON.parse(event.nativeEvent.data) as {
-        id: string;
-        status: number;
-        ok: boolean;
+        id?: string;
+        status?: number;
+        ok?: boolean;
         body?: string;
         error?: string;
+        __mdbRealtime?: boolean;
+        event?: RealtimeEvent;
+        args?: unknown[];
       };
+      if (data.__mdbRealtime) {
+        if (data.event) realtimeListeners.current.forEach((fn) => fn(data.event as RealtimeEvent, data.args || []));
+        return;
+      }
+      if (!data.id) return;
       const p = pending.current.get(data.id);
       if (!p) return;
       pending.current.delete(data.id);
@@ -208,11 +267,18 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
       if (data.error && !data.body) {
         p.reject(new Error(data.error));
       } else {
-        p.resolve({ status: data.status, ok: data.ok, body: data.body || '' });
+        p.resolve({ status: data.status || 0, ok: !!data.ok, body: data.body || '' });
       }
     } catch {
       // не наш формат повідомлення — ігноруємо
     }
+  }, []);
+
+  const subscribeRealtime = useCallback((handler: (event: RealtimeEvent, args: unknown[]) => void) => {
+    realtimeListeners.current.add(handler);
+    return () => {
+      realtimeListeners.current.delete(handler);
+    };
   }, []);
 
   const onLoginNav = useCallback(
@@ -238,8 +304,9 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
       refreshCurrentUser,
       openLogin,
       logout,
+      subscribeRealtime,
     }),
-    [bridgeReady, currentUser, authChecked, request, requestRaw, refreshCurrentUser, openLogin, logout],
+    [bridgeReady, currentUser, authChecked, request, requestRaw, refreshCurrentUser, openLogin, logout, subscribeRealtime],
   );
 
   return (
@@ -250,7 +317,10 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
         <WebView
           ref={bridgeRef}
           source={{ uri: `${apiBase}/` }}
-          onLoadEnd={() => setBridgeReady(true)}
+          onLoadEnd={() => {
+            setBridgeReady(true);
+            bridgeRef.current?.injectJavaScript(REALTIME_BRIDGE_SCRIPT);
+          }}
           onMessage={onBridgeMessage}
           onError={() => setBridgeReady(false)}
           javaScriptEnabled

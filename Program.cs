@@ -28,6 +28,14 @@ builder.Services.AddDbContext<MusicDbContext>(opts =>
 builder.Services.AddScoped<MusicService>();
 builder.Services.AddScoped<UserDirectoryService>();
 builder.Services.AddScoped<ArtistActivityService>();
+builder.Services.AddScoped<AdminActivityService>();
+// Файли пісень ком'юніті: Cloudflare R2, якщо заповнено Uploads:R2 (прод —
+// через App Settings Azure, напр. Uploads__R2__SecretAccessKey), інакше диск.
+var r2Options = builder.Configuration.GetSection("Uploads:R2").Get<R2Options>() ?? new R2Options();
+if (r2Options.IsConfigured)
+    builder.Services.AddSingleton<IAudioStorage>(sp => new R2AudioStorage(r2Options, sp.GetRequiredService<ILogger<R2AudioStorage>>()));
+else
+    builder.Services.AddSingleton<IAudioStorage, LocalAudioStorage>();
 builder.Services.AddHttpClient<TranslationService>();
 builder.Services.AddHttpClient<ExternalMusicSearchService>();
 builder.Services.AddHttpClient<GenreNormalizationService>();
@@ -135,6 +143,13 @@ var app = builder.Build();
 
 app.UseCors();
 
+// Аудіо ком'юніті з R2 грає за редиректом на *.r2.cloudflarestorage.com (підписані
+// посилання) або на публічний домен бакета — їх треба дозволити в media-src.
+var r2MediaSources = !r2Options.IsConfigured
+    ? ""
+    : " https://*.r2.cloudflarestorage.com" +
+      (Uri.TryCreate(r2Options.PublicBaseUrl, UriKind.Absolute, out var r2Public) ? $" {r2Public.GetLeftPart(UriPartial.Authority)}" : "");
+
 // Базові security-заголовки. CSP тримає 'unsafe-inline' для script/style —
 // увесь UI побудований на inline onclick="..." і style="..." атрибутах
 // (одна сторінка, без збірника), тож строгий nonce-based CSP вимагав би
@@ -163,7 +178,7 @@ app.Use(async (ctx, next) =>
         // data: — беззвучний data:audio/wav-якір (#ms-anchor), що утримує media
         // session на нашій сторінці, а не на чужому youtube.com iframe; без
         // data: тут CSP блокував саме його завантаження.
-        "media-src 'self' data: https://www.youtube.com; " +
+        $"media-src 'self' data: https://www.youtube.com{r2MediaSources}; " +
         "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
     await next();
 });
@@ -200,7 +215,7 @@ app.MapPost("/auth/logout", async (HttpContext ctx) =>
     return Results.Ok(new { message = "logged out" });
 });
 
-app.MapGet("/auth/me", (HttpContext ctx) =>
+app.MapGet("/auth/me", async (HttpContext ctx, UserDirectoryService userDirectory) =>
 {
     if (!ctx.User.Identity?.IsAuthenticated ?? true)
         return Results.Ok(new { authenticated = false });
@@ -208,6 +223,8 @@ app.MapGet("/auth/me", (HttpContext ctx) =>
     return Results.Ok(new
     {
         authenticated = true,
+        // Opaque id з lab.users — щоб фронтенд розпізнавав власні повідомлення/дописи/рецензії.
+        userId = await userDirectory.GetCurrentUserIdAsync(ctx.User),
         email = ctx.User.FindFirstValue(ClaimTypes.Email),
         name = ctx.User.FindFirstValue(ClaimTypes.Name),
         picture = ctx.User.FindFirstValue("picture") ?? ctx.User.FindFirstValue("urn:google:picture"),

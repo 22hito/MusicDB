@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
+import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
-import { Button, EmptyState, Field, Heading } from '@/components/UI';
+import { Badge, Button, EmptyState, ErrorState, Field, Heading, SegmentedPicker } from '@/components/UI';
+import { CommunityFields } from '@/components/CommunityFields';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { EditIcon } from '@/components/Icons';
 import { RADIUS, SPACING } from '@/constants/theme';
-import type { ExternalSongResult, SongRequest } from '@/api/types';
+import type { AdminNotification, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
 
@@ -35,7 +37,7 @@ function requestToForm(r: SongRequest): SongFormValues {
 export default function AdminScreen() {
   const { theme, t } = useSettings();
   const api = useMusicApi();
-  const [mode, setMode] = useState<'requests' | 'add'>('requests');
+  const [mode, setMode] = useState<'requests' | 'add' | 'notifications'>('requests');
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
@@ -56,18 +58,28 @@ export default function AdminScreen() {
             {t('nav.add')}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setMode('notifications')}
+          style={[styles.segmentBtn, mode === 'notifications' && { borderBottomColor: theme.accent }]}
+        >
+          <Text style={{ color: mode === 'notifications' ? theme.accent : theme.muted, fontSize: 13, textTransform: 'uppercase' }}>
+            {t('adminNotif.tab')}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {mode === 'requests' ? <RequestsPanel /> : <AddSongPanel />}
+      {mode === 'requests' ? <RequestsPanel /> : mode === 'add' ? <AddSongPanel /> : <NotificationsPanel />}
     </SafeAreaView>
   );
 }
 
 function RequestsPanel() {
   const { theme, t } = useSettings();
+  const { subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const [requests, setRequests] = useState<SongRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [editing, setEditing] = useState<SongRequest | null>(null);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -76,14 +88,23 @@ function RequestsPanel() {
     setLoading(true);
     api
       .getRequests()
-      .then(setRequests)
-      .catch(() => setRequests([]))
+      .then((res) => {
+        setRequests(res);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [api]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    return subscribeRealtime((event) => {
+      if (event === 'requestsChanged') load();
+    });
+  }, [subscribeRealtime, load]);
 
   const approve = async (id: number) => {
     setBusyId(id);
@@ -128,7 +149,9 @@ function RequestsPanel() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Heading pre={t('admin.heading.pre')} accent={t('admin.heading.accent')} />
-      {requests.length === 0 ? (
+      {loadError ? (
+        <ErrorState label={t('error.loadFailed')} onRetry={load} />
+      ) : requests.length === 0 ? (
         <EmptyState icon="📭" label={t('admin.empty')} />
       ) : (
         requests.map((r) => (
@@ -149,6 +172,18 @@ function RequestsPanel() {
             {r.genreNamesOriginal ? (
               <Text style={{ color: theme.muted, fontSize: 11, marginTop: 3 }}>({r.genreNamesOriginal})</Text>
             ) : null}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 8, gap: 6 }}>
+              <Badge
+                label={t(r.kind === 'community' ? 'home.source.community' : 'home.source.catalog')}
+                kind={r.kind === 'community' ? 'album' : 'genre'}
+              />
+              {r.requester ? (
+                <Text style={{ color: theme.muted, fontSize: 12 }}>
+                  {t('table.submittedBy')}: <Text style={{ color: theme.accent }}>{r.requester.displayName}</Text>
+                </Text>
+              ) : null}
+              {r.audioUrl ? <Text style={{ color: theme.muted, fontSize: 12 }}>· {t('admin.hasAudioFile')}</Text> : null}
+            </View>
             <View style={styles.reqActions}>
               <Button label={t('admin.approveBtn')} variant="success" small loading={busyId === r.id} onPress={() => approve(r.id)} />
               <Button label={t('admin.rejectBtn')} variant="danger" small loading={busyId === r.id} onPress={() => reject(r.id)} />
@@ -179,6 +214,10 @@ function AddSongPanel() {
   const [genresHint, setGenresHint] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [kind, setKind] = useState<SongSource>('catalog');
+  const [audio, setAudio] = useState<PickedAudio | null>(null);
+  const [youtube, setYoutube] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const set = (k: keyof typeof EMPTY_ADD) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -228,20 +267,43 @@ function AddSongPanel() {
 
   const submit = async () => {
     if (missing) return;
+    if (kind === 'community' && !audio && !youtube.trim()) {
+      setError(t('msg.communityNeedsFileOrVideo'));
+      return;
+    }
+    setError(null);
     setSubmitting(true);
     try {
-      await api.createSong({
-        artist: form.artist.trim(),
-        title: form.title.trim(),
-        release: form.release.trim(),
-        duration: form.duration.trim(),
-        album: form.album.trim() || null,
-        genres: form.genres.split(',').map((g) => g.trim()).filter(Boolean),
-      });
+      if (kind === 'community') {
+        await api.createCommunitySong({
+          artist: form.artist.trim(),
+          title: form.title.trim(),
+          release: form.release.trim(),
+          duration: form.duration.trim(),
+          genres: form.genres,
+          album: form.album.trim() || null,
+          youtubeVideo: youtube.trim() || null,
+          audio,
+        });
+      } else {
+        await api.createSong({
+          artist: form.artist.trim(),
+          title: form.title.trim(),
+          release: form.release.trim(),
+          duration: form.duration.trim(),
+          album: form.album.trim() || null,
+          genres: form.genres.split(',').map((g) => g.trim()).filter(Boolean),
+        });
+      }
       setForm(EMPTY_ADD);
+      setAudio(null);
+      setYoutube('');
       setExtResults([]);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3500);
+    } catch (e) {
+      const body = (e as { body?: string }).body;
+      setError(body ? `${t('msg.errorAddSong')}\n${body}` : t('msg.errorAddSong'));
     } finally {
       setSubmitting(false);
     }
@@ -251,6 +313,16 @@ function AddSongPanel() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Heading pre={t('add.heading.pre')} accent={t('add.heading.accent')} />
+        <View style={{ marginBottom: SPACING.lg }}>
+          <SegmentedPicker<SongSource>
+            options={[
+              { value: 'catalog', label: t('home.source.catalog') },
+              { value: 'community', label: t('home.source.community') },
+            ]}
+            value={kind}
+            onChange={setKind}
+          />
+        </View>
 
         {success ? (
           <View style={[styles.alert, { backgroundColor: `${theme.green}26`, borderColor: `${theme.green}4d` }]}>
@@ -279,11 +351,87 @@ function AddSongPanel() {
         <Field label={t('form.album')} value={form.album} onChangeText={set('album')} />
         <Field label={t('form.genres')} value={form.genres} onChangeText={set('genres')} hint={genresHint || t('form.genres.hint')} />
 
+        {kind === 'community' ? (
+          <CommunityFields audio={audio} youtube={youtube} onAudioChange={setAudio} onYoutubeChange={setYoutube} />
+        ) : null}
+        {error ? <Text style={{ color: theme.red, fontSize: 13, marginBottom: SPACING.md }}>{error}</Text> : null}
         <Button label={t('add.submitBtn')} onPress={submit} loading={submitting} disabled={missing} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+// Сповіщення адміна: нові заявки й дії ІНШИХ адмінів ("hito схвалює запит …").
+function NotificationsPanel() {
+  const { theme, t } = useSettings();
+  const { subscribeRealtime } = useApiBridge();
+  const api = useMusicApi();
+  const [items, setItems] = useState<AdminNotification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    api
+      .getAdminNotifications()
+      .then((d) => {
+        setItems(d.recent);
+        setUnread(d.unreadCount);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [api]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useEffect(
+    () =>
+      subscribeRealtime((event) => {
+        if (event === 'adminNotification') load();
+      }),
+    [subscribeRealtime, load],
+  );
+
+  const markRead = async () => {
+    await api.markAdminNotificationsRead().catch(() => {});
+    load();
+  };
+
+  if (loading) return <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />;
+
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      {unread > 0 ? (
+        <Button label={t('notif.markAllRead')} variant="outline" small onPress={markRead} style={{ alignSelf: 'flex-end', marginBottom: SPACING.md }} />
+      ) : null}
+      {items.length === 0 ? (
+        <EmptyState icon="🔔" label={t('notif.empty')} />
+      ) : (
+        items.map((n, i) => (
+          <View
+            key={n.id}
+            style={[styles.reqCard, { backgroundColor: theme.surface, borderColor: i < unread ? theme.accent : theme.border }]}
+          >
+            <Text style={{ color: theme.text, fontSize: 14 }}>
+              <Text style={{ fontWeight: '700' }}>{n.actor?.displayName ?? t('adminNotif.someone')}</Text>{' '}
+              {t(ADMIN_EVENT_KEYS[n.eventType])}
+              {n.source === 'community' ? ` · ${t('home.source.community')}` : ''}
+            </Text>
+            <Text style={{ color: theme.muted, fontSize: 13, marginTop: 3 }}>{n.label}</Text>
+            <Text style={{ color: theme.muted, fontSize: 11, marginTop: 3 }}>{n.createdAt}</Text>
+          </View>
+        ))
+      )}
+    </ScrollView>
+  );
+}
+
+const ADMIN_EVENT_KEYS = {
+  request_submitted: 'adminNotif.request_submitted',
+  request_approved: 'adminNotif.request_approved',
+  request_rejected: 'adminNotif.request_rejected',
+  song_added: 'adminNotif.song_added',
+} as const;
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },

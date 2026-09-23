@@ -49,20 +49,25 @@ const light: AppTheme = {
   onAccent: '#ffffff',
 };
 
-// Нейтральна, проміжна яскравість між темною і світлою.
+// СПРАВЖНЯ проміжна яскравість між темною (bg L≈0.005) і світлою (bg
+// L≈0.77) — попередні значення (#303134) за WCAG-яскравістю були майже
+// такими ж темними, як і темна тема, тобто по суті другим темним варіантом,
+// а не серединою. Увесь набір (surface/border/accent/muted), а не лише фон,
+// підняли разом, інакше золотий акцент і межі карток губилися б на
+// світлішому тлі. 1:1 з html[data-theme="gray"] у веб-версії.
 const gray: AppTheme = {
   mode: 'gray',
-  bg: '#303134',
-  surface: '#3a3b3f',
-  surface2: '#45464b',
-  border: '#505257',
-  accent: '#cfa96e',
-  accent2: '#9a8eda',
-  text: '#e4e4e2',
-  muted: '#9b9ba0',
-  green: '#6cc494',
-  red: '#e2807d',
-  onAccent: '#303134',
+  bg: '#5c5954',
+  surface: '#6b675f',
+  surface2: '#78736a',
+  border: '#8a8478',
+  accent: '#e8c988',
+  accent2: '#b7a8e6',
+  text: '#f2efe8',
+  muted: '#b3ac9f',
+  green: '#7fcda0',
+  red: '#e69494',
+  onAccent: '#221f1a',
 };
 
 export const THEMES: Record<ThemeMode, AppTheme> = { dark, light, gray };

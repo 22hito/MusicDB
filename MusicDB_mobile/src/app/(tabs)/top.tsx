@@ -7,7 +7,7 @@ import { useMusicApi } from '@/api/endpoints';
 import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { EmptyState, Heading } from '@/components/UI';
+import { EmptyState, ErrorState, Heading } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
 import { SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
@@ -16,7 +16,7 @@ import type { Song } from '@/api/types';
 // сервером за кількістю унікальних слухачів.
 export default function TopSongsScreen() {
   const { theme, t } = useSettings();
-  const { currentUser } = useApiBridge();
+  const { currentUser, subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const player = usePlayer();
@@ -24,6 +24,7 @@ export default function TopSongsScreen() {
 
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const isAdmin = !!currentUser?.isAdmin;
   const authenticated = !!currentUser?.authenticated;
@@ -32,14 +33,23 @@ export default function TopSongsScreen() {
     setLoading(true);
     api
       .getTopSongs(100)
-      .then(setSongs)
-      .catch(() => setSongs([]))
+      .then((res) => {
+        setSongs(res);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [api]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    return subscribeRealtime((event) => {
+      if (event === 'songsChanged') load();
+    });
+  }, [subscribeRealtime, load]);
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
@@ -49,6 +59,8 @@ export default function TopSongsScreen() {
 
       {loading ? (
         <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
+      ) : loadError ? (
+        <ErrorState label={t('error.loadFailed')} onRetry={load} />
       ) : (
         <FlatList
           data={songs}

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
@@ -8,14 +9,36 @@ import { useMusicApi } from '@/api/endpoints';
 import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { Button, EmptyState, Heading, StatCard } from '@/components/UI';
+import { Button, EmptyState, ErrorState, Heading, SegmentedPicker, StatCard } from '@/components/UI';
+import { RatingModal } from '@/components/RatingModal';
 import { SongRow } from '@/components/SongRow';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { AddToPlaylistModal } from '@/components/AddToPlaylistModal';
-import { ShuffleIcon } from '@/components/Icons';
-import { FONT_MONO_REGULAR, SPACING } from '@/constants/theme';
-import type { Song, Stats } from '@/api/types';
+import { ShuffleIcon, SortIcon } from '@/components/Icons';
+import { RADIUS, FONT_MONO_REGULAR, SPACING } from '@/constants/theme';
+import type { Song, SongSource, Stats } from '@/api/types';
+
+type SortKey = 'default' | 'artist' | 'title' | 'release' | 'duration' | 'plays' | 'rating';
+type SortDir = 'asc' | 'desc';
+
+// "hh:mm:ss" / "mm:ss" -> секунди, для числового сортування за тривалістю.
+function durationToSeconds(d: string): number {
+  const parts = d.split(':').map((p) => parseInt(p, 10) || 0);
+  return parts.reduce((acc, p) => acc * 60 + p, 0);
+}
+
+// .localeCompare()/типовий .sort() без компаратора порівнюють великі й малі
+// літери (і кирилицю/латиницю) непередбачувано залежно від рушія — великі
+// літери можуть опинитись окремим блоком перед малими. Приведення до
+// нижнього регістру перед звичайним порівнянням кодів символів природно
+// групує латиницю (a-z) окремо ПЕРЕД кирилицею (а-я), а регістр усередині
+// слова більше не впливає на порядок — саме так само зроблено у веб-версії.
+function textSortCmp(a: string, b: string): number {
+  const la = a.toLowerCase();
+  const lb = b.toLowerCase();
+  return la < lb ? -1 : la > lb ? 1 : 0;
+}
 
 function songToForm(s: Song): SongFormValues {
   return {
@@ -31,20 +54,27 @@ function songToForm(s: Song): SongFormValues {
 
 export default function LibraryScreen() {
   const { theme, t } = useSettings();
-  const { currentUser, authChecked } = useApiBridge();
+  const { currentUser, authChecked, subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const player = usePlayer();
   const requireAuth = useRequireAuth();
 
+  // Головна таблиця_1 (каталог) чи таблиця_2 (пісні від ком'юніті) — як перемикач на сайті.
+  const [source, setSource] = useState<SongSource>('catalog');
+  const [ratingSong, setRatingSong] = useState<Song | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [genreFilter, setGenreFilter] = useState('');
   const [shuffleActive, setShuffleActive] = useState(false);
   const [shuffleSeed, setShuffleSeed] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>('default');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortOpen, setSortOpen] = useState(false);
 
   const [addToPlaylistId, setAddToPlaylistId] = useState<number | null>(null);
   const [editSong, setEditSong] = useState<Song | null>(null);
@@ -55,18 +85,37 @@ export default function LibraryScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [songsRes, statsRes] = await Promise.all([api.getSongs(), api.getStats().catch(() => null)]);
+      const [songsRes, statsRes] = await Promise.all([api.getSongs(source), api.getStats(source).catch(() => null)]);
       setSongs(songsRes);
       if (statsRes) setStats(statsRes);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [api]);
+  }, [api, source]);
 
   useEffect(() => {
+    setLoading(true);
+    setGenreFilter('');
     load();
   }, [load]);
+
+  // Реалтайм: інший пристрій/адмін додав/змінив/видалив пісню — сервер шле
+  // songsChanged через SignalR (той самий канал, що й у веб-версії), тож
+  // список і статистика оновлюються самі, без ручного pull-to-refresh.
+  useEffect(() => {
+    return subscribeRealtime((event, args) => {
+      if (event === 'songsChanged') load();
+      // Нове середнє оцінки — точково, без перезавантаження всього списку.
+      if (event === 'ratingChanged') {
+        const [musicId, avg, count] = args as [number, number | null, number];
+        setSongs((prev) => prev.map((s) => (s.id === musicId ? { ...s, avgRating: avg, ratingCount: count } : s)));
+      }
+    });
+  }, [subscribeRealtime, load]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -76,7 +125,7 @@ export default function LibraryScreen() {
   const allGenres = useMemo(() => {
     const set = new Set<string>();
     songs.forEach((s) => s.genres.forEach((g) => set.add(g)));
-    return Array.from(set).sort();
+    return Array.from(set).sort(textSortCmp);
   }, [songs]);
 
   const shuffleOrder = useMemo(() => {
@@ -97,20 +146,57 @@ export default function LibraryScreen() {
         !q ||
         s.artist.toLowerCase().includes(q) ||
         s.title.toLowerCase().includes(q) ||
-        (s.album ? s.album.toLowerCase().includes(q) : false);
+        (s.album ? s.album.toLowerCase().includes(q) : false) ||
+        (s.submittedBy ? s.submittedBy.displayName.toLowerCase().includes(q) : false);
       const mg = !genreFilter || s.genres.includes(genreFilter);
       return mt && mg;
     });
-    if (shuffleOrder) {
+    if (sortKey !== 'default') {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      list = [...list].sort((a, b) => {
+        let cmp = 0;
+        if (sortKey === 'artist') cmp = textSortCmp(a.artist, b.artist);
+        else if (sortKey === 'title') cmp = textSortCmp(a.title, b.title);
+        else if (sortKey === 'release') cmp = a.release < b.release ? -1 : a.release > b.release ? 1 : 0;
+        else if (sortKey === 'duration') cmp = durationToSeconds(a.duration) - durationToSeconds(b.duration);
+        else if (sortKey === 'plays') cmp = (a.playCount ?? 0) - (b.playCount ?? 0);
+        else if (sortKey === 'rating') cmp = (a.avgRating ?? -1) - (b.avgRating ?? -1);
+        return cmp * dir;
+      });
+    } else if (shuffleOrder) {
       list = [...list].sort((a, b) => (shuffleOrder.get(a.id) ?? Infinity) - (shuffleOrder.get(b.id) ?? Infinity));
     }
     return list;
-  }, [songs, search, genreFilter, shuffleOrder]);
+  }, [songs, search, genreFilter, shuffleOrder, sortKey, sortDir]);
 
   const toggleShuffle = () => {
+    setSortKey('default');
     setShuffleActive((v) => !v);
     setShuffleSeed((s) => s + 1);
   };
+
+  const chooseSort = (key: SortKey) => {
+    if (key === 'default') {
+      setSortKey('default');
+    } else if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+    setShuffleActive(false);
+    setSortOpen(false);
+  };
+
+  const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+    { key: 'default', label: t('sort.default') },
+    { key: 'artist', label: t('table.artist') },
+    { key: 'title', label: t('table.title') },
+    { key: 'release', label: t('table.release') },
+    { key: 'duration', label: t('table.duration') },
+    { key: 'plays', label: t('sort.plays') },
+    { key: 'rating', label: t('table.rating') },
+  ];
 
   const isAdmin = !!currentUser?.isAdmin;
   const authenticated = !!currentUser?.authenticated;
@@ -172,7 +258,23 @@ export default function LibraryScreen() {
         contentContainerStyle={{ paddingBottom: 24 }}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Heading pre={t('home.heading.pre')} accent={t('home.heading.accent')} />
+            <View style={{ marginBottom: SPACING.md }}>
+              <SegmentedPicker<SongSource>
+                options={[
+                  { value: 'catalog', label: t('home.source.catalog') },
+                  { value: 'community', label: t('home.source.community') },
+                ]}
+                value={source}
+                onChange={setSource}
+              />
+            </View>
+            <Heading
+              pre={t(source === 'community' ? 'home.heading.communityPre' : 'home.heading.pre')}
+              accent={t(source === 'community' ? 'home.heading.communityAccent' : 'home.heading.accent')}
+            />
+            {source === 'community' ? (
+              <Text style={{ color: theme.muted, fontSize: 12, marginTop: -8, marginBottom: SPACING.md }}>{t('home.communityHint')}</Text>
+            ) : null}
 
             {stats ? (
               <View style={styles.statsRow}>
@@ -183,19 +285,20 @@ export default function LibraryScreen() {
               </View>
             ) : null}
 
-            {isAdmin ? (
-              <View style={{ marginBottom: SPACING.md }}>
-                <Button
-                  label={t('admin.normalizeGenresBtn')}
-                  variant="outline"
-                  small
-                  loading={normalizing}
-                  onPress={normalizeGenres}
-                />
-                {normalizeMsg ? (
-                  <Text style={{ color: theme.muted, fontSize: 12, marginTop: 8 }}>{normalizeMsg}</Text>
-                ) : null}
-              </View>
+            {/* Дії над таблицею: заявка (у таблицю, що відкрита) + "Об'єднати жанри" лише для адміна. */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: SPACING.md }}>
+              <Button
+                label={t(source === 'community' ? 'home.addOwnSongBtn' : 'home.addRequestBtn')}
+                variant="outline"
+                small
+                onPress={() => requireAuth(() => router.push({ pathname: '/request', params: { kind: source } }), t('msg.needLoginForRequest'))}
+              />
+              {isAdmin ? (
+                <Button label={t('admin.normalizeGenresBtn')} variant="outline" small loading={normalizing} onPress={normalizeGenres} />
+              ) : null}
+            </View>
+            {isAdmin && normalizeMsg ? (
+              <Text style={{ color: theme.muted, fontSize: 12, marginTop: -4, marginBottom: SPACING.md }}>{normalizeMsg}</Text>
             ) : null}
 
             <TextInput
@@ -224,6 +327,16 @@ export default function LibraryScreen() {
                 </Picker>
               </View>
               <TouchableOpacity
+                onPress={() => setSortOpen(true)}
+                style={[
+                  styles.shuffleBtn,
+                  { borderColor: sortKey !== 'default' ? theme.accent : theme.border, backgroundColor: sortKey !== 'default' ? `${theme.accent}1a` : 'transparent' },
+                ]}
+                hitSlop={4}
+              >
+                <SortIcon size={16} color={sortKey !== 'default' ? theme.accent : theme.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={toggleShuffle}
                 style={[
                   styles.shuffleBtn,
@@ -249,12 +362,48 @@ export default function LibraryScreen() {
             onAddToPlaylist={() => requireAuth(() => setAddToPlaylistId(item.id))}
             onEdit={() => setEditSong(item)}
             onDelete={() => setDeleteTarget(item)}
+            onRate={() => setRatingSong(item)}
           />
         )}
         ListEmptyComponent={
-          !loading ? <EmptyState icon="🎵" label={t('table.empty')} /> : null
+          loading ? (
+            <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
+          ) : loadError ? (
+            <ErrorState label={t('error.loadFailed')} onRetry={load} />
+          ) : (
+            <EmptyState icon="🎵" label={t(source === 'community' ? 'table.communityEmpty' : 'table.empty')} />
+          )
         }
       />
+
+      <Modal visible={sortOpen} transparent animationType="fade" onRequestClose={() => setSortOpen(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setSortOpen(false)}>
+          <View style={[styles.sortBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={{ color: theme.muted, fontSize: 11, textTransform: 'uppercase', marginBottom: 10 }}>
+              {t('sort.button')}
+            </Text>
+            {SORT_OPTIONS.map((opt) => {
+              const active = sortKey === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => chooseSort(opt.key)}
+                  style={[styles.sortRow, { borderColor: theme.border }]}
+                >
+                  <Text style={{ color: active ? theme.accent : theme.text, fontSize: 15, fontWeight: active ? '700' : '400' }}>
+                    {opt.label}
+                  </Text>
+                  {active ? (
+                    <Text style={{ color: theme.accent, fontSize: 15 }}>{sortDir === 'asc' ? '↑' : '↓'}</Text>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <RatingModal song={ratingSong} onClose={() => setRatingSong(null)} />
 
       <AddToPlaylistModal visible={addToPlaylistId !== null} musicId={addToPlaylistId} onClose={() => setAddToPlaylistId(null)} />
 
@@ -323,5 +472,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sortBox: {
+    width: 300,
+    maxWidth: '90%',
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    padding: SPACING.lg,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
 });

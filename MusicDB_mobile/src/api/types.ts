@@ -10,6 +10,24 @@ export interface Song {
   album: string | null;
   playCount: number; // унікальних слухачів, з listening_history
   youtubeVideoId: string | null; // закешований раніше знайдений і підтверджений відеоряд
+  artists?: ArtistRef[] | null;
+  source?: SongSource; // "catalog" — головна таблиця_1, "community" — таблиця_2
+  submittedBy?: UserRef | null; // хто додав (лише ком'юніті-пісні)
+  audioUrl?: string | null; // завантажений файл пісні — грає замість YouTube
+  avgRating?: number | null; // середня оцінка 0–100
+  ratingCount?: number;
+}
+
+export type SongSource = 'catalog' | 'community';
+
+export interface UserRef {
+  userId: number;
+  displayName: string;
+}
+
+export interface ArtistRef {
+  id: number;
+  name: string;
 }
 
 export interface CreateSongInput {
@@ -50,6 +68,9 @@ export interface SongRequest {
   albumTitle: string | null;
   createdAt: string;
   youtubeVideoId: string | null;
+  kind?: SongSource;
+  requester?: UserRef | null;
+  audioUrl?: string | null;
 }
 
 export interface CreateRequestInput {
@@ -99,6 +120,7 @@ export interface Recommendation {
 
 export interface AuthMe {
   authenticated: boolean;
+  userId?: number;
   email?: string;
   name?: string;
   picture?: string | null;
@@ -128,4 +150,135 @@ export interface ExternalSongResult {
 
 export interface AppConfig {
   youtubeApiKeys: string[]; // по одному на GCP-проєкт — квота 10000/добу рахується на проєкт, не на ключ
+}
+
+// ─── Ком'юніті: таблиця_2, оцінки, повідомлення, обговорення, сповіщення адмінів ───
+
+// Файл, обраний через expo-document-picker, — у форматі, який RN кладе в FormData.
+export interface PickedAudio {
+  uri: string;
+  name: string;
+  mimeType: string;
+  size?: number;
+}
+
+export interface CommunitySongInput {
+  artist: string;
+  title: string;
+  release: string;
+  duration: string;
+  genres: string; // через кому, як і на сайті
+  album: string | null;
+  youtubeVideo: string | null; // ID або посилання
+  audio: PickedAudio | null;
+}
+
+export interface RatingEntry {
+  user: UserRef;
+  score: number;
+  review: string | null;
+  updatedAt: string;
+}
+
+export interface SongRatings {
+  musicId: number;
+  avgRating: number | null;
+  ratingCount: number;
+  mine: RatingEntry | null;
+  reviews: RatingEntry[];
+}
+
+// "friends" | "accepted" | "pending_outgoing" | "pending_incoming" | "declined" | "declined_by_me" | "none"
+export type DmState = string;
+
+export interface Conversation {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  lastMessage: string;
+  lastFromMe: boolean;
+  lastAt: string;
+  unreadCount: number;
+  state: DmState;
+}
+
+export interface DirectMessage {
+  id: number;
+  senderId: number;
+  recipientId: number;
+  body: string;
+  createdAt: string;
+  isMine: boolean;
+}
+
+export interface DmThread {
+  state: DmState;
+  canSend: boolean;
+  messages: DirectMessage[];
+}
+
+export interface DmUnread {
+  unread: number;
+  requests: number;
+}
+
+export interface DmRequest {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  preview: string;
+  messageCount: number;
+  createdAt: string;
+}
+
+export interface ThreadSummary {
+  id: number;
+  title: string;
+  author: UserRef | null;
+  createdAt: string;
+  lastPostAt: string;
+  postCount: number;
+}
+
+export interface ThreadPost {
+  id: number;
+  author: UserRef | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface ThreadDetail {
+  id: number;
+  title: string;
+  body: string;
+  author: UserRef | null;
+  createdAt: string;
+  posts: ThreadPost[];
+}
+
+export interface AdminNotification {
+  id: number;
+  actor: UserRef | null;
+  eventType: 'request_submitted' | 'request_approved' | 'request_rejected' | 'song_added';
+  label: string;
+  source: SongSource;
+  createdAt: string;
+}
+
+export interface AdminNotificationsSummary {
+  unreadCount: number;
+  recent: AdminNotification[];
+}
+
+export interface ArtistSummary {
+  id: number;
+  name: string;
+  songCount: number;
+}
+
+export interface UserSearchResult {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  relationshipStatus: string;
 }

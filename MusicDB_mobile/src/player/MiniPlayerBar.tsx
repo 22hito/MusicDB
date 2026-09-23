@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { usePlayer } from './PlayerContext';
@@ -12,8 +12,10 @@ import {
   PrevIcon,
   RepeatIcon,
   ShuffleIcon,
+  StarIcon,
   VideoIcon,
 } from '@/components/Icons';
+import { RatingModal } from '@/components/RatingModal';
 
 function fmtSec(s: number) {
   const sec = Math.max(0, Math.floor(s || 0));
@@ -23,6 +25,7 @@ function fmtSec(s: number) {
 export function MiniPlayerBar() {
   const p = usePlayer();
   const { theme, t } = useSettings();
+  const [ratingOpen, setRatingOpen] = useState(false);
 
   if (!p.isOpen || !p.current) return null;
   const song = p.current;
@@ -96,17 +99,24 @@ export function MiniPlayerBar() {
 
         <View style={{ flex: 1 }} />
 
-        <TouchableOpacity
-          onPress={p.toggleVideoPopup}
-          style={[styles.smallIconBtn, p.videoPopupOpen && { backgroundColor: `${theme.accent}22` }]}
-          hitSlop={10}
-        >
-          <VideoIcon size={15} color={p.videoPopupOpen ? theme.accent : theme.muted} />
+        <TouchableOpacity onPress={() => setRatingOpen(true)} style={styles.smallIconBtn} hitSlop={10}>
+          <StarIcon size={15} color={song.avgRating != null ? theme.accent : theme.muted} />
         </TouchableOpacity>
+        {/* Файл пісні ком'юніті — без відео. */}
+        {song.audioUrl ? null : (
+          <TouchableOpacity
+            onPress={p.toggleVideoPopup}
+            style={[styles.smallIconBtn, p.videoPopupOpen && { backgroundColor: `${theme.accent}22` }]}
+            hitSlop={10}
+          >
+            <VideoIcon size={15} color={p.videoPopupOpen ? theme.accent : theme.muted} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity onPress={p.close} style={styles.smallIconBtn} hitSlop={10}>
           <CloseIcon size={13} color={theme.muted} />
         </TouchableOpacity>
       </View>
+      <RatingModal song={ratingOpen ? song : null} onClose={() => setRatingOpen(false)} />
     </View>
   );
 }

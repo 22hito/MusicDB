@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { Badge } from './UI';
-import { EditIcon, HeartIcon, PauseIcon, PlayIcon, PlusIcon, TrashIcon } from './Icons';
+import { EditIcon, HeartIcon, PauseIcon, PersonIcon, PlayIcon, PlusIcon, StarIcon, TrashIcon } from './Icons';
 import { FONT_MONO_REGULAR, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
@@ -33,6 +33,7 @@ export function SongRow({
   onAddToPlaylist,
   onEdit,
   onDelete,
+  onRate,
 }: {
   song: Song;
   isCurrent?: boolean;
@@ -49,6 +50,7 @@ export function SongRow({
   onAddToPlaylist?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onRate?: () => void; // відкрити оцінку/рецензії
 }) {
   const { theme, t } = useSettings();
   const wantFavorite = showFavorite ?? authenticated;
@@ -79,7 +81,25 @@ export function SongRow({
           <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.title, { color: theme.text, fontFamily: FONT_MONO_REGULAR }]}>
             {song.title}
           </Text>
+          {/* Таблиця_2: нік того, хто додав пісню. */}
+          {song.submittedBy ? (
+            <View style={styles.submitterLine}>
+              <PersonIcon size={11} color={theme.accent} />
+              <Text numberOfLines={1} style={[styles.submitter, { color: theme.accent, fontFamily: FONT_MONO_REGULAR }]}>
+                {song.submittedBy.displayName}
+              </Text>
+            </View>
+          ) : null}
         </View>
+
+        {onRate ? (
+          <TouchableOpacity onPress={onRate} hitSlop={8} style={[styles.ratingChip, { borderColor: theme.border }]}>
+            <StarIcon size={12} color={song.avgRating != null ? theme.accent : theme.muted} filled={song.avgRating != null} />
+            <Text style={{ color: song.avgRating != null ? theme.accent : theme.muted, fontSize: 12, fontFamily: FONT_MONO_REGULAR }}>
+              {song.avgRating != null ? song.avgRating : '—'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
 
         {wantFavorite ? (
           <TouchableOpacity onPress={onToggleFavorite} hitSlop={8} style={styles.actionIcon}>
@@ -147,6 +167,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 13,
     marginTop: 2,
+  },
+  submitterLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  submitter: {
+    fontSize: 11,
+  },
+  ratingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
   actionIcon: {
     width: 32,

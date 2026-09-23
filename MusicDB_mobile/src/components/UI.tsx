@@ -115,6 +115,22 @@ export function EmptyState({ icon, label }: { icon: string; label: string }) {
   );
 }
 
+// На відміну від EmptyState — для випадку, коли завантаження саме ЗЛАМАЛОСЬ
+// (немає з'єднання/сервер недоступний), а не просто немає даних. Без цього
+// невдалий запит і порожній список виглядали для користувача однаково.
+export function ErrorState({ label, onRetry }: { label: string; onRetry: () => void }) {
+  const { theme, t } = useSettings();
+  return (
+    <View style={styles.empty}>
+      <Text style={{ fontSize: 32, marginBottom: 10 }}>⚠️</Text>
+      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', marginBottom: 16 }}>
+        {label}
+      </Text>
+      <Button label={t('common.retry')} variant="outline" small onPress={onRetry} />
+    </View>
+  );
+}
+
 export function SegmentedPicker<T extends string>({
   options,
   value,
