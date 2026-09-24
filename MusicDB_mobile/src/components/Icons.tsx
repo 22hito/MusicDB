@@ -382,3 +382,12 @@ export function LyricsIcon({ size = 18, color = '#000' }: IconProps) {
     </Svg>
   );
 }
+
+export function CalendarIcon({ size = 16, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={3} y={4.5} width={18} height={16.5} rx={2} />
+      <Path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+    </Svg>
+  );
+}

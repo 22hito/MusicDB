@@ -16,6 +16,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { Button, Field, Heading, SegmentedPicker } from '@/components/UI';
 import { CommunityFields } from '@/components/CommunityFields';
 import { PLAYER_BAR_HEIGHT, SPACING } from '@/constants/theme';
+import { DateField } from '@/components/DateField';
 import type { ExternalSongResult, PickedAudio, SongSource } from '@/api/types';
 
 const EMPTY = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
@@ -186,7 +187,7 @@ ${body}` : ''}`);
             </View>
           ) : null}
 
-          <Field label={t('form.release')} value={form.release} onChangeText={set('release')} placeholder="2024-01-01" />
+          <DateField label={t('form.release')} value={form.release} onChange={set('release')} />
           <Field label={t('form.duration')} value={form.duration} onChangeText={set('duration')} placeholder="00:03:30" hint={t('form.duration.hint')} />
           <Field label={t('form.album')} value={form.album} onChangeText={set('album')} placeholder={t('form.album.placeholder')} />
           <Field

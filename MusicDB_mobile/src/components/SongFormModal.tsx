@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { Button, Field } from './UI';
+import { DateField } from './DateField';
 import { RADIUS, SPACING } from '@/constants/theme';
 
 export interface SongFormValues {
@@ -59,12 +60,7 @@ export function SongFormModal({
           <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Field label={t('form.artist')} value={values.artist} onChangeText={set('artist')} />
             <Field label={t('form.title')} value={values.title} onChangeText={set('title')} />
-            <Field
-              label={t('form.release')}
-              value={values.release}
-              onChangeText={set('release')}
-              placeholder="2024-01-01"
-            />
+            <DateField label={t('form.release')} value={values.release} onChange={set('release')} />
             <Field
               label={t('form.duration')}
               value={values.duration}

@@ -22,6 +22,7 @@ import { CommunityFields } from '@/components/CommunityFields';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { EditIcon, TrashIcon } from '@/components/Icons';
 import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
+import { DateField } from '@/components/DateField';
 import type { AdminNotification, BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
@@ -368,7 +369,7 @@ function AddSongPanel() {
           </View>
         ) : null}
 
-        <Field label={t('form.release')} value={form.release} onChangeText={set('release')} placeholder="2024-01-01" />
+        <DateField label={t('form.release')} value={form.release} onChange={set('release')} />
         <Field label={t('form.duration')} value={form.duration} onChangeText={set('duration')} placeholder="00:03:30" hint={t('form.duration.hint')} />
         <Field label={t('form.album')} value={form.album} onChangeText={set('album')} />
         <Field label={t('form.genres')} value={form.genres} onChangeText={set('genres')} hint={genresHint || t('form.genres.hint')} />
