@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -19,7 +20,7 @@ import { useMusicApi } from '@/api/endpoints';
 import { Badge, Button, EmptyState, ErrorState, Field, Heading, SegmentedPicker } from '@/components/UI';
 import { CommunityFields } from '@/components/CommunityFields';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
-import { EditIcon } from '@/components/Icons';
+import { EditIcon, TrashIcon } from '@/components/Icons';
 import { RADIUS, SPACING } from '@/constants/theme';
 import type { AdminNotification, BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
@@ -477,6 +478,26 @@ function BugsPanel() {
   }, [load]);
   useEffect(() => subscribeRealtime((event) => event === 'bugReportsChanged' && load()), [subscribeRealtime, load]);
 
+  const remove = (id: number) =>
+    Alert.alert(t('bugs.deleteConfirm'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('bugs.deleteBtn'),
+        style: 'destructive',
+        onPress: async () => {
+          setBusyId(id);
+          try {
+            await api.deleteBugReport(id);
+            setItems((prev) => prev.filter((x) => x.id !== id));
+          } catch {
+            Alert.alert(t('error.loadFailed'));
+          } finally {
+            setBusyId(null);
+          }
+        },
+      },
+    ]);
+
   const setStatus = async (id: number, status: BugStatus) => {
     setBusyId(id);
     try {
@@ -547,6 +568,14 @@ function BugsPanel() {
               ) : (
                 <Button small variant="outline" label={t('bugs.reopenBtn')} loading={busyId === b.id} onPress={() => setStatus(b.id, 'open')} />
               )}
+              <TouchableOpacity
+                onPress={() => remove(b.id)}
+                disabled={busyId === b.id}
+                accessibilityLabel={t('bugs.deleteBtn')}
+                style={[styles.bugDelete, { borderColor: theme.border }]}
+              >
+                <TrashIcon size={16} color={theme.red} />
+              </TouchableOpacity>
             </View>
           </View>
         ))
@@ -589,6 +618,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     marginBottom: SPACING.md,
   },
+  bugDelete: { width: 40, height: 40, borderRadius: RADIUS.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
   shotThumb: { width: 110, height: 82, borderRadius: RADIUS.sm, borderWidth: 1 },
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
   reqActions: {

@@ -373,6 +373,8 @@ export const I18N = {
     'battle.undo': 'Крок назад', // NEW
     'battle.videoHint': 'Натисніть «Послухати» — тут з’явиться відео', // NEW
     'battle.audioOnly': 'Трек без відео — грає аудіофайл', // NEW
+    'bugs.deleteBtn': 'Видалити', // NEW
+    'bugs.deleteConfirm': 'Видалити цей баг-репорт разом зі скріншотами? Це не можна скасувати.', // NEW
   },
   en: {
     'nav.home': 'Home',
@@ -746,6 +748,8 @@ export const I18N = {
     'battle.undo': 'Step back', // NEW
     'battle.videoHint': 'Tap "Listen" — the video will show up here', // NEW
     'battle.audioOnly': 'No video for this track — playing the audio file', // NEW
+    'bugs.deleteBtn': 'Delete', // NEW
+    'bugs.deleteConfirm': 'Delete this bug report along with its screenshots? This cannot be undone.', // NEW
   },
 } as const;
 

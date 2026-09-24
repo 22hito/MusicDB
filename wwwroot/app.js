@@ -417,6 +417,8 @@ const I18N = {
     'bugs.screenshotsHint': 'До 3 зображень, до 5 МБ кожне. Можна вставити з буфера (Ctrl+V).',
     'bugs.shotTooBig': 'Зображення більше 5 МБ.',
     'bugs.shotsTitle': 'Скріншоти',
+    'bugs.deleteBtn': 'Видалити',
+    'bugs.deleteConfirm': 'Видалити цей баг-репорт разом зі скріншотами? Це не можна скасувати.',
     'bugs.send': 'Надіслати',
     'bugs.tooShort': 'Опишіть, будь ласка, трохи докладніше (від 10 символів).',
     'bugs.tooMany': 'Забагато звітів за годину — спробуйте пізніше.',
@@ -858,6 +860,8 @@ const I18N = {
     'bugs.screenshotsHint': 'Up to 3 images, 5 MB each. You can also paste from the clipboard (Ctrl+V).',
     'bugs.shotTooBig': 'The image is larger than 5 MB.',
     'bugs.shotsTitle': 'Screenshots',
+    'bugs.deleteBtn': 'Delete',
+    'bugs.deleteConfirm': 'Delete this bug report along with its screenshots? This cannot be undone.',
     'bugs.send': 'Send',
     'bugs.tooShort': 'Please describe it in a bit more detail (10+ characters).',
     'bugs.tooMany': 'Too many reports this hour — please try again later.',
@@ -3290,6 +3294,12 @@ function _friendActionButtonHtml(u){
     return `<button class="btn btn-primary" onclick="event.stopPropagation();acceptFriendRequestFromUser(${u.userId})">${t('friends.acceptBtn')}</button>`;
   return `<button class="btn btn-primary" onclick="event.stopPropagation();sendFriendRequest(${u.userId})">${t('friends.addBtn')}</button>`;
 }
+// Аватарка в рядках сторінки друзів (пошук, запити, друзі) — або ініціал-заглушка.
+function _friendAvatarHtml(url){
+  return url
+    ? `<img class="friend-avatar" src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+    : `<span class="friend-avatar friend-avatar-ph"><svg class="icon"><use href="#icon-user"/></svg></span>`;
+}
 function runFriendsSearch(){
   const q = document.getElementById('friends-search').value.trim();
   const wrap = document.getElementById('friends-search-results');
@@ -3299,7 +3309,7 @@ function runFriendsSearch(){
     empty.style.display = list.length ? 'none' : '';
     wrap.innerHTML = list.map(u=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${u.userId})">
-        <div class="es-main"><strong>${esc(u.displayName)}</strong></div>
+        ${_friendAvatarHtml(u.avatarUrl)}<div class="es-main"><strong>${esc(u.displayName)}</strong></div>
         ${_friendActionButtonHtml(u)}
       </div>`).join('');
   }).catch(()=>{});
@@ -3313,7 +3323,7 @@ function loadFriendsPage(){
     document.getElementById('friends-incoming-empty').style.display = list.length ? 'none' : '';
     document.getElementById('friends-incoming-list').innerHTML = list.map(r=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${r.userId})">
-        <div class="es-main"><strong>${esc(r.displayName)}</strong></div>
+        ${_friendAvatarHtml(r.avatarUrl)}<div class="es-main"><strong>${esc(r.displayName)}</strong></div>
         <div style="display:flex;gap:6px;">
           <button class="btn btn-primary" onclick="event.stopPropagation();acceptFriendRequest(${r.requestId})">${t('friends.acceptBtn')}</button>
           <button class="btn btn-outline" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.rejectBtn')}</button>
@@ -3325,7 +3335,7 @@ function loadFriendsPage(){
     document.getElementById('friends-outgoing-empty').style.display = list.length ? 'none' : '';
     document.getElementById('friends-outgoing-list').innerHTML = list.map(r=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${r.userId})">
-        <div class="es-main"><strong>${esc(r.displayName)}</strong></div>
+        ${_friendAvatarHtml(r.avatarUrl)}<div class="es-main"><strong>${esc(r.displayName)}</strong></div>
         <button class="btn btn-outline" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.cancelBtn')}</button>
       </div>`).join('');
   }).catch(()=>{});
@@ -3334,7 +3344,7 @@ function loadFriendsPage(){
     document.getElementById('friends-list-empty').style.display = list.length ? 'none' : '';
     document.getElementById('friends-list').innerHTML = list.map(u=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${u.userId})">
-        <div class="es-main"><strong>${esc(u.displayName)}</strong></div>
+        ${_friendAvatarHtml(u.avatarUrl)}<div class="es-main"><strong>${esc(u.displayName)}</strong></div>
         <button class="btn btn-outline" onclick="event.stopPropagation();unfriendUser(${u.userId})">${t('friends.unfriendBtn')}</button>
       </div>`).join('');
   }).catch(()=>{});
@@ -4780,6 +4790,7 @@ function loadBugReports(){
           <span class="hint" style="margin:0;">${esc(b.createdAt)}</span>
           <span style="flex:1"></span>
           <button class="btn btn-outline" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="setBugStatus(${b.id}, '${b.status==='open'?'resolved':'open'}')">${t(b.status==='open' ? 'bugs.resolveBtn' : 'bugs.reopenBtn')}</button>
+          <button class="btn btn-outline bug-delete-btn" onclick="deleteBugReport(${b.id})" title="${t('bugs.deleteBtn')}" aria-label="${t('bugs.deleteBtn')}"><svg class="icon"><use href="#icon-trash"/></svg></button>
         </div>
         <div class="bug-card-body">${esc(b.description)}</div>
         ${b.screenshotCount ? `<div class="bug-card-shots">${Array.from({ length: b.screenshotCount }, (_, i) =>
@@ -4788,6 +4799,12 @@ function loadBugReports(){
         ${b.resolvedBy ? `<div class="hint">${t('bugs.resolvedBy')}: ${esc(b.resolvedBy.displayName)}</div>` : ''}
       </div>`).join('');
   }).catch(()=>{});
+}
+function deleteBugReport(id){
+  if(!confirm(t('bugs.deleteConfirm'))) return;
+  fetch(`/api/bug-reports/${id}`, { method:'DELETE' })
+    .then(r=>{ if(r.ok){ loadBugReports(); refreshBugsBadge(); } else alert(t('msg.connectionError')); })
+    .catch(()=>alert(t('msg.connectionError')));
 }
 function setBugStatus(id, status){
   fetch(`/api/bug-reports/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status }) })

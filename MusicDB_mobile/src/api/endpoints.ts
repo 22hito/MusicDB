@@ -237,6 +237,7 @@ export function useMusicApi() {
       bugScreenshotUrl: (id: number, index: number) => `${apiBase}/api/bug-reports/${id}/screenshots/${index}`,
       getBugReports: (status: BugStatus | 'all' = 'open') => request<BugReport[]>('/api/bug-reports', { query: { status } }),
       getOpenBugCount: () => request<number>('/api/bug-reports/open-count'),
+      deleteBugReport: (id: number) => request<void>(`/api/bug-reports/${id}`, { method: 'DELETE' }),
       setBugStatus: (id: number, status: BugStatus) =>
         request<void>(`/api/bug-reports/${id}`, { method: 'PATCH', body: { status } }),
     };

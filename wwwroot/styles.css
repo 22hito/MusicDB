@@ -2116,3 +2116,23 @@ button.badge.album.badge-filter.active { background: var(--accent); color: var(-
 /* Батл: "Крок назад" — повернутись до попереднього матчу. */
 .battle-undo-btn { display: inline-flex; align-items: center; gap: 0.35rem; }
 .battle-undo-btn:disabled { opacity: 0.45; cursor: default; }
+.bug-delete-btn { font-size: 0.7rem; padding: 0.3rem 0.55rem; color: var(--red); display: inline-flex; align-items: center; }
+.bug-delete-btn .icon { width: 14px; height: 14px; }
+.bug-delete-btn:hover { border-color: var(--red); }
+
+/* "Крок назад" — праворуч біля ✕, а не в центрі шапки (там абсолютно
+   позиціонована кнопка "Режим наведення", і вони накладались). */
+.battle-header .battle-undo-btn { margin-left: auto; margin-right: 14px; padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+@media (max-width: 900px) {
+  /* На вузькому екрані центрована кнопка вже не вміщається між лічильником і
+     правими кнопками — ставимо її у звичайний потік, одразу після лічильника. */
+  .battle-hover-toggle { position: static; transform: none; margin-left: 12px; }
+  .battle-hover-toggle:hover, .battle-hover-toggle:active { transform: none; }
+}
+
+/* Аватарки на сторінці друзів. */
+.friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
+.ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }
+.ext-search-item > .friend-avatar + .es-main { flex: 1; min-width: 0; }
+.friend-avatar-ph { display: inline-flex; align-items: center; justify-content: center; background: var(--surface2); color: var(--muted); }
+.friend-avatar-ph .icon { width: 16px; height: 16px; }

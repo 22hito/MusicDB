@@ -91,6 +91,21 @@ public class BugReportsController(
             r.CreatedAt.ToString("yyyy-MM-dd HH:mm"), Ref(r.ResolvedBy), r.Screenshots.Length)).ToList());
     }
 
+    // Видалення звіту разом із його скріншотами у сховищі.
+    [AdminOnly]
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var report = await db.BugReports.FindAsync(id);
+        if (report is null) return NotFound();
+        var files = report.Screenshots;
+        db.BugReports.Remove(report);
+        await db.SaveChangesAsync();
+        foreach (var file in files) await storage.DeleteAsync(file);
+        await hub.Clients.Group(MusicHub.AdminsGroup).SendAsync("bugReportsChanged");
+        return NoContent();
+    }
+
     [AdminOnly]
     [HttpGet("{id:int}/screenshots/{index:int}")]
     public async Task<IActionResult> GetScreenshot(int id, int index)
