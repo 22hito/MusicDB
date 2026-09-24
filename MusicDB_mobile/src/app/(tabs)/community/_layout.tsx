@@ -17,6 +17,7 @@ export default function CommunityLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="chat/[userId]" options={{ title: '' }} />
       <Stack.Screen name="thread/[id]" options={{ title: '' }} />
+      <Stack.Screen name="user/[id]" options={{ title: '' }} />
     </Stack>
   );
 }

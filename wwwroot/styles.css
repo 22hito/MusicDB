@@ -2085,3 +2085,8 @@ button.badge.album.badge-filter.active { background: var(--accent); color: var(-
 
 .setting-row-mobile-only { display: none !important; }
 @media (max-width: 768px) { .setting-row-mobile-only { display: flex !important; } }
+
+/* Швидкі клавіші на телефоні/планшеті без миші не мають сенсу — картку ховаємо. */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .settings-card-keyboard { display: none !important; }
+}

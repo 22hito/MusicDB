@@ -3,7 +3,14 @@ import { useApiBridge } from './ApiBridge';
 import { useSettings } from '@/state/SettingsContext';
 import type {
   AdminNotificationsSummary,
+  ArtistDetail,
   ArtistSummary,
+  BugReport,
+  BugStatus,
+  FriendRequest,
+  PublicPlaylist,
+  PublicProfile,
+  PublicUser,
   CommunitySongInput,
   Conversation,
   DmRequest,
@@ -114,7 +121,12 @@ export function useMusicApi() {
       // Playlists
       getPlaylists: () => request<Playlist[]>('/api/playlists'),
       getPlaylist: (id: number) => request<PlaylistDetail>(`/api/playlists/${id}`),
-      createPlaylist: (name: string) => request<Playlist>('/api/playlists', { method: 'POST', body: { name } }),
+      createPlaylist: (name: string, isPublic = false) =>
+        request<Playlist>('/api/playlists', { method: 'POST', body: { name, isPublic } }),
+      setPlaylistPublic: (id: number, isPublic: boolean) =>
+        request<Playlist>(`/api/playlists/${id}`, { method: 'PATCH', body: { isPublic } }),
+      // Публічні плейлисти всіх — для "Батл рояль".
+      getPublicPlaylists: () => request<PublicPlaylist[]>('/api/playlists/public'),
       deletePlaylist: (id: number) => request<void>(`/api/playlists/${id}`, { method: 'DELETE' }),
       addSongToPlaylist: (playlistId: number, musicId: number) =>
         request<void>(`/api/playlists/${playlistId}/songs/${musicId}`, { method: 'POST' }),
@@ -180,7 +192,35 @@ export function useMusicApi() {
       // Глобальний пошук
       searchArtists: (q: string) => request<ArtistSummary[]>('/api/artists', { query: { q } }),
       getArtistSongs: (id: number) => request<Song[]>(`/api/artists/${id}/songs`),
-      searchUsers: (q: string) => request<UserSearchResult[]>('/api/users/search', { query: { q, limit: 8 } }),
+      searchUsers: (q: string, limit = 8) => request<UserSearchResult[]>('/api/users/search', { query: { q, limit } }),
+
+      // Виконавці: каталог, сторінка, підписка
+      getArtists: (q?: string) => request<ArtistSummary[]>('/api/artists', { query: { q: q || undefined } }),
+      getArtist: (id: number) => request<ArtistDetail>(`/api/artists/${id}`),
+      followArtist: (id: number) => request<void>(`/api/artists/${id}/follow`, { method: 'POST' }),
+      unfollowArtist: (id: number) => request<void>(`/api/artists/${id}/follow`, { method: 'DELETE' }),
+
+      // Друзі й публічні профілі
+      getUserProfile: (id: number) => request<PublicProfile>(`/api/users/${id}`),
+      getFriends: () => request<PublicUser[]>('/api/friends'),
+      getIncomingFriendRequests: () => request<FriendRequest[]>('/api/friends/requests/incoming'),
+      getOutgoingFriendRequests: () => request<FriendRequest[]>('/api/friends/requests/outgoing'),
+      sendFriendRequest: (targetUserId: number) =>
+        request<FriendRequest>('/api/friends/requests', { method: 'POST', body: { targetUserId } }),
+      acceptFriendRequest: (requestId: number) =>
+        request<FriendRequest>(`/api/friends/requests/${requestId}/accept`, { method: 'POST' }),
+      // Скасувати свій або відхилити вхідний — один і той самий DELETE.
+      cancelOrRejectFriendRequest: (requestId: number) =>
+        request<void>(`/api/friends/requests/${requestId}`, { method: 'DELETE' }),
+      unfriend: (userId: number) => request<void>(`/api/friends/${userId}`, { method: 'DELETE' }),
+
+      // Баг-репорти: надіслати може будь-хто залогінений, переглядає адмін
+      sendBugReport: (description: string, context: string | null) =>
+        request<{ id: number }>('/api/bug-reports', { method: 'POST', body: { description, context } }),
+      getBugReports: (status: BugStatus | 'all' = 'open') => request<BugReport[]>('/api/bug-reports', { query: { status } }),
+      getOpenBugCount: () => request<number>('/api/bug-reports/open-count'),
+      setBugStatus: (id: number, status: BugStatus) =>
+        request<void>(`/api/bug-reports/${id}`, { method: 'PATCH', body: { status } }),
     };
     },
     [request, apiBase],

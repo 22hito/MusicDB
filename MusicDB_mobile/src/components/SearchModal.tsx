@@ -67,9 +67,9 @@ export function SearchModal({ visible, onClose }: { visible: boolean; onClose: (
     onClose();
   };
 
-  const openArtist = async (id: number) => {
-    if (artistSongs?.id === id) return setArtistSongs(null);
-    setArtistSongs({ id, songs: await api.getArtistSongs(id).catch(() => []) });
+  const openArtist = (id: number, name: string) => {
+    close();
+    router.push({ pathname: '/explore/artist/[id]', params: { id: String(id), name } });
   };
 
   const section = (title: string) => <Text style={[styles.section, { color: theme.muted }]}>{title}</Text>;
@@ -114,7 +114,7 @@ export function SearchModal({ visible, onClose }: { visible: boolean; onClose: (
           {artists.length ? section(t('navSearch.artists')) : null}
           {artists.map((a) => (
             <View key={`a${a.id}`}>
-              {row(a.id, <PersonIcon size={15} color={theme.muted} />, a.name, `${a.songCount} ${t('profile.songsWord')}`, () => openArtist(a.id))}
+              {row(a.id, <PersonIcon size={15} color={theme.muted} />, a.name, `${a.songCount} ${t('profile.songsWord')}`, () => openArtist(a.id, a.name))}
               {artistSongs?.id === a.id
                 ? artistSongs.songs.map((s) =>
                     row(`as${s.id}`, <View style={{ width: 14 }} />, s.title, s.album, () => {
@@ -131,10 +131,10 @@ export function SearchModal({ visible, onClose }: { visible: boolean; onClose: (
               `u${u.userId}`,
               u.avatarUrl ? <Image source={{ uri: u.avatarUrl }} style={styles.avatar} /> : <PersonIcon size={16} color={theme.muted} />,
               u.displayName,
-              t('chat.writeBtn'),
+              u.relationshipStatus === 'friends' ? t('friends.friendsBadge') : null,
               () => {
                 close();
-                router.push({ pathname: '/community/chat/[userId]', params: { userId: String(u.userId), name: u.displayName } });
+                router.push({ pathname: '/community/user/[id]', params: { id: String(u.userId), name: u.displayName } });
               },
             ),
           )}

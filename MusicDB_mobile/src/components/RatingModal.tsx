@@ -6,6 +6,7 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { Button } from './UI';
 import { StarIcon, TrashIcon } from './Icons';
+import { openUserProfile } from './FriendsPanel';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Song, SongRatings } from '@/api/types';
 
@@ -123,7 +124,16 @@ export function RatingModal({ song, onClose }: { song: Song | null; onClose: () 
                   data.reviews.map((rv) => (
                     <View key={rv.user.userId} style={[styles.review, { borderColor: theme.border }]}>
                       <View style={styles.reviewHead}>
-                        <Text style={{ color: theme.text, fontWeight: '700', flexShrink: 1 }}>{rv.user.displayName}</Text>
+                        <TouchableOpacity
+                          style={{ flexShrink: 1 }}
+                          disabled={!authed || rv.user.userId === currentUser?.userId}
+                          onPress={() => {
+                            onClose();
+                            openUserProfile(rv.user.userId, rv.user.displayName);
+                          }}
+                        >
+                          <Text style={{ color: theme.text, fontWeight: '700' }}>{rv.user.displayName}</Text>
+                        </TouchableOpacity>
                         <StarIcon size={13} color={theme.accent} filled />
                         <Text style={{ color: theme.accent, fontFamily: FONT_MONO_REGULAR }}>{rv.score}</Text>
                         <View style={{ flex: 1 }} />

@@ -105,6 +105,7 @@ export interface Playlist {
   name: string;
   songCount: number;
   createdAt: string;
+  isPublic?: boolean; // публічний — видно іншим (профіль, "Батл рояль")
 }
 
 export interface PlaylistDetail {
@@ -259,9 +260,9 @@ export interface ThreadDetail {
 export interface AdminNotification {
   id: number;
   actor: UserRef | null;
-  eventType: 'request_submitted' | 'request_approved' | 'request_rejected' | 'song_added';
+  eventType: 'request_submitted' | 'request_approved' | 'request_rejected' | 'song_added' | 'bug_reported';
   label: string;
-  source: SongSource;
+  source: SongSource | 'bug';
   createdAt: string;
 }
 
@@ -281,4 +282,65 @@ export interface UserSearchResult {
   displayName: string;
   avatarUrl: string | null;
   relationshipStatus: string;
+}
+
+// ─── Друзі, публічні профілі, виконавці, баг-репорти ───
+
+// "self" | "none" | "friends" | "pending_outgoing" | "pending_incoming"
+export type RelationshipStatus = string;
+
+export interface PublicUser {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  relationshipStatus: RelationshipStatus;
+}
+
+export interface FriendRequest {
+  requestId: number;
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  createdAt: string;
+}
+
+export interface PublicPlaylist {
+  id: number;
+  name: string;
+  songCount: number;
+  ownerLabel: string;
+}
+
+export interface PublicProfile {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  relationshipStatus: RelationshipStatus;
+  memberSince: string;
+  totalListened: number;
+  favoritesCount: number;
+  topGenres: string[];
+  publicPlaylists: PublicPlaylist[];
+}
+
+export interface ArtistDetail {
+  id: number;
+  name: string;
+  bio: string | null;
+  imageUrl: string | null;
+  songCount: number;
+  followerCount: number;
+  isFollowing: boolean;
+}
+
+export type BugStatus = 'open' | 'resolved';
+
+export interface BugReport {
+  id: number;
+  reporter: UserRef | null;
+  description: string;
+  context: string | null;
+  status: BugStatus;
+  createdAt: string;
+  resolvedBy: UserRef | null;
 }

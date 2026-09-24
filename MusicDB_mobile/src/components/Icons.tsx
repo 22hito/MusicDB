@@ -1,6 +1,6 @@
 // Ті самі inline SVG-шляхи, що й у веб-версії MusicDB — для однакового вигляду.
 import React from 'react';
-import Svg, { Line, Path, Polygon, Polyline, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polygon, Polyline, Rect } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
@@ -243,6 +243,78 @@ export function UploadIcon({ size = 18, color = '#000' }: IconProps) {
       <Path d="M12 16V4" />
       <Polyline points="7 8 12 3 17 8" />
       <Path d="M4 19h16" />
+    </Svg>
+  );
+}
+
+export function CompassIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={12} r={9.5} />
+      <Polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5 15.5 8.5" />
+    </Svg>
+  );
+}
+
+export function WheelIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={12} r={9.5} />
+      <Circle cx={12} cy={12} r={2} />
+      <Path d="M12 2.5V10M12 14v7.5M2.5 12H10M14 12h7.5M5.3 5.3l5.3 5.3M13.4 13.4l5.3 5.3M18.7 5.3l-5.3 5.3M10.6 13.4l-5.3 5.3" />
+    </Svg>
+  );
+}
+
+export function SwordsIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2" />
+      <Path d="M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2" />
+    </Svg>
+  );
+}
+
+export function MicIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={9} y={2.5} width={6} height={12} rx={3} />
+      <Path d="M5 11a7 7 0 0 0 14 0M12 18v3.5M8.5 21.5h7" />
+    </Svg>
+  );
+}
+
+export function BugIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={7} y={7} width={10} height={13} rx={5} />
+      <Path d="M9 7a3 3 0 0 1 6 0M12 11v9M3 13h4M17 13h4M4 7l3 2M20 7l-3 2M4 20l3-2.5M20 20l-3-2.5" />
+    </Svg>
+  );
+}
+
+export function GlobeIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={12} r={9.5} />
+      <Path d="M2.5 12h19M12 2.5c2.5 2.8 3.8 6 3.8 9.5s-1.3 6.7-3.8 9.5c-2.5-2.8-3.8-6-3.8-9.5S9.5 5.3 12 2.5z" />
+    </Svg>
+  );
+}
+
+export function LockIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={4.5} y={10.5} width={15} height={10.5} rx={2} />
+      <Path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+    </Svg>
+  );
+}
+
+export function ChevronRightIcon({ size = 16, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Polyline points="9 5 16 12 9 19" />
     </Svg>
   );
 }

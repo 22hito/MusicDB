@@ -8,10 +8,11 @@ import { useMusicApi } from '@/api/endpoints';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { Button, EmptyState, Heading, SegmentedPicker } from '@/components/UI';
 import { ChatIcon, PersonIcon } from '@/components/Icons';
+import { FriendsPanel, openUserProfile } from '@/components/FriendsPanel';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Conversation, DmRequest, ThreadSummary } from '@/api/types';
 
-type Tab = 'dm' | 'requests' | 'threads';
+type Tab = 'dm' | 'requests' | 'threads' | 'friends';
 
 // "Спілкування": особисті повідомлення (друзям — вільно, іншим — через запит),
 // вхідні запити на листування і гілки обговорень ком'юніті — як сторінка чату на сайті.
@@ -25,6 +26,7 @@ export default function CommunityScreen() {
   const [tab, setTab] = useState<Tab>('threads');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<DmRequest[]>([]);
+  const [friendRequests, setFriendRequests] = useState(0);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,7 @@ export default function CommunityScreen() {
       else if (authed && tab === 'dm') setConversations(await api.getConversations());
       else if (authed && tab === 'requests') setRequests(await api.getDmRequests());
       if (authed) api.getDmRequests().then(setRequests).catch(() => {});
+      if (authed) api.getIncomingFriendRequests().then((r) => setFriendRequests(r.length)).catch(() => {});
     } catch {
       // лишаємо попередні дані
     } finally {
@@ -64,7 +67,7 @@ export default function CommunityScreen() {
   useEffect(
     () =>
       subscribeRealtime((event) => {
-        if (event === 'dmReceived' || event === 'dmSent' || event === 'dmRequestsChanged' || event === 'threadsChanged') load();
+        if (event === 'dmReceived' || event === 'dmSent' || event === 'dmRequestsChanged' || event === 'threadsChanged' || event === 'friendsChanged') load();
       }),
     [subscribeRealtime, load],
   );
@@ -102,6 +105,7 @@ export default function CommunityScreen() {
     { value: 'threads', label: t('chat.tab.threads') },
     { value: 'dm', label: t('chat.tab.dm') },
     { value: 'requests', label: requests.length ? `${t('chat.tab.requests')} (${requests.length})` : t('chat.tab.requests') },
+    { value: 'friends', label: friendRequests ? `${t('nav.friends')} (${friendRequests})` : t('nav.friends') },
   ];
 
   return (
@@ -121,6 +125,8 @@ export default function CommunityScreen() {
             <EmptyState icon="🔒" label={t('chat.loginHint')} />
             <Button label={t('auth.loginBtn')} small onPress={() => requireAuth(() => {})} />
           </View>
+        ) : tab === 'friends' ? (
+          <FriendsPanel onChanged={load} />
         ) : loading ? (
           <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
         ) : tab === 'dm' ? (
@@ -163,7 +169,9 @@ export default function CommunityScreen() {
             ) : (
               requests.map((r) => (
                 <View key={r.userId} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border, flexWrap: 'wrap' }]}>
-                  <Avatar url={r.avatarUrl} />
+                  <TouchableOpacity onPress={() => openUserProfile(r.userId, r.displayName)}>
+                    <Avatar url={r.avatarUrl} />
+                  </TouchableOpacity>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={{ color: theme.text, fontWeight: '700' }}>{r.displayName}</Text>
                     <Text style={{ color: theme.muted, fontSize: 11 }}>{r.createdAt}</Text>
