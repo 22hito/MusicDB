@@ -330,6 +330,11 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
           style={styles.hiddenWebview}
+          // containerStyle обов'язковий: на Android react-native-webview загортає
+          // WebView у View зі стилем {flex: 1}, а `style` діє лише на внутрішній
+          // WebView. Без цього контейнер стояв у потоці поруч із <Slot/> і забирав
+          // рівно половину висоти — звідси баг "застосунок лише на верхній половині".
+          containerStyle={styles.hiddenWebview}
         />
       ) : null}
 
@@ -378,7 +383,7 @@ const styles = StyleSheet.create({
   },
   loginModal: {
     flex: 1,
-    backgroundColor: '#0d0d0f',
+    backgroundColor: '#090c14',
     paddingTop: Platform.OS === 'ios' ? 54 : 24,
   },
   loginHeader: {
@@ -388,7 +393,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2e',
+    borderBottomColor: '#272b37',
   },
   loginTitle: {
     color: '#e8e8e0',
@@ -400,7 +405,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   loginCancelText: {
-    color: '#c8a96e',
+    color: '#efba64',
     fontSize: 14,
   },
   loginWebview: {

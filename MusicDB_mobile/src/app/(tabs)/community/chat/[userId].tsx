@@ -151,6 +151,6 @@ const styles = StyleSheet.create({
   time: { fontSize: 10, marginTop: 4, textAlign: 'right' },
   hint: { fontSize: 12, lineHeight: 17, marginHorizontal: SPACING.lg, marginBottom: SPACING.sm, padding: SPACING.sm, borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.md },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: SPACING.sm, borderTopWidth: 1, paddingBottom: 130 },
-  input: { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-  sendBtn: { height: 44, borderRadius: RADIUS.md, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, minHeight: 48, maxHeight: 120, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+  sendBtn: { height: 48, borderRadius: RADIUS.md, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
 });

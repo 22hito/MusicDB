@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
+import { FONT_SANS_SEMIBOLD } from '@/constants/theme';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { MiniPlayerBar } from '@/player/MiniPlayerBar';
@@ -64,18 +65,18 @@ export default function TabsLayout() {
   return (
     <View
       style={{ flex: 1, backgroundColor: theme.bg }}
-      onLayout={(e) => console.log('[DBG2] (tabs) outer View', e.nativeEvent.layout)}
     >
       <BrandHeader />
       {/* <Tabs> не бере flex:1 сам по собі, коли він більше не єдина дитина
           (з'явився BrandHeader-сусід) — без цієї обгортки контент і таббар
           стискались у верхню половину екрана, а решта лишалась порожньою. */}
-      <View style={{ flex: 1 }} onLayout={(e) => console.log('[DBG2] Tabs wrapper View', e.nativeEvent.layout)}>
+      <View style={{ flex: 1 }}>
         <Tabs
           screenOptions={{
             headerShown: false,
             tabBarActiveTintColor: theme.accent,
             tabBarInactiveTintColor: theme.muted,
+            tabBarLabelStyle: { fontFamily: FONT_SANS_SEMIBOLD, fontSize: 11 },
             tabBarStyle: {
               backgroundColor: theme.surface,
               borderTopColor: theme.border,

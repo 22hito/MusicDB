@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -101,8 +102,22 @@ export default function WheelScreen() {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [playlist, setPlaylist] = useState<Song[]>([]);
+  // Кут лише накопичується (ніколи не скидається через setValue посеред життя
+  // екрана): так повторні оберти на нативному драйвері працюють стабільно.
   const rotation = useRef(new Animated.Value(0)).current;
   const rotationDeg = useRef(0);
+  const rotate = useRef(rotation.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] })).current;
+  const spinRef = useRef<() => void>(() => {});
+  // Змах пальцем по колесу вбік — теж крутить (вертикальний жест лишається прокрутці сторінки).
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (_, g) => {
+        if (Math.abs(g.vx) > 0.25 || Math.abs(g.dx) > 60) spinRef.current();
+      },
+    }),
+  ).current;
 
   const load = useCallback(() => {
     setLoading(true);
@@ -133,8 +148,6 @@ export default function WheelScreen() {
     setCount(v);
     setResult(null);
     setPlaylist([]);
-    rotation.setValue(0);
-    rotationDeg.current = 0;
   };
 
   const spin = () => {
@@ -143,10 +156,9 @@ export default function WheelScreen() {
     const winner = Math.floor(Math.random() * n);
     const mid = winner * segAngle + segAngle / 2;
     const fullSpins = Math.max(4, Math.round(duration * 1.4)) + Math.floor(Math.random() * 2);
-    // Від поточного кута (без повних обертів) до положення, де mid під стрілкою.
-    const start = rotationDeg.current % 360;
-    rotation.setValue(start);
-    const target = start + fullSpins * 360 + ((360 - mid - start + 720) % 360);
+    // Від поточного кута до найближчого положення, де mid під стрілкою, + повні оберти.
+    const start = rotationDeg.current;
+    const target = start + fullSpins * 360 + ((((360 - mid - start) % 360) + 360) % 360);
     setSpinning(true);
     setResult(null);
     setPlaylist([]);
@@ -156,6 +168,7 @@ export default function WheelScreen() {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start(() => {
+      rotation.setValue(target); // на випадок перерваної анімації — фіксуємо фінальний кут
       rotationDeg.current = target;
       const g = genres[winner];
       setResult(g);
@@ -164,7 +177,9 @@ export default function WheelScreen() {
     });
   };
 
-  const rotate = rotation.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] });
+  useEffect(() => {
+    spinRef.current = spin;
+  });
 
   // Підписи — як на сайті: від хаба до обідка, шрифт зменшується для довгих назв, далі — трикрапка.
   const hubR = Math.max(18, size * 0.07);
@@ -197,7 +212,7 @@ export default function WheelScreen() {
               </View>
             </View>
 
-            <View style={{ width: size, height: size + 14, alignSelf: 'center' }}>
+            <View style={{ width: size, height: size + 14, alignSelf: 'center' }} {...pan.panHandlers}>
               <Animated.View style={{ position: 'absolute', top: 14, width: size, height: size, transform: [{ rotate }] }}>
                 <Svg width={size} height={size}>
                   {genres.map((g, i) => (

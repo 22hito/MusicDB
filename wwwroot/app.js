@@ -405,11 +405,18 @@ const I18N = {
     'chat.state.declined': 'Співрозмовник відхилив запит на листування.',
     'chat.state.pendingIncoming': 'Це запит на листування. Відповідь автоматично його схвалить.',
     'battle.communityTrack': "Трек ком'юніті",
+    'battle.undo': '↶ Крок назад',
     'bugs.menu': 'Повідомити про баг',
     'bugs.title': 'Повідомити про баг',
     'bugs.describe': 'Що сталося? *',
     'bugs.placeholder': 'Що ви робили, що очікували побачити і що сталося натомість…',
     'bugs.attachContext': 'Додати технічні дані (сторінка, пісня, браузер, розмір вікна)',
+    'bugs.attachContextHint': 'Допомагає відтворити помилку: адмін бачить, що саме було відкрито. Без паролів чи особистих даних.',
+    'bugs.previewSummary': 'Що саме буде надіслано?',
+    'bugs.addScreenshot': 'Додати скріншот',
+    'bugs.screenshotsHint': 'До 3 зображень, до 5 МБ кожне. Можна вставити з буфера (Ctrl+V).',
+    'bugs.shotTooBig': 'Зображення більше 5 МБ.',
+    'bugs.shotsTitle': 'Скріншоти',
     'bugs.send': 'Надіслати',
     'bugs.tooShort': 'Опишіть, будь ласка, трохи докладніше (від 10 символів).',
     'bugs.tooMany': 'Забагато звітів за годину — спробуйте пізніше.',
@@ -839,11 +846,18 @@ const I18N = {
     'chat.state.declined': 'This person declined your message request.',
     'chat.state.pendingIncoming': 'This is a message request. Replying accepts it automatically.',
     'battle.communityTrack': 'Community track',
+    'battle.undo': '↶ Step back',
     'bugs.menu': 'Report a bug',
     'bugs.title': 'Report a bug',
     'bugs.describe': 'What happened? *',
     'bugs.placeholder': 'What you were doing, what you expected and what happened instead…',
     'bugs.attachContext': 'Attach technical details (page, song, browser, window size)',
+    'bugs.attachContextHint': 'Helps reproduce the problem: the admin sees what exactly was open. No passwords or personal data.',
+    'bugs.previewSummary': 'What exactly will be sent?',
+    'bugs.addScreenshot': 'Add screenshot',
+    'bugs.screenshotsHint': 'Up to 3 images, 5 MB each. You can also paste from the clipboard (Ctrl+V).',
+    'bugs.shotTooBig': 'The image is larger than 5 MB.',
+    'bugs.shotsTitle': 'Screenshots',
     'bugs.send': 'Send',
     'bugs.tooShort': 'Please describe it in a bit more detail (10+ characters).',
     'bugs.tooMany': 'Too many reports this hour — please try again later.',
@@ -3126,6 +3140,24 @@ let battleHoverModeActive = false;
 let battleInitialSize = 0;   // розмір турніру на старті — для стрічки прогресу
 let battleTransitioning = false; // йде анімація вибору — ігноруємо повторні кліки/клавіші
 let battleChampionSong = null;
+// Знімки стану перед кожним вибором — для "Крок назад" (обрав не ту пісню).
+let battleHistory = [];
+function _syncBattleUndo(){
+  const btn = document.getElementById('battle-undo-btn');
+  if(btn) btn.disabled = !battleHistory.length;
+}
+function undoBattle(){
+  if(battleTransitioning || !battleHistory.length) return;
+  const prev = battleHistory.pop();
+  battleRound = prev.round;
+  battleWinners = prev.winners;
+  battleMatchIndex = prev.matchIndex;
+  battleChampionSong = null;
+  document.getElementById('battle-champion').style.display = 'none';
+  document.getElementById('battle-split').style.display = 'flex';
+  _syncBattleUndo();
+  loadBattleMatch();
+}
 
 // Сторінка "Батл рояль" у навбарі: власні плейлисти (якщо залогінені) + публічні чужі.
 function openBattlePage(){
@@ -3432,6 +3464,8 @@ function startBattleRoyale(size){
   battleMatchIndex = 0;
   battleInitialSize = size;
   battleTransitioning = false;
+  battleHistory = [];
+  _syncBattleUndo();
   // Ставимо головний плеєр на паузу на час турніру — щоб не було потрійного звуку.
   if(ytPlayer && ytReady){ try{ ytPlayer.pauseVideo(); }catch(e){} }
   if(playerMode === 'file') _pPause();
@@ -3620,6 +3654,8 @@ function chooseBattleWinner(side){
   _stopBattleMinis();
 
   const winner = battleRound[battleMatchIndex*2 + side];
+  battleHistory.push({ round: battleRound.slice(), winners: battleWinners.slice(), matchIndex: battleMatchIndex });
+  _syncBattleUndo();
   battleWinners.push(winner);
   battleMatchIndex++;
 
@@ -3645,6 +3681,7 @@ document.addEventListener('keydown', (e) => {
   if(document.getElementById('battle-champion').style.display !== 'none') return;
   const tag = document.activeElement?.tagName;
   if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); undoBattle(); return; }
   if(e.key === 'ArrowLeft' || e.key === '1'){ e.preventDefault(); chooseBattleWinner(0); }
   else if(e.key === 'ArrowRight' || e.key === '2'){ e.preventDefault(); chooseBattleWinner(1); }
 });
@@ -4625,12 +4662,54 @@ function _onVidReady(vid) {
 function openBugReportModal(){
   document.getElementById('bug-report-text').value = '';
   document.getElementById('bug-report-context').checked = true;
+  document.getElementById('bug-context-preview').open = false;
+  _syncBugContextPreview();
+  _bugShots = [];
+  _renderBugShots();
   document.getElementById('bug-report-status').textContent = '';
   document.getElementById('bug-report-send').disabled = false;
   document.getElementById('bug-report-modal-overlay').classList.add('open');
   setTimeout(() => document.getElementById('bug-report-text').focus(), 50);
 }
 function closeBugReportModal(){ _closeModalAnimated('bug-report-modal-overlay'); }
+// ─── Скріншоти (до 3, до 5 МБ): вибір файлу або вставка з буфера ───
+const BUG_SHOTS_MAX = 3, BUG_SHOT_MAX_BYTES = 5 * 1024 * 1024;
+let _bugShots = [];
+function _addBugShots(files){
+  const status = document.getElementById('bug-report-status');
+  status.textContent = '';
+  for(const f of files){
+    if(_bugShots.length >= BUG_SHOTS_MAX) break;
+    if(!/^image\/(png|jpeg|webp|gif)$/.test(f.type)) continue;
+    if(f.size > BUG_SHOT_MAX_BYTES){ status.textContent = t('bugs.shotTooBig'); continue; }
+    // Вставлене з буфера приходить як "image.png" — даємо унікальне ім'я з правильним розширенням.
+    const ext = f.type.split('/')[1].replace('jpeg', 'jpg');
+    _bugShots.push({ file: new File([f], `screenshot-${Date.now()}-${_bugShots.length}.${ext}`, { type: f.type }), url: URL.createObjectURL(f) });
+  }
+  _renderBugShots();
+}
+function _removeBugShot(i){
+  URL.revokeObjectURL(_bugShots[i].url);
+  _bugShots.splice(i, 1);
+  _renderBugShots();
+}
+function _renderBugShots(){
+  document.getElementById('bug-shots-list').innerHTML = _bugShots.map((s, i) => `
+    <div class="bug-shot"><img src="${s.url}" alt=""><button type="button" onclick="_removeBugShot(${i})" aria-label="${t('modal.cancel')}">×</button></div>`).join('');
+  document.getElementById('bug-shots-add').style.display = _bugShots.length >= BUG_SHOTS_MAX ? 'none' : '';
+}
+document.addEventListener('paste', e => {
+  if(!document.getElementById('bug-report-modal-overlay')?.classList.contains('open')) return;
+  const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+  if(files.length){ e.preventDefault(); _addBugShots(files); }
+});
+
+// Показуємо рівно ті рядки, що підуть у звіт (раніше галочка була "чорною скринькою").
+function _syncBugContextPreview(){
+  const on = document.getElementById('bug-report-context').checked;
+  document.getElementById('bug-context-preview').style.display = on ? '' : 'none';
+  if(on) document.getElementById('bug-context-pre').textContent = _bugContext();
+}
 document.getElementById('bug-report-modal-overlay').addEventListener('click', function(e){
   if(e.target === this) closeBugReportModal();
 });
@@ -4656,7 +4735,18 @@ function submitBugReport(){
   const btn = document.getElementById('bug-report-send');
   btn.disabled = true;
   const context = document.getElementById('bug-report-context').checked ? _bugContext() : null;
-  fetch('/api/bug-reports', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ description: text, context }) })
+  // Зі скріншотами — multipart на окремий ендпоінт, без них — звичайний JSON.
+  let req;
+  if(_bugShots.length){
+    const fd = new FormData();
+    fd.append('description', text);
+    if(context) fd.append('context', context);
+    _bugShots.forEach(s => fd.append('screenshots', s.file));
+    req = fetch('/api/bug-reports/with-screenshots', { method:'POST', body: fd });
+  } else {
+    req = fetch('/api/bug-reports', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ description: text, context }) });
+  }
+  req
     .then(r=>{
       if(r.status === 429){ status.textContent = t('bugs.tooMany'); btn.disabled = false; return; }
       if(!r.ok){ status.textContent = t('msg.connectionError'); btn.disabled = false; return; }
@@ -4692,6 +4782,8 @@ function loadBugReports(){
           <button class="btn btn-outline" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="setBugStatus(${b.id}, '${b.status==='open'?'resolved':'open'}')">${t(b.status==='open' ? 'bugs.resolveBtn' : 'bugs.reopenBtn')}</button>
         </div>
         <div class="bug-card-body">${esc(b.description)}</div>
+        ${b.screenshotCount ? `<div class="bug-card-shots">${Array.from({ length: b.screenshotCount }, (_, i) =>
+          `<a href="/api/bug-reports/${b.id}/screenshots/${i}" target="_blank" rel="noopener"><img src="/api/bug-reports/${b.id}/screenshots/${i}" alt="${t('bugs.shotsTitle')} ${i + 1}" loading="lazy"></a>`).join('')}</div>` : ''}
         ${b.context ? `<details class="bug-card-context"><summary>${t('bugs.contextTitle')}</summary><pre>${esc(b.context)}</pre></details>` : ''}
         ${b.resolvedBy ? `<div class="hint">${t('bugs.resolvedBy')}: ${esc(b.resolvedBy.displayName)}</div>` : ''}
       </div>`).join('');

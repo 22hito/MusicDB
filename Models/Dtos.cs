@@ -212,7 +212,8 @@ public record CreatePostDto(string Body);
 
 public record CreateBugReportDto(string Description, string? Context);
 
-public record BugReportDto(int Id, UserRefDto? Reporter, string Description, string? Context, string Status, string CreatedAt, UserRefDto? ResolvedBy);
+// ScreenshotCount — скільки скріншотів; самі файли: GET /api/bug-reports/{id}/screenshots/{index}.
+public record BugReportDto(int Id, UserRefDto? Reporter, string Description, string? Context, string Status, string CreatedAt, UserRefDto? ResolvedBy, int ScreenshotCount = 0);
 
 public record SetBugReportStatusDto(string Status);
 

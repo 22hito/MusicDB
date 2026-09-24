@@ -12,6 +12,7 @@ export interface SongFormValues {
   album: string;
   genres: string; // comma-separated
   youtubeVideoId: string; // ID або повне посилання — бекенд сам розбирає; порожньо = скинути кеш
+  lyrics?: string; // текст пісні; undefined — ще не завантажено
 }
 
 export function SongFormModal({
@@ -21,6 +22,7 @@ export function SongFormModal({
   onCancel,
   onSave,
   saving,
+  loadLyrics,
 }: {
   visible: boolean;
   title: string;
@@ -28,12 +30,22 @@ export function SongFormModal({
   onCancel: () => void;
   onSave: (values: SongFormValues) => void;
   saving?: boolean;
+  // Текст пісні тягнеться окремим запитом (як і на сайті) — підставляємо, коли прийде.
+  loadLyrics?: () => Promise<string | null>;
 }) {
   const { theme, t } = useSettings();
   const [values, setValues] = useState<SongFormValues>(initial);
 
   useEffect(() => {
-    if (visible) setValues(initial);
+    if (!visible) return;
+    setValues({ ...initial, lyrics: loadLyrics ? undefined : initial.lyrics });
+    let cancelled = false;
+    loadLyrics?.()
+      .then((text) => !cancelled && setValues((v) => ({ ...v, lyrics: v.lyrics ?? text ?? '' })))
+      .catch(() => !cancelled && setValues((v) => ({ ...v, lyrics: v.lyrics ?? '' })));
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
@@ -44,7 +56,7 @@ export function SongFormModal({
       <View style={styles.overlay}>
         <View style={[styles.box, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600', marginBottom: 16 }}>{title}</Text>
-          <ScrollView style={{ maxHeight: 440 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Field label={t('form.artist')} value={values.artist} onChangeText={set('artist')} />
             <Field label={t('form.title')} value={values.title} onChangeText={set('title')} />
             <Field
@@ -76,6 +88,18 @@ export function SongFormModal({
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {loadLyrics ? (
+              <Field
+                label={t('admin.lyrics')}
+                value={values.lyrics ?? ''}
+                editable={values.lyrics !== undefined}
+                onChangeText={set('lyrics')}
+                placeholder={values.lyrics === undefined ? '…' : t('admin.lyrics.placeholder')}
+                multiline
+                textAlignVertical="top"
+                style={{ minHeight: 160, maxHeight: 320, paddingTop: 12 }}
+              />
+            ) : null}
           </ScrollView>
           <View style={styles.actions}>
             <Button label={t('common.cancel')} variant="outline" onPress={onCancel} small />

@@ -1098,7 +1098,20 @@
       <label for="bug-report-text" data-i18n="bugs.describe">Що сталося? *</label>
       <textarea id="bug-report-text" rows="6" maxlength="4000" style="resize:vertical;" data-i18n-placeholder="bugs.placeholder" placeholder="Що ви робили, що очікували побачити і що сталося натомість…"></textarea>
     </div>
-    <label class="bug-context-toggle"><input type="checkbox" id="bug-report-context" checked> <span data-i18n="bugs.attachContext">Додати технічні дані (сторінка, пісня, браузер, розмір вікна)</span></label>
+    <div class="bug-shots">
+      <div class="bug-shots-list" id="bug-shots-list"></div>
+      <label class="btn btn-outline bug-shots-add" id="bug-shots-add">
+        <svg class="icon"><use href="#icon-plus"/></svg> <span data-i18n="bugs.addScreenshot">Додати скріншот</span>
+        <input type="file" id="bug-shots-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden onchange="_addBugShots(this.files); this.value='';">
+      </label>
+      <div class="bug-context-help" style="margin:0.35rem 0 0;" data-i18n="bugs.screenshotsHint">До 3 зображень, до 5 МБ кожне. Можна вставити з буфера (Ctrl+V).</div>
+    </div>
+    <label class="bug-context-toggle"><input type="checkbox" id="bug-report-context" checked onchange="_syncBugContextPreview()"> <span data-i18n="bugs.attachContext">Додати технічні дані (сторінка, пісня, браузер, розмір вікна)</span></label>
+    <div class="bug-context-help" data-i18n="bugs.attachContextHint">Допомагає відтворити помилку: адмін бачить, що саме було відкрито. Без паролів чи особистих даних.</div>
+    <details class="bug-context-preview" id="bug-context-preview">
+      <summary data-i18n="bugs.previewSummary">Що саме буде надіслано?</summary>
+      <pre id="bug-context-pre"></pre>
+    </details>
     <div class="hint" id="bug-report-status" style="min-height:1.2em;"></div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeBugReportModal()" data-i18n="modal.cancel">Скасувати</button>
@@ -1318,6 +1331,7 @@
     <div class="battle-header">
       <span id="battle-round-label"></span>
       <button type="button" class="btn btn-outline battle-hover-toggle" id="battle-hover-toggle-btn" onclick="toggleBattleHoverMode()" title="Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза" data-i18n-title="battle.hoverModeHint"><svg class="icon"><use href="#icon-cursor"/></svg> <span data-i18n="battle.hoverModeBtn">Режим наведення</span></button>
+      <button type="button" class="btn btn-outline battle-undo-btn" id="battle-undo-btn" onclick="undoBattle()" disabled title="Ctrl+Z" data-i18n="battle.undo">↶ Крок назад</button>
       <button class="battle-close-btn" onclick="closeBattle()"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
     <div id="battle-progress-ribbon" class="battle-progress-ribbon"></div>
@@ -1374,6 +1388,7 @@
       <div class="battle-champion-title" id="battle-champion-title"></div>
       <div class="battle-champion-actions">
         <button class="btn btn-primary" onclick="playBattleChampion()"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="battle.listenToWinnerBtn">Слухати переможця</span></button>
+        <button class="btn btn-outline" onclick="undoBattle()" data-i18n="battle.undo">↶ Крок назад</button>
         <button class="btn btn-outline" onclick="closeBattle()" data-i18n="player.close">Закрити</button>
       </div>
     </div>

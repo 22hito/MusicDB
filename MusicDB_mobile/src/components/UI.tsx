@@ -8,18 +8,37 @@ import {
   TextInputProps,
   TouchableOpacity,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSettings } from '@/state/SettingsContext';
-import { FONT_MONO_MEDIUM, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
+import {
+  FONT_SANS_MEDIUM,
+  FONT_SANS_REGULAR,
+  FONT_SANS_SEMIBOLD,
+  FONT_SERIF_BLACK,
+  CONTROL_HEIGHT,
+  RADIUS,
+  SPACING,
+} from '@/constants/theme';
 import { PersonIcon } from './Icons';
 
+// Заголовок сторінки як .section-heading на сайті: Playfair Display 900,
+// друге слово — акцентом.
 export function Heading({ pre, accent }: { pre: string; accent: string }) {
   const { theme } = useSettings();
   return (
-    <Text style={{ fontFamily: FONT_SERIF_BOLD, fontSize: 22, color: theme.text, marginBottom: SPACING.lg }}>
+    <Text style={{ fontFamily: FONT_SERIF_BLACK, fontSize: 28, lineHeight: 34, color: theme.text, marginBottom: SPACING.lg, letterSpacing: -0.3 }}>
       {pre} <Text style={{ color: theme.accent }}>{accent}</Text>
     </Text>
   );
+}
+
+// Картка-поверхня: .card на сайті (surface, тонка рамка, радіус 18).
+export function Card({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+  const { theme } = useSettings();
+  return <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, style]}>{children}</View>;
 }
 
 type ButtonVariant = 'primary' | 'outline' | 'success' | 'danger' | 'plain';
@@ -42,67 +61,70 @@ export function Button({
   style?: any;
 }) {
   const { theme } = useSettings();
-  const bg =
-    variant === 'primary'
-      ? theme.accent
-      : variant === 'success'
-        ? theme.green
-        : variant === 'danger'
-          ? theme.red
-          : 'transparent';
   const color =
-    variant === 'primary' || variant === 'success' ? theme.onAccent : variant === 'danger' ? '#fff' : theme.text;
-  const borderColor = variant === 'outline' || variant === 'plain' ? theme.border : bg;
+    variant === 'primary'
+      ? theme.onAccent
+      : variant === 'success'
+        ? theme.bg
+        : variant === 'danger'
+          ? theme.onRed
+          : variant === 'plain'
+            ? theme.text2
+            : theme.text;
+  const bg = variant === 'success' ? theme.green : variant === 'danger' ? theme.red : variant === 'outline' ? theme.surface : 'transparent';
+  const borderColor = variant === 'outline' ? theme.borderStrong : variant === 'plain' ? 'transparent' : bg;
+  const content = loading ? (
+    <ActivityIndicator size="small" color={color} />
+  ) : (
+    <Text numberOfLines={1} style={[styles.btnText, small && styles.btnTextSmall, { color }]}>
+      {label}
+    </Text>
+  );
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
-      style={[
-        styles.btn,
-        small && styles.btnSmall,
-        { backgroundColor: bg, borderColor, opacity: disabled ? 0.5 : 1 },
-        style,
-      ]}
+      activeOpacity={0.8}
+      style={[styles.btn, small && styles.btnSmall, { backgroundColor: bg, borderColor, opacity: disabled ? 0.5 : 1 }, variant === 'primary' && styles.btnPrimary, style]}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={color} />
-      ) : (
-        <Text style={[styles.btnText, small && styles.btnTextSmall, { color }]}>{label}</Text>
-      )}
+      {/* Основна кнопка — градієнт --accent-grad (hi → accent → lo), як "Увійти через Google". */}
+      {variant === 'primary' ? (
+        <LinearGradient
+          colors={[theme.accentHi, theme.accent, theme.accentLo]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+      {content}
     </TouchableOpacity>
   );
 }
 
-export function Badge({ label, kind = 'genre' }: { label: string; kind?: 'genre' | 'album' }) {
+// Жанр — фіолетова "таблетка" (--accent2), альбом — акцентна, як у таблиці сайту.
+export function Badge({ label, kind = 'genre', active }: { label: string; kind?: 'genre' | 'album'; active?: boolean }) {
   const { theme } = useSettings();
-  const isAlbum = kind === 'album';
+  const c = kind === 'album' ? theme.accent : theme.accent2;
   return (
-    <View
-      style={[
-        styles.badge,
-        {
-          backgroundColor: isAlbum ? `${theme.accent}1f` : `${theme.accent2}26`,
-          borderColor: isAlbum ? `${theme.accent}4d` : `${theme.accent2}4d`,
-        },
-      ]}
-    >
-      <Text
-        numberOfLines={isAlbum ? 2 : 1}
-        style={[styles.badgeText, { color: isAlbum ? theme.accent : theme.accent2, fontFamily: FONT_MONO_MEDIUM }]}
-      >
+    <View style={[styles.badge, { backgroundColor: active ? `${c}40` : `${c}1f`, borderColor: active ? c : `${c}59` }]}>
+      <Text numberOfLines={kind === 'album' ? 2 : 1} style={[styles.badgeText, { color: c }]}>
         {label}
       </Text>
     </View>
   );
 }
 
-export function StatCard({ label, value }: { label: string; value: number | string }) {
+// Картка статистики — як .stat-card: дрібна розріджена мітка + велике число Playfair.
+export function StatCard({ label, value, style }: { label: string; value: number | string; style?: StyleProp<ViewStyle> }) {
   const { theme } = useSettings();
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      <Text style={[styles.statLabel, { color: theme.muted, fontFamily: FONT_MONO_MEDIUM }]}>{label}</Text>
-      <Text style={[styles.statValue, { color: theme.accent, fontFamily: FONT_SERIF_BOLD }]}>{value}</Text>
+    <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }, style]}>
+      <Text numberOfLines={1} style={[styles.statLabel, { color: theme.muted }]}>
+        {label}
+      </Text>
+      <Text style={[styles.statValue, { color: theme.accent }]}>{value}</Text>
     </View>
   );
 }
@@ -112,20 +134,19 @@ export function EmptyState({ icon, label }: { icon: string; label: string }) {
   return (
     <View style={styles.empty}>
       <Text style={{ fontSize: 32, marginBottom: 10 }}>{icon}</Text>
-      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20, textAlign: 'center' }}>{label}</Text>
+      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', fontFamily: FONT_SANS_REGULAR }}>{label}</Text>
     </View>
   );
 }
 
 // На відміну від EmptyState — для випадку, коли завантаження саме ЗЛАМАЛОСЬ
-// (немає з'єднання/сервер недоступний), а не просто немає даних. Без цього
-// невдалий запит і порожній список виглядали для користувача однаково.
+// (немає з'єднання/сервер недоступний), а не просто немає даних.
 export function ErrorState({ label, onRetry }: { label: string; onRetry: () => void }) {
   const { theme, t } = useSettings();
   return (
     <View style={styles.empty}>
       <Text style={{ fontSize: 32, marginBottom: 10 }}>⚠️</Text>
-      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', marginBottom: 16 }}>
+      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', marginBottom: 16, fontFamily: FONT_SANS_REGULAR }}>
         {label}
       </Text>
       <Button label={t('common.retry')} variant="outline" small onPress={onRetry} />
@@ -133,32 +154,31 @@ export function ErrorState({ label, onRetry }: { label: string; onRetry: () => v
   );
 }
 
+// Сегментований перемикач — як .seg-switch на сайті: спільна рамка, активний
+// сегмент підсвічений поверхнею, а не заливкою акцентом.
 export function SegmentedPicker<T extends string>({
   options,
   value,
   onChange,
 }: {
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; icon?: (color: string) => React.ReactNode }[];
   value: T;
   onChange: (value: T) => void;
 }) {
   const { theme } = useSettings();
   return (
-    <View style={styles.segmented}>
+    <View style={[styles.segmented, { borderColor: theme.border, backgroundColor: theme.surface }]}>
       {options.map((opt) => {
         const active = opt.value === value;
+        const color = active ? theme.text : theme.muted;
         return (
           <TouchableOpacity
             key={opt.value}
             onPress={() => onChange(opt.value)}
-            style={[
-              styles.segmentBtn,
-              { backgroundColor: active ? theme.accent : theme.surface2, borderColor: active ? theme.accent : theme.border },
-            ]}
+            style={[styles.segmentBtn, active && { backgroundColor: theme.surface2 }]}
           >
-            <Text style={[styles.segmentText, { color: active ? theme.onAccent : theme.text, fontFamily: FONT_MONO_MEDIUM }]}>
-              {opt.label}
-            </Text>
+            {opt.icon ? opt.icon(active ? theme.accent : theme.muted) : null}
+            <Text style={[styles.segmentText, { color }]}>{opt.label}</Text>
           </TouchableOpacity>
         );
       })}
@@ -166,123 +186,20 @@ export function SegmentedPicker<T extends string>({
   );
 }
 
-export function Field({
-  label,
-  hint,
-  ...rest
-}: TextInputProps & { label: string; hint?: string }) {
+export function Field({ label, hint, style, ...rest }: TextInputProps & { label: string; hint?: string }) {
   const { theme } = useSettings();
   return (
     <View style={{ marginBottom: SPACING.lg }}>
-      <Text style={[styles.fieldLabel, { color: theme.muted, fontFamily: FONT_MONO_MEDIUM }]}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: theme.text2 }]}>{label}</Text>
       <TextInput
         placeholderTextColor={theme.muted}
-        style={[
-          styles.input,
-          { backgroundColor: theme.surface2, borderColor: theme.border, color: theme.text, fontFamily: FONT_MONO_MEDIUM },
-        ]}
         {...rest}
+        style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }, style]}
       />
       {hint ? <Text style={[styles.hint, { color: theme.muted }]}>{hint}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  btn: {
-    minHeight: 44,
-    paddingVertical: 12,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnSmall: {
-    minHeight: 40,
-    paddingVertical: 9,
-    paddingHorizontal: SPACING.md,
-  },
-  btnText: {
-    fontFamily: FONT_MONO_MEDIUM,
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontWeight: '700',
-  },
-  btnTextSmall: {
-    fontSize: 12,
-  },
-  badge: {
-    borderWidth: 1,
-    borderRadius: RADIUS.pill,
-    paddingVertical: 3,
-    paddingHorizontal: 9,
-    marginRight: 5,
-    marginBottom: 5,
-  },
-  badgeText: {
-    fontSize: 11,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: 100,
-    borderWidth: 1,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-  },
-  statLabel: {
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 5,
-  },
-  statValue: {
-    fontSize: 24,
-  },
-  empty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 44,
-    paddingHorizontal: 16,
-  },
-  segmented: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  segmentBtn: {
-    borderWidth: 1,
-    borderRadius: RADIUS.pill,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  segmentText: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 7,
-  },
-  input: {
-    minHeight: 46,
-    borderWidth: 1,
-    borderRadius: RADIUS.sm,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
-  },
-  hint: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 5,
-  },
-});
 
 // Кругла аватарка користувача з фолбеком-іконкою (як .avatar-ph на сайті).
 export function Avatar({ url, size = 40 }: { url: string | null | undefined; size?: number }) {
@@ -304,15 +221,126 @@ export function Avatar({ url, size = 40 }: { url: string | null | undefined; siz
   );
 }
 
-// Заголовок секції всередині екрана (дрібні великі літери, як .section-title на сайті).
+// Заголовок секції всередині екрана (дрібні розріджені великі літери, як мітки на сайті).
 export function SectionTitle({ label, right }: { label: string; right?: React.ReactNode }) {
   const { theme } = useSettings();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.lg, marginBottom: SPACING.sm }}>
-      <Text style={{ color: theme.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: FONT_MONO_MEDIUM }}>
-        {label}
-      </Text>
+      <Text style={{ color: theme.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, fontFamily: FONT_SANS_SEMIBOLD }}>{label}</Text>
       {right}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+  },
+  btn: {
+    minHeight: CONTROL_HEIGHT,
+    paddingVertical: 12,
+    paddingHorizontal: SPACING.lg + 2,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  btnPrimary: {
+    borderWidth: 0,
+    borderRadius: RADIUS.pill,
+  },
+  btnSmall: {
+    minHeight: 40,
+    paddingVertical: 8,
+    paddingHorizontal: SPACING.md + 2,
+  },
+  btnText: {
+    fontFamily: FONT_SANS_SEMIBOLD,
+    fontSize: 15,
+  },
+  btnTextSmall: {
+    fontSize: 13.5,
+  },
+  badge: {
+    borderWidth: 1,
+    borderRadius: RADIUS.pill,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontFamily: FONT_SANS_MEDIUM,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: 100,
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+  },
+  statLabel: {
+    fontSize: 10.5,
+    textTransform: 'uppercase',
+    letterSpacing: 1.3,
+    marginBottom: 6,
+    fontFamily: FONT_SANS_SEMIBOLD,
+  },
+  statValue: {
+    fontSize: 32,
+    lineHeight: 38,
+    fontFamily: FONT_SERIF_BLACK,
+  },
+  empty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 44,
+    paddingHorizontal: 16,
+  },
+  segmented: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 4,
+    gap: 2,
+  },
+  segmentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+  },
+  segmentText: {
+    fontSize: 14,
+    fontFamily: FONT_SANS_SEMIBOLD,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    marginBottom: 7,
+    fontFamily: FONT_SANS_SEMIBOLD,
+  },
+  input: {
+    minHeight: CONTROL_HEIGHT,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontFamily: FONT_SANS_REGULAR,
+  },
+  hint: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 5,
+    fontFamily: FONT_SANS_REGULAR,
+  },
+});

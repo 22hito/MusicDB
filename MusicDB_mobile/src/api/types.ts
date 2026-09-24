@@ -343,4 +343,5 @@ export interface BugReport {
   status: BugStatus;
   createdAt: string;
   resolvedBy: UserRef | null;
+  screenshotCount?: number; // файли: GET /api/bug-reports/{id}/screenshots/{index}
 }

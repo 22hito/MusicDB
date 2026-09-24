@@ -289,6 +289,8 @@ public class BugReport
     [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     [Column("resolved_at")] public DateTime? ResolvedAt { get; set; }
     [Column("resolved_by")] public int? ResolvedBy { get; set; }
+    // Імена файлів скріншотів у сховищі (те саме, що й для аудіо: R2 або диск).
+    [Column("screenshots")] public string[] Screenshots { get; set; } = [];
 }
 
 [Table("discussion_threads", Schema = "lab")]

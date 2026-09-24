@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
-    minHeight: 46,
+    minHeight: 48,
   },
   input: { flex: 1, fontSize: 15, paddingVertical: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, paddingVertical: 8, borderBottomWidth: 1 },

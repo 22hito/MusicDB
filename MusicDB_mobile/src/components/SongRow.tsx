@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { Badge } from './UI';
 import { EditIcon, HeartIcon, PauseIcon, PersonIcon, PlayIcon, PlusIcon, StarIcon, TrashIcon } from './Icons';
-import { FONT_MONO_REGULAR, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
+import { FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
 function fmtDate(d: string) {
@@ -73,23 +73,27 @@ export function SongRow({
     <View
       style={[
         styles.row,
-        { borderColor: theme.border, backgroundColor: isCurrent ? `${theme.accent}12` : 'transparent' },
+        { borderColor: isCurrent ? `${theme.accent}80` : theme.border, backgroundColor: isCurrent ? `${theme.accent}10` : theme.surface },
       ]}
     >
       <View style={styles.topLine}>
-        <TouchableOpacity onPress={onPlay} style={[styles.playBtn, { backgroundColor: theme.surface2 }]} hitSlop={10}>
+        <TouchableOpacity
+          onPress={onPlay}
+          style={[styles.playBtn, { backgroundColor: isCurrent ? theme.accent : theme.surface2, borderColor: isCurrent ? theme.accent : theme.border }]}
+          hitSlop={10}
+        >
           {isCurrent && isPlaying ? (
-            <PauseIcon size={14} color={theme.accent} />
+            <PauseIcon size={14} color={theme.onAccent} />
           ) : (
-            <PlayIcon size={13} color={isCurrent ? theme.accent : theme.muted} />
+            <PlayIcon size={13} color={isCurrent ? theme.onAccent : theme.text} />
           )}
         </TouchableOpacity>
 
         <View style={styles.titleWrap}>
-          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.artist, { color: theme.text, fontFamily: FONT_SERIF_BOLD }]}>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.artist, { color: theme.accent }]}>
             {song.artist}
           </Text>
-          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.title, { color: theme.text, fontFamily: FONT_MONO_REGULAR }]}>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.title, { color: theme.text }]}>
             {song.title}
           </Text>
           {/* Таблиця_2: нік того, хто додав пісню. */}
@@ -101,7 +105,7 @@ export function SongRow({
               onPress={() => song.submittedBy && onSubmitterPress?.(song.submittedBy.userId, song.submittedBy.displayName)}
             >
               <PersonIcon size={11} color={theme.accent} />
-              <Text numberOfLines={1} style={[styles.submitter, { color: theme.accent, fontFamily: FONT_MONO_REGULAR }]}>
+              <Text numberOfLines={1} style={[styles.submitter, { color: theme.accent, fontFamily: FONT_SANS_REGULAR }]}>
                 {song.submittedBy.displayName}
               </Text>
             </TouchableOpacity>
@@ -111,7 +115,7 @@ export function SongRow({
         {onRate ? (
           <TouchableOpacity onPress={onRate} hitSlop={8} style={[styles.ratingChip, { borderColor: theme.border }]}>
             <StarIcon size={12} color={song.avgRating != null ? theme.accent : theme.muted} filled={song.avgRating != null} />
-            <Text style={{ color: song.avgRating != null ? theme.accent : theme.muted, fontSize: 12, fontFamily: FONT_MONO_REGULAR }}>
+            <Text style={{ color: song.avgRating != null ? theme.accent : theme.muted, fontSize: 12, fontFamily: FONT_SANS_REGULAR }}>
               {song.avgRating != null ? song.avgRating : '—'}
             </Text>
           </TouchableOpacity>
@@ -140,7 +144,7 @@ export function SongRow({
       </View>
 
       <View style={styles.metaLine}>
-        <Text style={[styles.metaText, { color: theme.muted, fontFamily: FONT_MONO_REGULAR }]}>
+        <Text style={[styles.metaText, { color: theme.muted, fontFamily: FONT_SANS_REGULAR }]}>
           {fmtDate(song.release)} · {song.duration} · 👁 {song.playCount ?? 0}
         </Text>
         <View style={styles.badgesWrap}>
@@ -164,9 +168,11 @@ export function SongRow({
 
 const styles = StyleSheet.create({
   row: {
-    borderBottomWidth: 1,
-    paddingVertical: SPACING.sm + 4,
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
+    marginBottom: 10,
   },
   topLine: {
     flexDirection: 'row',
@@ -174,9 +180,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   playBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -186,11 +193,12 @@ const styles = StyleSheet.create({
   },
   artist: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: FONT_SANS_BOLD,
   },
   title: {
-    fontSize: 13,
+    fontSize: 14,
     marginTop: 2,
+    fontFamily: FONT_SANS_REGULAR,
   },
   submitterLine: {
     flexDirection: 'row',
@@ -199,7 +207,8 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   submitter: {
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: FONT_SANS_MEDIUM,
   },
   ratingChip: {
     flexDirection: 'row',
@@ -218,7 +227,7 @@ const styles = StyleSheet.create({
   },
   metaLine: {
     marginTop: 8,
-    marginLeft: 42,
+    marginLeft: 46,
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',

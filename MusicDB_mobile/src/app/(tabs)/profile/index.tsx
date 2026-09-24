@@ -20,7 +20,7 @@ import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
 import { Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
-import { BugIcon, GlobeIcon, LockIcon, TrashIcon, UsersIcon } from '@/components/Icons';
+import { BugIcon, ChevronRightIcon, GlobeIcon, LockIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
 import { BugReportModal } from '@/components/BugReportModal';
 import { RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, Profile, Song } from '@/api/types';
@@ -311,17 +311,21 @@ export default function ProfileScreen() {
           >
             <UsersIcon size={17} color={theme.accent} />
             <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('nav.friends')}</Text>
+            <ChevronRightIcon size={14} color={theme.muted} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setBugOpen(true)} style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
             <BugIcon size={17} color={theme.accent} />
             <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('bugs.menu')}</Text>
+            <ChevronRightIcon size={14} color={theme.muted} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={openSettingsModal} style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+            <SlidersIcon size={17} color={theme.accent} />
+            <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('settings.change')}</Text>
+            <ChevronRightIcon size={14} color={theme.muted} />
           </TouchableOpacity>
         </View>
 
         <Button label={t('auth.logout')} variant="outline" onPress={logout} style={{ marginTop: 26 }} />
-        <TouchableOpacity onPress={openSettingsModal} style={styles.settingsLink} hitSlop={6}>
-          <Text style={{ color: theme.muted, fontSize: 13 }}>{t('settings.change')}</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <BugReportModal visible={bugOpen} onClose={() => setBugOpen(false)} />
@@ -401,7 +405,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 48,
+    minHeight: 52,
     borderWidth: 1,
     borderRadius: RADIUS.md,
     paddingHorizontal: 14,
@@ -416,10 +420,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   listCard: {
-    borderWidth: 1,
-    borderRadius: RADIUS.lg,
     marginBottom: SPACING.xl,
-    overflow: 'hidden',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -461,9 +462,9 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
   },
   input: {
-    minHeight: 46,
+    minHeight: 48,
     borderWidth: 1,
-    borderRadius: RADIUS.sm,
+    borderRadius: RADIUS.md,
     paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 14,

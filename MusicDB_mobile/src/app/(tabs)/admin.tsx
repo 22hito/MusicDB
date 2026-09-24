@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
+  Modal,
+  Pressable,
   Platform,
   ScrollView,
   StyleSheet,
@@ -153,6 +156,7 @@ function RequestsPanel() {
         albumTitle: values.album.trim() || null,
         youtubeVideoId: values.youtubeVideoId.trim(),
       });
+      if (values.lyrics !== undefined) await api.setRequestLyrics(updated.id, values.lyrics).catch(() => {});
       setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
       setEditing(null);
     } finally {
@@ -216,6 +220,7 @@ function RequestsPanel() {
           onCancel={() => setEditing(null)}
           onSave={saveEdit}
           saving={saving}
+          loadLyrics={() => api.getRequestLyrics(editing.id).then((d) => d.lyrics)}
         />
       ) : null}
     </ScrollView>
@@ -452,6 +457,7 @@ function BugsPanel() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [viewer, setViewer] = useState<string | null>(null); // скріншот на весь екран
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const load = useCallback(() => {
@@ -521,6 +527,15 @@ function BugsPanel() {
                 ) : null}
               </TouchableOpacity>
             ) : null}
+            {b.screenshotCount ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginTop: 10 }}>
+                {Array.from({ length: b.screenshotCount }, (_, i) => (
+                  <TouchableOpacity key={i} onPress={() => setViewer(api.bugScreenshotUrl(b.id, i))}>
+                    <Image source={{ uri: api.bugScreenshotUrl(b.id, i) }} style={[styles.shotThumb, { borderColor: theme.border }]} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : null}
             {b.resolvedBy ? (
               <Text style={{ color: theme.muted, fontSize: 11, marginTop: 6 }}>
                 {t('bugs.resolvedBy')}: {b.resolvedBy.displayName}
@@ -536,6 +551,11 @@ function BugsPanel() {
           </View>
         ))
       )}
+      <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
+        <Pressable style={styles.viewer} onPress={() => setViewer(null)}>
+          {viewer ? <Image source={{ uri: viewer }} style={{ width: '100%', height: '85%' }} resizeMode="contain" /> : null}
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -569,6 +589,8 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     marginBottom: SPACING.md,
   },
+  shotThumb: { width: 110, height: 82, borderRadius: RADIUS.sm, borderWidth: 1 },
+  viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
   reqActions: {
     flexDirection: 'row',
     gap: 10,

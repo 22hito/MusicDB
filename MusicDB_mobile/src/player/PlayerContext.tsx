@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { WebView } from '@/components/WebViewCompat';
 import { CloseIcon } from '@/components/Icons';
 import { useMusicApi } from '@/api/endpoints';
@@ -132,6 +132,17 @@ interface PlayerState {
   toggleShuffle: () => void;
   toggleRepeat: () => void;
   toggleVideoPopup: () => void;
+  pause: () => void;
+  // "Док" для відео: екран (батл) передає прямокутник у координатах вікна — той
+  // самий WebView-плеєр малюється в ньому (звук не переривається). null — сховати.
+  setVideoDock: (rect: VideoDock | null) => void;
+}
+
+export interface VideoDock {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 const PlayerCtx = createContext<PlayerState | null>(null);
@@ -165,6 +176,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [repeat, setRepeat] = useState(false);
   const [volume, setVolumeState] = useState(80);
   const [videoPopupOpen, setVideoPopupOpen] = useState(false);
+  const [videoDock, setVideoDock] = useState<VideoDock | null>(null);
   const [, setEngineReady] = useState(false);
   const [pageReady, setPageReady] = useState(false);
 
@@ -275,6 +287,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const toggleShuffle = useCallback(() => setShuffle((s) => !s), []);
   const toggleRepeat = useCallback(() => setRepeat((r) => !r), []);
   const toggleVideoPopup = useCallback(() => setVideoPopupOpen((o) => !o), []);
+  const pause = useCallback(() => postCommand({ cmd: 'pause' }), [postCommand]);
 
   const onEngineMessage = useCallback(
     (event: { nativeEvent: { data: string } }) => {
@@ -344,8 +357,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       toggleShuffle,
       toggleRepeat,
       toggleVideoPopup,
+      pause,
+      setVideoDock,
     }),
     [
+      pause,
       queue,
       index,
       current,
@@ -373,8 +389,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
-  const screenWidth = Dimensions.get('window').width;
+  // Хук, а не Dimensions.get: при повороті екрана ширина має перерахуватись.
+  const { width: screenWidth } = useWindowDimensions();
   const popupWidth = Math.min(320, screenWidth - 24);
+  // Док має пріоритет над попапом, але лише коли є що показати (відео, не аудіофайл).
+  const docked = !!videoDock && !!videoId && !current?.audioUrl;
 
   return (
     <PlayerCtx.Provider value={value}>
@@ -383,25 +402,27 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       {/* Прихований (або, коли відкрито попап, видимий) WebView з YouTube IFrame API.
           Це ЄДИНИЙ екземпляр — переключаємо лише стиль, тому звук не переривається. */}
       <View
-        pointerEvents={videoPopupOpen ? 'auto' : 'none'}
+        pointerEvents={videoPopupOpen || docked ? 'auto' : 'none'}
         style={
-          videoPopupOpen
+          docked && videoDock
+            ? [styles.dock, { left: videoDock.x, top: videoDock.y, width: videoDock.width, height: videoDock.height }]
+            : videoPopupOpen
             ? [
                 styles.popupCard,
-                { width: popupWidth, bottom: PLAYER_BAR_HEIGHT + 16, backgroundColor: theme.mode === 'dark' ? '#0f0f11' : '#111' },
+                { width: popupWidth, bottom: PLAYER_BAR_HEIGHT + 16, backgroundColor: theme.mode === 'dark' ? '#161924' : '#111' },
               ]
             : styles.hiddenEngine
         }
       >
-        {videoPopupOpen ? (
+        {videoPopupOpen && !docked ? (
           <View style={styles.popupHeader}>
             <Text style={styles.popupHeaderText}>{t('videoPopup.title')}</Text>
             <TouchableOpacity onPress={toggleVideoPopup} style={styles.popupCloseBtn} hitSlop={10}>
-              <CloseIcon size={14} color="#8a8a90" />
+              <CloseIcon size={14} color="#9398a5" />
             </TouchableOpacity>
           </View>
         ) : null}
-        <View style={videoPopupOpen ? styles.popupFrame : styles.hiddenFrame}>
+        <View style={docked ? { flex: 1 } : videoPopupOpen ? styles.popupFrame : styles.hiddenFrame}>
           <WebView
             ref={engineRef}
             // Раніше — source={{html, baseUrl:'https://www.youtube.com'}}: підроблений
@@ -413,6 +434,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             source={{ uri: `${apiBase}/mobile-player.html` }}
             onMessage={onEngineMessage}
             allowsInlineMediaPlayback
+            // Кнопка "на весь екран" у контролах YouTube: на Android без цього
+            // WebView просто ігнорує запит на повноекранний режим.
+            allowsFullscreenVideo
             mediaPlaybackRequiresUserAction={false}
             javaScriptEnabled
             domStorageEnabled
@@ -439,6 +463,14 @@ const styles = StyleSheet.create({
     left: 0,
     opacity: 0,
   },
+  dock: {
+    position: 'absolute',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    zIndex: 400,
+    elevation: 6,
+  },
   hiddenFrame: {
     width: 1,
     height: 1,
@@ -449,7 +481,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#2a2a2e',
+    borderColor: '#272b37',
     zIndex: 500,
     elevation: 20,
     shadowColor: '#000',
@@ -464,10 +496,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e1e22',
+    borderBottomColor: '#1a1e29',
   },
   popupHeaderText: {
-    color: '#c8a96e',
+    color: '#efba64',
     fontSize: 12,
     letterSpacing: 0.5,
     textTransform: 'uppercase',

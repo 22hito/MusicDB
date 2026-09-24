@@ -16,16 +16,26 @@ namespace MusicDB.Api.Controllers;
 [Route("api/bug-reports")]
 [Authorize]
 public class BugReportsController(
-    MusicDbContext db, UserDirectoryService userDirectory, AdminActivityService adminActivity, IHubContext<MusicHub> hub) : ControllerBase
+    MusicDbContext db, UserDirectoryService userDirectory, AdminActivityService adminActivity, IHubContext<MusicHub> hub,
+    IAudioStorage storage) : ControllerBase
 {
     public const int MaxDescriptionLength = 4000;
     public const int MaxContextLength = 2000;
     public const int MaxPerHour = 5; // проти випадкового/навмисного флуду
+    public const int MaxScreenshots = 3;
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateBugReportDto dto)
+    public Task<IActionResult> Create([FromBody] CreateBugReportDto dto) => CreateCoreAsync(dto.Description, dto.Context, null);
+
+    // Той самий звіт + до 3 скріншотів (multipart/form-data: description, context, screenshots[]).
+    [HttpPost("with-screenshots")]
+    [RequestSizeLimit(MaxScreenshots * AudioFiles.MaxImageBytes + 1024 * 1024)]
+    public Task<IActionResult> CreateWithScreenshots([FromForm] string description, [FromForm] string? context, [FromForm] List<IFormFile>? screenshots) =>
+        CreateCoreAsync(description, context, screenshots);
+
+    private async Task<IActionResult> CreateCoreAsync(string? rawDescription, string? rawContext, List<IFormFile>? screenshots)
     {
-        var description = dto.Description?.Trim() ?? "";
+        var description = rawDescription?.Trim() ?? "";
         if (description.Length < 10 || description.Length > MaxDescriptionLength)
             return BadRequest("Description must be 10–4000 characters.");
 
@@ -34,12 +44,26 @@ public class BugReportsController(
         if (await db.BugReports.CountAsync(r => r.UserId == myId && r.CreatedAt > hourAgo) >= MaxPerHour)
             return StatusCode(StatusCodes.Status429TooManyRequests, "Too many reports, try again later.");
 
-        var context = dto.Context?.Trim();
+        // Спершу перевіряємо ВСІ файли, щоб не лишати в сховищі половину збереженого.
+        screenshots ??= [];
+        if (screenshots.Count > MaxScreenshots) return BadRequest($"At most {MaxScreenshots} screenshots.");
+        foreach (var file in screenshots)
+            if (AudioFiles.ValidateImage(file).Error is { } imageError) return BadRequest(imageError);
+        var saved = new List<string>();
+        foreach (var file in screenshots)
+        {
+            var (name, error) = await storage.SaveImageAsync(file);
+            if (name is null) return BadRequest(error);
+            saved.Add(name);
+        }
+
+        var context = rawContext?.Trim();
         var report = new BugReport
         {
             UserId = myId,
             Description = description,
-            Context = string.IsNullOrEmpty(context) ? null : context.Length > MaxContextLength ? context[..MaxContextLength] : context
+            Context = string.IsNullOrEmpty(context) ? null : context.Length > MaxContextLength ? context[..MaxContextLength] : context,
+            Screenshots = [.. saved]
         };
         db.BugReports.Add(report);
         await db.SaveChangesAsync();
@@ -64,7 +88,16 @@ public class BugReportsController(
 
         return Ok(reports.Select(r => new BugReportDto(
             r.Id, Ref(r.UserId), r.Description, r.Context, r.Status,
-            r.CreatedAt.ToString("yyyy-MM-dd HH:mm"), Ref(r.ResolvedBy))).ToList());
+            r.CreatedAt.ToString("yyyy-MM-dd HH:mm"), Ref(r.ResolvedBy), r.Screenshots.Length)).ToList());
+    }
+
+    [AdminOnly]
+    [HttpGet("{id:int}/screenshots/{index:int}")]
+    public async Task<IActionResult> GetScreenshot(int id, int index)
+    {
+        var report = await db.BugReports.FindAsync(id);
+        if (report is null || index < 0 || index >= report.Screenshots.Length) return NotFound();
+        return this.ToResult(await storage.OpenAsync(report.Screenshots[index]));
     }
 
     [AdminOnly]
