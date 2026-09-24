@@ -22,7 +22,7 @@ import { Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from 
 import { SongRow } from '@/components/SongRow';
 import { BugIcon, ChevronRightIcon, GlobeIcon, LockIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
 import { BugReportModal } from '@/components/BugReportModal';
-import { RADIUS, SPACING } from '@/constants/theme';
+import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, Profile, Song } from '@/api/types';
 
 export default function ProfileScreen() {
@@ -356,7 +356,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: 40 },
+  // Запас під плаваючий міні-плеєр — щоб нижні кнопки не ховались під ним.
+  content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: PLAYER_BAR_HEIGHT + 60 },
   card: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,

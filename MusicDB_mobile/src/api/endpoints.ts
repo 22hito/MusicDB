@@ -44,8 +44,9 @@ import type {
 // ендпоінти MusicDB.Api.Controllers.* один в один.
 // multipart/form-data для ком'юніті-пісні (файл до 25 МБ). Іде нативним
 // fetch, а не через WebView-бридж: протягувати мегабайти base64 крізь
-// injectJavaScript ненадійно. Сесійна кука спільна з WebView (Android —
-// CookieManager, iOS — sharedCookiesEnabled → NSHTTPCookieStorage).
+// injectJavaScript ненадійно. Кука сесії живе у WebView і в нативний fetch
+// потрапляє не завжди (iOS — ніколи), тож авторизація — токеном завантаження:
+// беремо його через WebView-бридж і передаємо заголовком X-Upload-Token.
 function toCommunityFormData(input: CommunitySongInput): FormData {
   const fd = new FormData();
   fd.append('artist', input.artist);
@@ -69,7 +70,8 @@ export function useMusicApi() {
   return useMemo(
     () => {
       const upload = async <T,>(path: string, body: FormData, method: 'POST' | 'PUT' = 'POST'): Promise<T> => {
-        const res = await fetch(`${apiBase}${path}`, { method, body, credentials: 'include' });
+        const { token } = await request<{ token: string }>('/api/upload-token', { method: 'POST' });
+        const res = await fetch(`${apiBase}${path}`, { method, body, credentials: 'include', headers: { 'X-Upload-Token': token } });
         const text = await res.text();
         if (!res.ok) {
           const err = new Error(`HTTP ${res.status} for ${path}`) as Error & { status?: number; body?: string };

@@ -2,8 +2,41 @@
 
 PostgreSQL (Neon), схема `lab`. Контекст EF Core — `Data/MusicDbContext.cs`.
 
-> Схема змінюється **не** через EF Core Migrations, а ручними ідемпотентними SQL-скриптами (`db/*.sql`, поза цим
-> репозиторієм). Скрипт застосовують до локальної й продакшн-бази **до** деплою коду, що на нього спирається.
+Схема змінюється через **EF Core Migrations** (`Data/Migrations`), історія застосованих міграцій — у таблиці
+`lab.__EFMigrationsHistory`. Нові міграції застосовуються автоматично при старті застосунку
+(`Database.Migrate()` у `Program.cs`), тож схема бази завжди відповідає коду, що деплоїться.
+
+## Як змінити схему
+
+```bash
+# 1. Змінити модель: сутність у Data/MusicDbContext.cs (властивість, [Column], OnModelCreating)
+# 2. Згенерувати міграцію (dotnet-ef — локальний інструмент репозиторію)
+dotnet tool restore
+dotnet ef migrations add AddSomethingUseful --output-dir Data/Migrations
+# 3. Переглянути згенерований Data/Migrations/*_AddSomethingUseful.cs
+# 4. Застосувати локально (або просто запустити застосунок — він застосує сам)
+dotnet ef database update
+# 5. Закомітити модель і міграцію РАЗОМ — на проді міграція застосується при деплої
+```
+
+- На .NET 10 SDK `dotnet-ef 9` запускати з `DOTNET_ROLL_FORWARD=Major` (напр. `set DOTNET_ROLL_FORWARD=Major`).
+- CI (`main_musicdb.yml`) перевіряє `dotnet ef migrations has-pending-model-changes`: змінили модель без
+  міграції — збірка падає ще до деплою.
+- Автоматичне застосування можна вимкнути змінною `Database__AutoMigrate=false` — тоді
+  `dotnet ef database update` або `dotnet ef migrations script --idempotent` вручну.
+- Руйнівні зміни (видалення колонок/таблиць, зміна типу з втратою даних) — окремим кроком, з бекапом;
+  EF генерує їх без запитань.
+
+## Базова міграція
+
+`*_Baseline.cs` — точна схема продакшн-бази на 24.09.2026 (`pg_dump --schema-only`), виконується як SQL. На
+вже існуючих базах вона лише позначена застосованою; на новій порожній базі створює все. SQL, а не згенеровані
+EF-операції — бо реальна схема має `serial`-ідентифікатори, `timestamp` без часового поясу, значення за
+замовчуванням, обчислювані колонки й CHECK-обмеження, яких у C#-моделі немає. Нові таблиці, створені майбутніми
+міграціями, отримають типи за замовчуванням EF/Npgsql (identity, `timestamptz`).
+
+Колонки `music.lyrics_license` і `music.lyrics_source`, що існували на продакшні поза моделлю й не використовувались,
+видалено міграцією `DropUnusedLyricsColumns`.
 
 ## Таблиці
 
@@ -20,7 +53,10 @@ PostgreSQL (Neon), схема `lab`. Контекст EF Core — `Data/MusicDbC
 індекси на `users.email` і `artists.normalized_name`; у `friend_requests` колонки `pair_low/pair_high`
 обчислює сама БД (одна дружба на пару).
 
-## Історія скриптів
+## Історія до міграцій (legacy SQL)
+
+Скрипти, якими схема змінювалась до переходу на EF Core Migrations, — у `Data/Migrations/Legacy/`
+(вже застосовані, лише для довідки).
 
 | Скрипт | Що робить |
 |---|---|

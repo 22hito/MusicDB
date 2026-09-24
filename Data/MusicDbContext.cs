@@ -398,6 +398,11 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
 
         mb.Entity<User>().HasIndex(u => u.Email).IsUnique();
 
+        // Одне зарахування прослуховування на пару користувач+пісня (HistoryController
+        // ловить DbUpdateException саме від цього індексу).
+        mb.Entity<ListeningHistory>().HasIndex(h => new { h.UserEmail, h.MusicId }).IsUnique()
+            .HasDatabaseName("ux_listening_history_user_music");
+
         mb.Entity<Artist>().HasIndex(a => a.NormalizedName).IsUnique();
 
         mb.Entity<MusicArtist>().HasKey(ma => new { ma.MusicId, ma.ArtistId });
