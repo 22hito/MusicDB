@@ -61,9 +61,9 @@ public static class AudioFiles
     {
         if (file.Length == 0) return (null, "Empty file.");
         if (file.Length > MaxImageBytes) return (null, $"Image is larger than {MaxImageBytes / 1024 / 1024} MB.");
-        var ext = Path.GetExtension(file.FileName);
-        if (string.IsNullOrEmpty(ext) || !ImageTypes.ContainsKey(ext)) return (null, "Unsupported image format.");
-        return ($"shot-{Guid.NewGuid():N}{ext.ToLowerInvariant()}", null);
+        var ext = ResolveExtension(file, ImageTypes, SniffImage);
+        if (ext is null) return (null, "Unsupported image format.");
+        return ($"shot-{Guid.NewGuid():N}{ext}", null);
     }
 
     // Власне ім'я (GUID) — ім'я від клієнта ніколи не стає шляхом/ключем.
@@ -71,9 +71,49 @@ public static class AudioFiles
     {
         if (file.Length == 0) return (null, "Empty file.");
         if (file.Length > MaxBytes) return (null, $"File is larger than {MaxBytes / 1024 / 1024} MB.");
+        var ext = ResolveExtension(file, ContentTypes, SniffAudio);
+        if (ext is null) return (null, "Unsupported audio format.");
+        return ($"{Guid.NewGuid():N}{ext}", null);
+    }
+
+    // Розширення з імені файлу; якщо його нема чи воно чуже — за вмістом, далі за MIME-типом.
+    // Браузер на Android часто віддає файл з вибору "Аудіо" під назвою треку без ".mp3".
+    private static string? ResolveExtension(IFormFile file, Dictionary<string, string> types, Func<byte[], string?> sniff)
+    {
         var ext = Path.GetExtension(file.FileName);
-        if (string.IsNullOrEmpty(ext) || !ContentTypes.ContainsKey(ext)) return (null, "Unsupported audio format.");
-        return ($"{Guid.NewGuid():N}{ext.ToLowerInvariant()}", null);
+        if (!string.IsNullOrEmpty(ext) && types.ContainsKey(ext)) return ext.ToLowerInvariant();
+
+        var head = new byte[16];
+        int read;
+        using (var s = file.OpenReadStream()) read = s.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
+        if (sniff(head[..read]) is { } sniffed) return sniffed;
+
+        var mime = file.Headers is null ? null : file.ContentType?.Split(';')[0].Trim();
+        return string.IsNullOrEmpty(mime) ? null : types.FirstOrDefault(t => string.Equals(t.Value, mime, StringComparison.OrdinalIgnoreCase)).Key;
+    }
+
+    private static bool StartsWith(byte[] b, int offset, string ascii) =>
+        b.Length >= offset + ascii.Length && ascii.Select((c, i) => b[offset + i] == c).All(x => x);
+
+    private static string? SniffAudio(byte[] b)
+    {
+        if (StartsWith(b, 0, "ID3") || (b.Length >= 2 && b[0] == 0xFF && (b[1] & 0xE6) == 0xE2)) return ".mp3"; // ID3-тег або кадр MPEG layer III
+        if (b.Length >= 2 && b[0] == 0xFF && (b[1] & 0xF6) == 0xF0) return ".aac"; // ADTS
+        if (StartsWith(b, 0, "fLaC")) return ".flac";
+        if (StartsWith(b, 0, "OggS")) return ".ogg";
+        if (StartsWith(b, 0, "RIFF") && StartsWith(b, 8, "WAVE")) return ".wav";
+        if (StartsWith(b, 4, "ftyp")) return ".m4a";
+        if (b.Length >= 4 && b[0] == 0x1A && b[1] == 0x45 && b[2] == 0xDF && b[3] == 0xA3) return ".webm";
+        return null;
+    }
+
+    private static string? SniffImage(byte[] b)
+    {
+        if (b.Length >= 8 && b[0] == 0x89 && StartsWith(b, 1, "PNG")) return ".png";
+        if (b.Length >= 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF) return ".jpg";
+        if (StartsWith(b, 0, "GIF8")) return ".gif";
+        if (StartsWith(b, 0, "RIFF") && StartsWith(b, 8, "WEBP")) return ".webp";
+        return null;
     }
 
     // Захист від ../ та інших сюрпризів у значенні з БД.
