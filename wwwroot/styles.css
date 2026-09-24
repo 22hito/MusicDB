@@ -2178,3 +2178,10 @@ button.badge.album.badge-filter.active { background: var(--accent); color: var(-
 .battle-side-info { height: auto; width: 100%; min-width: 0; }
 .battle-side-info .mq { max-width: 100%; }
 .battle-side-artist, .battle-side-title { display: block; -webkit-line-clamp: unset; white-space: nowrap; }
+
+/* Загальне вікно підтвердження: для не-руйнівних дій (вхід) — акцентна кнопка й іконка. */
+#confirm-modal-overlay .modal-box { width: 380px; }
+.modal-icon-circle.info { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.modal-icon-circle.info .icon { width: 18px; height: 18px; }
+.modal-btn-confirm.neutral { background: var(--accent); color: var(--on-accent); }
+.modal-btn-confirm.neutral:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }

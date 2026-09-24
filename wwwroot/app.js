@@ -418,6 +418,10 @@ const I18N = {
     'bugs.shotTooBig': 'Зображення більше 5 МБ.',
     'bugs.shotsTitle': 'Скріншоти',
     'bugs.deleteBtn': 'Видалити',
+    'bugs.deleteTitle': 'Видалити баг-репорт?',
+    'modal.deleteShortTitle': 'Видалити?',
+    'chat.clearTitle': 'Видалити чат?',
+    'auth.loginRequiredTitle': 'Потрібен вхід',
     'bugs.deleteConfirm': 'Видалити цей баг-репорт разом зі скріншотами? Це не можна скасувати.',
     'bugs.send': 'Надіслати',
     'bugs.tooShort': 'Опишіть, будь ласка, трохи докладніше (від 10 символів).',
@@ -861,6 +865,10 @@ const I18N = {
     'bugs.shotTooBig': 'The image is larger than 5 MB.',
     'bugs.shotsTitle': 'Screenshots',
     'bugs.deleteBtn': 'Delete',
+    'bugs.deleteTitle': 'Delete bug report?',
+    'modal.deleteShortTitle': 'Delete?',
+    'chat.clearTitle': 'Delete chat?',
+    'auth.loginRequiredTitle': 'Sign-in required',
     'bugs.deleteConfirm': 'Delete this bug report along with its screenshots? This cannot be undone.',
     'bugs.send': 'Send',
     'bugs.tooShort': 'Please describe it in a bit more detail (10+ characters).',
@@ -1400,6 +1408,48 @@ function openAddToPlaylistModal(musicId){
 // Симетричний вихід для всіх модалок сайту: додає .closing (запускає
 // modalOut-анімацію через CSS), і лише після її завершення знімає .open —
 // без цього display:none спрацював би миттєво, а анімація не встигла б програтись.
+// Вікно підтвердження в стилі сайту замість браузерного confirm(), що показував
+// "Подтвердите действие на musicdb-…azurewebsites.net" мовою браузера.
+// Повертає Promise<boolean>. Esc / клік повз вікно — "ні", Enter — "так".
+const _TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
+const _USER_ICON = '<svg class="icon"><use href="#icon-user"/></svg>';
+let _confirmResolve = null;
+function confirmModal({ title, text, confirmLabel, danger = true }){
+  if(_confirmResolve) _confirmResolve(false); // попереднє, якщо лишилось відкритим
+  const overlay = document.getElementById('confirm-modal-overlay');
+  document.getElementById('confirm-modal-title').textContent = title;
+  document.getElementById('confirm-modal-text').textContent = text;
+  const icon = document.getElementById('confirm-modal-icon');
+  icon.innerHTML = danger ? _TRASH_ICON : _USER_ICON;
+  icon.classList.toggle('info', !danger);
+  const ok = document.getElementById('confirm-modal-ok');
+  ok.textContent = confirmLabel;
+  ok.classList.toggle('neutral', !danger);
+  overlay.classList.add('open');
+  setTimeout(() => ok.focus(), 30);
+  return new Promise(resolve => { _confirmResolve = resolve; });
+}
+function _finishConfirm(result){
+  if(!_confirmResolve) return;
+  const resolve = _confirmResolve;
+  _confirmResolve = null;
+  _closeModalAnimated('confirm-modal-overlay');
+  resolve(result);
+}
+document.getElementById('confirm-modal-ok').addEventListener('click', () => _finishConfirm(true));
+document.getElementById('confirm-modal-cancel').addEventListener('click', () => _finishConfirm(false));
+document.getElementById('confirm-modal-overlay').addEventListener('click', function(e){ if(e.target === this) _finishConfirm(false); });
+document.addEventListener('keydown', e => {
+  if(!_confirmResolve) return;
+  if(e.key === 'Escape'){ e.preventDefault(); _finishConfirm(false); }
+  else if(e.key === 'Enter'){ e.preventDefault(); _finishConfirm(true); }
+});
+// Типовий випадок: дія потребує входу.
+function confirmLogin(textKey = 'msg.confirmLoginGeneric'){
+  confirmModal({ title: t('auth.loginRequiredTitle'), text: t(textKey), confirmLabel: t('auth.loginBtn'), danger: false })
+    .then(ok => { if(ok) login(); });
+}
+
 function _closeModalAnimated(overlayId){
   const overlay = document.getElementById(overlayId);
   if(!overlay || !overlay.classList.contains('open')) return;
@@ -1467,7 +1517,7 @@ function removeSongFromPlaylist(playlistId, musicId){
 // ================================================================
 function openRecommendationsPage(){
   if(!currentUser?.authenticated){
-    if(confirm(t('msg.confirmLoginGeneric'))) login();
+    confirmLogin();
     return;
   }
   showPage('recommendations');
@@ -1987,7 +2037,7 @@ document.querySelectorAll('.stat-card').forEach(card => {
 // kind ('catalog'|'community') — з якої таблиці прийшли; без нього лишається попередній вибір.
 function openRequestPage(kind){
   if(!currentUser?.authenticated){
-    if(confirm(t('msg.confirmLoginForRequest'))) login();
+    confirmLogin('msg.confirmLoginForRequest');
     return;
   }
   if(kind) setSongFormKind('req', kind);
@@ -4883,8 +4933,8 @@ document.addEventListener('keydown', e => {
   else if(e.key === 'ArrowLeft'){ e.preventDefault(); stepShotViewer(-1); }
   else if(e.key === 'ArrowRight'){ e.preventDefault(); stepShotViewer(1); }
 });
-function deleteBugReport(id){
-  if(!confirm(t('bugs.deleteConfirm'))) return;
+async function deleteBugReport(id){
+  if(!await confirmModal({ title: t('bugs.deleteTitle'), text: t('bugs.deleteConfirm'), confirmLabel: t('bugs.deleteBtn') })) return;
   fetch(`/api/bug-reports/${id}`, { method:'DELETE' })
     .then(r=>{ if(r.ok){ loadBugReports(); refreshBugsBadge(); } else alert(t('msg.connectionError')); })
     .catch(()=>alert(t('msg.connectionError')));
@@ -4931,7 +4981,7 @@ function _applyHomeSourceUi(){
 // Публічні профілі — лише для залогінених (UsersController [Authorize]).
 function openUserProfileOrLogin(userId){
   if(!currentUser?.authenticated){
-    if(confirm(t('msg.confirmLoginGeneric'))) login();
+    confirmLogin();
     return;
   }
   openUserProfilePage(userId);
@@ -4973,7 +5023,7 @@ function switchChatTab(tab){
 }
 function openDirectChat(userId){
   if(!currentUser?.authenticated){
-    if(confirm(t('msg.confirmLoginGeneric'))) login();
+    confirmLogin();
     return;
   }
   if(userId == null) return;
@@ -5102,9 +5152,9 @@ function loadDmThread(){
   }).catch(()=>{});
 }
 // "Видалити чат у себе": переписка зникає лише в мене; нове повідомлення поверне розмову.
-function deleteChatForMe(){
+async function deleteChatForMe(){
   const id = currentChatUserId;
-  if(id == null || !confirm(t('chat.clearConfirm'))) return;
+  if(id == null || !await confirmModal({ title: t('chat.clearTitle'), text: t('chat.clearConfirm'), confirmLabel: t('chat.clearBtn') })) return;
   fetch(`/api/messages/${id}`, { method:'DELETE' })
     .then(r=>{
       if(!r.ok){ alert(t('msg.connectionError')); return; }
@@ -5164,7 +5214,7 @@ function loadThreads(){
   }).catch(()=>{});
 }
 function toggleNewThreadForm(){
-  if(!currentUser?.authenticated){ if(confirm(t('msg.confirmLoginGeneric'))) login(); return; }
+  if(!currentUser?.authenticated){ confirmLogin(); return; }
   const form = document.getElementById('thread-new-form');
   form.style.display = form.style.display === 'none' ? '' : 'none';
   if(form.style.display === '') document.getElementById('thread-new-title').focus();
@@ -5236,12 +5286,12 @@ function replyToThread(){
     })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
-function deleteThread(id){
-  if(!confirm(t('threads.confirmDeleteThread'))) return;
+async function deleteThread(id){
+  if(!await confirmModal({ title: t('modal.deleteShortTitle'), text: t('threads.confirmDeleteThread'), confirmLabel: t('modal.confirmDelete') })) return;
   fetch(`/api/threads/${id}`, { method:'DELETE' }).then(r=>{ if(r.ok) closeThreadDetail(); else alert(t('msg.connectionError')); }).catch(()=>{});
 }
-function deleteThreadPost(postId){
-  if(!confirm(t('threads.confirmDeletePost'))) return;
+async function deleteThreadPost(postId){
+  if(!await confirmModal({ title: t('modal.deleteShortTitle'), text: t('threads.confirmDeletePost'), confirmLabel: t('modal.confirmDelete') })) return;
   fetch(`/api/threads/posts/${postId}`, { method:'DELETE' }).then(r=>{ if(r.ok) loadThreadDetail(); else alert(t('msg.connectionError')); }).catch(()=>{});
 }
 
@@ -5322,8 +5372,8 @@ function deleteMyRating(){
     .then(r=>{ if(r.ok || r.status===404) _loadRatingModal(); })
     .catch(()=>{});
 }
-function adminDeleteReview(userId){
-  if(!confirm(t('rating.confirmAdminDelete'))) return;
+async function adminDeleteReview(userId){
+  if(!await confirmModal({ title: t('modal.deleteShortTitle'), text: t('rating.confirmAdminDelete'), confirmLabel: t('modal.confirmDelete') })) return;
   fetch(`/api/songs/${ratingMusicId}/ratings?userId=${userId}`, { method:'DELETE' })
     .then(r=>{ if(r.ok) _loadRatingModal(); })
     .catch(()=>{});
