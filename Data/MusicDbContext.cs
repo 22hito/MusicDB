@@ -266,6 +266,31 @@ public class DmRequest
     [Column("responded_at")] public DateTime? RespondedAt { get; set; }
 }
 
+// "Видалити чат у себе": повідомлення з id <= ClearedUpToId цьому користувачу
+// не показуються; співрозмовник свою копію переписки зберігає.
+[Table("dm_cleared", Schema = "lab")]
+public class DmCleared
+{
+    [Column("user_id")] public int UserId { get; set; }
+    [Column("other_user_id")] public int OtherUserId { get; set; }
+    [Column("cleared_up_to_id")] public int ClearedUpToId { get; set; }
+    [Column("cleared_at")] public DateTime ClearedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Баг-репорт від користувача; адміни бачать у адмін-панелі й отримують сповіщення.
+[Table("bug_reports", Schema = "lab")]
+public class BugReport
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("user_id")] public int? UserId { get; set; }
+    [Required, Column("description")] public string Description { get; set; } = "";
+    [Column("context")] public string? Context { get; set; }
+    [Required, Column("status")] public string Status { get; set; } = "open"; // open | resolved
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("resolved_at")] public DateTime? ResolvedAt { get; set; }
+    [Column("resolved_by")] public int? ResolvedBy { get; set; }
+}
+
 [Table("discussion_threads", Schema = "lab")]
 public class DiscussionThread
 {
@@ -325,6 +350,8 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
     public DbSet<AdminNotificationRead> AdminNotificationReads { get; set; }
     public DbSet<DirectMessage> DirectMessages { get; set; }
     public DbSet<DmRequest> DmRequests { get; set; }
+    public DbSet<BugReport> BugReports { get; set; }
+    public DbSet<DmCleared> DmCleared { get; set; }
     public DbSet<DiscussionThread> DiscussionThreads { get; set; }
     public DbSet<DiscussionPost> DiscussionPosts { get; set; }
     public DbSet<SongRating> SongRatings { get; set; }
@@ -384,6 +411,7 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
         mb.Entity<ArtistFollow>().HasKey(f => new { f.UserId, f.ArtistId });
 
         mb.Entity<SongRating>().HasKey(r => new { r.UserId, r.MusicId });
+        mb.Entity<DmCleared>().HasKey(c => new { c.UserId, c.OtherUserId });
 
         mb.Entity<DiscussionPost>()
             .HasOne(p => p.Thread)

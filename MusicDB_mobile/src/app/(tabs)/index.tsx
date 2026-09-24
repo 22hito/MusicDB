@@ -70,6 +70,7 @@ export default function LibraryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [genreFilter, setGenreFilter] = useState('');
+  const [albumFilter, setAlbumFilter] = useState('');
   const [shuffleActive, setShuffleActive] = useState(false);
   const [shuffleSeed, setShuffleSeed] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>('default');
@@ -100,6 +101,7 @@ export default function LibraryScreen() {
   useEffect(() => {
     setLoading(true);
     setGenreFilter('');
+    setAlbumFilter('');
     load();
   }, [load]);
 
@@ -149,7 +151,8 @@ export default function LibraryScreen() {
         (s.album ? s.album.toLowerCase().includes(q) : false) ||
         (s.submittedBy ? s.submittedBy.displayName.toLowerCase().includes(q) : false);
       const mg = !genreFilter || s.genres.includes(genreFilter);
-      return mt && mg;
+      const ma = !albumFilter || s.album === albumFilter;
+      return mt && mg && ma;
     });
     if (sortKey !== 'default') {
       const dir = sortDir === 'asc' ? 1 : -1;
@@ -167,7 +170,7 @@ export default function LibraryScreen() {
       list = [...list].sort((a, b) => (shuffleOrder.get(a.id) ?? Infinity) - (shuffleOrder.get(b.id) ?? Infinity));
     }
     return list;
-  }, [songs, search, genreFilter, shuffleOrder, sortKey, sortDir]);
+  }, [songs, search, genreFilter, albumFilter, shuffleOrder, sortKey, sortDir]);
 
   const toggleShuffle = () => {
     setSortKey('default');
@@ -312,6 +315,21 @@ export default function LibraryScreen() {
               ]}
             />
 
+            {genreFilter || albumFilter ? (
+              <View style={styles.chipsRow}>
+                {genreFilter ? (
+                  <TouchableOpacity onPress={() => setGenreFilter('')} style={[styles.chip, { borderColor: theme.accent2, backgroundColor: `${theme.accent2}22` }]}>
+                    <Text style={{ color: theme.text, fontSize: 13 }}>{t('table.genres')}: {genreFilter}  ✕</Text>
+                  </TouchableOpacity>
+                ) : null}
+                {albumFilter ? (
+                  <TouchableOpacity onPress={() => setAlbumFilter('')} style={[styles.chip, { borderColor: theme.accent, backgroundColor: `${theme.accent}1f` }]}>
+                    <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13 }}>{t('table.album')}: {albumFilter}  ✕</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
+
             <View style={styles.filterRow}>
               <View style={[styles.pickerWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <Picker
@@ -363,6 +381,10 @@ export default function LibraryScreen() {
             onEdit={() => setEditSong(item)}
             onDelete={() => setDeleteTarget(item)}
             onRate={() => setRatingSong(item)}
+            onGenrePress={(g) => setGenreFilter((cur) => (cur === g ? '' : g))}
+            onAlbumPress={(a) => setAlbumFilter((cur) => (cur === a ? '' : a))}
+            activeGenre={genreFilter}
+            activeAlbum={albumFilter}
           />
         )}
         ListEmptyComponent={
@@ -450,6 +472,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 15,
     marginBottom: 12,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    maxWidth: '100%',
   },
   filterRow: {
     flexDirection: 'row',

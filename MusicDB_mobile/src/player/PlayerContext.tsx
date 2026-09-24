@@ -16,7 +16,6 @@ import { useSettings } from '@/state/SettingsContext';
 import { PLAYER_BAR_HEIGHT } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
-const FALLBACK_YT_KEY = 'AIzaSyCc0I2E_03NGYQchLXv3OMNbBiReak5XP8';
 const BAD_WORDS = [
   'cover',
   'reaction',
@@ -143,7 +142,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const api = useMusicApi();
   const engineRef = useRef<any>(null);
 
-  const [ytApiKeys, setYtApiKeys] = useState<string[]>([FALLBACK_YT_KEY]);
+  const [ytApiKeys, setYtApiKeys] = useState<string[]>([]) // ключі — лише з /config, не вписувати в код;
   const ytKeyIdxRef = useRef(0);
   useEffect(() => {
     api

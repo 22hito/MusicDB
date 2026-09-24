@@ -202,6 +202,33 @@ public class CommunityFeaturesTests
     }
 
     [Fact]
+    public async Task Messages_ClearForMe_HidesOnlyForMe_UntilNewMessage()
+    {
+        using var db = TestDb.Create();
+        var dir = new UserDirectoryService(db);
+        var aliceId = await dir.GetOrCreateUserIdAsync("alice@x.com", "alice", null);
+        var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
+        await MakeFriendsAsync(db, aliceId, bobId);
+        var alice = WithUser(new MessagesController(db, dir, Hub), "alice@x.com");
+        var bob = WithUser(new MessagesController(db, dir, Hub), "bob@x.com");
+        await alice.Send(bobId, new SendMessageDto("старе 1"));
+        await bob.Send(aliceId, new SendMessageDto("старе 2"));
+        await alice.Send(bobId, new SendMessageDto("непрочитане"));
+
+        Assert.IsType<NoContentResult>(await bob.ClearForMe(aliceId));
+
+        Assert.Empty(Ok(await bob.GetConversations()));
+        Assert.Empty(Ok(await bob.GetThread(aliceId)).Messages);
+        Assert.Equal(0, Ok(await bob.GetUnreadCount()).Unread); // приховане не висить непрочитаним
+        Assert.Equal(3, Ok(await alice.GetThread(bobId)).Messages.Count); // у alice все на місці
+
+        await alice.Send(bobId, new SendMessageDto("нове"));
+        var conv = Assert.Single(Ok(await bob.GetConversations()));
+        Assert.Equal("нове", conv.LastMessage);
+        Assert.Equal("нове", Assert.Single(Ok(await bob.GetThread(aliceId)).Messages).Body);
+    }
+
+    [Fact]
     public async Task Messages_ToNonFriend_BecomeRequest_UntilAccepted()
     {
         using var db = TestDb.Create();

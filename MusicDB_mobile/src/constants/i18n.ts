@@ -258,6 +258,8 @@ export const I18N = {
     'navSearch.users': 'Люди', // NEW
     'navSearch.empty': 'Нічого не знайдено', // NEW
     'navSearch.loginForUsers': 'Увійдіть, щоб шукати людей', // NEW
+    'chat.clearBtn': 'Видалити чат', // NEW
+    'chat.clearConfirm': "Видалити цей чат у себе? У співрозмовника переписка лишиться, а нові повідомлення з'являться тут знову.", // NEW
   },
   en: {
     'nav.home': 'Home',
@@ -516,6 +518,8 @@ export const I18N = {
     'navSearch.users': 'People', // NEW
     'navSearch.empty': 'Nothing found', // NEW
     'navSearch.loginForUsers': 'Sign in to search for people', // NEW
+    'chat.clearBtn': 'Delete chat', // NEW
+    'chat.clearConfirm': 'Delete this chat for yourself? The other person keeps the conversation, and new messages will show up here again.', // NEW
   },
 } as const;
 
