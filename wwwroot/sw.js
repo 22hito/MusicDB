@@ -16,7 +16,10 @@ self.addEventListener('fetch', (event) => {
   // і fetch() звідси підпав би під connect-src; до того ж <audio> робить
   // Range-запити, які браузер сам обробляє краще без проміжного SW.
   const url = new URL(event.request.url);
+  // Так само картинки (скріншоти баг-репортів теж редиректять на R2) — інакше
+  // браузер блокував їх за connect-src і показував "бите" зображення.
   if (event.request.destination === 'audio' || url.pathname.endsWith('/audio')) return;
+  if (event.request.destination === 'image' || /\/screenshots\/\d+$/.test(url.pathname)) return;
   if (url.origin === self.location.origin) {
     event.respondWith(fetch(event.request));
   }

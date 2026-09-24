@@ -3061,7 +3061,7 @@ fileAudio.addEventListener('error', ()=>{
   if(playerMode!=='file' || !fileAudio.getAttribute('src')) return;
   setLoad(false);
   const s=playerQueue[playerIndex];
-  if(s) document.getElementById('p-title').textContent=s.title+t('audio.notFoundSuffix');
+  if(s) _setMarqueeText(document.getElementById('p-title'), s.title+t('audio.notFoundSuffix'));
 });
 
 function onYouTubeIframeAPIReady(){
@@ -3567,10 +3567,10 @@ async function loadBattleMatch(){
   const b = battleRound[battleMatchIndex*2+1];
   document.getElementById('battle-round-label').textContent =
     `${t('battle.roundLabel')}${battleRound.length} → ${battleRound.length/2}`;
-  document.getElementById('battle-a-artist').textContent = a.artist;
-  document.getElementById('battle-a-title').textContent = a.title;
-  document.getElementById('battle-b-artist').textContent = b.artist;
-  document.getElementById('battle-b-title').textContent = b.title;
+  _setMarqueeText(document.getElementById('battle-a-artist'), a.artist);
+  _setMarqueeText(document.getElementById('battle-a-title'), a.title);
+  _setMarqueeText(document.getElementById('battle-b-artist'), b.artist);
+  _setMarqueeText(document.getElementById('battle-b-title'), b.title);
   document.getElementById('battle-a-notfound').style.display = 'none';
   document.getElementById('battle-b-notfound').style.display = 'none';
 
@@ -4062,8 +4062,8 @@ function _loadCurrent(){
   const s=playerQueue[playerIndex];if(!s)return;
   listenLogged=false;
   userIntendedPlaying=true;
-  document.getElementById('p-title').textContent=s.title;
-  document.getElementById('p-artist').innerHTML=artistLinksHtml(s);
+  _setMarqueeText(document.getElementById('p-title'), s.title);
+  _setMarqueeHtml(document.getElementById('p-artist'), artistLinksHtml(s));
   document.getElementById('p-album').textContent=s.album||t('table.single');
   document.getElementById('player-cover-img').style.display='none';
   document.getElementById('player-cover-ph').style.display='block';
@@ -4117,7 +4117,7 @@ function _loadCurrent(){
   _updateMediaSessionMetadata(s, null);
 
   vidPromise.then(vid=>{
-    if(!vid){setLoad(false);document.getElementById('p-title').textContent=s.title+t('video.notFoundSuffix');return;}
+    if(!vid){setLoad(false);_setMarqueeText(document.getElementById('p-title'), s.title+t('video.notFoundSuffix'));return;}
     currentVid = vid;
     _onVidReady(vid);
     const img=document.getElementById('player-cover-img');
@@ -4423,6 +4423,59 @@ function toggleKaraoke(){
   document.getElementById('btn-karaoke').classList.toggle('active', karaokeOpen);
   if(karaokeOpen) loadKaraokeLyrics();
 }
+// ─── Біжучий рядок: текст, що не влазить, іде по колу (як на табло) ───
+// Вміст загортаємо в .mq-track > .mq-inner; якщо він ширший за контейнер —
+// додаємо копію (.mq-clone) через проміжок і безперервно зсуваємо доріжку на
+// ширину тексту + проміжок: коли копія доходить до початку, цикл непомітно
+// починається знову. Якщо влазить — звичайний статичний текст. Перераховується
+// при зміні розміру (ResizeObserver): поворот екрана / звуження вікна.
+const MQ_GAP = 48; // px між кінцем тексту і його копією
+const _mqObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => entries.forEach(e => {
+  const w = Math.round(e.contentRect.width);
+  if(e.target._mqW === w) return; // власні зміни (копія, клас) розмір не міняють — не зациклюємось
+  e.target._mqW = w;
+  _mqMeasure(e.target);
+})) : null;
+function _marquee(el){
+  if(!el) return;
+  if(!el.querySelector(':scope > .mq-track')){
+    const track = document.createElement('span');
+    track.className = 'mq-track';
+    const inner = document.createElement('span');
+    inner.className = 'mq-inner';
+    while(el.firstChild) inner.appendChild(el.firstChild);
+    track.appendChild(inner);
+    el.appendChild(track);
+    el.classList.add('mq');
+    _mqObserver?.observe(el);
+  }
+  _mqMeasure(el);
+}
+function _mqMeasure(el){
+  const track = el.querySelector(':scope > .mq-track');
+  const inner = track?.querySelector(':scope > .mq-inner');
+  if(!inner) return;
+  track.querySelector(':scope > .mq-clone')?.remove();
+  el.classList.remove('mq-on');
+  // У inline-елемента scrollWidth = 0 — міряємо фактичну ширину тексту.
+  const textW = Math.ceil(inner.getBoundingClientRect().width);
+  if(el.clientWidth > 0 && textW - el.clientWidth > 2){
+    const clone = inner.cloneNode(true);
+    clone.className = 'mq-inner mq-clone';
+    clone.setAttribute('aria-hidden', 'true');
+    track.appendChild(clone);
+    const shift = textW + MQ_GAP;
+    el.style.setProperty('--mq-gap', `${MQ_GAP}px`);
+    el.style.setProperty('--mq-shift', `${shift}px`);
+    el.style.setProperty('--mq-dur', `${(shift / 40 + 1.2).toFixed(1)}s`); // ~40px/с + пауза на старті кола
+    el.classList.add('mq-on');
+  }
+}
+// Той самий елемент отримує новий текст через textContent/innerHTML — обгортку
+// треба відновити, тож після зміни викликаємо _marquee() ще раз.
+function _setMarqueeText(el, text){ if(!el) return; el.textContent = text; _marquee(el); }
+function _setMarqueeHtml(el, html){ if(!el) return; el.innerHTML = html; _marquee(el); }
+
 function loadKaraokeLyrics(){
   const textEl = document.getElementById('karaoke-text');
   const emptyEl = document.getElementById('karaoke-empty');
@@ -4794,12 +4847,42 @@ function loadBugReports(){
         </div>
         <div class="bug-card-body">${esc(b.description)}</div>
         ${b.screenshotCount ? `<div class="bug-card-shots">${Array.from({ length: b.screenshotCount }, (_, i) =>
-          `<a href="/api/bug-reports/${b.id}/screenshots/${i}" target="_blank" rel="noopener"><img src="/api/bug-reports/${b.id}/screenshots/${i}" alt="${t('bugs.shotsTitle')} ${i + 1}" loading="lazy"></a>`).join('')}</div>` : ''}
+          `<button type="button" class="bug-card-shot" onclick="openShotViewer(${b.id}, ${b.screenshotCount}, ${i})"><img src="/api/bug-reports/${b.id}/screenshots/${i}" alt="${t('bugs.shotsTitle')} ${i + 1}" loading="lazy"></button>`).join('')}</div>` : ''}
         ${b.context ? `<details class="bug-card-context"><summary>${t('bugs.contextTitle')}</summary><pre>${esc(b.context)}</pre></details>` : ''}
         ${b.resolvedBy ? `<div class="hint">${t('bugs.resolvedBy')}: ${esc(b.resolvedBy.displayName)}</div>` : ''}
       </div>`).join('');
   }).catch(()=>{});
 }
+// ─── Переглядач скріншотів: модальне вікно зі стрілками (← → / Esc) ───
+let _shotViewer = null; // { id, count, index }
+function openShotViewer(id, count, index){
+  _shotViewer = { id, count, index };
+  _renderShotViewer();
+  document.getElementById('shot-viewer').classList.add('open');
+}
+function closeShotViewer(){
+  document.getElementById('shot-viewer').classList.remove('open');
+  _shotViewer = null;
+}
+function stepShotViewer(d){
+  if(!_shotViewer) return;
+  _shotViewer.index = (_shotViewer.index + d + _shotViewer.count) % _shotViewer.count;
+  _renderShotViewer();
+}
+function _renderShotViewer(){
+  const v = _shotViewer;
+  document.getElementById('shot-viewer-img').src = `/api/bug-reports/${v.id}/screenshots/${v.index}`;
+  const many = v.count > 1;
+  document.getElementById('shot-viewer-prev').style.display = many ? '' : 'none';
+  document.getElementById('shot-viewer-next').style.display = many ? '' : 'none';
+  document.getElementById('shot-viewer-count').textContent = many ? `${v.index + 1} / ${v.count}` : '';
+}
+document.addEventListener('keydown', e => {
+  if(!_shotViewer) return;
+  if(e.key === 'Escape'){ e.preventDefault(); closeShotViewer(); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); stepShotViewer(-1); }
+  else if(e.key === 'ArrowRight'){ e.preventDefault(); stepShotViewer(1); }
+});
 function deleteBugReport(id){
   if(!confirm(t('bugs.deleteConfirm'))) return;
   fetch(`/api/bug-reports/${id}`, { method:'DELETE' })

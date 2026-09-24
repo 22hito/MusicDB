@@ -115,6 +115,20 @@ public class BugReportsController(
         return this.ToResult(await storage.OpenAsync(report.Screenshots[index]));
     }
 
+    // Для мобільного застосунку: пряме (підписане) посилання на R2 замість редиректу —
+    // нативний <Image> тоді тягне картинку без куки сесії. Локальне сховище
+    // (розробка) редиректу не має — віддаємо шлях до ендпоінта вище.
+    [AdminOnly]
+    [HttpGet("{id:int}/screenshots/{index:int}/link")]
+    public async Task<IActionResult> GetScreenshotLink(int id, int index)
+    {
+        var report = await db.BugReports.FindAsync(id);
+        if (report is null || index < 0 || index >= report.Screenshots.Length) return NotFound();
+        var source = await storage.OpenAsync(report.Screenshots[index]);
+        if (source is null) return NotFound();
+        return Ok(new { url = source.RedirectUrl ?? $"/api/bug-reports/{id}/screenshots/{index}" });
+    }
+
     [AdminOnly]
     [HttpGet("open-count")]
     public async Task<ActionResult<int>> GetOpenCount() => Ok(await db.BugReports.CountAsync(r => r.Status == "open"));

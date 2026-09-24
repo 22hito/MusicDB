@@ -157,4 +157,17 @@ public class BugReportsTests
         Assert.Null(await Storage.OpenAsync(report.Screenshots[0])); // файл прибрано зі сховища
         Assert.IsType<NotFoundResult>(await admin.Delete(report.Id));
     }
+
+    [Fact]
+    public async Task ScreenshotLink_ForLocalStorage_PointsToApiEndpoint()
+    {
+        using var db = TestDb.Create();
+        await Create(db, "user@x.com").CreateWithScreenshots("Звіт зі скріншотом для посилання", null, [Png()]);
+        var id = db.BugReports.Single().Id;
+        var admin = Create(db, "admin@x.com", admin: true);
+
+        var ok = Assert.IsType<OkObjectResult>(await admin.GetScreenshotLink(id, 0));
+        Assert.Contains($"/api/bug-reports/{id}/screenshots/0", System.Text.Json.JsonSerializer.Serialize(ok.Value));
+        Assert.IsType<NotFoundResult>(await admin.GetScreenshotLink(id, 1));
+    }
 }

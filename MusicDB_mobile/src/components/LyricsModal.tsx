@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { CloseIcon } from './Icons';
+import { MarqueeText } from './MarqueeText';
 import { FONT_SANS_MEDIUM, FONT_SANS_REGULAR, FONT_SERIF_BLACK, RADIUS, SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
@@ -41,8 +42,8 @@ export function LyricsModal({ song, onClose }: { song: Song | null; onClose: () 
         >
           <View style={styles.head}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>{song?.title}</Text>
-              <Text numberOfLines={1} style={[styles.artist, { color: theme.accent }]}>{song?.artist}</Text>
+              <MarqueeText style={[styles.title, { color: theme.text }]}>{song?.title ?? ''}</MarqueeText>
+              <MarqueeText style={[styles.artist, { color: theme.accent }]}>{song?.artist ?? ''}</MarqueeText>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={10} style={[styles.close, { backgroundColor: theme.surface2 }]}>
               <CloseIcon size={13} color={theme.muted} />
