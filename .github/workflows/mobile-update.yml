@@ -1,0 +1,76 @@
+# Оновлення мобільного застосунку "по повітрю" (EAS Update): кожен пуш у main,
+# що змінює MusicDB_mobile, публікує новий JS-код у гілку "preview" — її слухають
+# APK-збірки з профілю preview (channel: preview). Телефони підхоплюють оновлення
+# самі (див. src/components/UpdateBanner.tsx), без перевстановлення APK.
+#
+# Потрібен секрет репозиторію EXPO_TOKEN (expo.dev → Account settings → Access tokens).
+# Без нього крок публікації пропускається, а не падає.
+#
+# Нативні зміни (новий нативний модуль, плагін у app.json) оновленням НЕ доставити —
+# для них підняти "version" у app.json (runtimeVersion = appVersion) і зібрати новий APK.
+
+name: Mobile OTA update (EAS)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'MusicDB_mobile/**'
+      - '.github/workflows/mobile-update.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-update
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: MusicDB_mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check EXPO_TOKEN
+        id: token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::warning::EXPO_TOKEN secret is not set — skipping EAS Update publish."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: MusicDB_mobile/package-lock.json
+
+      - uses: expo/expo-github-action@v8
+        if: steps.token.outputs.present == 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        if: steps.token.outputs.present == 'true'
+        run: npm ci
+
+      - name: Type check
+        if: steps.token.outputs.present == 'true'
+        run: npx tsc --noEmit -p .
+
+      - name: Publish update
+        if: steps.token.outputs.present == 'true'
+        env:
+          # Повідомлення коміту — через env, а не підстановкою в скрипт (захист від ін'єкції).
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message || 'Manual update' }}
+        run: eas update --branch preview --platform android --message "$(printf '%s' "$COMMIT_MESSAGE" | head -n 1)" --non-interactive

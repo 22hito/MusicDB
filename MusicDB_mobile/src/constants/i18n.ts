@@ -375,6 +375,8 @@ export const I18N = {
     'battle.audioOnly': 'Трек без відео — грає аудіофайл', // NEW
     'bugs.deleteBtn': 'Видалити', // NEW
     'bugs.deleteConfirm': 'Видалити цей баг-репорт разом зі скріншотами? Це не можна скасувати.', // NEW
+    'update.ready': 'Доступна нова версія застосунку', // NEW
+    'update.restart': 'Перезапустити', // NEW
   },
   en: {
     'nav.home': 'Home',
@@ -750,6 +752,8 @@ export const I18N = {
     'battle.audioOnly': 'No video for this track — playing the audio file', // NEW
     'bugs.deleteBtn': 'Delete', // NEW
     'bugs.deleteConfirm': 'Delete this bug report along with its screenshots? This cannot be undone.', // NEW
+    'update.ready': 'A new version of the app is ready', // NEW
+    'update.restart': 'Restart', // NEW
   },
 } as const;
 
