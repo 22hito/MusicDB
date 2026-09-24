@@ -257,6 +257,18 @@ const I18N = {
     'msg.confirmLoginGeneric': 'Щоб продовжити, потрібно увійти через Google. Перейти до входу?',
     'nav.recommendations': 'Рекомендовано для вас',
     'nav.profile': 'Профіль',
+    'nav.library': 'Бібліотека',
+    'nav.topShort': 'Топ',
+    'nav.social': 'Спілкування',
+    'nav.explore': 'Огляд',
+    'nav.adminShort': 'Адмін',
+    'explore.heading.pre': 'Що',
+    'explore.heading.accent': 'послухати',
+    'explore.wheelSub': 'Випадковий жанр — готовий плейлист',
+    'explore.battleSub': 'Турнір пісень з плейлиста',
+    'explore.artistsSub': 'Каталог, дискографії, підписки',
+    'explore.recSub': 'Підбірка за тим, що ви слухаєте',
+    'explore.topSub': 'Найпрослуханіші пісні',
     'nav.profileSettings': 'Налаштування',
     'profileSettings.heading.pre': 'Налаштування',
     'profileSettings.heading.accent': 'профілю',
@@ -704,6 +716,18 @@ const I18N = {
     'msg.confirmLoginGeneric': 'You need to sign in with Google to continue. Go to login?',
     'nav.recommendations': 'Recommended for you',
     'nav.profile': 'Profile',
+    'nav.library': 'Library',
+    'nav.topShort': 'Top',
+    'nav.social': 'Community',
+    'nav.explore': 'Explore',
+    'nav.adminShort': 'Admin',
+    'explore.heading.pre': 'What to',
+    'explore.heading.accent': 'listen to',
+    'explore.wheelSub': 'A random genre — a ready playlist',
+    'explore.battleSub': 'A song tournament from a playlist',
+    'explore.artistsSub': 'Catalog, discographies, follows',
+    'explore.recSub': 'Picks based on what you listen to',
+    'explore.topSub': 'The most played songs',
     'nav.profileSettings': 'Settings',
     'profileSettings.heading.pre': 'Profile',
     'profileSettings.heading.accent': 'settings',
@@ -972,6 +996,37 @@ function _findSong(id){
 // ================================================================
 // NAVIGATION
 // ================================================================
+// ─── Мобільна навігація (як у застосунку): таббар, розгортний пошук ───
+function openProfileTab(){
+  if(currentUser?.authenticated) showPage('profile');
+  else confirmLogin();
+}
+function toggleMobileSearch(force){
+  const open = force ?? !document.body.classList.contains('m-search-open');
+  document.body.classList.toggle('m-search-open', open);
+  if(open) setTimeout(() => document.getElementById('nav-search-input')?.focus(), 30);
+}
+// Лічильники на вкладках таббару дублюють бейджі шапки (ЛС / адмін-запити).
+function _syncTabbarBadges(){
+  const copy = (fromId, toId) => {
+    const from = document.getElementById(fromId), to = document.getElementById(toId);
+    if(!to) return;
+    const text = from && from.style.display !== 'none' ? from.textContent.trim() : '';
+    to.textContent = text;
+    to.classList.toggle('show', !!text && text !== '0');
+  };
+  copy('dm-badge', 'mtab-chat-badge');
+  copy('admin-requests-badge', 'mtab-admin-badge');
+}
+if(typeof MutationObserver === 'function'){
+  const _badgeObs = new MutationObserver(() => _syncTabbarBadges());
+  const _watchBadges = () => ['dm-badge', 'admin-requests-badge'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el && !el._mtabWatched){ el._mtabWatched = true; _badgeObs.observe(el, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['style'] }); }
+  });
+  new MutationObserver(() => { _watchBadges(); _syncTabbarBadges(); }).observe(document.getElementById('auth-area'), { childList: true });
+}
+
 function showPage(n){
   const doSwitch = () => {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -982,6 +1037,7 @@ function showPage(n){
     if(tab) tab.classList.add('active');
   };
   _hideNavSearch();
+  document.body.classList.remove('m-search-open');
   document.documentElement.setAttribute('data-page', n);
   _routerOnShowPage(n);
   // View Transitions API — нативний крос-фейд між сторінками (Chrome/Edge,
@@ -1024,7 +1080,7 @@ function showPage(n){
 const _PAGE_PATHS = {
   top: '/top', artists: '/artists', profile: '/profile', 'profile-settings': '/profile/settings',
   settings: '/settings', friends: '/friends', wheel: '/wheel', battle: '/battle',
-  recommendations: '/recommendations', request: '/request', 'admin-hub': '/admin',
+  recommendations: '/recommendations', request: '/request', 'admin-hub': '/admin', explore: '/explore',
 };
 function _pathForPage(n){
   if(n === 'home') return homeSource === 'community' ? '/community' : '/';
@@ -1960,15 +2016,15 @@ function renderSongs(){
         <button class="play-row-btn${isPlay?' is-playing':''}" data-icon="${btnIcon===ROW_PAUSE_ICON?'pause':'play'}" onclick="toggleOrPlay(${s.id}, playSong)">${btnIcon}</button>
       </td>
       <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
-      <td data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
-      <td data-label="${t('table.title')}">${esc(s.title)}</td>
-      <td class="duration-col" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
-      <td class="duration-col" data-label="${t('table.duration')}">${s.duration}</td>
-      <td data-label="${t('table.genres')}">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</td>
-      <td data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(t('filter.byAlbum'))}">${esc(s.album)}</button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
-      <td class="duration-col" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
-      <td class="duration-col" data-label="${t('table.rating')}">${ratingChipHtml(s)}</td>
-      ${isCommunity?`<td data-label="${t('table.submittedBy')}">${submitterLinkHtml(s)}</td>`:''}
+      <td class="td-artist" data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
+      <td class="td-title" data-label="${t('table.title')}">${esc(s.title)}</td>
+      <td class="duration-col td-release" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
+      <td class="duration-col td-duration" data-label="${t('table.duration')}">${s.duration}</td>
+      <td class="td-genres" data-label="${t('table.genres')}">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</td>
+      <td class="td-album" data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(t('filter.byAlbum'))}">${esc(s.album)}</button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+      <td class="duration-col td-plays" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
+      <td class="duration-col td-rating" data-label="${t('table.rating')}">${ratingChipHtml(s)}</td>
+      ${isCommunity?`<td class="td-submitter" data-label="${t('table.submittedBy')}">${submitterLinkHtml(s)}</td>`:''}
       ${currentUser?.authenticated?`<td class="td-icon-trail" data-label=""><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
       ${currentUser?.isAdmin?`<td class="td-actions" data-label="${t('table.action')}"><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
     </tr>`;
@@ -2877,13 +2933,13 @@ function renderAuthArea() {
         </button>
         <div class="dropdown-menu" id="notif-list" style="min-width:320px;max-height:420px;overflow-y:auto;"></div>
       </div>
-      <button class="dropdown-toggle" onclick="openChatPage('dm')" title="${t('chat.tab.dm')}" style="margin-right:0.3rem;">
+      <button class="dropdown-toggle nav-dm-btn" onclick="openChatPage('dm')" title="${t('chat.tab.dm')}" style="margin-right:0.3rem;">
         <svg class="icon"><use href="#icon-chat"/></svg><span id="dm-badge" class="badge" style="display:none;margin-left:2px;"></span>
       </button>
       <div class="dropdown" id="profile-dropdown">
         <button class="dropdown-toggle" onclick="toggleDropdown(event,'profile-dropdown')" title="${t('nav.profile')}" style="height:auto;padding:0.25rem 0.6rem 0.25rem 0.3rem;">
           ${pic}
-          <span style="color:var(--muted);font-size:0.78rem;font-family:var(--font-ui);">${esc(displayLabel)}</span>
+          <span class="nav-profile-name" style="color:var(--muted);font-size:0.78rem;font-family:var(--font-ui);">${esc(displayLabel)}</span>
         </button>
         <div class="dropdown-menu">
           <button onclick="showPage('profile')" data-i18n="nav.profile">${t('nav.profile')}</button>
@@ -2891,11 +2947,12 @@ function renderAuthArea() {
           <button onclick="showPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
           <button onclick="openChatPage('dm')" data-i18n="nav.messages">${t('nav.messages')}</button>
           <button onclick="openBugReportModal()"><svg class="icon"><use href="#icon-bug"/></svg> ${t('bugs.menu')}</button>
+          <button class="mobile-only-item" onclick="logout()">${t('auth.logout')}</button>
           ${isAdmin?`<button onclick="showPage('admin-hub')" id="tab-admin-hub" class="nav-menu-item"><svg class="icon"><use href="#icon-settings"/></svg> ${t('nav.adminHub')}<span id="admin-requests-badge" class="badge" style="display:none;margin-left:auto;"></span></button>`:''}
         </div>
       </div>
-      ${isAdmin?'<span style="background:var(--accent);color:var(--on-accent);font-size:0.65rem;font-family:var(--font-ui);padding:0.15rem 0.5rem;border-radius:4px;font-weight:700;">ADMIN</span>':''}
-      <button onclick="logout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.72rem;font-family:var(--font-ui);cursor:pointer;">${t('auth.logout')}</button>
+      ${isAdmin?'<span class="nav-admin-tag" style="background:var(--accent);color:var(--on-accent);font-size:0.65rem;font-family:var(--font-ui);padding:0.15rem 0.5rem;border-radius:4px;font-weight:700;">ADMIN</span>':''}
+      <button class="nav-logout-btn" onclick="logout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.72rem;font-family:var(--font-ui);cursor:pointer;">${t('auth.logout')}</button>
     `;
     refreshNotifBadge();
     refreshDmBadge();
@@ -4097,10 +4154,10 @@ async function loadTopSongsPage(){
           <button class="play-row-btn${isPlay?' is-playing':''}" data-icon="${btnIcon===ROW_PAUSE_ICON?'pause':'play'}" onclick="toggleOrPlay(${s.id}, playFromTop)">${btnIcon}</button>
         </td>
         <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
-        <td data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
-        <td data-label="${t('table.title')}">${esc(s.title)}</td>
-        <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
-        <td class="duration-col" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
+        <td class="td-artist" data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
+        <td class="td-title" data-label="${t('table.title')}">${esc(s.title)}</td>
+        <td class="td-album" data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+        <td class="duration-col td-plays" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
       </tr>`;
     }).join('');
   }catch(e){

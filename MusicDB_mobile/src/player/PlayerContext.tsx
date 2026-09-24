@@ -8,6 +8,8 @@ import React, {
   useState,
 } from 'react';
 import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from 'expo-audio';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { WebView } from '@/components/WebViewCompat';
 import { CloseIcon } from '@/components/Icons';
 import { useMusicApi } from '@/api/endpoints';
@@ -183,6 +185,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const listenLoggedRef = useRef(false);
   const requestSeqRef = useRef(0);
 
+  // Два рушії: пісні з завантаженим файлом грає НАТИВНИЙ плеєр (expo-audio) —
+  // він живе у фоні й при вимкненому екрані та показує керування на екрані
+  // блокування; YouTube лишається у WebView (фон для нього заборонений правилами
+  // YouTube API — тому поки він грає, екран просто не гасне).
+  const nativeRef = useRef<AudioPlayer | null>(null);
+  const modeRef = useRef<'yt' | 'native'>('yt');
+  const nativeStatusRef = useRef<(s: AudioStatus) => void>(() => {});
+  useEffect(() => {
+    setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true, interruptionMode: 'doNotMix' }).catch(() => {});
+    const p = createAudioPlayer(null, { updateInterval: 500 });
+    nativeRef.current = p;
+    const sub = p.addListener('playbackStatusUpdate', (st) => nativeStatusRef.current(st));
+    return () => {
+      sub.remove();
+      p.remove();
+      nativeRef.current = null;
+    };
+  }, []);
+
   const current = queue[index] || null;
   const isOpen = queue.length > 0;
   const isPlaying = state === 'playing';
@@ -200,12 +221,32 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setState('loading');
       setCurrentTime(0);
       setDuration(0);
-      // Пісня таблиці_2 з завантаженим файлом — грає <audio> у тій самій
-      // сторінці-плеєрі (mobile-player.html), з тими самими подіями state/time.
-      if (song.audioUrl) {
+      // Пісня з завантаженим файлом — нативний плеєр (фон + екран блокування).
+      const native = nativeRef.current;
+      if (song.audioUrl && native) {
+        modeRef.current = 'native';
         setVideoPopupOpen(false);
-        postCommand({ cmd: 'loadAudio', url: `${apiBase}${song.audioUrl}`, autoplay: true });
+        postCommand({ cmd: 'stop' }); // YouTube у WebView — замовкає
+        native.replace({ uri: `${apiBase}${song.audioUrl}` });
+        native.volume = volume / 100;
+        native.play();
+        const artworkUrl = song.youtubeVideoId ? `https://img.youtube.com/vi/${song.youtubeVideoId}/mqdefault.jpg` : undefined;
+        try {
+          native.setActiveForLockScreen(true, { title: song.title, artist: song.artist, albumTitle: song.album ?? undefined, artworkUrl }, { showSeekBackward: true, showSeekForward: true });
+        } catch {
+          // Expo Go / web — без керування на екрані блокування
+        }
         return;
+      }
+      // Далі — YouTube у WebView: нативний плеєр зупиняємо й знімаємо з екрана блокування.
+      modeRef.current = 'yt';
+      if (native) {
+        native.pause();
+        try {
+          native.clearLockScreenControls();
+        } catch {
+          // нічого
+        }
       }
       // Закешований раніше videoId (уже підтверджений — будь-яким клієнтом)
       // рятує від нового звернення до YouTube Search API (100 одиниць квоти).
@@ -224,7 +265,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setVideoId(vid);
       postCommand({ cmd: 'load', videoId: vid, autoplay: true });
     },
-    [ytApiKeys, api, postCommand, apiBase],
+    [ytApiKeys, api, postCommand, apiBase, volume],
   );
 
   useEffect(() => {
@@ -240,7 +281,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setIndex(idx >= 0 ? idx : 0);
   }, []);
 
+  const isNative = () => modeRef.current === 'native' && !!nativeRef.current;
+
   const toggle = useCallback(() => {
+    if (isNative()) {
+      if (state === 'playing') nativeRef.current!.pause();
+      else nativeRef.current!.play();
+      return;
+    }
     if (state === 'playing') postCommand({ cmd: 'pause' });
     else postCommand({ cmd: 'play' });
   }, [state, postCommand]);
@@ -253,7 +301,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const prev = useCallback(() => {
     if (!queue.length) return;
     if (currentTime > 3) {
-      postCommand({ cmd: 'seekTo', seconds: 0 });
+      if (isNative()) nativeRef.current!.seekTo(0).catch(() => {});
+      else postCommand({ cmd: 'seekTo', seconds: 0 });
       return;
     }
     setIndex((i) => (i - 1 + queue.length) % queue.length);
@@ -261,6 +310,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const close = useCallback(() => {
     postCommand({ cmd: 'stop' });
+    const native = nativeRef.current;
+    if (native) {
+      native.pause();
+      try {
+        native.clearLockScreenControls();
+      } catch {
+        // нічого
+      }
+    }
+    modeRef.current = 'yt';
     setQueue([]);
     setIndex(0);
     setVideoId(null);
@@ -271,7 +330,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const seekFraction = useCallback(
     (fraction: number) => {
       if (!duration) return;
-      postCommand({ cmd: 'seekTo', seconds: duration * fraction });
+      if (isNative()) nativeRef.current!.seekTo(duration * fraction).catch(() => {});
+      else postCommand({ cmd: 'seekTo', seconds: duration * fraction });
     },
     [duration, postCommand],
   );
@@ -280,6 +340,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     (v: number) => {
       setVolumeState(v);
       postCommand({ cmd: 'setVolume', volume: v });
+      if (nativeRef.current) nativeRef.current.volume = v / 100;
     },
     [postCommand],
   );
@@ -287,7 +348,40 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const toggleShuffle = useCallback(() => setShuffle((s) => !s), []);
   const toggleRepeat = useCallback(() => setRepeat((r) => !r), []);
   const toggleVideoPopup = useCallback(() => setVideoPopupOpen((o) => !o), []);
-  const pause = useCallback(() => postCommand({ cmd: 'pause' }), [postCommand]);
+  const pause = useCallback(() => {
+    if (isNative()) nativeRef.current!.pause();
+    else postCommand({ cmd: 'pause' });
+  }, [postCommand]);
+
+  // Оновлюємо обробник щорендеру (актуальні repeat/next/current), підписка — одна.
+  nativeStatusRef.current = (st: AudioStatus) => {
+    if (modeRef.current !== 'native') return;
+    setCurrentTime(st.currentTime || 0);
+    setDuration(st.duration || 0);
+    if (st.didJustFinish) {
+      if (repeat) {
+        nativeRef.current?.seekTo(0).then(() => nativeRef.current?.play()).catch(() => {});
+      } else {
+        next();
+      }
+      return;
+    }
+    setState(st.playing ? 'playing' : st.isBuffering || !st.isLoaded ? 'buffering' : 'paused');
+    if (!listenLoggedRef.current && currentUser?.authenticated && current) {
+      const threshold = Math.min(20, (st.duration || 0) / 2);
+      if (threshold > 0 && st.currentTime >= threshold) {
+        listenLoggedRef.current = true;
+        api.logListen(current.id).catch(() => {});
+      }
+    }
+  };
+
+  // YouTube не може грати у фоні — тож поки він грає, не даємо екрану згаснути.
+  useEffect(() => {
+    const keep = state === 'playing' && !!current && !current.audioUrl;
+    if (keep) activateKeepAwakeAsync('nowl-player').catch(() => {});
+    else deactivateKeepAwake('nowl-player').catch(() => {});
+  }, [state, current]);
 
   const onEngineMessage = useCallback(
     (event: { nativeEvent: { data: string } }) => {
@@ -302,6 +396,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       } else if (data.type === 'ready') {
         setEngineReady(true);
         postCommand({ cmd: 'setVolume', volume });
+      } else if (modeRef.current === 'native' && (data.type === 'state' || data.type === 'time' || data.type === 'error')) {
+        return;
       } else if (data.type === 'state') {
         if (data.state === 'ended') {
           if (repeat) {

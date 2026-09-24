@@ -15,6 +15,7 @@ import { ApiBridgeProvider } from '@/api/ApiBridge';
 import { FavoritesProvider } from '@/state/FavoritesContext';
 import { PlayerProvider } from '@/player/PlayerContext';
 import { SettingsScreen } from '@/screens/SettingsScreen';
+import { UpdateBanner } from '@/components/UpdateBanner';
 
 // Раніше тут був expo-router-івський <Stack> ((tabs) + модальний "settings").
 // Виміри (onLayout-логи на кожному рівні дерева) показали, що ЛИШЕ контент
@@ -83,6 +84,7 @@ function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
             <View style={{ flex: 1 }}>
               <Slot />
             </View>
+            <UpdateBanner />
             <Modal visible={settingsModalOpen} animationType="slide" onRequestClose={closeSettingsModal}>
               <SettingsScreen onClose={closeSettingsModal} />
             </Modal>

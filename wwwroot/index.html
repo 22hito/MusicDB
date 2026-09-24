@@ -153,6 +153,7 @@
     <div class="nav-search-results" id="nav-search-results"></div>
   </div>
   <div class="nav-right">
+  <button type="button" class="nav-icon-btn nav-search-toggle" id="nav-search-toggle" onclick="toggleMobileSearch()" aria-label="Пошук" data-i18n-title="navSearch.placeholder" title="Пошук"><svg class="icon"><use href="#icon-search"/></svg></button>
   <div class="dropdown" id="lang-dropdown">
     <button class="dropdown-toggle" onclick="toggleDropdown(event,'lang-dropdown')"><span id="lang-toggle-label">UA</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
     <div class="dropdown-menu">
@@ -467,6 +468,20 @@
 </div>
 
 <!-- RECOMMENDATIONS -->
+<!-- ОГЛЯД: плитки колеса / батлу / виконавців / рекомендацій (вкладка нижнього таббару на телефоні) -->
+<div id="page-explore" class="page">
+  <div class="container">
+    <h2><span data-i18n="explore.heading.pre">Що</span> <span class="hl" data-i18n="explore.heading.accent">послухати</span></h2>
+    <div class="explore-tiles">
+      <button type="button" class="explore-tile" onclick="showPage('wheel')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-wheel"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.wheel">Колесо фортуни</strong><span data-i18n="explore.wheelSub">Випадковий жанр — готовий плейлист</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="explore-tile" onclick="showPage('battle')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-trophy"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.battle">Батл рояль</strong><span data-i18n="explore.battleSub">Турнір пісень з плейлиста</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="explore-tile" onclick="showPage('artists')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-mic"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.artists">Виконавці</strong><span data-i18n="explore.artistsSub">Каталог, дискографії, підписки</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="explore-tile" onclick="openRecommendationsPage()"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-sparkle"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.recommendations">Рекомендовано для вас</strong><span data-i18n="explore.recSub">Підбірка за тим, що ви слухаєте</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="explore-tile" onclick="showPage('top')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-headphones"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.top">Топ 100</strong><span data-i18n="explore.topSub">Найпрослуханіші пісні</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
+    </div>
+  </div>
+</div>
+
 <div id="page-recommendations" class="page">
   <div class="container">
     <h2><span data-i18n="rec.heading.pre">Рекомендовано</span> <span class="hl" data-i18n="rec.heading.accent">для вас</span></h2>
@@ -913,6 +928,17 @@
 </div>
 
 <!-- PLAYER BAR -->
+<!-- Нижній таббар (лише на телефоні) — та сама навігація, що й у мобільному застосунку.
+     Активна вкладка підсвічується CSS-ом за html[data-page] (ставить showPage). -->
+<div class="mobile-tabbar" id="mobile-tabbar" role="navigation" aria-label="Навігація">
+  <button type="button" class="mtab" data-tab="home" onclick="showHome('catalog')"><svg class="icon"><use href="#icon-music"/></svg><span data-i18n="nav.library">Бібліотека</span></button>
+  <button type="button" class="mtab" data-tab="top" onclick="showPage('top')"><svg class="icon"><use href="#icon-trophy"/></svg><span data-i18n="nav.topShort">Топ</span></button>
+  <button type="button" class="mtab" data-tab="chat" onclick="openChatPage('threads')"><svg class="icon"><use href="#icon-chat"/></svg><span data-i18n="nav.social">Спілкування</span><span class="mtab-badge" id="mtab-chat-badge"></span></button>
+  <button type="button" class="mtab" data-tab="explore" onclick="showPage('explore')"><svg class="icon"><use href="#icon-sparkle"/></svg><span data-i18n="nav.explore">Огляд</span></button>
+  <button type="button" class="mtab" data-tab="profile" onclick="openProfileTab()"><svg class="icon"><use href="#icon-user"/></svg><span data-i18n="nav.profile">Профіль</span></button>
+  <button type="button" class="mtab mtab-admin" data-tab="admin" onclick="showPage('admin-hub')"><svg class="icon"><use href="#icon-settings"/></svg><span data-i18n="nav.adminShort">Адмін</span><span class="mtab-badge" id="mtab-admin-badge"></span></button>
+</div>
+
 <div id="player-bar">
   <div id="player-seek-wrap" onmousedown="seekStart(event)" ontouchstart="seekStart(event)">
     <div id="player-seek-filled"></div>

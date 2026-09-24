@@ -2,7 +2,7 @@
   "expo": {
     "name": "N'Owl",
     "slug": "musicdb-mobile",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "musicdb",
@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.nowl.mobile",
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#090c14",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -24,7 +25,15 @@
       },
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true,
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -48,7 +57,15 @@
         }
       ],
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true,
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -60,6 +77,12 @@
         "projectId": "6649fc84-6592-4735-926f-1fccdf1e3769"
       }
     },
-    "owner": "22hito"
+    "owner": "22hito",
+    "updates": {
+      "url": "https://u.expo.dev/6649fc84-6592-4735-926f-1fccdf1e3769"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
