@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { TrashIcon } from '@/components/Icons';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
@@ -57,6 +58,17 @@ export default function ChatScreen() {
     }
   };
 
+  // "Видалити чат у себе": у співрозмовника переписка лишається.
+  const clearForMe = () =>
+    Alert.alert(t('chat.clearBtn'), t('chat.clearConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: () => api.clearChatForMe(userId).then(() => router.back()).catch(() => {}),
+      },
+    ]);
+
   const hintKey = thread ? STATE_HINT_KEYS[thread.state as keyof typeof STATE_HINT_KEYS] : undefined;
 
   return (
@@ -65,7 +77,17 @@ export default function ChatScreen() {
       keyboardVerticalOffset={90}
       style={{ flex: 1, backgroundColor: theme.bg }}
     >
-      <Stack.Screen options={{ title: params.name || t('chat.tab.dm') }} />
+      <Stack.Screen
+        options={{
+          title: params.name || t('chat.tab.dm'),
+          headerRight: () =>
+            thread?.messages.length ? (
+              <TouchableOpacity onPress={clearForMe} hitSlop={10} accessibilityLabel={t('chat.clearBtn')}>
+                <TrashIcon size={18} color={theme.red} />
+              </TouchableOpacity>
+            ) : null,
+        }}
+      />
       {!thread ? (
         <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
       ) : (

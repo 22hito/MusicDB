@@ -157,6 +157,8 @@ export function useMusicApi() {
       respondDmRequest: (userId: number, accept: boolean) =>
         request<void>(`/api/messages/requests/${userId}/${accept ? 'accept' : 'decline'}`, { method: 'POST' }),
       getDmThread: (userId: number) => request<DmThread>(`/api/messages/${userId}`),
+      // "Видалити чат у себе": переписка зникає лише для мене.
+      clearChatForMe: (userId: number) => request<void>(`/api/messages/${userId}`, { method: 'DELETE' }),
       sendMessage: (userId: number, body: string) =>
         request<unknown>(`/api/messages/${userId}`, { method: 'POST', body: { body } }),
 

@@ -40,7 +40,10 @@ const I18N = {
     'settings.accent.lavender': 'Лаванда',
     'settings.accent.ocean': 'Океан',
     'settings.accent.emerald': 'Смарагд',
-    'settings.fontScale': 'Розмір тексту',
+    'settings.uiScale': 'Розмір інтерфейсу',
+    'settings.uiScale.hint': 'Масштабує все: текст, кнопки, іконки й відступи.',
+    'settings.autoScale': 'Збільшувати на великих моніторах',
+    'settings.autoScale.hint': 'На екранах 2K/4K інтерфейс автоматично більший, щоб не губитись посередині.',
     'settings.density': 'Щільність таблиць',
     'settings.density.hint': 'Компактна вміщує більше пісень на екрані.',
     'settings.density.comfortable': 'Комфортна',
@@ -286,6 +289,17 @@ const I18N = {
     'profile.addToPlaylist': 'Додати в плейлист',
     'profile.addToPlaylistTitle': 'Додати в плейлист',
     'profile.newPlaylistPlaceholder': 'Назва нового плейлиста',
+    'playlistModal.title': 'Новий плейлист',
+    'playlistModal.subtitle': 'Пісні додаються кнопкою «+» у будь-якій таблиці.',
+    'playlistModal.nameLabel': 'Назва',
+    'playlistModal.namePlaceholder': 'Наприклад, Нічна дорога…',
+    'playlistModal.nameRequired': 'Введіть назву плейлиста',
+    'playlistModal.visibility': 'Видимість',
+    'playlistModal.private': 'Приватний',
+    'playlistModal.privateHint': 'Бачите лише ви',
+    'playlistModal.public': 'Публічний',
+    'playlistModal.publicHint': 'Інші зможуть зіграти його в «Батл рояль»',
+    'playlistModal.create': 'Створити',
     'profile.createAndAddBtn': 'Створити й додати',
     'rec.heading.pre': 'Рекомендовано',
     'rec.heading.accent': 'для вас',
@@ -390,7 +404,40 @@ const I18N = {
     'chat.state.pendingOutgoing': 'Запит на листування надіслано. Писати далі можна буде, щойно співрозмовник його схвалить.',
     'chat.state.declined': 'Співрозмовник відхилив запит на листування.',
     'chat.state.pendingIncoming': 'Це запит на листування. Відповідь автоматично його схвалить.',
-    'battle.communityTrack': "Трек ком'юніті"
+    'battle.communityTrack': "Трек ком'юніті",
+    'bugs.menu': 'Повідомити про баг',
+    'bugs.title': 'Повідомити про баг',
+    'bugs.describe': 'Що сталося? *',
+    'bugs.placeholder': 'Що ви робили, що очікували побачити і що сталося натомість…',
+    'bugs.attachContext': 'Додати технічні дані (сторінка, пісня, браузер, розмір вікна)',
+    'bugs.send': 'Надіслати',
+    'bugs.tooShort': 'Опишіть, будь ласка, трохи докладніше (від 10 символів).',
+    'bugs.tooMany': 'Забагато звітів за годину — спробуйте пізніше.',
+    'bugs.thanks': 'Дякуємо! Звіт надіслано адміністраторам.',
+    'bugs.filter.open': 'Відкриті',
+    'bugs.filter.resolved': 'Вирішені',
+    'bugs.filter.all': 'Усі',
+    'bugs.empty': 'Немає баг-репортів',
+    'bugs.status.open': 'відкритий',
+    'bugs.status.resolved': 'вирішений',
+    'bugs.resolveBtn': 'Позначити вирішеним',
+    'bugs.reopenBtn': 'Відкрити знову',
+    'bugs.contextTitle': 'Технічні дані',
+    'bugs.resolvedBy': 'Вирішив',
+    'adminHub.bugsTab': 'Баг-репорти',
+    'adminNotif.bug_reported': 'повідомляє про баг',
+    'toast.dm': 'Нове повідомлення від {name}',
+    'toast.dmRequest': '{name} хоче з вами листуватися',
+    'toast.friendRequest': '{name} хоче додати вас у друзі',
+    'toast.friendAccepted': '{name} тепер ваш друг',
+    'filter.byGenre': 'Показати лише цей жанр (ще раз — скинути)',
+    'filter.byAlbum': 'Показати лише цей альбом (ще раз — скинути)',
+    'filter.genre': 'Жанр',
+    'filter.remove': 'Прибрати фільтр',
+    'filter.clearAll': 'Скинути всі',
+    'chat.clearBtn': 'Видалити чат',
+    'chat.clearHint': 'Переписка зникне лише у вас — у співрозмовника вона лишиться',
+    'chat.clearConfirm': "Видалити цей чат у себе? У співрозмовника переписка лишиться, а нові повідомлення з'являться тут знову."
   },
   en: {
     'nav.home': 'Home',
@@ -427,7 +474,10 @@ const I18N = {
     'settings.accent.lavender': 'Lavender',
     'settings.accent.ocean': 'Ocean',
     'settings.accent.emerald': 'Emerald',
-    'settings.fontScale': 'Text size',
+    'settings.uiScale': 'Interface size',
+    'settings.uiScale.hint': 'Scales everything: text, buttons, icons and spacing.',
+    'settings.autoScale': 'Enlarge on large monitors',
+    'settings.autoScale.hint': 'On 2K/4K screens the interface grows automatically so it doesn’t get lost in the middle.',
     'settings.density': 'Table density',
     'settings.density.hint': 'Compact fits more songs on screen.',
     'settings.density.comfortable': 'Comfortable',
@@ -673,6 +723,17 @@ const I18N = {
     'profile.addToPlaylist': 'Add to playlist',
     'profile.addToPlaylistTitle': 'Add to playlist',
     'profile.newPlaylistPlaceholder': 'New playlist name',
+    'playlistModal.title': 'New playlist',
+    'playlistModal.subtitle': 'Add songs with the “+” button in any table.',
+    'playlistModal.nameLabel': 'Name',
+    'playlistModal.namePlaceholder': 'e.g. Night drive…',
+    'playlistModal.nameRequired': 'Enter a playlist name',
+    'playlistModal.visibility': 'Visibility',
+    'playlistModal.private': 'Private',
+    'playlistModal.privateHint': 'Only you can see it',
+    'playlistModal.public': 'Public',
+    'playlistModal.publicHint': 'Others can play it in “Battle royale”',
+    'playlistModal.create': 'Create',
     'profile.createAndAddBtn': 'Create & add',
     'rec.heading.pre': 'Recommended',
     'rec.heading.accent': 'for you',
@@ -777,7 +838,40 @@ const I18N = {
     'chat.state.pendingOutgoing': 'Message request sent. You can write more once it is accepted.',
     'chat.state.declined': 'This person declined your message request.',
     'chat.state.pendingIncoming': 'This is a message request. Replying accepts it automatically.',
-    'battle.communityTrack': 'Community track'
+    'battle.communityTrack': 'Community track',
+    'bugs.menu': 'Report a bug',
+    'bugs.title': 'Report a bug',
+    'bugs.describe': 'What happened? *',
+    'bugs.placeholder': 'What you were doing, what you expected and what happened instead…',
+    'bugs.attachContext': 'Attach technical details (page, song, browser, window size)',
+    'bugs.send': 'Send',
+    'bugs.tooShort': 'Please describe it in a bit more detail (10+ characters).',
+    'bugs.tooMany': 'Too many reports this hour — please try again later.',
+    'bugs.thanks': 'Thank you! The report was sent to the admins.',
+    'bugs.filter.open': 'Open',
+    'bugs.filter.resolved': 'Resolved',
+    'bugs.filter.all': 'All',
+    'bugs.empty': 'No bug reports',
+    'bugs.status.open': 'open',
+    'bugs.status.resolved': 'resolved',
+    'bugs.resolveBtn': 'Mark resolved',
+    'bugs.reopenBtn': 'Reopen',
+    'bugs.contextTitle': 'Technical details',
+    'bugs.resolvedBy': 'Resolved by',
+    'adminHub.bugsTab': 'Bug reports',
+    'adminNotif.bug_reported': 'reported a bug',
+    'toast.dm': 'New message from {name}',
+    'toast.dmRequest': '{name} wants to message you',
+    'toast.friendRequest': '{name} wants to be your friend',
+    'toast.friendAccepted': '{name} is now your friend',
+    'filter.byGenre': 'Show only this genre (click again to clear)',
+    'filter.byAlbum': 'Show only this album (click again to clear)',
+    'filter.genre': 'Genre',
+    'filter.remove': 'Remove filter',
+    'filter.clearAll': 'Clear all',
+    'chat.clearBtn': 'Delete chat',
+    'chat.clearHint': 'The conversation disappears only for you — the other person keeps it',
+    'chat.clearConfirm': 'Delete this chat for yourself? The other person keeps the conversation, and new messages will show up here again.'
   }
 };
 let currentLang = localStorage.getItem('lang') || 'uk';
@@ -794,7 +888,7 @@ function applyLang(lang){
   document.querySelectorAll('#lang-dropdown [data-lang-option]').forEach(b=>{
     b.classList.toggle('active', b.getAttribute('data-lang-option') === lang);
   });
-  document.title = t('page.title');
+  _updateTitleBadge(); // назва вкладки новою мовою + лічильник непрочитаного
   // Динамічний контент без data-i18n треба перемалювати наново при зміні мови.
   renderSongs();
   updateStats();
@@ -863,6 +957,7 @@ function showPage(n){
   };
   _hideNavSearch();
   document.documentElement.setAttribute('data-page', n);
+  _routerOnShowPage(n);
   // View Transitions API — нативний крос-фейд між сторінками (Chrome/Edge,
   // а отже й Electron). Без підтримки (Firefox/Safari) просто миттєво
   // перемикає, як і раніше — жодного regressions, лише бонус там, де є.
@@ -872,7 +967,7 @@ function showPage(n){
   requestAnimationFrame(()=>{
     if(n==='home'){renderSongs();updateStats().catch(console.error);}
     if(n==='top') loadTopSongsPage();
-    if(n==='admin-hub'){ switchAdminHubTab('requests'); renderRequests(); }
+    if(n==='admin-hub'){ switchAdminHubTab(_pendingAdminHubTab || 'requests'); _pendingAdminHubTab = null; renderRequests(); }
     if(n==='profile') loadProfilePage();
     if(n==='profile-settings') loadProfileSettingsPage();
     if(n==='recommendations') loadRecommendationsPage();
@@ -884,6 +979,124 @@ function showPage(n){
     if(n==='user-profile') loadUserProfilePage();
     if(n==='settings') loadSettingsPage();
     if(n==='chat') loadChatPage();
+  });
+}
+
+// ================================================================
+// МАРШРУТИЗАЦІЯ: кожна сторінка має власну адресу (History API)
+// Раніше URL не змінювався взагалі — "назад/вперед" у браузері, кнопка
+// миші "назад" (mouse4) і посилання на конкретну сторінку не працювали, а
+// нова сторінка відкривалась на тій самій висоті прокрутки, що й попередня,
+// тож виглядала як вікно поверх головної. Тепер: showPage() пише адресу в
+// історію, popstate відкриває сторінку з адреси й відновлює прокрутку.
+// Сервер віддає index.html на будь-який не-API шлях (MapFallbackToFile).
+// ================================================================
+const _PAGE_PATHS = {
+  top: '/top', artists: '/artists', profile: '/profile', 'profile-settings': '/profile/settings',
+  settings: '/settings', friends: '/friends', wheel: '/wheel', battle: '/battle',
+  recommendations: '/recommendations', request: '/request', 'admin-hub': '/admin',
+};
+function _pathForPage(n){
+  if(n === 'home') return homeSource === 'community' ? '/community' : '/';
+  if(n === 'artist') return currentArtistId != null ? `/artist/${currentArtistId}` : '/artists';
+  if(n === 'playlist') return currentPlaylistId != null ? `/playlist/${currentPlaylistId}` : '/profile';
+  if(n === 'user-profile') return currentProfileUserId != null ? `/user/${currentProfileUserId}` : '/friends';
+  if(n === 'chat') return chatTab && chatTab !== 'threads' ? `/chat/${chatTab}` : '/chat';
+  return _PAGE_PATHS[n] || '/';
+}
+function _parsePath(path){
+  const p = (path || '/').replace(/\/+$/, '') || '/';
+  let m;
+  if(p === '/') return { page: 'home', source: 'catalog' };
+  if(p === '/community') return { page: 'home', source: 'community' };
+  if((m = p.match(/^\/artist\/(\d+)$/))) return { page: 'artist', id: +m[1] };
+  if((m = p.match(/^\/playlist\/(\d+)$/))) return { page: 'playlist', id: +m[1] };
+  if((m = p.match(/^\/user\/(\d+)$/))) return { page: 'user-profile', id: +m[1] };
+  if((m = p.match(/^\/chat(?:\/(dm|requests|threads))?$/))) return { page: 'chat', tab: m[1] || 'threads' };
+  const page = Object.keys(_PAGE_PATHS).find(k => _PAGE_PATHS[k] === p);
+  return page ? { page } : { page: 'home', source: 'catalog' };
+}
+if('scrollRestoration' in history) history.scrollRestoration = 'manual';
+// Сторінка, яку зараз відкриваємо З ІСТОРІЇ (назад/вперед/пряме посилання):
+// для неї адресу не пушимо, а лише замінюємо. Не булевий прапорець, а назва
+// сторінки — бо openPlaylist() тощо викликають showPage() асинхронно, після fetch.
+let _routeRestoring = null;
+let _routerReady = false;
+function _routerOnShowPage(n){
+  if(!_routerReady) return;
+  const path = _pathForPage(n);
+  if(_routeRestoring === n){
+    _routeRestoring = null;
+    history.replaceState({ page: n, scrollY: history.state?.scrollY || 0 }, '', path + location.search);
+    _restoreScroll(history.state?.scrollY || 0);
+    return;
+  }
+  if(path === location.pathname) return; // та сама сторінка (напр. повторний клік "Головна")
+  // Запам'ятовуємо, де користувач був на попередній сторінці — "назад" поверне туди ж.
+  history.replaceState({ ...(history.state || {}), scrollY: window.scrollY }, '');
+  history.pushState({ page: n, scrollY: 0 }, '', path);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+// Вміст (таблиця, плейлист) може домальовуватись асинхронно — пробуємо кілька
+// разів, поки сторінка не стане достатньо високою для збереженої позиції.
+function _restoreScroll(y){
+  if(!y){ window.scrollTo({ top: 0, behavior: 'instant' }); return; }
+  let tries = 0;
+  const attempt = () => {
+    window.scrollTo({ top: y, behavior: 'instant' });
+    if(Math.abs(window.scrollY - y) > 2 && ++tries < 12) setTimeout(attempt, 80);
+  };
+  requestAnimationFrame(attempt);
+}
+// Відкрити сторінку за адресою. authOnly-сторінки без входу → головна
+// (а не confirm("Увійти?") при кожному "назад").
+function _openRoute(r){
+  const authed = !!currentUser?.authenticated;
+  const needsAuth = ['profile', 'profile-settings', 'friends', 'recommendations', 'request', 'user-profile', 'playlist'];
+  if((needsAuth.includes(r.page) && !authed) || (r.page === 'admin-hub' && !currentUser?.isAdmin)){
+    r = { page: 'home', source: 'catalog' };
+    history.replaceState({ page: 'home', scrollY: 0 }, '', '/');
+  }
+  _routeRestoring = r.page;
+  switch(r.page){
+    case 'home': showHome(r.source); break;
+    case 'artist': openArtistPage(r.id); break;
+    case 'playlist': openPlaylist(r.id); break;
+    case 'user-profile': openUserProfilePage(r.id); break;
+    case 'chat': openChatPage(r.tab); break;
+    default: showPage(r.page);
+  }
+}
+window.addEventListener('popstate', () => {
+  // Спершу закриваємо відкриті модальні вікна — "назад" не має лишати їх висіти над
+  // іншою сторінкою. Їхніми ж функціями закриття: батл/граф зупиняють свої плеєри й таймери.
+  const closers = {
+    'battle-modal-overlay': closeBattle, 'battle-setup-modal-overlay': closeBattleSetup, 'graph-modal-overlay': closeGraph,
+    'add-to-playlist-modal-overlay': closeAddToPlaylistModal, 'delete-modal-overlay': closeDeleteModal,
+    'edit-request-modal-overlay': closeEditRequestModal, 'edit-song-modal-overlay': closeEditSongModal,
+    'rating-modal-overlay': closeRatingModal, 'create-playlist-modal-overlay': closeCreatePlaylistModal,
+  };
+  document.querySelectorAll('.modal-overlay.open').forEach(o => {
+    try { (closers[o.id] || (() => o.classList.remove('open')))(); } catch(e){ o.classList.remove('open'); }
+  });
+  _openRoute(_parsePath(location.pathname));
+});
+// Викликається з initApp(), коли вже відомо, хто залогінений.
+function _initRouter(){
+  _routerReady = true;
+  const r = _parsePath(location.pathname);
+  if(r.page === 'home' && r.source === 'catalog'){
+    history.replaceState({ page: 'home', scrollY: 0 }, '', '/' + location.search);
+    return;
+  }
+  _openRoute(r);
+}
+// Electron: бокові кнопки миші не прив'язані до історії автоматично (у браузерах —
+// так, тому там не дублюємо, інакше один клік = два кроки назад).
+if(localStorage.getItem('isDesktopApp') === '1'){
+  window.addEventListener('mouseup', e => {
+    if(e.button === 3){ e.preventDefault(); history.back(); }
+    else if(e.button === 4){ e.preventDefault(); history.forward(); }
   });
 }
 // ================================================================
@@ -1090,15 +1303,51 @@ function loadProfilePlaylists(){
       </div>`).join('');
   }).catch(()=>{});
 }
+// Новий плейлист — власне модальне вікно замість prompt()/confirm().
+// Публічний плейлист видно іншим на сторінці "Батл рояль"; за замовчуванням — приватний.
 function createPlaylist(){
-  const name = prompt(t('profile.newPlaylistPrompt'));
-  if(!name || !name.trim()) return;
-  // Публічний плейлист видно іншим на сторінці "Батл рояль"; за замовчуванням — приватний.
-  const isPublic = confirm(t('profile.newPlaylistPublicConfirm'));
-  fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: name.trim(), isPublic }) })
-    .then(r=>{ if(r.ok) loadProfilePlaylists(); else alert(t('msg.connectionError')); })
-    .catch(()=>{ alert(t('msg.connectionError')); });
+  const form = document.getElementById('create-playlist-form');
+  form.reset();
+  _setCreatePlaylistError('');
+  _onCreatePlaylistInput();
+  document.getElementById('create-playlist-submit').disabled = false;
+  document.getElementById('create-playlist-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('create-playlist-name').focus(), 60);
 }
+function closeCreatePlaylistModal(){
+  _closeModalAnimated('create-playlist-modal-overlay');
+}
+function _setCreatePlaylistError(msg){
+  document.getElementById('create-playlist-error').textContent = msg;
+  document.getElementById('create-playlist-name').toggleAttribute('aria-invalid', !!msg);
+}
+function _onCreatePlaylistInput(){
+  const input = document.getElementById('create-playlist-name');
+  document.getElementById('create-playlist-count').textContent = `${input.value.length}/${input.maxLength}`;
+  if(input.value.trim()) _setCreatePlaylistError('');
+}
+function submitCreatePlaylist(e){
+  e.preventDefault();
+  const input = document.getElementById('create-playlist-name');
+  const name = input.value.trim();
+  if(!name){ _setCreatePlaylistError(t('playlistModal.nameRequired')); input.focus(); return; }
+  const isPublic = document.querySelector('input[name="create-playlist-visibility"]:checked')?.value === 'public';
+  const btn = document.getElementById('create-playlist-submit');
+  btn.disabled = true;
+  fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, isPublic }) })
+    .then(r=>{
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      closeCreatePlaylistModal();
+      loadProfilePlaylists();
+    })
+    .catch(()=>{ _setCreatePlaylistError(t('msg.connectionError')); btn.disabled = false; });
+}
+document.getElementById('create-playlist-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeCreatePlaylistModal();
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && document.getElementById('create-playlist-modal-overlay').classList.contains('open')) closeCreatePlaylistModal();
+});
 function deletePlaylist(id){
   fetch(`/api/playlists/${id}`, { method:'DELETE' }).then(()=>loadProfilePlaylists()).catch(()=>{});
 }
@@ -1562,15 +1811,46 @@ function debouncedRenderSongs(){
   _renderSongsTimer = setTimeout(renderSongs, 150);
 }
 
+// Швидка фільтрація з самої таблиці: клік по бейджу жанру — той самий фільтр,
+// що й список "Усі жанри" (повторний клік знімає); по альбому — окремий фільтр
+// (альбомів сотні, тож у випадному списку їм не місце). Обидва — чипами над таблицею.
+let albumFilter = '';
+function filterByGenre(g){
+  const sel = document.getElementById('filter-genre');
+  sel.value = sel.value === g ? '' : g;
+  renderSongs();
+}
+function filterByAlbum(a){
+  albumFilter = albumFilter === a ? '' : a;
+  renderSongs();
+}
+function clearQuickFilters(){
+  document.getElementById('filter-genre').value = '';
+  albumFilter = '';
+  renderSongs();
+}
+function _renderActiveFilters(gf){
+  const box = document.getElementById('active-filters');
+  if(!box) return;
+  const chips = [];
+  if(gf) chips.push(`<button type="button" class="filter-chip" onclick="filterByGenre(this.dataset.v)" data-v="${esc(gf)}" title="${esc(t('filter.remove'))}"><span class="filter-chip-kind">${esc(t('filter.genre'))}:</span> ${esc(abbrGenre(gf))} <svg class="icon"><use href="#icon-x"/></svg></button>`);
+  if(albumFilter) chips.push(`<button type="button" class="filter-chip album" onclick="filterByAlbum(this.dataset.v)" data-v="${esc(albumFilter)}" title="${esc(t('filter.remove'))}"><span class="filter-chip-kind">${esc(t('table.album'))}:</span> ${esc(albumFilter)} <svg class="icon"><use href="#icon-x"/></svg></button>`);
+  if(chips.length > 1) chips.push(`<button type="button" class="filter-chip-clear" onclick="clearQuickFilters()">${esc(t('filter.clearAll'))}</button>`);
+  box.innerHTML = chips.join('');
+  box.hidden = chips.length === 0;
+}
+
 function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
+  _renderActiveFilters(gf);
   const isCommunity = homeSource === 'community';
   const filtered=activeSongs().filter(s=>{
     const mt=!srch||s.artist.toLowerCase().includes(srch)||s.title.toLowerCase().includes(srch)||(s.album&&s.album.toLowerCase().includes(srch))
       ||(isCommunity&&s.submittedBy&&s.submittedBy.displayName.toLowerCase().includes(srch));
     const mg=!gf||s.genres.includes(gf);
-    return mt&&mg;
+    const ma=!albumFilter||s.album===albumFilter;
+    return mt&&mg&&ma;
   });
   const ordered = shuffleActive
     ? [...filtered].sort((a,b)=>(shuffleOrderMap.get(a.id) ?? Infinity) - (shuffleOrderMap.get(b.id) ?? Infinity))
@@ -1602,8 +1882,8 @@ function renderSongs(){
       <td data-label="${t('table.title')}">${esc(s.title)}</td>
       <td class="duration-col" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
       <td class="duration-col" data-label="${t('table.duration')}">${s.duration}</td>
-      <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
-      <td data-label="${t('table.album')}">${s.album?`<span class="badge album">${esc(s.album)}</span>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+      <td data-label="${t('table.genres')}">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</td>
+      <td data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(t('filter.byAlbum'))}">${esc(s.album)}</button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
       <td class="duration-col" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
       <td class="duration-col" data-label="${t('table.rating')}">${ratingChipHtml(s)}</td>
       ${isCommunity?`<td data-label="${t('table.submittedBy')}">${submitterLinkHtml(s)}</td>`:''}
@@ -1662,8 +1942,9 @@ async function updateStats(){
 document.querySelectorAll('.stat-card').forEach(card => {
   card.addEventListener('mousemove', e => {
     const r = card.getBoundingClientRect();
-    card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-    card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    const z = _uiZoom();
+    card.style.setProperty('--mx', ((e.clientX - r.left) / z) + 'px');
+    card.style.setProperty('--my', ((e.clientY - r.top) / z) + 'px');
   });
 });
 
@@ -1869,10 +2150,17 @@ function submitRequest(){
 
 // Підтаби всередині "Адмін-панелі" — перемикають ті самі блоки, що раніше були окремими вкладками навбару.
 function switchAdminHubTab(tab){
-  document.getElementById('admin-hub-requests-section').style.display = tab==='requests' ? '' : 'none';
-  document.getElementById('admin-hub-add-section').style.display = tab==='add' ? '' : 'none';
-  document.getElementById('admin-hub-tab-requests').classList.toggle('active', tab==='requests');
-  document.getElementById('admin-hub-tab-add').classList.toggle('active', tab==='add');
+  ['requests','add','bugs'].forEach(k=>{
+    document.getElementById(`admin-hub-${k}-section`).style.display = tab===k ? '' : 'none';
+    document.getElementById(`admin-hub-tab-${k}`).classList.toggle('active', tab===k);
+  });
+  if(tab==='bugs') loadBugReports();
+}
+// Зі сповіщення про баг-репорт — одразу на вкладку "Баг-репорти", решта — на заявки.
+let _pendingAdminHubTab = null;
+function openAdminHub(eventType){
+  _pendingAdminHubTab = eventType === 'bug_reported' ? 'bugs' : null;
+  showPage('admin-hub');
 }
 function renderRequests(){
   if(!currentUser?.isAdmin){
@@ -2291,11 +2579,17 @@ function _applyArtworkColor(vid){
 // ================================================================
 const PREF_DEFAULTS = {
   motion: 'system', artColors: true, glowFollow: true, glow: 100, grain: true,
-  accent: 'amber', fontScale: 100, density: 'comfortable', highContrast: false, playerKeys: true,
+  accent: 'amber', uiScale: 100, autoScale: true, density: 'comfortable', highContrast: false, playerKeys: true,
 };
 const ACCENT_HUES = { amber: 78, coral: 38, rose: 5, lavender: 295, ocean: 235, emerald: 158 };
 let PREFS = (() => {
-  try { return { ...PREF_DEFAULTS, ...JSON.parse(localStorage.getItem('prefs') || '{}') }; }
+  try {
+    const saved = JSON.parse(localStorage.getItem('prefs') || '{}');
+    // Міграція: "Розмір тексту" (fontScale) став "Розміром інтерфейсу" (uiScale).
+    if(saved.fontScale != null && saved.uiScale == null) saved.uiScale = saved.fontScale;
+    delete saved.fontScale;
+    return { ...PREF_DEFAULTS, ...saved };
+  }
   catch(e){ return { ...PREF_DEFAULTS }; }
 })();
 function _reducedMotion(){
@@ -2311,8 +2605,9 @@ function applyPrefs(){
   setAttr('data-contrast', PREFS.highContrast ? 'high' : null);
   setAttr('data-grain', PREFS.grain ? null : 'off');
   setAttr('data-glow-follow', PREFS.glowFollow ? '' : null);
-  if(PREFS.fontScale !== 100) root.style.setProperty('--font-scale', PREFS.fontScale / 100);
-  else root.style.removeProperty('--font-scale');
+  if(PREFS.uiScale !== 100) root.style.setProperty('--ui-scale', PREFS.uiScale / 100);
+  else root.style.removeProperty('--ui-scale');
+  setAttr('data-auto-scale', PREFS.autoScale ? null : 'off');
   root.style.setProperty('--ah', ACCENT_HUES[PREFS.accent] ?? ACCENT_HUES.amber);
   root.style.setProperty('--glow-k', PREFS.glow / 100);
   _paintArtworkColor();
@@ -2422,7 +2717,9 @@ function fmtSec(s){s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).p
 // ================================================================
 let currentUser = null;
 // Кілька ключів для автоматичної ротації, коли поточний впирається у денний ліміт квоти.
-let ytApiKeys = ['AIzaSyD5hFlUEq2bOv7r5XstBHKLUEND8E5ZThA', 'AIzaSyCKI5XDq_JwVrVK5tWjNC0Z9byuPijSLa4'];
+// Ключі приходять лише з /config (initApp). Раніше тут були вписані ключі —
+// їх знайшов GitGuardian у публічному репозиторії; не повертати.
+let ytApiKeys = [];
 let ytApiKeyIdx = 0;
 
 // Мінімальний час показу сплешу — на швидкому з'єднанні дані готові за
@@ -2460,6 +2757,7 @@ async function initApp() {
   renderAuthArea();
   renderSongs();
   await updateStats();
+  _initRouter();
   _hideSplash();
 }
 
@@ -2511,6 +2809,7 @@ function renderAuthArea() {
           <button onclick="showPage('settings')" id="tab-settings" class="nav-menu-item" data-i18n="nav.settings">${t('nav.settings')}</button>
           <button onclick="showPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
           <button onclick="openChatPage('dm')" data-i18n="nav.messages">${t('nav.messages')}</button>
+          <button onclick="openBugReportModal()"><svg class="icon"><use href="#icon-bug"/></svg> ${t('bugs.menu')}</button>
           ${isAdmin?`<button onclick="showPage('admin-hub')" id="tab-admin-hub" class="nav-menu-item"><svg class="icon"><use href="#icon-settings"/></svg> ${t('nav.adminHub')}<span id="admin-requests-badge" class="badge" style="display:none;margin-left:auto;"></span></button>`:''}
         </div>
       </div>
@@ -2519,7 +2818,7 @@ function renderAuthArea() {
     `;
     refreshNotifBadge();
     refreshDmBadge();
-    if(isAdmin) refreshAdminRequestsBadge();
+    if(isAdmin){ refreshAdminRequestsBadge(); refreshBugsBadge(); }
   } else {
     area.innerHTML = `
       <button onclick="login()" class="nav-login-btn">
@@ -2544,7 +2843,38 @@ function refreshNotifBadge(){
     const count = (notif?.unreadCount || 0) + (incoming?.length || 0) + (adminNotif?.unreadCount || 0);
     if(count > 0){ badge.textContent = count > 99 ? '99+' : count; badge.style.display = ''; }
     else { badge.style.display = 'none'; }
+    _unreadCounts.notif = count;
+    _updateTitleBadge();
   });
+}
+// Непрочитане (сповіщення + повідомлення + запити) видно й у назві вкладки —
+// коли сайт відкритий у фоні, "(3) N'Owl" одразу показує, що щось прийшло.
+const _unreadCounts = { notif: 0, dm: 0 };
+function _updateTitleBadge(){
+  const n = currentUser?.authenticated ? _unreadCounts.notif + _unreadCounts.dm : 0;
+  const base = t('page.title');
+  document.title = n > 0 ? `(${n > 99 ? '99+' : n}) ${base}` : base;
+}
+
+// Короткі спливаючі сповіщення (нове повідомлення, запит у друзі, дія адміна).
+function showToast(text, onClick){
+  let box = document.getElementById('toast-stack');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'toast-stack';
+    box.setAttribute('role', 'status');
+    box.setAttribute('aria-live', 'polite');
+    document.body.appendChild(box);
+  }
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'toast';
+  el.textContent = text;
+  const close = () => { el.classList.add('toast-out'); setTimeout(() => el.remove(), 250); };
+  el.onclick = () => { close(); onClick?.(); };
+  box.appendChild(el);
+  while(box.children.length > 4) box.firstElementChild.remove();
+  setTimeout(close, 6000);
 }
 function _notifEventText(type){
   if(type === 'song_added') return t('notif.event.songAdded');
@@ -2595,7 +2925,7 @@ function onOpenNotifDropdown(){
     const adminHtml = adminRecent.length ? `
       <div class="notif-section-title">${t('adminNotif.sectionTitle')}</div>
       ${adminRecent.map((n,i)=>`
-      <div class="notif-item${i<adminUnread?' unread':''}" onclick="showPage('admin-hub')">
+      <div class="notif-item${i<adminUnread?' unread':''}" onclick="openAdminHub('${n.eventType}')">
         <div style="font-size:0.8rem;">${_adminEventText(n)}</div>
         <div style="font-size:0.75rem;color:var(--muted);">${esc(n.label)}</div>
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${esc(n.createdAt)}</div>
@@ -2643,7 +2973,7 @@ async function logout() {
   await fetch('/auth/logout', {method:'POST'});
   currentUser = {authenticated:false};
   // Перепідключення — щоб сервер вивів з'єднання з групи користувача/адмінів.
-  if(rtConn) rtConn.stop().then(()=>rtConn.start()).catch(()=>{});
+  if(rtConn){ _rtManualStop = true; rtConn.stop().finally(() => { _rtManualStop = false; _startRealtime(); }); }
   renderAuthArea();
   // Go to home, re-render
   showPage('home');
@@ -3406,7 +3736,8 @@ function _graphZoomBy(factor){
   wrap.addEventListener('wheel', function(e){
     e.preventDefault();
     const rect = wrap.getBoundingClientRect();
-    _graphZoomAt(e.clientX-rect.left, e.clientY-rect.top, e.deltaY < 0 ? 1.15 : 1/1.15);
+    const z = _uiZoom();
+    _graphZoomAt((e.clientX-rect.left)/z, (e.clientY-rect.top)/z, e.deltaY < 0 ? 1.15 : 1/1.15);
   }, { passive: false });
   wrap.addEventListener('mousedown', function(e){
     _graphDragging = true;
@@ -3415,15 +3746,17 @@ function _graphZoomBy(factor){
   });
   window.addEventListener('mousemove', function(e){
     if(_graphDragging){
-      _graphView.x = _graphDragStart.vx + (e.clientX-_graphDragStart.x);
-      _graphView.y = _graphDragStart.vy + (e.clientY-_graphDragStart.y);
+      const z = _uiZoom();
+      _graphView.x = _graphDragStart.vx + (e.clientX-_graphDragStart.x)/z;
+      _graphView.y = _graphDragStart.vy + (e.clientY-_graphDragStart.y)/z;
       _graphApplyView();
     }
     if(_graphHoveredIndex !== null){
       const rect = wrap.getBoundingClientRect();
       const tip = document.getElementById('graph-tooltip');
-      tip.style.left = (e.clientX-rect.left) + 'px';
-      tip.style.top = (e.clientY-rect.top) + 'px';
+      const z = _uiZoom();
+      tip.style.left = ((e.clientX-rect.left)/z) + 'px';
+      tip.style.top = ((e.clientY-rect.top)/z) + 'px';
     }
   });
   window.addEventListener('mouseup', function(){
@@ -3988,7 +4321,13 @@ function setEQ(on){
   document.documentElement.toggleAttribute('data-playing', !!on);
 }
 // Прогрес пісні → "комета" в плеєрі (--p) і в сяйві сторінки (--pn, 0..1).
+// Тікер кличе це двічі на секунду, а "комета" їде з transition 1.1с — тобто
+// рухалась (і перемальовувала сяйво під навбаром із backdrop-filter) без
+// упину. Оновлюємо лише після зсуву ≥2% (≈ раз на 5с для 4-хв пісні) або скидання.
+let _glowLastPct = -100;
 function _setGlowProgress(pct){
+  if(pct !== 0 && Math.abs(pct - _glowLastPct) < 2) return;
+  _glowLastPct = pct;
   const bar = document.getElementById('player-bar');
   if(bar) bar.style.setProperty('--p', pct + '%');
   const amb = document.getElementById('ambient');
@@ -4098,6 +4437,16 @@ document.addEventListener('fullscreenchange', () => {
   else document.body.appendChild(playerBar);
 });
 
+// Масштаб інтерфейсу ("Розмір інтерфейсу" + автомасштаб) — це zoom на <body>.
+// clientX/getBoundingClientRect() повертають ЕКРАННІ пікселі (уже помножені на
+// zoom), а значення, записані в style (left/width/…), браузер множить на zoom
+// ще раз. Без ділення на _uiZoom() вікно відео "тікало" від курсора при
+// перетягуванні/розширенні, а граф і "прожектор" на картках — зміщувались.
+function _uiZoom(){
+  const z = parseFloat(getComputedStyle(document.body).zoom);
+  return z > 0 ? z : 1;
+}
+
 let videoPopupExpanded = false;
 function toggleVideoPopupSize(){
   videoPopupExpanded = !videoPopupExpanded;
@@ -4106,19 +4455,20 @@ function toggleVideoPopupSize(){
   // Явно перезаписуємо width/height — інакше inline-стиль від ручного перетягування переміг би клас.
   const rect = popup.getBoundingClientRect();
   const targetW = videoPopupExpanded ? Math.min(720, window.innerWidth * 0.9) : 320;
-  const targetH = Math.round(targetW * 9 / 16) + header.offsetHeight;
+  const targetH = Math.round(targetW * 9 / 16) + header.offsetHeight * _uiZoom();
   // Попап за замовчуванням прив'язаний right/bottom — ростимо від поточного
   // правого-нижнього кута явними left/top, щоб не виштовхувати його за межі viewport.
   let newLeft = rect.right - targetW;
   let newTop = rect.bottom - targetH;
   newLeft = Math.max(8, Math.min(newLeft, window.innerWidth - targetW - 8));
   newTop = Math.max(8, Math.min(newTop, window.innerHeight - targetH - 8));
+  const z = _uiZoom();
   popup.style.right = 'auto';
   popup.style.bottom = 'auto';
-  popup.style.left = newLeft + 'px';
-  popup.style.top = newTop + 'px';
-  popup.style.width = targetW + 'px';
-  popup.style.height = targetH + 'px';
+  popup.style.left = (newLeft / z) + 'px';
+  popup.style.top = (newTop / z) + 'px';
+  popup.style.width = (targetW / z) + 'px';
+  popup.style.height = (targetH / z) + 'px';
   document.getElementById('video-popup-expand').classList.toggle('active', videoPopupExpanded);
 }
 
@@ -4128,18 +4478,19 @@ function toggleVideoPopupSize(){
 
   document.querySelectorAll('.vp-resize').forEach((handle) => {
     const dir = handle.dataset.dir; // 'n','s','e','w','ne','nw','se','sw'
-    let dragging = false, startX = 0, startY = 0, startRect = null;
+    let dragging = false, startX = 0, startY = 0, startRect = null, z = 1;
 
     handle.addEventListener('pointerdown', (e) => {
       if (document.fullscreenElement) return; // у fullscreen розмір фіксований
       dragging = true;
       startX = e.clientX; startY = e.clientY;
       startRect = popup.getBoundingClientRect();
+      z = _uiZoom();
       // Фіксуємо left/top ОДРАЗУ (а не лише скидаємо right/bottom) — інакше
       // між pointerdown і першим pointermove попап на мить "стрибне" в
       // позицію за замовчуванням.
-      popup.style.left = startRect.left + 'px';
-      popup.style.top = startRect.top + 'px';
+      popup.style.left = (startRect.left / z) + 'px';
+      popup.style.top = (startRect.top / z) + 'px';
       popup.style.right = 'auto';
       popup.style.bottom = 'auto';
       handle.setPointerCapture(e.pointerId);
@@ -4157,8 +4508,8 @@ function toggleVideoPopupSize(){
       if (dir.includes('s')) height = startRect.height + dy;
       if (dir.includes('n')) height = startRect.height - dy;
 
-      width = Math.max(MIN_W, Math.min(window.innerWidth * 0.98, width));
-      height = Math.max(MIN_H, Math.min(window.innerHeight * 0.98, height));
+      width = Math.max(MIN_W * z, Math.min(window.innerWidth * 0.98, width));
+      height = Math.max(MIN_H * z, Math.min(window.innerHeight * 0.98, height));
 
       // Протилежний (нерухомий) край лишається на місці — координату рахуємо від нього.
       if (dir.includes('w')) left = startRect.right - width;
@@ -4168,10 +4519,10 @@ function toggleVideoPopupSize(){
       if (dir.includes('n') && top < 0) { height += top; top = 0; }
       if (dir.includes('w') && left < 0) { width += left; left = 0; }
 
-      popup.style.width = width + 'px';
-      popup.style.height = height + 'px';
-      popup.style.left = left + 'px';
-      popup.style.top = top + 'px';
+      popup.style.width = (width / z) + 'px';
+      popup.style.height = (height / z) + 'px';
+      popup.style.left = (left / z) + 'px';
+      popup.style.top = (top / z) + 'px';
     });
     const endDrag = (e) => {
       dragging = false;
@@ -4185,14 +4536,15 @@ function toggleVideoPopupSize(){
 (function initVideoPopupDrag(){
   const popup = document.getElementById('video-popup');
   const header = document.getElementById('video-popup-header');
-  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0, z = 1;
 
   header.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button')) return; // не тягнемо, якщо клік по кнопці
     const rect = popup.getBoundingClientRect();
+    z = _uiZoom();
     // Переходимо з bottom/right-позиціювання на top/left, щоб рахувати зсув однаково.
-    popup.style.left = rect.left + 'px';
-    popup.style.top = rect.top + 'px';
+    popup.style.left = (rect.left / z) + 'px';
+    popup.style.top = (rect.top / z) + 'px';
     popup.style.right = 'auto';
     popup.style.bottom = 'auto';
     dragging = true;
@@ -4209,8 +4561,8 @@ function toggleVideoPopupSize(){
     let newTop = startTop + (e.clientY - startY);
     newLeft = Math.max(margin - rect.width, Math.min(window.innerWidth - margin, newLeft));
     newTop = Math.max(0, Math.min(window.innerHeight - margin, newTop));
-    popup.style.left = newLeft + 'px';
-    popup.style.top = newTop + 'px';
+    popup.style.left = (newLeft / z) + 'px';
+    popup.style.top = (newTop / z) + 'px';
   });
   const endDrag = (e) => {
     dragging = false;
@@ -4255,6 +4607,90 @@ function _onVidReady(vid) {
 }
 
 // ================================================================
+// БАГ-РЕПОРТИ: меню профілю → модалка; адміни — вкладка в адмін-панелі
+// ================================================================
+function openBugReportModal(){
+  document.getElementById('bug-report-text').value = '';
+  document.getElementById('bug-report-context').checked = true;
+  document.getElementById('bug-report-status').textContent = '';
+  document.getElementById('bug-report-send').disabled = false;
+  document.getElementById('bug-report-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('bug-report-text').focus(), 50);
+}
+function closeBugReportModal(){ _closeModalAnimated('bug-report-modal-overlay'); }
+document.getElementById('bug-report-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeBugReportModal();
+});
+// Технічний контекст — те, що зазвичай доводиться перепитувати: де, що грало, чим.
+function _bugContext(){
+  const s = playerQueue[playerIndex];
+  const page = document.querySelector('.page.active')?.id?.replace('page-', '') || '?';
+  return [
+    `page: ${page}`,
+    `url: ${location.href}`,
+    s ? `song: #${s.id} ${s.artist} — ${s.title} (${playerMode}${playerMode==='yt' && currentVid ? ' ' + currentVid : ''}, ${isPlaying() ? 'playing' : 'paused'})` : 'song: —',
+    `video popup: ${videoPopupOpen ? 'open' : 'closed'}`,
+    `viewport: ${innerWidth}x${innerHeight} @${devicePixelRatio}`,
+    `lang: ${currentLang}, theme: ${document.documentElement.getAttribute('data-theme')}`,
+    `realtime: ${rtConn?.state || 'n/a'}`,
+    `ua: ${navigator.userAgent}`,
+  ].join('\n');
+}
+function submitBugReport(){
+  const text = document.getElementById('bug-report-text').value.trim();
+  const status = document.getElementById('bug-report-status');
+  if(text.length < 10){ status.textContent = t('bugs.tooShort'); return; }
+  const btn = document.getElementById('bug-report-send');
+  btn.disabled = true;
+  const context = document.getElementById('bug-report-context').checked ? _bugContext() : null;
+  fetch('/api/bug-reports', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ description: text, context }) })
+    .then(r=>{
+      if(r.status === 429){ status.textContent = t('bugs.tooMany'); btn.disabled = false; return; }
+      if(!r.ok){ status.textContent = t('msg.connectionError'); btn.disabled = false; return; }
+      closeBugReportModal();
+      showToast(t('bugs.thanks'));
+    })
+    .catch(()=>{ status.textContent = t('msg.connectionError'); btn.disabled = false; });
+}
+
+let _bugFilter = 'open';
+function setBugFilter(f){
+  _bugFilter = f;
+  ['open','resolved','all'].forEach(k => document.getElementById(`bugs-filter-${k}`).classList.toggle('active', k===f));
+  loadBugReports();
+}
+function refreshBugsBadge(){
+  if(!currentUser?.isAdmin) return;
+  fetch('/api/bug-reports/open-count').then(r=>r.ok?r.json():0).then(n=>{
+    const b = document.getElementById('admin-bugs-badge');
+    if(b){ b.textContent = n > 99 ? '99+' : n; b.style.display = n > 0 ? '' : 'none'; }
+  }).catch(()=>{});
+}
+function loadBugReports(){
+  fetch(`/api/bug-reports?status=${_bugFilter}`).then(r=>r.ok?r.json():[]).then(list=>{
+    document.getElementById('bugs-empty').style.display = list.length ? 'none' : '';
+    document.getElementById('bugs-list').innerHTML = list.map(b=>`
+      <div class="bug-card${b.status==='resolved'?' resolved':''}">
+        <div class="bug-card-head">
+          <span class="badge${b.status==='open'?' source-community':''}">${t('bugs.status.' + b.status)}</span>
+          ${b.reporter ? `<a href="#" class="artist-link" onclick="openUserProfilePage(${b.reporter.userId});return false;">${esc(b.reporter.displayName)}</a>` : ''}
+          <span class="hint" style="margin:0;">${esc(b.createdAt)}</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-outline" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="setBugStatus(${b.id}, '${b.status==='open'?'resolved':'open'}')">${t(b.status==='open' ? 'bugs.resolveBtn' : 'bugs.reopenBtn')}</button>
+        </div>
+        <div class="bug-card-body">${esc(b.description)}</div>
+        ${b.context ? `<details class="bug-card-context"><summary>${t('bugs.contextTitle')}</summary><pre>${esc(b.context)}</pre></details>` : ''}
+        ${b.resolvedBy ? `<div class="hint">${t('bugs.resolvedBy')}: ${esc(b.resolvedBy.displayName)}</div>` : ''}
+      </div>`).join('');
+  }).catch(()=>{});
+}
+function setBugStatus(id, status){
+  fetch(`/api/bug-reports/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status }) })
+    .then(r=>{ if(r.ok){ loadBugReports(); refreshBugsBadge(); } else alert(t('msg.connectionError')); })
+    .catch(()=>{ alert(t('msg.connectionError')); });
+}
+
+// ================================================================
 // ГОЛОВНА ТАБЛИЦЯ_2 (пісні від ком'юніті) — та сама сторінка "Головна",
 // перемикач лише змінює, яку з двох таблиць показувати.
 // ================================================================
@@ -4265,6 +4701,7 @@ function showHome(source){
     // Перемішування — порядок конкретної таблиці, в іншій воно не має сенсу.
     if(shuffleActive) toggleShuffleTable();
     document.getElementById('filter-genre').value = '';
+    albumFilter = '';
   }
   _applyHomeSourceUi();
   showPage('home');
@@ -4350,13 +4787,17 @@ function refreshDmBadge(){
   fetch('/api/messages/unread-count').then(r=>r.ok?r.json():null).then(d=>{
     if(!d) return;
     setBadge('dm-badge', d.unread + d.requests);
+    _unreadCounts.dm = d.unread + d.requests;
+    _updateTitleBadge();
     setBadge('chat-tab-dm-badge', d.unread);
     setBadge('chat-tab-requests-badge', d.requests);
   }).catch(()=>{});
 }
 // SignalR: новий/схвалений/відхилений запит на листування.
-function onDmRequestsEvent(otherUserId){
+function onDmRequestsEvent(otherUserId, name){
   refreshDmBadge();
+  // name приходить лише з новим запитом (схвалення/відхилення — без нього).
+  if(name) showToast(t('toast.dmRequest').replace('{name}', name), () => openChatPage('requests'));
   if(!document.getElementById('page-chat')?.classList.contains('active')) return;
   if(chatTab==='requests') loadDmRequests();
   if(chatTab==='dm'){ loadConversations(); if(currentChatUserId === otherUserId) loadDmThread(); }
@@ -4390,7 +4831,9 @@ function respondDmRequest(userId, accept){
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
 // SignalR: нове повідомлення в будь-якому діалозі (моє з іншої вкладки або вхідне).
-function onDirectMessageEvent(otherUserId){
+function onDirectMessageEvent(otherUserId, name){
+  const viewing = document.getElementById('page-chat')?.classList.contains('active') && chatTab==='dm' && currentChatUserId === otherUserId;
+  if(name && !viewing) showToast(t('toast.dm').replace('{name}', name), () => openDirectChat(otherUserId));
   const chatOpen = document.getElementById('page-chat')?.classList.contains('active') && chatTab==='dm';
   if(chatOpen){
     loadConversations();
@@ -4452,6 +4895,22 @@ function loadDmThread(){
     box.scrollTop = box.scrollHeight;
     refreshDmBadge();
   }).catch(()=>{});
+}
+// "Видалити чат у себе": переписка зникає лише в мене; нове повідомлення поверне розмову.
+function deleteChatForMe(){
+  const id = currentChatUserId;
+  if(id == null || !confirm(t('chat.clearConfirm'))) return;
+  fetch(`/api/messages/${id}`, { method:'DELETE' })
+    .then(r=>{
+      if(!r.ok){ alert(t('msg.connectionError')); return; }
+      currentChatUserId = null;
+      _chatPartnerName = '';
+      document.getElementById('chat-dm-panel').style.display = 'none';
+      document.getElementById('chat-dm-empty').style.display = '';
+      loadConversations();
+      refreshDmBadge();
+    })
+    .catch(()=>{ alert(t('msg.connectionError')); });
 }
 function onChatInputKeydown(e){
   if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendDirectMessage(); }
@@ -4759,9 +5218,13 @@ _updatePopoutBtnVisibility();
 // ================================================================
 let rtConn = null;
 if (window.signalR) {
+  // withAutomaticReconnect() за замовчуванням робить лише 4 спроби (0/2/10/30с)
+  // і здається назавжди: після рестарту сервера (деплой), сну ноутбука чи
+  // обриву мережі вкладка лишалась без realtime до перезавантаження сторінки.
+  // Тепер — безкінечно, з паузою до 30с.
   rtConn = new signalR.HubConnectionBuilder()
     .withUrl('/hubs/music')
-    .withAutomaticReconnect()
+    .withAutomaticReconnect({ nextRetryDelayInMilliseconds: ctx => Math.min(30000, 1000 * 2 ** Math.min(ctx.previousRetryCount, 5)) })
     .build();
 
   rtConn.on('songsChanged', () => {
@@ -4775,17 +5238,66 @@ if (window.signalR) {
   // Нова заявка / дія іншого адміна — лише для групи адмінів (MusicHub.AdminsGroup).
   rtConn.on('adminNotification', () => {
     refreshNotifBadge();
+    // Текст події ("hito схвалює запит …") — з тієї ж стрічки, що й у дзвіночку.
+    fetch('/api/admin-notifications?limit=1').then(r=>r.ok?r.json():null).then(d=>{
+      const n = d?.recent?.[0];
+      if(!n || d.unreadCount === 0) return;
+      const tmp = document.createElement('div');
+      tmp.innerHTML = _adminEventText(n);
+      showToast(`${tmp.textContent.trim()}: ${n.label}`, () => openAdminHub(n.eventType));
+    }).catch(()=>{});
     if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
   });
-  rtConn.on('dmReceived', (fromUserId) => onDirectMessageEvent(fromUserId));
+  rtConn.on('dmReceived', (fromUserId, name) => onDirectMessageEvent(fromUserId, name));
   rtConn.on('dmSent', (toUserId) => onDirectMessageEvent(toUserId));
-  rtConn.on('dmRequestsChanged', (otherUserId) => onDmRequestsEvent(otherUserId));
+  rtConn.on('dmRequestsChanged', (otherUserId, name) => onDmRequestsEvent(otherUserId, name));
+  // Друзі: запит / прийняття / видалення — раніше інша сторона бачила це лише після перезавантаження.
+  rtConn.on('friendsChanged', (otherUserId, name, kind) => {
+    refreshNotifBadge();
+    if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
+    if(document.getElementById('page-friends')?.classList.contains('active')) loadFriendsPage();
+    if(document.getElementById('page-user-profile')?.classList.contains('active') && currentProfileUserId === otherUserId) loadUserProfilePage();
+    // Дружба змінює і право писати без запиту на листування.
+    if(document.getElementById('page-chat')?.classList.contains('active') && chatTab === 'dm' && currentChatUserId === otherUserId) loadDmThread();
+    if(name && kind === 'request') showToast(t('toast.friendRequest').replace('{name}', name), () => showPage('friends'));
+    if(name && kind === 'accepted') showToast(t('toast.friendAccepted').replace('{name}', name), () => openUserProfilePage(otherUserId));
+  });
   rtConn.on('threadsChanged', (threadId) => {
     if(!document.getElementById('page-chat')?.classList.contains('active') || chatTab !== 'threads') return;
     if(currentThreadId === threadId) loadThreadDetail();
     else if(currentThreadId == null) loadThreads();
   });
   rtConn.on('ratingChanged', (musicId, avg, count) => _applyRatingSummary(musicId, avg, count));
+  rtConn.on('bugReportsChanged', () => {
+    refreshBugsBadge();
+    if(document.getElementById('admin-hub-bugs-section')?.style.display === '') loadBugReports();
+  });
 
-  rtConn.start().catch(() => {});
+  // Після розриву могли пропустити події — один раз дотягуємо все актуальне.
+  rtConn.onreconnected(() => _resyncRealtime(true));
+  rtConn.onclose(() => { if(!_rtManualStop) setTimeout(_startRealtime, 5000); });
+  _startRealtime();
 }
+let _rtManualStop = false;
+// Перший старт теж може впасти (сервер саме перезапускається) — пробуємо ще.
+function _startRealtime(){
+  if(!rtConn || rtConn.state !== 'Disconnected') return;
+  rtConn.start().catch(() => setTimeout(_startRealtime, 5000));
+}
+function _resyncRealtime(withSongs){
+  if(currentUser?.authenticated){
+    refreshNotifBadge();
+    refreshDmBadge();
+    if(currentUser.isAdmin){ refreshAdminRequestsBadge(); refreshBugsBadge(); renderRequests(); }
+    if(document.getElementById('page-chat')?.classList.contains('active')) loadChatPage();
+  }
+  if(withSongs) loadSongs().then(() => { renderSongs(); updateStats(); }).catch(() => {});
+}
+// Повернулись на вкладку (браузер міг приспати з'єднання у фоні) — перевіряємо
+// з'єднання й лічильники; не частіше разу на 30с, щоб не смикати API.
+let _lastVisibleResync = 0;
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden || !rtConn) return;
+  _startRealtime();
+  if(Date.now() - _lastVisibleResync > 30000){ _lastVisibleResync = Date.now(); _resyncRealtime(false); }
+});

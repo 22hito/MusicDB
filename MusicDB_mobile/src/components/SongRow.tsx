@@ -34,6 +34,10 @@ export function SongRow({
   onEdit,
   onDelete,
   onRate,
+  onGenrePress,
+  onAlbumPress,
+  activeGenre,
+  activeAlbum,
 }: {
   song: Song;
   isCurrent?: boolean;
@@ -51,6 +55,11 @@ export function SongRow({
   onEdit?: () => void;
   onDelete?: () => void;
   onRate?: () => void; // відкрити оцінку/рецензії
+  // Швидка фільтрація, як на сайті: натиснув жанр/альбом — список лише з ним.
+  onGenrePress?: (genre: string) => void;
+  onAlbumPress?: (album: string) => void;
+  activeGenre?: string;
+  activeAlbum?: string;
 }) {
   const { theme, t } = useSettings();
   const wantFavorite = showFavorite ?? authenticated;
@@ -129,9 +138,17 @@ export function SongRow({
         </Text>
         <View style={styles.badgesWrap}>
           {song.genres.slice(0, 3).map((g) => (
-            <Badge key={g} label={abbrGenre(g)} kind="genre" />
+            <TouchableOpacity key={g} disabled={!onGenrePress} onPress={() => onGenrePress?.(g)} hitSlop={4}>
+              <Badge label={g === activeGenre ? `✓ ${abbrGenre(g)}` : abbrGenre(g)} kind="genre" />
+            </TouchableOpacity>
           ))}
-          {song.album ? <Badge label={song.album} kind="album" /> : <Text style={[styles.singleLabel, { color: theme.muted }]}>{t('table.single')}</Text>}
+          {song.album ? (
+            <TouchableOpacity disabled={!onAlbumPress} onPress={() => onAlbumPress?.(song.album!)} hitSlop={4}>
+              <Badge label={song.album === activeAlbum ? `✓ ${song.album}` : song.album} kind="album" />
+            </TouchableOpacity>
+          ) : (
+            <Text style={[styles.singleLabel, { color: theme.muted }]}>{t('table.single')}</Text>
+          )}
         </View>
       </View>
     </View>

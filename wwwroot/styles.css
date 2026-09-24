@@ -60,7 +60,8 @@
   --art2: var(--accent2);
   --art3: var(--accent-hi);
   --glow-k: 1;
-  --font-scale: 1;
+  --ui-scale: 1;
+  --auto-scale: 1;
   --shadow-rgb: 2, 4, 12;
   --shadow-k: 1;
   --scrim: oklch(0.1 0.02 272 / 0.62);
@@ -299,7 +300,9 @@ h2 span.hl {
   background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
   background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: shimmerText 5s linear infinite;
+  /* Один прохід, не infinite: анімований background-position перемальовує
+     текст щокадру — нескінченне переливання тримало CPU зайнятим постійно. */
+  animation: shimmerText 5s linear 1;
 }
 @keyframes shimmerText { to { background-position: -200% center; } }
 
@@ -784,8 +787,13 @@ tbody tr:last-child td { border-bottom: none; }
 .play-row-btn { background: none; border: none; cursor: pointer; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: color 0.2s, background 0.2s, transform 0.15s; }
 .play-row-btn:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); transform: scale(1.1); }
 .play-row-btn:active { transform: scale(0.92); }
-.play-row-btn.is-playing { color: var(--accent); animation: rowPulse 2s ease-in-out infinite; }
-@keyframes rowPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 0%, transparent); } }
+.play-row-btn.is-playing { color: var(--accent); position: relative; }
+.play-row-btn.is-playing::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: rowPulse 2s ease-in-out infinite; will-change: transform, opacity;
+}
+@keyframes rowPulse { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.35); opacity: 0; } }
 
 /* ================================================================
    GENIUS-STYLE PLAYER BAR
@@ -1495,7 +1503,10 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button, [role="button"] { touch-action: manipulation; }
 
 /* ---------- Типографіка ---------- */
-html { font-size: calc(100% * var(--font-scale)); }
+/* Масштаб ІНТЕРФЕЙСУ (налаштування "Розмір інтерфейсу"): zoom масштабує все —
+   текст, кнопки, іконки, відступи в px — як масштаб браузера, а не лише rem-текст.
+   --auto-scale додатково збільшує інтерфейс на великих моніторах (див. нижче). */
+body { zoom: calc(var(--ui-scale) * var(--auto-scale)); }
 body { font-size: 0.906rem; font-optical-sizing: auto; }
 h2 { font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.35rem); font-weight: 800; letter-spacing: -0.015em; }
 h3 { font-family: var(--font-sans); font-weight: 650; letter-spacing: -0.01em; }
@@ -1656,15 +1667,9 @@ html[data-playing] .ambient-band { opacity: calc(var(--aurora-a) * var(--glow-k)
     radial-gradient(32% 56% at 50% 32%, var(--art2), transparent 72%),
     radial-gradient(30% 62% at 92% 45%, var(--art3), transparent 72%);
   filter: blur(64px) saturate(1.2);
-  animation: ambientDrift 30s ease-in-out infinite alternate;
+  /* Без нескінченного дрейфу/"дихання" (див. вище) — ціна їх була: повна
+     перемальовка щокадру навіть на простої сторінки. */
 }
-html[data-playing] .ambient-band { animation: ambientDrift 30s ease-in-out infinite alternate, ambientBreath 5.5s ease-in-out infinite alternate; }
-@keyframes ambientDrift {
-  0%   { transform: translate3d(-2vw, 0, 0) scale(1); }
-  50%  { transform: translate3d(2vw, 2vh, 0) scale(1.06); }
-  100% { transform: translate3d(-1vw, -1vh, 0) scale(1.02); }
-}
-@keyframes ambientBreath { from { filter: blur(64px) saturate(1.05); } to { filter: blur(58px) saturate(1.4); } }
 .ambient-comet {
   position: absolute; top: 0; left: 0; width: 44vw; height: 100%;
   background: radial-gradient(50% 56% at 50% 40%, var(--art), transparent 72%);
@@ -1797,3 +1802,270 @@ html[data-contrast="high"] {
   div.setting-row .seg-switch { display: flex; width: 100%; flex-wrap: nowrap; }
   div.setting-row .seg-switch button { flex: 1 1 0; justify-content: center; padding-left: 0.4rem; padding-right: 0.4rem; }
 }
+
+/* ================================================================
+   АДАПТИВНІСТЬ ПІД МОНІТОРИ
+   Великі екрани: інтерфейс, розрахований на ~1440px, на 2K/4K займав
+   вузьку смугу посередині з дрібним текстом. --auto-scale плавно
+   збільшує ВСЕ (через zoom на body, див. вище). Медіазапити рахуються за
+   шириною вікна, яку zoom не змінює, тож зворотного зв'язку немає.
+   Вимикається налаштуванням "Збільшувати на великих моніторах".
+   ================================================================ */
+@media (min-width: 2000px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.12; } }
+@media (min-width: 2400px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.25; } }
+@media (min-width: 3000px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.5; } }
+@media (min-width: 3600px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.75; } }
+
+/* Ноутбуки 1280–1440: трохи щільніше, щоб таблиця влазила без горизонтального скролу. */
+@media (max-width: 1440px) and (min-width: 1081px) {
+  .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+  nav { padding-left: 1.25rem; padding-right: 1.25rem; column-gap: 1rem; }
+  thead th, tbody td { padding-left: 0.75rem; padding-right: 0.75rem; }
+}
+/* Низькі екрани (ноутбуки 768px заввишки, вікно на пів екрана): менші вертикальні відступи. */
+@media (max-height: 820px) and (min-width: 769px) {
+  .container { padding-top: 1.6rem; }
+  .stats-row { margin-bottom: 1.4rem; }
+  .stat-card { padding-top: 1rem; padding-bottom: 0.95rem; }
+  h2 { margin-bottom: 1.1rem; }
+}
+
+/* ================================================================
+   МОДАЛЬНІ ФОРМИ (новий плейлист, додати в плейлист)
+   ================================================================ */
+.modal-form { width: 460px; max-width: calc(100vw - 32px); padding: 1.5rem 1.6rem 1.4rem; }
+.modal-head { display: flex; align-items: flex-start; gap: 0.9rem; margin-bottom: 1.3rem; }
+.modal-head-icon {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; font-size: 1.2rem;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.modal-head-text { flex: 1; min-width: 0; }
+.modal-head-text h3 { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -0.01em; }
+.modal-head-text p { color: var(--muted); font-size: 0.82rem; margin-top: 0.25rem; line-height: 1.45; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 999px; border: none; background: none; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center; font-size: 1rem; flex-shrink: 0; margin: -4px -6px 0 0; transition: background-color 0.15s, color 0.15s;
+}
+.modal-close:hover { background: var(--surface2); color: var(--text); }
+.modal-form .form-group { margin-bottom: 1.15rem; }
+.modal-form .form-group input[type="text"] { font-family: var(--font-sans); font-size: 0.95rem; padding: 0.75rem 0.9rem; }
+.modal-form input[aria-invalid] { border-color: var(--red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 18%, transparent); }
+.field-meta { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.4rem; min-height: 1.1em; font-size: 0.75rem; }
+.field-error { color: var(--red); font-weight: 500; }
+.field-count { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+.vis-group { border: none; padding: 0; min-width: 0; }
+.vis-group legend { display: block; font-size: 0.7rem; font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; padding: 0; }
+.vis-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.vis-option { position: relative; cursor: pointer; }
+.vis-option input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.vis-card {
+  display: flex; flex-direction: column; gap: 0.2rem; height: 100%; padding: 0.85rem 0.9rem; border-radius: var(--radius);
+  border: 1px solid var(--border-strong); background: var(--surface); transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+.vis-card strong { font-size: 0.9rem; color: var(--text); font-weight: 650; }
+.vis-card small { font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
+.vis-icon { font-size: 1.05rem; color: var(--muted); margin-bottom: 0.25rem; transition: color 0.15s; }
+.vis-option:hover .vis-card { border-color: color-mix(in srgb, var(--accent) 50%, var(--border-strong)); }
+.vis-option input:checked + .vis-card {
+  border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.vis-option input:checked + .vis-card .vis-icon { color: var(--accent); }
+.vis-option input:focus-visible + .vis-card { outline: 2px solid var(--accent); outline-offset: 2px; }
+.modal-form .modal-actions { margin-top: 1.4rem; }
+/* Основна дія модалки — акцентна кнопка з ПРАВИЛЬНИМ кольором тексту для акценту
+   (раніше "Створити й додати" мала фон акценту, але текст для червоної кнопки). */
+.modal-btn-primary {
+  background: var(--accent-grad); color: var(--on-accent); border: none; border-radius: var(--radius-sm);
+  padding: 0.55rem 1.15rem; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 650; cursor: pointer;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 22%, transparent); transition: filter 0.15s, transform 0.15s, opacity 0.15s;
+}
+.modal-btn-primary:hover { filter: brightness(1.07); }
+.modal-btn-primary:active { transform: scale(0.97); }
+.modal-btn-primary:disabled { opacity: 0.6; cursor: progress; }
+#add-to-playlist-modal-overlay .modal-box { width: 400px; }
+@media (max-width: 480px) {
+  .vis-options { grid-template-columns: 1fr; }
+  .modal-form { padding: 1.25rem 1.1rem 1.1rem; }
+}
+/* Бічні групи навбару не стискаються нижче власного вмісту — інакше на
+   1280–1400px пошук у центральній колонці наїжджав на "Меню" й мову. */
+.nav-left, .nav-right { min-width: max-content; }
+@media (max-width: 1400px) and (min-width: 1081px) {
+  /* Коли вже не влазить "рівно по центру" — пошук займає весь вільний простір між групами. */
+  nav { grid-template-columns: auto minmax(180px, 1fr) auto; }
+}
+/* Картки видимості всередині .form-group успадковували капс підписів полів. */
+.vis-option, .vis-card, .vis-card strong, .vis-card small { text-transform: none; letter-spacing: normal; font-weight: inherit; }
+.vis-option { display: block; margin: 0; font-size: 0.9rem; color: var(--text); }
+.vis-card strong { font-weight: 650; }
+
+/* ================================================================
+   СПЛИВАЮЧІ СПОВІЩЕННЯ (нове повідомлення, запит у друзі, дія адміна)
+   Праворуч угорі під навбаром — не перекриває плеєр і відео-попап знизу.
+   ================================================================ */
+#toast-stack { position: fixed; top: 72px; right: 16px; z-index: 1200; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 32px)); pointer-events: none; }
+.toast {
+  pointer-events: auto; text-align: left; cursor: pointer;
+  background: var(--elevated, var(--surface)); color: var(--text);
+  border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: var(--radius, 10px); padding: 0.7rem 0.9rem;
+  font: inherit; font-size: 0.84rem; line-height: 1.35;
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.3));
+  animation: toastIn 0.22s cubic-bezier(.2,.9,.3,1);
+}
+.toast:hover { border-color: var(--accent); }
+.toast.toast-out { opacity: 0; transform: translateX(12px); transition: opacity 0.22s, transform 0.22s; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ================================================================
+   БАГ-РЕПОРТИ
+   ================================================================ */
+.bug-context-toggle { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.78rem; color: var(--muted); margin: -0.4rem 0 0.4rem; cursor: pointer; }
+.bug-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.bug-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius, 10px); padding: 0.8rem 1rem; }
+.bug-card.resolved { opacity: 0.7; }
+.bug-card-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.8rem; }
+.bug-card-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.87rem; line-height: 1.5; }
+.bug-card-context { margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); }
+.bug-card-context summary { cursor: pointer; }
+.bug-card-context pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-mono); font-size: 0.72rem; background: var(--surface2); border-radius: 6px; padding: 0.5rem 0.7rem; margin-top: 0.4rem; }
+
+/* ================================================================
+   МАСШТАБ БРАУЗЕРА (125–250%) = вузьке вікно в CSS-пікселях
+   На моніторі 1920px: 125% → 1536px, 150% → 1280, 175% → 1097,
+   200% → 960, 250% → 768. Навбар залогіненого (дзвіночок, чат, аватар,
+   ADMIN, "Вийти") не влазив і давав горизонтальну прокрутку всієї
+   сторінки, а головна таблиця (до 12 стовпців) — власну. Нижче —
+   поступове стискання: спершу другорядні підписи, потім стовпці.
+   Селектори на наявну розмітку renderAuthArea (її не змінюємо).
+   ================================================================ */
+#auth-area { gap: 0.45rem !important; }
+#auth-area > button[onclick="logout()"] { height: 36px; border-radius: 999px !important; padding: 0 0.85rem !important; font-size: 0.78rem !important; }
+
+/* 1) ≤1560px: ім'я біля аватара й бейдж ADMIN — зайві (є в меню профілю). */
+@media (max-width: 1560px) {
+  #profile-dropdown > .dropdown-toggle > span { display: none; }
+  #profile-dropdown > .dropdown-toggle { padding: 0.2rem !important; width: 38px; height: 38px !important; justify-content: center; }
+  #auth-area > span { display: none; }
+}
+/* 2) ≤1320px: тема лише іконкою, "Вийти" — іконкою (підпис лишається для скрінрідерів як title). */
+@media (max-width: 1320px) {
+  #theme-toggle-label, #theme-dropdown .caret, #lang-dropdown .caret { display: none; }
+  #theme-dropdown { margin: 0 0.45rem !important; }
+  #theme-dropdown .dropdown-toggle, #lang-dropdown .dropdown-toggle { padding: 0 0.7rem; }
+  #auth-area > button[onclick="logout()"] {
+    width: 36px; padding: 0 !important; font-size: 0 !important; position: relative;
+  }
+  #auth-area > button[onclick="logout()"]::before {
+    content: ''; position: absolute; inset: 0; margin: auto; width: 16px; height: 16px; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16 17 21 12 16 7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16 17 21 12 16 7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .nav-brand { margin-right: 0.75rem; }
+  #nav-menu-dropdown { margin-left: 1.1rem; }
+}
+/* 3) ≤1200px: пошук — окремим рядком на всю ширину (раніше лише з 1080px). */
+@media (max-width: 1200px) {
+  nav { grid-template-columns: 1fr auto; row-gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .nav-search { grid-column: 1 / -1; grid-row: 2; max-width: none; }
+  .nav-left, .nav-right { min-width: 0; }
+}
+/* 4) ≤980px: "Меню" лише іконкою, щільніші кнопки справа. */
+@media (max-width: 980px) {
+  .nav-menu-label { display: none; }
+  .nav-right .dropdown-toggle, .nav-icon-btn { padding: 0 0.6rem; }
+  .nav-icon-btn { width: 36px; padding: 0; margin-right: 0.35rem; }
+  #notif-dropdown { margin-right: 0 !important; }
+  .nav-right button[onclick="openChatPage('dm')"] { margin-right: 0 !important; }
+}
+
+/* ---------- Головна таблиця: пріоритетне приховування стовпців ----------
+   Порядок стовпців: 1 розгорнути, 2 №, 3 виконавець, 4 назва, 5 дата,
+   6 тривалість, 7 жанри, 8 альбом, 9 прослухано, 10 оцінка, далі — дії.
+   Спершу ховаємо найменш важливе; дані лишаються в розгорнутому рядку. */
+@media (max-width: 1440px) and (min-width: 769px) {
+  #page-home .scroll-table table th:nth-child(2), #page-home .scroll-table table td:nth-child(2) { display: none; }
+  #page-home .scroll-table .badge.album { max-width: 180px; }
+}
+@media (max-width: 1320px) and (min-width: 769px) {
+  #page-home .scroll-table table th:nth-child(9), #page-home .scroll-table table td:nth-child(9) { display: none; }
+  #page-home .scroll-table thead th, #page-home .scroll-table tbody td { padding-left: 0.6rem; padding-right: 0.6rem; }
+}
+@media (max-width: 1100px) and (min-width: 769px) {
+  #page-home .scroll-table table th:nth-child(5), #page-home .scroll-table table td:nth-child(5) { display: none; }
+  #page-home .scroll-table .badge.album { max-width: 140px; }
+}
+@media (max-width: 980px) and (min-width: 769px) {
+  #page-home .scroll-table table th:nth-child(6), #page-home .scroll-table table td:nth-child(6) { display: none; }
+  #page-home .scroll-table tbody td { font-size: 0.84rem; }
+  #page-home .scroll-table thead th, #page-home .scroll-table tbody td { padding-left: 0.45rem; padding-right: 0.45rem; }
+}
+
+/* Панель фільтрів: пошук гнучкий, кнопка "Надіслати запит" не відривається на окремий рядок. */
+@media (max-width: 1240px) and (min-width: 769px) {
+  .filter-bar input { flex: 1 1 220px; width: auto; }
+  .filter-bar select { flex: 0 1 200px; min-width: 0; }
+}
+
+/* ================================================================
+   ТЕЛЕФОН / МАСШТАБ 250–500% (≤768px CSS). Має стояти ОСТАННІМ: блок
+   "≤1200px" вище теж спрацьовує на цих ширинах і повертав навбару дві
+   колонки — права група (нерозривна) наповзала на лого й "Головну".
+   Тут: 1-й рядок — лого/Головна/Меню, 2-й — кнопки дій (з переносом),
+   3-й — пошук. Жодна група не може вилізти за край або перекрити іншу.
+   ================================================================ */
+@media (max-width: 768px) {
+  nav { grid-template-columns: minmax(0, 1fr); row-gap: 0.5rem; padding: 0.5rem 0.75rem; }
+  .nav-left { grid-row: 1; justify-self: stretch; min-width: 0; flex-wrap: wrap; row-gap: 0.4rem; }
+  .nav-right { grid-row: 2; justify-self: stretch; min-width: 0; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-start; }
+  .nav-search { grid-row: 3; grid-column: 1; }
+  .nav-right > *, #auth-area > * { margin: 0 !important; }
+  #auth-area { flex-wrap: wrap; gap: 0.4rem !important; }
+  #theme-dropdown, #nav-settings-btn { margin: 0 !important; }
+  .nav-brand { margin-right: 0.6rem; }
+  #nav-menu-dropdown { margin-left: 0.9rem; }
+}
+@media (max-width: 420px) {
+  .nav-brand { font-size: 0; gap: 0; margin-right: 0.4rem; }  /* лише сова, без напису */
+  .nav-home-btn { padding: 0 0.8rem; }
+  #nav-menu-dropdown { margin-left: 0.7rem; }
+}
+@media (max-width: 768px) {
+  /* Комірка-картка — flex без переносу: 4+ жанри йшли в один рядок за край картки. */
+  .table-wrap.mobile-cards tbody td { flex-wrap: wrap; justify-content: flex-end; row-gap: 0.3rem; }
+  .table-wrap.mobile-cards tbody td::before { margin-right: auto; }
+  .table-wrap.mobile-cards .badge { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+}
+/* Ручки зміни розміру відео-попапу — ПОВНІСТЮ всередині вікна: попап має
+   overflow:hidden, тож половина ручок, винесена назовні (right/bottom:-4px),
+   обрізалась, і правий/нижній край із кутом ледве вдавалось схопити. */
+.vp-resize-e { right: 0; }
+.vp-resize-s { bottom: 0; }
+.vp-resize-n { top: 0; }
+.vp-resize-w { left: 0; }
+.vp-resize-ne { top: 0; right: 0; }
+.vp-resize-nw { top: 0; left: 0; }
+.vp-resize-se { bottom: 0; right: 0; }
+.vp-resize-sw { bottom: 0; left: 0; }
+
+/* Шапка діалогу: ім'я зліва, "Видалити чат" справа. */
+.chat-header { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.chat-clear-btn { font-size: 0.7rem; padding: 0.3rem 0.7rem; }
+
+/* Швидкі фільтри: клікабельні бейджі жанру/альбому в таблиці + чипи над нею. */
+button.badge.badge-filter { font: inherit; font-size: 0.7rem; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+button.badge.badge-filter:hover { border-color: var(--accent2); }
+button.badge.album.badge-filter:hover { border-color: var(--accent); }
+button.badge.badge-filter.active { background: var(--accent2); color: var(--bg); border-color: var(--accent2); }
+button.badge.album.badge-filter.active { background: var(--accent); color: var(--on-accent, var(--bg)); border-color: var(--accent); }
+.active-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: -0.6rem 0 1.1rem; }
+.active-filters[hidden] { display: none; }
+.filter-chip, .filter-chip-clear { font: inherit; font-size: 0.78rem; cursor: pointer; border-radius: 999px; padding: 0.3rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; }
+.filter-chip { background: color-mix(in srgb, var(--accent2) 14%, transparent); color: var(--text); border: 1px solid color-mix(in srgb, var(--accent2) 45%, transparent); }
+.filter-chip.album { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.filter-chip:hover { border-color: var(--red); }
+.filter-chip-kind { color: var(--muted); }
+.filter-chip-clear { background: none; border: 1px dashed var(--border); color: var(--muted); }
+.filter-chip-clear:hover { color: var(--text); border-color: var(--text); }

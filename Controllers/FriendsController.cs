@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MusicDB.Api.Data;
+using MusicDB.Api.Hubs;
 using MusicDB.Api.Models;
 using MusicDB.Api.Services;
 
@@ -11,8 +13,18 @@ namespace MusicDB.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class FriendsController(MusicDbContext db, UserDirectoryService userDirectory) : ControllerBase
+public class FriendsController(MusicDbContext db, UserDirectoryService userDirectory, IHubContext<MusicHub> hub) : ControllerBase
 {
+    // Іншій стороні — одразу оновити дзвіночок/сторінку друзів/профіль і, для нового
+    // запиту, показати "X хоче додати вас у друзі" (kind: request | accepted | removed).
+    private async Task NotifyFriendsChangedAsync(int otherUserId, int myId, string kind)
+    {
+        var email = await db.Users.Where(u => u.Id == otherUserId).Select(u => u.Email).FirstOrDefaultAsync();
+        if (email is null) return;
+        var myName = (await userDirectory.GetUserCardsAsync([myId])).GetValueOrDefault(myId)?.DisplayName;
+        await hub.Clients.Group(MusicHub.UserGroup(email)).SendAsync("friendsChanged", myId, myName, kind);
+    }
+
     private string CurrentEmail => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     private async Task<int> CurrentUserIdAsync() => await userDirectory.GetOrCreateUserIdAsync(
@@ -104,6 +116,7 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
             reverse.Status = "accepted";
             reverse.RespondedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            await NotifyFriendsChangedAsync(dto.TargetUserId, myId, "accepted");
             return Ok(await ToFriendRequestDtoAsync(reverse, dto.TargetUserId));
         }
 
@@ -120,6 +133,7 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
                 (r.RequesterId == dto.TargetUserId && r.AddresseeId == myId));
             return Ok(await ToFriendRequestDtoAsync(existing, dto.TargetUserId));
         }
+        await NotifyFriendsChangedAsync(dto.TargetUserId, myId, "request");
         return Ok(await ToFriendRequestDtoAsync(req, dto.TargetUserId));
     }
 
@@ -133,6 +147,7 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
         req.Status = "accepted";
         req.RespondedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+        await NotifyFriendsChangedAsync(req.RequesterId, myId, "accepted");
         return Ok(await ToFriendRequestDtoAsync(req, req.RequesterId));
     }
 
@@ -147,6 +162,7 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
 
         db.FriendRequests.Remove(req);
         await db.SaveChangesAsync();
+        await NotifyFriendsChangedAsync(req.RequesterId == myId ? req.AddresseeId : req.RequesterId, myId, "removed");
         return NoContent();
     }
 
@@ -162,6 +178,7 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
 
         db.FriendRequests.Remove(req);
         await db.SaveChangesAsync();
+        await NotifyFriendsChangedAsync(friendUserId, myId, "removed");
         return NoContent();
     }
 }

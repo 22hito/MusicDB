@@ -208,6 +208,14 @@ public record CreateThreadDto(string Title, string Body);
 
 public record CreatePostDto(string Body);
 
+// ─── Баг-репорти ─────────────────────────────────────────────────────────────
+
+public record CreateBugReportDto(string Description, string? Context);
+
+public record BugReportDto(int Id, UserRefDto? Reporter, string Description, string? Context, string Status, string CreatedAt, UserRefDto? ResolvedBy);
+
+public record SetBugReportStatusDto(string Status);
+
 // ─── Оцінки / рецензії ─────────────────────────────────────────────────────
 
 public record RatingDto(UserRefDto User, int Score, string? Review, string UpdatedAt);

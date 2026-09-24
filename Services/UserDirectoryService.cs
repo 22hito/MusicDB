@@ -34,10 +34,21 @@ public class UserDirectoryService(MusicDbContext db)
         return await db.Users.Where(u => u.Email == email).Select(u => u.Id).FirstAsync();
     }
 
-    public Task<int> GetCurrentUserIdAsync(ClaimsPrincipal user) => GetOrCreateUserIdAsync(
-        user.FindFirstValue(ClaimTypes.Email) ?? "",
-        user.FindFirstValue(ClaimTypes.Name),
-        user.FindFirstValue("picture") ?? user.FindFirstValue("urn:google:picture"));
+    // Викликається на КОЖНОМУ API-запиті — тому спершу лише читаємо id. Раніше тут
+    // одразу йшов INSERT … ON CONFLICT DO UPDATE: новий рядок не з'являвся, але кожен
+    // запит переписував users (мертві версії рядків для вакууму), а last_login_at
+    // означав "останній запит", а не "останній вхід". Запис — лише для нового
+    // користувача; справжній вхід оновлює рядок через OnTicketReceived (Program.cs).
+    public async Task<int> GetCurrentUserIdAsync(ClaimsPrincipal user)
+    {
+        var email = user.FindFirstValue(ClaimTypes.Email) ?? "";
+        var existingId = await db.Users.Where(u => u.Email == email).Select(u => (int?)u.Id).FirstOrDefaultAsync();
+        if (existingId is int id) return id;
+        return await GetOrCreateUserIdAsync(
+            email,
+            user.FindFirstValue(ClaimTypes.Name),
+            user.FindFirstValue("picture") ?? user.FindFirstValue("urn:google:picture"));
+    }
 
     public record UserCard(int UserId, string DisplayName, string? AvatarUrl)
     {

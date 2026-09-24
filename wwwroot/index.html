@@ -33,7 +33,9 @@
       if (p.density === 'compact') root.setAttribute('data-density', 'compact');
       if (p.highContrast) root.setAttribute('data-contrast', 'high');
       if (p.grain === false) root.setAttribute('data-grain', 'off');
-      if (p.fontScale && p.fontScale !== 100) root.style.setProperty('--font-scale', p.fontScale / 100);
+      var ui = p.uiScale != null ? p.uiScale : p.fontScale;
+      if (ui && ui !== 100) root.style.setProperty('--ui-scale', ui / 100);
+      if (p.autoScale === false) root.setAttribute('data-auto-scale', 'off');
       if (p.accent && hues[p.accent] != null) root.style.setProperty('--ah', hues[p.accent]);
       if (p.glow != null) root.style.setProperty('--glow-k', p.glow / 100);
     } catch (e) {}
@@ -93,6 +95,7 @@
   <symbol id="icon-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></symbol>
   <symbol id="icon-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
   <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></symbol>
+  <symbol id="icon-bug" viewBox="0 0 24 24"><rect x="7" y="8" width="10" height="12" rx="5"/><path d="M9 8a3 3 0 0 1 6 0M12 12v8M3 13h4M17 13h4M4 7l3 2M20 7l-3 2M4 19l3-2M20 19l-3-2"/></symbol>
   <symbol id="icon-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
   <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></symbol>
   <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></symbol>
@@ -198,7 +201,7 @@
     <div class="hint" id="home-community-hint" style="display:none;margin:-0.6rem 0 1.2rem;" data-i18n="home.communityHint">Власні пісні учасників спільноти — завантажені файлом або з посиланням на YouTube.</div>
     <div class="filter-bar">
       <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="debouncedRenderSongs()">
-      <select id="filter-genre" onchange="renderSongs()"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
+      <select id="filter-genre" onchange="renderSongs()" aria-label="Жанр" data-i18n-title="filter.allGenres"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="table.shuffle">Перемішати</span></button>
       <!-- Дії над таблицею — в одному рядку з фільтрами, притиснуті праворуч.
            "Об'єднати жанри" — лише для адмінів (показує renderAuthArea, ендпоінт теж [AdminOnly]). -->
@@ -207,6 +210,8 @@
         <button class="btn btn-outline" onclick="openRequestPage(homeSource)" id="home-add-btn" data-i18n="home.addRequestBtn">+ Надіслати запит</button>
       </div>
     </div>
+    <!-- Активні фільтри чипами: клік по жанру/альбому в таблиці додає, ✕ — знімає. -->
+    <div class="active-filters" id="active-filters" hidden></div>
     <div class="table-wrap scroll-table mobile-cards">
       <table>
         <thead>
@@ -296,6 +301,7 @@
     <div class="filter-bar" style="margin-bottom:1.5rem;">
       <button type="button" class="btn btn-outline active" id="admin-hub-tab-requests" onclick="switchAdminHubTab('requests')" data-i18n="adminHub.requestsTab">Запити</button>
       <button type="button" class="btn btn-outline" id="admin-hub-tab-add" onclick="switchAdminHubTab('add')" data-i18n="adminHub.addTab">Додати пісню</button>
+      <button type="button" class="btn btn-outline" id="admin-hub-tab-bugs" onclick="switchAdminHubTab('bugs')"><span data-i18n="adminHub.bugsTab">Баг-репорти</span> <span class="count-badge" id="admin-bugs-badge" style="display:none;"></span></button>
     </div>
 
     <div id="admin-hub-requests-section">
@@ -347,6 +353,17 @@
           <div id="add-ext-search-results" style="display:flex;flex-direction:column;gap:0.5rem;max-height:460px;overflow-y:auto;padding-right:4px;"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Баг-репорти від користувачів (меню профілю → "Повідомити про баг"). -->
+    <div id="admin-hub-bugs-section" style="display:none;">
+      <div class="seg-switch" style="margin-bottom:1rem;">
+        <button type="button" id="bugs-filter-open" class="active" onclick="setBugFilter('open')" data-i18n="bugs.filter.open">Відкриті</button>
+        <button type="button" id="bugs-filter-resolved" onclick="setBugFilter('resolved')" data-i18n="bugs.filter.resolved">Вирішені</button>
+        <button type="button" id="bugs-filter-all" onclick="setBugFilter('all')" data-i18n="bugs.filter.all">Усі</button>
+      </div>
+      <div id="bugs-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-check"/></svg><span data-i18n="bugs.empty">Немає баг-репортів</span></div>
+      <div id="bugs-list" class="bug-list"></div>
     </div>
   </div>
 </div>
@@ -683,14 +700,26 @@
         </div>
 
         <div class="setting-row">
-          <div class="setting-text"><div class="setting-label" data-i18n="settings.fontScale">Розмір тексту</div></div>
-          <div class="seg-switch" data-pref="fontScale">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.uiScale">Розмір інтерфейсу</div>
+            <div class="setting-hint" data-i18n="settings.uiScale.hint">Масштабує все: текст, кнопки, іконки й відступи.</div>
+          </div>
+          <div class="seg-switch" data-pref="uiScale">
+            <button type="button" data-value="85">85%</button>
             <button type="button" data-value="90">90%</button>
             <button type="button" data-value="100">100%</button>
             <button type="button" data-value="110">110%</button>
-            <button type="button" data-value="120">120%</button>
+            <button type="button" data-value="125">125%</button>
           </div>
         </div>
+
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.autoScale">Збільшувати на великих моніторах</div>
+            <div class="setting-hint" data-i18n="settings.autoScale.hint">На екранах 2K/4K інтерфейс автоматично більший, щоб не губитись посередині.</div>
+          </div>
+          <span class="switch"><input type="checkbox" data-pref="autoScale"><span class="switch-track"></span></span>
+        </label>
 
         <div class="setting-row">
           <div class="setting-text">
@@ -836,7 +865,7 @@
         <div class="chat-main">
           <div id="chat-dm-empty" class="empty"><svg class="icon"><use href="#icon-chat"/></svg><span data-i18n="chat.pickConversation">Оберіть розмову ліворуч</span></div>
           <div id="chat-dm-panel" style="display:none;">
-            <div class="chat-header"><a href="#" id="chat-dm-partner" class="artist-link"></a></div>
+            <div class="chat-header"><a href="#" id="chat-dm-partner" class="artist-link"></a><button type="button" class="btn btn-outline chat-clear-btn" onclick="deleteChatForMe()" data-i18n-title="chat.clearHint" title="Переписка зникне лише у вас — у співрозмовника вона лишиться"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="chat.clearBtn">Видалити чат</span></button></div>
             <div id="chat-dm-messages" class="chat-messages"></div>
             <div id="chat-dm-state-hint" class="chat-state-hint" style="display:none;"></div>
             <div class="chat-input-row" id="chat-dm-input-row">
@@ -1059,6 +1088,23 @@
      media session саме ЦЬОГО документа. Тиша, зациклена, гучність не важлива. -->
 <audio id="ms-anchor" loop preload="auto" src="data:audio/wav;base64,UklGRsQPAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAPAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA"></audio>
 
+<!-- Баг-репорт: опис + (за бажанням) технічний контекст, який додається автоматично. -->
+<div class="modal-overlay" id="bug-report-modal-overlay">
+  <div class="modal-box" style="width:460px;">
+    <div class="modal-title-row"><svg class="icon"><use href="#icon-bug"/></svg> <span data-i18n="bugs.title">Повідомити про баг</span></div>
+    <div class="form-group">
+      <label for="bug-report-text" data-i18n="bugs.describe">Що сталося? *</label>
+      <textarea id="bug-report-text" rows="6" maxlength="4000" style="resize:vertical;" data-i18n-placeholder="bugs.placeholder" placeholder="Що ви робили, що очікували побачити і що сталося натомість…"></textarea>
+    </div>
+    <label class="bug-context-toggle"><input type="checkbox" id="bug-report-context" checked> <span data-i18n="bugs.attachContext">Додати технічні дані (сторінка, пісня, браузер, розмір вікна)</span></label>
+    <div class="hint" id="bug-report-status" style="min-height:1.2em;"></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeBugReportModal()" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" id="bug-report-send" style="background:var(--accent);" onclick="submitBugReport()" data-i18n="bugs.send">Надіслати</button>
+    </div>
+  </div>
+</div>
+
 <!-- Модальне вікно підтвердження видалення пісні (замінює браузерний confirm()) -->
 <div class="modal-overlay" id="delete-modal-overlay">
   <div class="modal-box">
@@ -1180,6 +1226,59 @@
   </div>
 </div>
 
+<!-- Модальне вікно "новий плейлист" (профіль). Замість системних prompt()/confirm(),
+     які не стилізуються й виглядали чужорідно на сайті. -->
+<div class="modal-overlay" id="create-playlist-modal-overlay">
+  <form class="modal-box modal-form" id="create-playlist-form" onsubmit="submitCreatePlaylist(event)" novalidate>
+    <div class="modal-head">
+      <span class="modal-head-icon"><svg class="icon"><use href="#icon-music"/></svg></span>
+      <div class="modal-head-text">
+        <h3 id="create-playlist-title" data-i18n="playlistModal.title">Новий плейлист</h3>
+        <p data-i18n="playlistModal.subtitle">Пісні додаються кнопкою «+» у будь-якій таблиці.</p>
+      </div>
+      <button type="button" class="modal-close" onclick="closeCreatePlaylistModal()" aria-label="Закрити" data-i18n-title="modal.cancel"><svg class="icon"><use href="#icon-x"/></svg></button>
+    </div>
+
+    <div class="form-group">
+      <label for="create-playlist-name" data-i18n="playlistModal.nameLabel">Назва</label>
+      <input type="text" id="create-playlist-name" maxlength="80" autocomplete="off" spellcheck="false"
+             data-i18n-placeholder="playlistModal.namePlaceholder" placeholder="Наприклад, Нічна дорога…"
+             aria-describedby="create-playlist-error" oninput="_onCreatePlaylistInput()">
+      <div class="field-meta">
+        <span class="field-error" id="create-playlist-error" aria-live="polite"></span>
+        <span class="field-count" id="create-playlist-count">0/80</span>
+      </div>
+    </div>
+
+    <fieldset class="form-group vis-group">
+      <legend data-i18n="playlistModal.visibility">Видимість</legend>
+      <div class="vis-options">
+        <label class="vis-option">
+          <input type="radio" name="create-playlist-visibility" value="private" checked>
+          <span class="vis-card">
+            <span class="vis-icon"><svg class="icon"><use href="#icon-lock"/></svg></span>
+            <strong data-i18n="playlistModal.private">Приватний</strong>
+            <small data-i18n="playlistModal.privateHint">Бачите лише ви</small>
+          </span>
+        </label>
+        <label class="vis-option">
+          <input type="radio" name="create-playlist-visibility" value="public">
+          <span class="vis-card">
+            <span class="vis-icon"><svg class="icon"><use href="#icon-globe"/></svg></span>
+            <strong data-i18n="playlistModal.public">Публічний</strong>
+            <small data-i18n="playlistModal.publicHint">Інші зможуть зіграти його в «Батл рояль»</small>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="modal-actions">
+      <button type="button" class="modal-btn-cancel" onclick="closeCreatePlaylistModal()" data-i18n="modal.cancel">Скасувати</button>
+      <button type="submit" class="modal-btn-primary" id="create-playlist-submit"><span data-i18n="playlistModal.create">Створити</span></button>
+    </div>
+  </form>
+</div>
+
 <!-- Модальне вікно "додати пісню в плейлист" -->
 <div class="modal-overlay" id="add-to-playlist-modal-overlay">
   <div class="modal-box" style="width:360px;">
@@ -1193,7 +1292,7 @@
     </div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeAddToPlaylistModal()" data-i18n="modal.cancel">Скасувати</button>
-      <button class="modal-btn-confirm" style="background:var(--accent);" onclick="createPlaylistAndAdd()" data-i18n="profile.createAndAddBtn">Створити й додати</button>
+      <button class="modal-btn-primary" onclick="createPlaylistAndAdd()" data-i18n="profile.createAndAddBtn">Створити й додати</button>
     </div>
   </div>
 </div>

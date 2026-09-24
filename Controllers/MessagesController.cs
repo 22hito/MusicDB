@@ -76,7 +76,11 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
             .ToListAsync();
 
         var states = await GetStatesAsync(myId, groups.Select(g => g.OtherId).ToList());
-        groups = groups.Where(g => !HiddenStates.Contains(states[g.OtherId])).ToList();
+        var cleared = await ClearedUpToAsync(myId);
+        groups = groups
+            .Where(g => !HiddenStates.Contains(states[g.OtherId]))
+            .Where(g => g.LastId > cleared.GetValueOrDefault(g.OtherId)) // після "видалити чат у себе" — лише якщо прийшло нове
+            .ToList();
 
         var lastIds = groups.Select(g => g.LastId).ToList();
         var lastMessages = await db.DirectMessages.Where(m => lastIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
@@ -134,7 +138,10 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
 
         return Ok(pending.Select(r =>
         {
-            var fromThem = messages.Where(m => m.SenderId == r.RequesterId).ToList();
+            // Лише повідомлення, надіслані ПІСЛЯ появи запиту: якщо раніше ви були
+            // друзями, стара історія лишається в діалозі, але превʼю й лічильник
+            // запиту мають показувати саме нове повідомлення, а не найстаріше.
+            var fromThem = messages.Where(m => m.SenderId == r.RequesterId && m.CreatedAt >= r.CreatedAt).ToList();
             var card = cards.GetValueOrDefault(r.RequesterId);
             return new DmRequestDto(
                 r.RequesterId,
@@ -174,8 +181,10 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
         var myId = await userDirectory.GetCurrentUserIdAsync(User);
         var state = await GetStateAsync(myId, userId);
 
+        var clearedUpTo = (await ClearedUpToAsync(myId)).GetValueOrDefault(userId);
         var messages = await db.DirectMessages
             .Where(m => (m.SenderId == myId && m.RecipientId == userId) || (m.SenderId == userId && m.RecipientId == myId))
+            .Where(m => m.Id > clearedUpTo)
             .OrderByDescending(m => m.Id)
             .Take(200)
             .ToListAsync();
@@ -194,6 +203,34 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
         messages.Reverse();
         return Ok(new DmThreadDto(state, CanSend(state), messages.Select(m => ToDto(m, myId)).ToList()));
     }
+
+    // "Видалити чат у себе": ховає всю поточну переписку лише для мене. Співрозмовник
+    // свою копію зберігає; нові повідомлення (від будь-кого) з'являться знову.
+    [HttpDelete("{userId:int}")]
+    public async Task<IActionResult> ClearForMe(int userId)
+    {
+        var myId = await userDirectory.GetCurrentUserIdAsync(User);
+        var pair = db.DirectMessages.Where(m =>
+            (m.SenderId == myId && m.RecipientId == userId) || (m.SenderId == userId && m.RecipientId == myId));
+        var lastId = await pair.MaxAsync(m => (int?)m.Id);
+        if (lastId is null) return NoContent();
+
+        var row = await db.DmCleared.FindAsync(myId, userId);
+        if (row is null) db.DmCleared.Add(new DmCleared { UserId = myId, OtherUserId = userId, ClearedUpToId = lastId.Value });
+        else { row.ClearedUpToId = lastId.Value; row.ClearedAt = DateTime.UtcNow; }
+
+        // Приховане не має висіти непрочитаним у лічильниках.
+        var now = DateTime.UtcNow;
+        foreach (var m in await pair.Where(m => m.RecipientId == myId && m.ReadAt == null && m.Id <= lastId).ToListAsync())
+            m.ReadAt = now;
+        await db.SaveChangesAsync();
+
+        await NotifySelfAsync("dmSent", userId); // інші вкладки — оновити список розмов і лічильник
+        return NoContent();
+    }
+
+    private async Task<Dictionary<int, int>> ClearedUpToAsync(int myId) =>
+        await db.DmCleared.Where(c => c.UserId == myId).ToDictionaryAsync(c => c.OtherUserId, c => c.ClearedUpToId);
 
     [HttpPost("{userId:int}")]
     public async Task<ActionResult<DirectMessageDto>> Send(int userId, [FromBody] SendMessageDto dto)
@@ -240,15 +277,18 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
             return Conflict("Please retry.");
         }
 
-        await NotifyAsync(userId, requestCreated ? "dmRequestsChanged" : "dmReceived", myId);
+        // Ім'я відправника — щоб отримувач одразу показав "Нове повідомлення від …",
+        // не роблячи окремого запиту. Мобільний клієнт читає лише args[0] — сумісно.
+        var senderName = (await userDirectory.GetUserCardsAsync([myId])).GetValueOrDefault(myId)?.DisplayName;
+        await NotifyAsync(userId, requestCreated ? "dmRequestsChanged" : "dmReceived", myId, senderName);
         await NotifySelfAsync("dmSent", userId);
         return Ok(ToDto(message, myId));
     }
 
-    private async Task NotifyAsync(int userId, string evt, int arg)
+    private async Task NotifyAsync(int userId, string evt, int arg, string? name = null)
     {
         var email = await db.Users.Where(u => u.Id == userId).Select(u => u.Email).FirstOrDefaultAsync();
-        if (email is not null) await hub.Clients.Group(MusicHub.UserGroup(email)).SendAsync(evt, arg);
+        if (email is not null) await hub.Clients.Group(MusicHub.UserGroup(email)).SendAsync(evt, arg, name);
     }
 
     // Іншим вкладкам самого користувача.
