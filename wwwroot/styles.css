@@ -2069,3 +2069,8 @@ button.badge.album.badge-filter.active { background: var(--accent); color: var(-
 .filter-chip-kind { color: var(--muted); }
 .filter-chip-clear { background: none; border: 1px dashed var(--border); color: var(--muted); }
 .filter-chip-clear:hover { color: var(--text); border-color: var(--text); }
+
+/* Налаштування клавіатури: пошук — окремо як "завжди активні"; клавіші плеєра
+   тьмяніють, коли перемикач "Керування плеєром" вимкнено. */
+.shortcut-group-title { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 0.4rem; }
+.settings-card:has(input[data-pref="playerKeys"]:not(:checked)) .shortcut-list.player-keys { opacity: 0.45; }
