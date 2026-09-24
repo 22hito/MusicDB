@@ -15,7 +15,7 @@ import { useMusicApi } from '@/api/endpoints';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { Button, Field, Heading, SegmentedPicker } from '@/components/UI';
 import { CommunityFields } from '@/components/CommunityFields';
-import { SPACING } from '@/constants/theme';
+import { PLAYER_BAR_HEIGHT, SPACING } from '@/constants/theme';
 import type { ExternalSongResult, PickedAudio, SongSource } from '@/api/types';
 
 const EMPTY = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
@@ -213,7 +213,8 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
-    paddingBottom: 40,
+    // Запас під плаваючий міні-плеєр над таббаром — інакше кнопка "Надіслати" ховалась під ним.
+    paddingBottom: PLAYER_BAR_HEIGHT + 60,
   },
   alert: {
     borderWidth: 1,

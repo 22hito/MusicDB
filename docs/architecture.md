@@ -57,7 +57,7 @@ MusicDB (публічний бренд — **N'Owl**) — музична пла�
 
 | Workflow | Що робить |
 |---|---|
-| `main_musicdb.yml` | Push у `main`: build → тести → publish → деплой в Azure Web App |
+| `main_musicdb.yml` | Push у `main`: build → тести → перевірка міграцій EF → publish → деплой в Azure Web App |
 | `codeql.yml` | Статичний аналіз C# і JS/TS (push, PR, щотижня) |
 | `lint.yml` | ESLint для `wwwroot/js` і `wwwroot/sw.js` |
 | `mobile-update.yml` | Зміни в `MusicDB_mobile/`: перевірка типів + публікація OTA-оновлення (секрет `EXPO_TOKEN`) |
@@ -79,5 +79,5 @@ MusicDB (публічний бренд — **N'Owl**) — музична пла�
   фон для вбудованого плеєра (YouTube Premium на це не впливає).
 - Мобільний застосунок працює з cookie-сесією через прихований WebView; якщо Google посилить обмеження для
   вбудованих WebView, знадобиться окремий мобільний auth-флоу (JWT/API-ключ).
-- Схема БД змінюється вручну SQL-скриптами, а не EF Core Migrations ([database.md](database.md)).
+- Схема БД — EF Core Migrations із застосуванням при старті; CI не пропускає зміну моделі без міграції ([database.md](database.md)).
 - Донабір жанрів і тривалостей іде невеликими порціями щодня — у межах безкоштовної квоти Gemini.

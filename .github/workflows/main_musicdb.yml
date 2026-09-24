@@ -29,6 +29,15 @@ jobs:
       - name: Run tests
         run: dotnet test Tests/MusicDB.Api.Tests/MusicDB.Api.Tests.csproj --configuration Release --no-build
 
+      # Модель EF змінили, а міграцію не додали — зупиняємо деплой, інакше схема бази
+      # розійшлася б із кодом (міграції застосовуються при старті застосунку).
+      - name: Check EF model has a migration
+        env:
+          DOTNET_ROLL_FORWARD: Major
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --project MusicDB.Api.csproj --configuration Release --no-build
+
       - name: dotnet publish
         # Публікуємо лише веб-проєкт (не всю .sln) — інакше в пакет деплою
         # потрапляють ще й тестові збірки (xunit тощо).

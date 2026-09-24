@@ -21,7 +21,7 @@ import { Badge, Button, EmptyState, ErrorState, Field, Heading, SegmentedPicker 
 import { CommunityFields } from '@/components/CommunityFields';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { EditIcon, TrashIcon } from '@/components/Icons';
-import { RADIUS, SPACING } from '@/constants/theme';
+import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { AdminNotification, BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
@@ -622,7 +622,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: 40 },
+  // Запас під плаваючий міні-плеєр — щоб нижні кнопки не ховались під ним.
+  content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: PLAYER_BAR_HEIGHT + 60 },
   reqCard: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,

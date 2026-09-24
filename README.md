@@ -8,7 +8,7 @@
 
 🔗 **Живий сайт**: https://musicdb-b5c4grhhdjdjd5gv.polandcentral-01.azurewebsites.net/
 
-📚 **Документація для розробників** — у [`docs/`](docs/): [архітектура](docs/architecture.md) · [API](docs/api.md) · [база даних](docs/database.md) · [веб-фронтенд](docs/frontend.md) · [мобільний застосунок](docs/mobile.md). Історія змін — [CHANGELOG.md](CHANGELOG.md).
+**Документація для розробників** — у [`docs/`](docs/): [архітектура](docs/architecture.md) · [API](docs/api.md) · [база даних](docs/database.md) · [веб-фронтенд](docs/frontend.md) · [мобільний застосунок](docs/mobile.md). Історія змін — [CHANGELOG.md](CHANGELOG.md).
 
 ## Можливості
 
@@ -57,7 +57,7 @@
 ```
 Controllers/        REST API контролери
 Services/            Бізнес-логіка (нормалізація жанрів/виконавців, рекомендації, пошук)
-Data/                EF Core DbContext і сутності
+Data/                EF Core DbContext і сутності; Migrations/ — міграції схеми (Legacy/ — старі SQL-скрипти)
 Models/              DTO
 Filters/             Атрибути авторизації (AdminOnly)
 Hubs/                SignalR hub
@@ -72,14 +72,13 @@ Tests/               xUnit тести
 MusicDB_desktop/     Electron-застосунок
 MusicDB_mobile/      React Native застосунок (Expo): src/app — екрани, src/components, src/api, src/player
 .github/workflows/   CI/CD: деплой на Azure, CodeQL, ESLint, OTA-оновлення мобільного (mobile-update.yml)
-db/                  SQL-міграції (окремо від git — див. коментар нижче)
 docs/                Документація для розробників (Markdown)
 ```
 
 > Новий модуль фронтенду: створити `wwwroot/js/<назва>.js` і додати `<script>` в `index.html` перед `main.js`.
 > ESLint (`npm run lint`) сам підхоплює всі файли `js/` і знає про спільні імена між ними.
 
-> Схема БД наразі змінюється вручну SQL-скриптами (`db/*.sql`, поза цим репозиторієм), не через EF Core Migrations — це заплановане до переходу.
+> Схема БД — через EF Core Migrations (`Data/Migrations`), застосовуються автоматично при старті застосунку. Як додати міграцію — [docs/database.md](docs/database.md).
 
 ## Файли пісень ком'юніті (Cloudflare R2)
 
@@ -121,7 +120,7 @@ npx expo start          # відкрити в Expo Go (QR-код)
 cp appsettings.json appsettings.Local.json
 # заповнити ConnectionStrings:Postgres, Authentication:Google:ClientSecret, YouTube/Gemini/LastFm ключі
 
-# 2. Застосувати схему БД — SQL-скрипти в db/ (поза цим репо), по порядку створення
+# 2. Схема БД створиться сама при першому запуску (EF Core Migrations)
 
 # 3. Запуск
 dotnet run

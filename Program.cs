@@ -23,7 +23,9 @@ if (!string.IsNullOrEmpty(renderPort))
 }
 
 builder.Services.AddDbContext<MusicDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+    // Історія EF Core Migrations — у тій самій схемі lab, поруч із таблицями.
+    opts.UseNpgsql(builder.Configuration.GetConnectionString("Postgres"),
+        npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "lab")));
 
 builder.Services.AddScoped<MusicService>();
 builder.Services.AddScoped<UserDirectoryService>();
@@ -31,6 +33,7 @@ builder.Services.AddScoped<ArtistActivityService>();
 builder.Services.AddScoped<AdminActivityService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<CatalogCache>();
+builder.Services.AddSingleton<UploadTokenService>();
 // Файли пісень ком'юніті: Cloudflare R2, якщо заповнено Uploads:R2 (прод —
 // через App Settings Azure, напр. Uploads__R2__SecretAccessKey), інакше диск.
 var r2Options = builder.Configuration.GetSection("Uploads:R2").Get<R2Options>() ?? new R2Options();
@@ -52,9 +55,22 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+    // "Smart": запит із заголовком X-Upload-Token (завантаження файлів мобільним застосунком)
+    // перевіряється токеном, решта — як і раніше cookie-сесією.
+    options.DefaultScheme = "Smart";
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    // Виклик входу: для запиту з токеном — просто 401, для решти — як і раніше Google.
+    options.DefaultChallengeScheme = "SmartChallenge";
 })
+.AddPolicyScheme("SmartChallenge", "Google або 401 для токена", o =>
+    o.ForwardDefaultSelector = ctx => ctx.Request.Headers.ContainsKey(UploadTokenAuth.Header)
+        ? UploadTokenAuth.Scheme
+        : GoogleDefaults.AuthenticationScheme)
+.AddPolicyScheme("Smart", "Cookie або токен завантаження", o =>
+    o.ForwardDefaultSelector = ctx => ctx.Request.Headers.ContainsKey(UploadTokenAuth.Header)
+        ? UploadTokenAuth.Scheme
+        : CookieAuthenticationDefaults.AuthenticationScheme)
+.AddScheme<AuthenticationSchemeOptions, UploadTokenAuthenticationHandler>(UploadTokenAuth.Scheme, null)
 .AddCookie(options =>
 {
     options.Cookie.Name = "MusicDB.Session";
@@ -142,6 +158,15 @@ builder.Services.AddCors(opts =>
         policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader()));
 
 var app = builder.Build();
+
+// EF Core Migrations: нові міграції (Data/Migrations) застосовуються при старті — схема
+// бази завжди відповідає коду, що деплоїться. EF бере advisory-lock, тож паралельні старти
+// безпечні. Вимкнути (напр. для ручного контролю): Database__AutoMigrate=false.
+if (app.Configuration.GetValue("Database:AutoMigrate", true))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<MusicDbContext>().Database.Migrate();
+}
 
 app.UseCors();
 
