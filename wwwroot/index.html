@@ -813,6 +813,11 @@
           <span class="settings-card-icon"><svg class="icon"><use href="#icon-keyboard"/></svg></span>
           <div><h3 data-i18n="settings.keyboard">Клавіатура</h3><p data-i18n="settings.keyboard.sub">Швидкі клавіші</p></div>
         </header>
+        <!-- Пошук — не керування плеєром, тож перемикач нижче його не вимикає. -->
+        <div class="shortcut-group-title" data-i18n="settings.keysAlways">Завжди активні</div>
+        <ul class="shortcut-list">
+          <li><span data-i18n="settings.key.search">Пошук</span><span><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></span></li>
+        </ul>
         <label class="setting-row">
           <div class="setting-text">
             <div class="setting-label" data-i18n="settings.playerKeys">Керування плеєром з клавіатури</div>
@@ -820,8 +825,7 @@
           </div>
           <span class="switch"><input type="checkbox" data-pref="playerKeys"><span class="switch-track"></span></span>
         </label>
-        <ul class="shortcut-list">
-          <li><span data-i18n="settings.key.search">Пошук</span><span><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></span></li>
+        <ul class="shortcut-list player-keys">
           <li><span data-i18n="settings.key.play">Відтворення / пауза</span><span><kbd data-i18n="settings.key.space">Пробіл</kbd></span></li>
           <li><span data-i18n="settings.key.next">Наступна пісня</span><span><kbd>Shift</kbd>+<kbd>→</kbd></span></li>
           <li><span data-i18n="settings.key.prev">Попередня пісня</span><span><kbd>Shift</kbd>+<kbd>←</kbd></span></li>
