@@ -18,6 +18,49 @@
 @media (max-width: 768px) {
   :root { --tabbar-h: 62px; }
 
+  /* ── Батл рояль — як у мобільному застосунку: на весь екран, одна рамка з відео
+     пісні, яку слухають, дві картки поруч (VS між ними), знизу "Крок назад"/"Вийти". ── */
+  #battle-modal-overlay { padding: 0; }
+  .battle-box { width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; border: none; display: flex; flex-direction: column; overflow: hidden; padding-bottom: env(safe-area-inset-bottom); }
+  .battle-header { padding: 12px 16px; justify-content: center; gap: 6px; border-bottom: none; }
+  .battle-header .battle-hover-toggle, .battle-header .battle-undo-btn, .battle-header .battle-close-btn { display: none; }
+  .battle-header span { font-size: 0.78rem; }
+  .battle-match-label { display: inline; }
+  .battle-progress-ribbon { padding: 0 16px; gap: 6px; }
+  .battle-progress-sep { display: none; }
+  .battle-progress-seg { font-size: 0.72rem; padding: 3px 10px; min-width: 34px; text-align: center; }
+  .battle-split { flex: 1; min-height: 0; padding: 14px 16px 0; overflow-y: auto; }
+  .battle-media-row { position: relative; flex-direction: row; padding: 0; margin: 0 0 22px; width: 100%;
+    height: clamp(120px, min(calc((100vw - 32px) * 0.5625), calc(100dvh - 430px)), 420px);
+    border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); overflow: hidden; flex-shrink: 0; }
+  .battle-media-row .battle-vs { display: none; }
+  .battle-media-row .battle-video-wrap { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; visibility: hidden; }
+  .battle-media-row .battle-video-wrap.m-active { visibility: visible; }
+  .battle-media-row .battle-video-wrap.battle-loser-fade, .battle-media-row .battle-video-wrap.battle-winner-flash { transform: none; }
+  .battle-m-hint { display: none; position: absolute; inset: 0; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 0.78rem; text-align: center; padding: 0 12px; }
+  .battle-m-hint .icon { width: 22px; height: 22px; }
+  .battle-media-row.m-idle .battle-m-hint { display: flex; }
+  .battle-details-row { position: relative; flex-direction: row; gap: 10px; padding: 0; min-height: 190px; }
+  .battle-details-row::before { content: 'VS'; position: absolute; left: 50%; top: -15px; transform: translateX(-50%); z-index: 2;
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border: 1px solid var(--accent); color: var(--accent); font-family: var(--font-serif); font-weight: 700; font-style: italic; font-size: 0.75rem; }
+  .battle-vs-spacer { display: none; }
+  .battle-side { align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 12px 12px; gap: 8px; }
+  .battle-side.m-current { border-color: var(--accent); }
+  .battle-side-info { text-align: left; height: auto; flex: 1; margin-bottom: 4px; }
+  .battle-side-artist { color: var(--accent); font-family: var(--font-ui); font-size: 0.95rem; }
+  .battle-side-title { color: var(--text); font-size: 0.85rem; margin-top: 3px; }
+  .battle-listen-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 8px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--surface2); color: var(--text); font: inherit; font-family: var(--font-mono); font-size: 0.8rem; cursor: pointer; white-space: nowrap; overflow: hidden; }
+  .battle-listen-btn .icon { width: 14px; height: 14px; flex-shrink: 0; }
+  .battle-side.m-current .battle-listen-btn .icon { color: var(--accent); }
+  .battle-choose-btn { height: 40px; padding: 0 8px; font-size: 0.82rem; margin-top: 0; box-shadow: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .battle-choose-btn .icon { display: none; }
+  .battle-m-bar { display: flex; gap: 10px; padding: 14px 16px 16px; flex-shrink: 0; }
+  .battle-m-bar .btn { flex: 1; justify-content: center; }
+  .battle-exit-btn { background: none; border-color: transparent; color: var(--muted); }
+  .battle-champion { flex: 1; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; }
+  .battle-champion-actions .btn-outline { display: none; }
+
   /* ── Шапка: бренд · пошук · дзвіночок · аватар ── */
   #tab-home, #nav-menu-dropdown, #lang-dropdown, #theme-dropdown,
   .nav-dm-btn, .nav-profile-name, .nav-admin-tag { display: none !important; }

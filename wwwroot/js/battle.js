@@ -16,8 +16,49 @@ let battleChampionSong = null;
 // Знімки стану перед кожним вибором — для "Крок назад" (обрав не ту пісню).
 let battleHistory = [];
 function _syncBattleUndo(){
-  const btn = document.getElementById('battle-undo-btn');
-  if(btn) btn.disabled = !battleHistory.length;
+  ['battle-undo-btn', 'battle-undo-btn-m'].forEach(id => {
+    const btn = document.getElementById(id);
+    if(btn) btn.disabled = !battleHistory.length;
+  });
+}
+
+// ─── Телефон (≤768px): вигляд як у мобільному застосунку ───────────────────
+// Одна рамка з відео тієї пісні, яку слухають (кнопка "Послухати" на картці),
+// картки поруч, "Крок назад"/"Вийти" внизу. Плеєри й логіка — ті самі, що на ПК;
+// на ПК ці елементи приховані CSS-ом, тож там усе як було.
+let battleActiveSide = null; // 'a' | 'b' — чиє відео в рамці; null — підказка
+function _battleSidePlaying(side){
+  if(_isBattleAudioSide(side)) return !_battleAudio(side).paused;
+  const p = side === 'a' ? battleLeftPlayer : battleRightPlayer;
+  try{ return p?.getPlayerState?.() === YT.PlayerState.PLAYING; }catch(e){ return false; }
+}
+function _renderBattleListen(){
+  const row = document.querySelector('#battle-split .battle-media-row');
+  row?.classList.toggle('m-idle', !battleActiveSide);
+  document.querySelectorAll('#battle-split .battle-video-wrap').forEach((w, i) =>
+    w.classList.toggle('m-active', battleActiveSide === (i ? 'b' : 'a')));
+  document.querySelectorAll('#battle-split .battle-side').forEach((el, i) => {
+    const side = i ? 'b' : 'a';
+    el.classList.toggle('m-current', battleActiveSide === side);
+    const use = el.querySelector('.battle-listen-btn use');
+    if(use) use.setAttribute('href', _battleSidePlaying(side) ? '#icon-pause' : '#icon-play');
+  });
+}
+function listenBattleSide(i){
+  const side = i ? 'b' : 'a';
+  const playing = _battleSidePlaying(side);
+  battleActiveSide = side;
+  _renderBattleListen();
+  if(_isBattleAudioSide(side)){ toggleBattleMini(side); return; }
+  const p = side === 'a' ? battleLeftPlayer : battleRightPlayer;
+  try{ playing ? p.pauseVideo() : p.playVideo(); }catch(e){}
+}
+async function exitBattle(){
+  if(document.getElementById('battle-champion').style.display === 'none'){
+    const ok = await confirmModal({ title: t('battle.exit'), text: t('battle.exitConfirm'), confirmLabel: t('battle.exit') });
+    if(!ok) return;
+  }
+  closeBattle();
 }
 function undoBattle(){
   if(battleTransitioning || !battleHistory.length) return;
@@ -147,6 +188,7 @@ function _onBattleStateChange(side, e){
   if(e.data === YT.PlayerState.CUED){
     try{ e.target.unMute(); e.target.setVolume(vol); }catch(err){}
   }
+  _renderBattleListen();
   // Двоє одночасно не мають грати: щойно один переходить у PLAYING — ставимо другий на паузу.
   if(e.data !== YT.PlayerState.PLAYING) return;
   const other = side === 'a' ? battleRightPlayer : battleLeftPlayer;
@@ -197,6 +239,9 @@ async function loadBattleMatch(){
   const b = battleRound[battleMatchIndex*2+1];
   document.getElementById('battle-round-label').textContent =
     `${t('battle.roundLabel')}${battleRound.length} → ${battleRound.length/2}`;
+  document.getElementById('battle-match-label').textContent = `· ${battleMatchIndex + 1}/${battleRound.length/2}`;
+  battleActiveSide = null;
+  _renderBattleListen();
   _setMarqueeText(document.getElementById('battle-a-artist'), a.artist);
   _setMarqueeText(document.getElementById('battle-a-title'), a.title);
   _setMarqueeText(document.getElementById('battle-b-artist'), b.artist);
@@ -244,6 +289,7 @@ function seekBattleMini(side, e){
 ['a','b'].forEach(side=>{
   const audio = _battleAudio(side);
   ['timeupdate','pause','loadedmetadata','ended'].forEach(ev=>audio.addEventListener(ev, ()=>_renderBattleMini(side)));
+  ['play','pause','ended'].forEach(ev=>audio.addEventListener(ev, _renderBattleListen));
   // Як і з відео: грає лише один бік — інший (відео чи міні-плеєр) на паузу.
   audio.addEventListener('play', ()=>{
     _renderBattleMini(side);

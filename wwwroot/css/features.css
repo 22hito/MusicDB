@@ -39,6 +39,12 @@
   .battle-hover-toggle:hover, .battle-hover-toggle:active { transform: none; }
 }
 
+/* Вікно підтвердження — над будь-якою модалкою (напр. "Вийти з турніру?" поверх батлу). */
+#confirm-modal-overlay { z-index: 1100; }
+
+/* Батл: елементи мобільного вигляду — на ПК приховані. */
+.battle-match-label, .battle-m-hint, .battle-listen-btn, .battle-m-bar { display: none; }
+
 /* Аватарки на сторінці друзів. */
 .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }
