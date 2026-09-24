@@ -142,4 +142,19 @@ public class BugReportsTests
             [Png(size: (int)AudioFiles.MaxImageBytes + 1)]));
         Assert.Empty(db.BugReports);
     }
+
+    [Fact]
+    public async Task Admin_DeletesReport_AndItsScreenshots()
+    {
+        using var db = TestDb.Create();
+        await Create(db, "user@x.com").CreateWithScreenshots("Звіт, який треба видалити", null, [Png()]);
+        var report = db.BugReports.Single();
+        var admin = Create(db, "admin@x.com", admin: true);
+        Assert.IsType<PhysicalFileResult>(await admin.GetScreenshot(report.Id, 0));
+
+        Assert.IsType<NoContentResult>(await admin.Delete(report.Id));
+        Assert.Empty(db.BugReports);
+        Assert.Null(await Storage.OpenAsync(report.Screenshots[0])); // файл прибрано зі сховища
+        Assert.IsType<NotFoundResult>(await admin.Delete(report.Id));
+    }
 }
