@@ -1,0 +1,337 @@
+/* N'Owl — Навігація й розкладка: меню, перша мобільна адаптація, перемикачі, таблиця_2,
+   сповіщення, оцінки, спілкування.
+   Файли css/*.css підключаються в index.html СТРОГО в цьому порядку (каскад). */
+
+/* ================================================================
+   ГНУЧКИЙ NAV: у адміна/авторизованого користувача до 7 вкладок разом з
+   мовою/темою/аватаром/виходом — на звичайному вікні десктопного застосунку
+   (1280px за замовчуванням) чи ноутбучному екрані все це вже НЕ влазить в
+   один рядок навіть на повністю широких моніторах не йдеться, а лишень факт,
+   що там реально не влазить. Тому переносимо вкладки на власний рядок під
+   брендом/авторизацією — замість того, щоб частина вкладок ховалась за
+   горизонтальним скролом і виглядала "обрізаною". Поріг підібраний виміром
+   реальної потрібної ширини (не влазить ще на 1576px, влазить з 1676px).
+   ================================================================ */
+@media (max-width: 1650px) {
+  nav { flex-wrap: wrap; height: auto; row-gap: 0.35rem; }
+  #nav-hamburger-dropdown { order: 10; flex: 1 1 100%; }
+}
+
+/* ================================================================
+   ГАМБУРГЕР-МЕНЮ: перенесення вкладок на власний рядок (блок вище) рятує
+   лише якщо ЦЬОМУ рядку є де розміститись — повному списку з 7 вкладок
+   реально потрібно ~1048px навіть у власному рядку. На вужчих вікнах (від
+   ~650 до ~1048px) рядок технічно "свій", але однаково не вміщає всі
+   вкладки — спрацьовує запасний горизонтальний скрол під маскою, який на
+   практиці виглядає як обрізаний текст, а не як явний натяк "прокрути далі".
+   Тому поріг гамбургера піднято з 650px до 1080px (з запасом) — щоб він
+   вмикався ДО того, як з'явиться цей "напівпідігнаний" стан, а не після.
+   Замість обрізаного рядка згортаємо вкладки в кнопку "☰", що відкриває їх
+   спливаючим списком — той самий підхід, що й у theme/lang-дропдаунах. */
+@media (max-width: 1080px) {
+  #nav-hamburger-dropdown { order: 0; flex: 0 0 auto; position: relative; }
+  .nav-hamburger { display: inline-flex; }
+  .nav-tabs {
+    display: none;
+    position: absolute; top: calc(100% + 8px); left: 0;
+    flex-direction: column; width: 250px; max-width: 82vw;
+    background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.4rem; box-shadow: var(--shadow-md);
+    mask-image: none; -webkit-mask-image: none; overflow: visible;
+    z-index: 250;
+  }
+  #nav-hamburger-dropdown.open .nav-tabs {
+    display: flex;
+    animation: dropIn 0.16s cubic-bezier(.2,.9,.3,1);
+  }
+  .nav-tabs li { width: 100%; }
+  .nav-tabs li button, .nav-tabs li a {
+    width: 100%; height: auto; padding: 0.7rem 0.85rem; border-radius: 6px;
+    border-bottom: none; justify-content: flex-start;
+  }
+  .nav-tab-indicator { display: none; }
+}
+
+/* ================================================================
+   МОБІЛЬНА АДАПТАЦІЯ
+   Все нижче — лише під max-width, десктопний вигляд не чіпаємо.
+   ================================================================ */
+@media (max-width: 768px) {
+  nav { padding: 0 0.75rem; }
+  .nav-brand { font-size: 1.05rem; margin-right: 0.75rem; }
+  .nav-tabs li button, .nav-tabs li a { height: 44px; padding: 0 0.8rem; font-size: 0.7rem; white-space: nowrap; }
+
+  .container { padding: 1.25rem 1rem; }
+  h2 { font-size: 1.45rem; }
+
+  /* STAT CARDS: фіксуємо 2 колонки, щоб не гуляло між 1 і 3 залежно від ширини */
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .stat-card { padding: 0.9rem 1rem; }
+  .stat-card .value { font-size: 1.6rem; }
+
+  /* FILTER BAR: пошук — на всю ширину, фільтр і "перемішати" — рядком під ним */
+  .filter-bar { gap: 0.5rem; }
+  .filter-bar input { flex: 1 1 100%; width: auto; }
+  .filter-bar select { flex: 1 1 auto; }
+
+  /* ФОРМИ: форма і панель "схожих пісень" завжди в один стовпчик — інакше стискаються до нечитабельного вигляду */
+  .form-card, .ext-search-panel-box { flex: 1 1 100% !important; max-width: 100% !important; }
+  .form-card { padding: 1.25rem; }
+  .form-row { grid-template-columns: 1fr; gap: 0.75rem; }
+  .form-card .btn-primary { width: 100%; padding: 0.75rem 1rem; }
+
+  /* ТАБЛИЦІ → КАРТКИ: ховаємо заголовки, підпис береться з data-label на <td>. */
+  .table-wrap.mobile-cards table, .table-wrap.mobile-cards thead, .table-wrap.mobile-cards tbody,
+  .table-wrap.mobile-cards tr, .table-wrap.mobile-cards td { display: block; width: 100%; }
+  .table-wrap.mobile-cards thead { display: none; }
+  .table-wrap.mobile-cards { background: none; border: none; box-shadow: none; }
+  .table-wrap.mobile-cards tbody tr { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.8rem; margin-bottom: 0.7rem; background: var(--surface); box-shadow: var(--shadow-sm); }
+  .table-wrap.mobile-cards tbody tr:last-child { margin-bottom: 0; }
+  .table-wrap.mobile-cards tbody td { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px dashed var(--border); text-align: right; }
+  .table-wrap.mobile-cards tbody td:last-child { border-bottom: none; }
+  .table-wrap.mobile-cards tbody td::before { content: attr(data-label); color: var(--muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; flex-shrink: 0; }
+  .table-wrap.mobile-cards tbody td[data-label=""]::before { content: none; }
+  /* Клітинки лише з іконками (без підпису бо в шапці там теж пусто) — рівняємо по краю */
+  .table-wrap.mobile-cards tbody td.td-icon-lead { justify-content: flex-start; }
+  .table-wrap.mobile-cards tbody td.td-icon-trail { justify-content: flex-end; }
+  .table-wrap.mobile-cards tbody td.td-actions > div { flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+  .table-wrap.mobile-cards .badge.album { max-width: 100%; }
+
+  /* ТАП-ЗОНИ: збільшуємо кнопки-іконки під палець (орієнтир ≥40px) */
+  .btn-icon-danger, .btn-icon-edit, .btn-icon-fav { width: 40px; height: 40px; }
+  .btn-icon-danger svg, .btn-icon-edit svg, .btn-icon-fav svg { width: 18px; height: 18px; }
+  .play-row-btn { width: 36px; height: 36px; }
+  .actions-td { flex-wrap: wrap; gap: 0.5rem; }
+
+  /* МОДАЛЬНІ ВІКНА: обмежуємо ширину й висоту (деякі мають інлайновий width:400px); кнопки на всю ширину */
+  .modal-box { width: 92vw !important; max-height: 85vh; overflow-y: auto; padding: 1.25rem; }
+  .modal-actions { flex-direction: column-reverse; gap: 0.5rem; }
+  .modal-actions button { width: 100%; padding: 0.65rem 1rem; font-size: 0.85rem; }
+
+  /* ПЛЕЄР: ховаємо другорядні елементи (гучність, час) — лишаємо місце під кнопки керування */
+  .player-left { min-width: 0; max-width: 42%; flex: 0 1 42%; padding: 0 0.5rem 0 0.6rem; gap: 0.6rem; }
+  #player-cover { width: 42px; height: 42px; }
+  #p-album { display: none; }
+  .player-center { padding: 0 0.2rem; min-width: 0; }
+  .time-row { display: none; }
+  /* Перемішати/повтор дублюють функціонал (перемішати вже є в таблиці) — на
+     вузьких екранах прибираємо їх, бо разом з play/pause/next і кнопками
+     праворуч (відео, редагувати, закрити) вони не влазили в один рядок і
+     виштовхували закрити/наступну пісню за межі екрана без можливості
+     дотягнутись без горизонтального скролу всієї сторінки. */
+  #btn-shuffle, #btn-repeat { display: none; }
+  .player-right { min-width: 0; padding: 0 0.5rem 0 0.2rem; gap: 0.15rem; }
+  .vol-row { display: none; }
+
+  /* Відео-попап шириною 320px не влазить у вузькі екрани — прив'язуємось до обох країв */
+  #video-popup { left: 12px; right: 12px; width: calc(100vw - 24px); }
+}
+
+@media (max-width: 420px) {
+  .container { padding: 1rem 0.75rem; }
+  .nav-tabs li button, .nav-tabs li a { padding: 0 0.6rem; font-size: 0.66rem; }
+
+  /* На найменших телефонах навіть без shuffle/repeat лишається мало місця,
+     якщо адміну ще й показана кнопка редагування — стискаємо трохи сильніше. */
+  .player-left { max-width: 36%; flex-basis: 36%; padding: 0 0.4rem 0 0.5rem; gap: 0.4rem; }
+  #player-cover { width: 36px; height: 36px; }
+  .player-center .pc-icon-btn { width: 30px; height: 30px; }
+  .player-center .pc-main { width: 34px; height: 34px; }
+}
+
+/* ================================================================
+   НАВБАР: "Головна" + випадаюче меню + глобальний пошук
+   (замінили смугу вкладок .nav-tabs / гамбургер)
+   ================================================================ */
+.nav-home-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-family: var(--font-ui); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 0.8rem; height: 56px; border-bottom: 2px solid transparent; transition: color 0.2s; flex-shrink: 0; }
+.nav-home-btn:hover { color: var(--text); }
+.nav-home-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+#nav-menu-dropdown { margin-right: 0.75rem; flex-shrink: 0; }
+.nav-menu { left: 0; right: auto; min-width: 240px; transform-origin: top left; }
+.nav-menu a.nav-menu-item { color: var(--text); font-family: var(--font-ui); font-size: 0.78rem; padding: 0.5rem 0.6rem; border-radius: 5px; display: flex; align-items: center; gap: 0.55rem; text-decoration: none; transition: background 0.15s; }
+.nav-menu a.nav-menu-item:hover { background: var(--surface2); }
+.nav-search { position: relative; flex: 1 1 260px; max-width: 420px; min-width: 0; margin-right: auto; }
+.nav-search-icon { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.nav-search input { width: 100%; height: 32px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-ui); font-size: 0.78rem; padding: 0 0.7rem 0 2rem; outline: none; transition: border-color 0.2s; }
+.nav-search input:focus { border-color: var(--accent); }
+.nav-search-results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; min-width: 300px; max-height: 70vh; overflow-y: auto; background: var(--elevated, var(--surface)); border: 1px solid var(--border); border-radius: 8px; padding: 0.35rem; display: none; z-index: 260; box-shadow: var(--shadow-md); }
+.nav-search-results.open { display: block; animation: dropIn 0.16s cubic-bezier(.2,.9,.3,1); }
+.nav-search-section { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0.5rem 0.6rem 0.25rem; }
+.nav-search-item { width: 100%; background: none; border: none; text-align: left; color: var(--text); padding: 0.45rem 0.6rem; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-ui); }
+.nav-search-item:hover { background: var(--surface2); }
+.nav-search-item img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.nav-search-item .nsi-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.nav-search-item .nsi-main strong { font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-search-item .nsi-main span { font-size: 0.7rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-search-empty { padding: 0.8rem; color: var(--muted); font-size: 0.8rem; }
+#lang-dropdown { margin-left: 0.75rem; }
+
+@media (max-width: 1080px) {
+  nav { flex-wrap: wrap; height: auto; row-gap: 0.35rem; padding-top: 0.35rem; padding-bottom: 0.35rem; }
+  .nav-menu-label { display: none; }
+  .nav-search { order: 10; flex: 1 1 100%; max-width: none; margin-right: 0; }
+  .nav-home-btn { height: 40px; }
+}
+
+/* ================================================================
+   ПЕРЕМИКАЧІ (таблиця_1/таблиця_2, тип заявки, вкладки чату)
+   ================================================================ */
+.seg-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 3px; background: var(--surface); flex-wrap: wrap; }
+.seg-switch button { background: none; border: none; color: var(--muted); font-family: var(--font-ui); font-size: 0.75rem; letter-spacing: 0.05em; padding: 0.45rem 0.9rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; transition: background 0.15s, color 0.15s; }
+.seg-switch button:hover { color: var(--text); }
+.seg-switch button.active { background: var(--surface2); color: var(--accent); }
+.count-badge { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 0.65rem; line-height: 18px; text-align: center; font-weight: 700; }
+
+/* ================================================================
+   ТАБЛИЦЯ_2: автор, оцінка, бейдж джерела
+   ================================================================ */
+.badge.source-community { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.submitter-link { display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+.rating-chip { background: none; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-family: var(--font-ui); font-size: 0.72rem; padding: 0.15rem 0.55rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; transition: border-color 0.15s, color 0.15s; }
+.rating-chip:hover { border-color: var(--accent); color: var(--accent); }
+.rating-chip.has-rating { color: var(--accent); }
+.rating-chip small { opacity: 0.65; font-size: 0.65rem; }
+.req-source-cell { display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-start; }
+.req-audio { width: 220px; max-width: 100%; height: 32px; }
+.community-fields { border-top: 1px dashed var(--border); padding-top: 1rem; margin-bottom: 0.25rem; }
+#btn-video.disabled { opacity: 0.35; pointer-events: none; }
+
+/* ================================================================
+   СПОВІЩЕННЯ: секції (адміністрування / підписки)
+   ================================================================ */
+.notif-section-title { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0.5rem 0.8rem 0.3rem; border-top: 1px solid var(--border); }
+.notif-item { padding: 0.5rem 0.8rem; border-top: 1px solid var(--border); cursor: pointer; }
+.notif-item:hover { background: var(--surface2); }
+.notif-item.unread { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* ================================================================
+   ОЦІНКИ Й РЕЦЕНЗІЇ
+   ================================================================ */
+.rating-input-row { display: flex; align-items: center; gap: 0.75rem; }
+.rating-input-row input[type="range"] { flex: 1; accent-color: var(--accent); padding: 0; border: none; background: none; box-shadow: none; }
+.rating-input-row input[type="number"] { width: 80px !important; flex-shrink: 0; text-align: center; }
+.rating-reviews-title { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 1.2rem 0 0.6rem; }
+.rating-reviews { display: flex; flex-direction: column; gap: 0.6rem; }
+.rating-review { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; }
+.rating-review-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; margin-bottom: 0.35rem; }
+.rating-review-head .btn-icon-danger { margin-left: auto; width: 26px; height: 26px; }
+.rating-review-date { color: var(--muted); font-size: 0.7rem; }
+.rating-review-body { font-size: 0.82rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ================================================================
+   СПІЛКУВАННЯ: особисті повідомлення + обговорення
+   ================================================================ */
+.chat-layout { display: grid; grid-template-columns: 300px 1fr; gap: 1rem; min-height: 480px; }
+.chat-sidebar, .chat-main { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem; min-width: 0; }
+.chat-main { display: flex; flex-direction: column; }
+#chat-dm-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.chat-conv { display: flex; gap: 0.6rem; align-items: center; padding: 0.55rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+.chat-conv:hover { background: var(--surface2); }
+.chat-conv.active { background: var(--surface2); box-shadow: inset 3px 0 0 var(--accent); }
+.chat-conv img, .chat-conv-ph { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.chat-conv-main { min-width: 0; flex: 1; }
+.chat-conv-top { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; font-size: 0.82rem; }
+.chat-conv-last { font-size: 0.72rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-header { padding: 0.2rem 0.3rem 0.7rem; border-bottom: 1px solid var(--border); font-weight: 600; }
+.chat-messages { flex: 1; overflow-y: auto; max-height: 55vh; min-height: 260px; padding: 0.8rem 0.2rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.chat-msg { max-width: 75%; align-self: flex-start; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px 12px 12px 4px; padding: 0.45rem 0.7rem; }
+.chat-msg.mine { align-self: flex-end; background: color-mix(in srgb, var(--accent) 16%, var(--surface2)); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 12px 12px 4px 12px; }
+.chat-msg-body { font-size: 0.85rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-msg-time { font-size: 0.62rem; color: var(--muted); margin-top: 0.2rem; text-align: right; }
+.chat-input-row { display: flex; gap: 0.6rem; align-items: flex-end; margin-top: 0.6rem; }
+.chat-input-row textarea { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-ui); font-size: 0.85rem; padding: 0.55rem 0.75rem; resize: vertical; outline: none; }
+.chat-input-row textarea:focus { border-color: var(--accent); }
+.thread-card .es-main span { white-space: normal; }
+.thread-post { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1rem; }
+.thread-op { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.thread-post-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; }
+.thread-post-meta { font-size: 0.72rem; color: var(--muted); margin: 0.2rem 0 0.5rem; }
+.thread-post-body { font-size: 0.87rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
+
+@media (max-width: 768px) {
+  .chat-layout { grid-template-columns: 1fr; }
+  .chat-sidebar { max-height: 260px; overflow-y: auto; }
+  .chat-msg { max-width: 90%; }
+  .chat-input-row { flex-direction: column; align-items: stretch; }
+}
+
+/* ================================================================
+   НАВБАР: три колонки — ліва група / пошук / права група.
+   Бокові колонки однакові (1fr), тож пошук стоїть рівно по центру
+   СТОРІНКИ, а не в "залишку" між різними за шириною групами. Якщо права
+   група ширша за свою колонку, 1fr (= minmax(auto,1fr)) просто розсуває
+   сітку, без накладання на пошук.
+   ================================================================ */
+nav { display: grid; grid-template-columns: 1fr minmax(260px, 520px) 1fr; column-gap: 1.5rem; }
+.nav-left, .nav-right { display: flex; align-items: center; min-width: 0; }
+.nav-left { justify-self: start; }
+.nav-right { justify-self: end; }
+.nav-brand { margin-right: 1.25rem; }
+.nav-search { max-width: none; margin: 0; width: 100%; }
+.nav-search input { height: 38px; border-radius: 999px; background: var(--surface); border-color: var(--border-strong); font-size: 0.82rem; padding: 0 1rem 0 2.3rem; box-shadow: var(--shadow-sm); transition: border-color 0.2s, box-shadow 0.2s; }
+.nav-search input:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.nav-search-icon { left: 0.9rem; }
+.nav-search-results { border-radius: var(--radius); }
+
+/* "Головна" — основна навігаційна кнопка: повноцінна "таблетка" з іконкою
+   і тонованим фоном, а не дрібний текст-вкладка поруч із другорядним меню. */
+.nav-home-btn {
+  height: 38px; padding: 0 1.05rem; display: inline-flex; align-items: center; gap: 0.5rem;
+  border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface);
+  color: var(--text); font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600;
+  letter-spacing: 0.01em; text-transform: none; box-shadow: var(--shadow-sm);
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+.nav-home-btn .icon { font-size: 1.05rem; }
+.nav-home-btn:hover { border-color: var(--accent); color: var(--accent); }
+.nav-home-btn:active { transform: scale(0.97); }
+.nav-home-btn.active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+/* Відокремлюємо "Меню" від "Головна" відступом і тонкою вертикальною рискою. */
+#nav-menu-dropdown { margin: 0 0 0 1.5rem; position: relative; }
+#nav-menu-dropdown::before { content: ''; position: absolute; left: -0.8rem; top: 20%; bottom: 20%; width: 1px; background: var(--border-strong); }
+.nav-menu-toggle { height: 38px; border-radius: 999px; padding: 0 0.9rem; }
+
+@media (max-width: 1080px) {
+  nav { grid-template-columns: 1fr auto; row-gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .nav-search { grid-column: 1 / -1; grid-row: 2; }
+  .nav-home-btn { height: 36px; }
+}
+@media (max-width: 768px) {
+  nav { grid-template-columns: 1fr; }
+  .nav-right { justify-self: start; flex-wrap: wrap; row-gap: 0.4rem; }
+  .nav-search { grid-row: 3; }
+  #nav-menu-dropdown { margin-left: 1rem; }
+  #nav-menu-dropdown::before { left: -0.55rem; }
+}
+.nav-login-btn { height: 38px; padding: 0 1.1rem; border: none; border-radius: 999px; background: var(--accent-grad); color: var(--on-accent); font-family: var(--font-sans); font-size: 0.82rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 25%, transparent); transition: filter 0.2s, transform 0.15s, box-shadow 0.2s; white-space: nowrap; }
+.nav-login-btn:hover { filter: brightness(1.07); transform: translateY(-1px); box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent); }
+.nav-search input::placeholder, .chat-input-row textarea::placeholder { color: var(--muted); opacity: 0.85; }
+
+/* Дії над головною таблицею (об'єднати жанри — адмін, надіслати запит) в одному рядку. */
+.home-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin-left: auto; }
+
+/* Запити на листування */
+.chat-state-hint { font-size: 0.75rem; color: var(--muted); border: 1px dashed var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
+.dm-request-card { display: flex; align-items: center; gap: 0.8rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1rem; flex-wrap: wrap; }
+.dm-request-card img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.dm-request-main { flex: 1; min-width: 200px; }
+.dm-request-preview { font-size: 0.82rem; color: var(--text2, var(--muted)); margin-top: 0.25rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dm-request-actions { display: flex; gap: 0.5rem; }
+
+/* Батл рояль: міні-плеєр для треку ком'юніті без відео */
+.battle-video-wrap { position: relative; }
+.battle-mini { display: none; position: absolute; inset: 0; flex-direction: column; align-items: center; justify-content: center; gap: 0.7rem; padding: 1rem; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 16%, var(--surface2)), var(--surface) 75%); }
+.battle-video-wrap.audio-mode .battle-mini { display: flex; }
+.battle-video-wrap.audio-mode iframe { visibility: hidden; }
+.battle-mini-cover { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent); border: 1px solid var(--border); background: var(--surface2); }
+.battle-mini.playing .battle-mini-cover { animation: battleMiniSpin 6s linear infinite; }
+@keyframes battleMiniSpin { to { transform: rotate(360deg); } }
+.battle-mini-play { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; background: var(--accent); color: var(--on-accent, #141210); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
+.battle-mini-play:hover { transform: scale(1.08); }
+.battle-mini-seek { width: 80%; height: 6px; border-radius: 3px; background: var(--border); cursor: pointer; overflow: hidden; }
+.battle-mini-fill { height: 100%; width: 0; background: var(--accent); }
+.battle-mini-time { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.battle-mini-label { font-size: 0.7rem; color: var(--accent); display: inline-flex; align-items: center; gap: 0.3rem; }

@@ -1,0 +1,109 @@
+/* N'Owl — Модальні вікна, спливаючі сповіщення (toasts), баг-репорти.
+   Файли css/*.css підключаються в index.html СТРОГО в цьому порядку (каскад). */
+
+   МОДАЛЬНІ ФОРМИ (новий плейлист, додати в плейлист)
+   ================================================================ */
+.modal-form { width: 460px; max-width: calc(100vw - 32px); padding: 1.5rem 1.6rem 1.4rem; }
+.modal-head { display: flex; align-items: flex-start; gap: 0.9rem; margin-bottom: 1.3rem; }
+.modal-head-icon {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; font-size: 1.2rem;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.modal-head-text { flex: 1; min-width: 0; }
+.modal-head-text h3 { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -0.01em; }
+.modal-head-text p { color: var(--muted); font-size: 0.82rem; margin-top: 0.25rem; line-height: 1.45; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 999px; border: none; background: none; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center; font-size: 1rem; flex-shrink: 0; margin: -4px -6px 0 0; transition: background-color 0.15s, color 0.15s;
+}
+.modal-close:hover { background: var(--surface2); color: var(--text); }
+.modal-form .form-group { margin-bottom: 1.15rem; }
+.modal-form .form-group input[type="text"] { font-family: var(--font-sans); font-size: 0.95rem; padding: 0.75rem 0.9rem; }
+.modal-form input[aria-invalid] { border-color: var(--red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 18%, transparent); }
+.field-meta { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.4rem; min-height: 1.1em; font-size: 0.75rem; }
+.field-error { color: var(--red); font-weight: 500; }
+.field-count { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+.vis-group { border: none; padding: 0; min-width: 0; }
+.vis-group legend { display: block; font-size: 0.7rem; font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; padding: 0; }
+.vis-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.vis-option { position: relative; cursor: pointer; }
+.vis-option input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.vis-card {
+  display: flex; flex-direction: column; gap: 0.2rem; height: 100%; padding: 0.85rem 0.9rem; border-radius: var(--radius);
+  border: 1px solid var(--border-strong); background: var(--surface); transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+.vis-card strong { font-size: 0.9rem; color: var(--text); font-weight: 650; }
+.vis-card small { font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
+.vis-icon { font-size: 1.05rem; color: var(--muted); margin-bottom: 0.25rem; transition: color 0.15s; }
+.vis-option:hover .vis-card { border-color: color-mix(in srgb, var(--accent) 50%, var(--border-strong)); }
+.vis-option input:checked + .vis-card {
+  border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.vis-option input:checked + .vis-card .vis-icon { color: var(--accent); }
+.vis-option input:focus-visible + .vis-card { outline: 2px solid var(--accent); outline-offset: 2px; }
+.modal-form .modal-actions { margin-top: 1.4rem; }
+/* Основна дія модалки — акцентна кнопка з ПРАВИЛЬНИМ кольором тексту для акценту
+   (раніше "Створити й додати" мала фон акценту, але текст для червоної кнопки). */
+.modal-btn-primary {
+  background: var(--accent-grad); color: var(--on-accent); border: none; border-radius: var(--radius-sm);
+  padding: 0.55rem 1.15rem; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 650; cursor: pointer;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 22%, transparent); transition: filter 0.15s, transform 0.15s, opacity 0.15s;
+}
+.modal-btn-primary:hover { filter: brightness(1.07); }
+.modal-btn-primary:active { transform: scale(0.97); }
+.modal-btn-primary:disabled { opacity: 0.6; cursor: progress; }
+#add-to-playlist-modal-overlay .modal-box { width: 400px; }
+@media (max-width: 480px) {
+  .vis-options { grid-template-columns: 1fr; }
+  .modal-form { padding: 1.25rem 1.1rem 1.1rem; }
+}
+/* Бічні групи навбару не стискаються нижче власного вмісту — інакше на
+   1280–1400px пошук у центральній колонці наїжджав на "Меню" й мову. */
+.nav-left, .nav-right { min-width: max-content; }
+@media (max-width: 1400px) and (min-width: 1081px) {
+  /* Коли вже не влазить "рівно по центру" — пошук займає весь вільний простір між групами. */
+  nav { grid-template-columns: auto minmax(180px, 1fr) auto; }
+}
+/* Картки видимості всередині .form-group успадковували капс підписів полів. */
+.vis-option, .vis-card, .vis-card strong, .vis-card small { text-transform: none; letter-spacing: normal; font-weight: inherit; }
+.vis-option { display: block; margin: 0; font-size: 0.9rem; color: var(--text); }
+.vis-card strong { font-weight: 650; }
+
+/* ================================================================
+   СПЛИВАЮЧІ СПОВІЩЕННЯ (нове повідомлення, запит у друзі, дія адміна)
+   Праворуч угорі під навбаром — не перекриває плеєр і відео-попап знизу.
+   ================================================================ */
+#toast-stack { position: fixed; top: 72px; right: 16px; z-index: 1200; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 32px)); pointer-events: none; }
+.toast {
+  pointer-events: auto; text-align: left; cursor: pointer;
+  background: var(--elevated, var(--surface)); color: var(--text);
+  border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: var(--radius, 10px); padding: 0.7rem 0.9rem;
+  font: inherit; font-size: 0.84rem; line-height: 1.35;
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.3));
+  animation: toastIn 0.22s cubic-bezier(.2,.9,.3,1);
+}
+.toast:hover { border-color: var(--accent); }
+.toast.toast-out { opacity: 0; transform: translateX(12px); transition: opacity 0.22s, transform 0.22s; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ================================================================
+   БАГ-РЕПОРТИ
+   ================================================================ */
+.bug-context-toggle { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.78rem; color: var(--muted); margin: -0.4rem 0 0.4rem; cursor: pointer; }
+.bug-context-help { font-size: 0.74rem; color: var(--muted); margin: 0 0 0.4rem 1.6rem; line-height: 1.45; }
+.bug-context-preview { margin: 0 0 0.6rem 1.6rem; font-size: 0.75rem; }
+.bug-context-preview summary { cursor: pointer; color: var(--accent); }
+.bug-context-preview pre { margin: 0.4rem 0 0; padding: 0.6rem 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 9rem; overflow: auto; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text2); }
+.bug-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.bug-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius, 10px); padding: 0.8rem 1rem; }
+.bug-card.resolved { opacity: 0.7; }
+.bug-card-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.8rem; }
+.bug-card-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.87rem; line-height: 1.5; }
+.bug-card-context { margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); }
+.bug-card-context summary { cursor: pointer; }
+.bug-card-context pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-mono); font-size: 0.72rem; background: var(--surface2); border-radius: 6px; padding: 0.5rem 0.7rem; margin-top: 0.4rem; }
+
+/* ================================================================
