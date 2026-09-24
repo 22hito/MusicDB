@@ -67,7 +67,6 @@
   --scrim: oklch(0.1 0.02 272 / 0.62);
   --card-hl: inset 0 1px 0 oklch(1 0 0 / 0.045);
   --glass: oklch(0.2 0.02 272 / 0.72);
-  --grain: 0.04;
   --aurora-a: 0.22;
   --logo-filter: invert(1) brightness(1.15);
   --accent-grad: linear-gradient(135deg, var(--accent-hi), var(--accent) 55%, var(--accent-lo));
@@ -122,7 +121,6 @@ html[data-theme="light"] {
   --scrim: oklch(0.25 0.03 272 / 0.3);
   --card-hl: inset 0 1px 0 oklch(1 0 0 / 0.8);
   --glass: oklch(0.995 0.004 85 / 0.74);
-  --grain: 0.025;
   --aurora-a: 0.16;
   --logo-filter: none;
   --accent-grad: linear-gradient(135deg, var(--accent-hi) -20%, var(--accent) 45%, var(--accent-lo));
@@ -155,7 +153,6 @@ html[data-theme="gray"] {
   --scrim: oklch(0.2 0.02 265 / 0.5);
   --card-hl: inset 0 1px 0 oklch(1 0 0 / 0.07);
   --glass: oklch(0.46 0.02 265 / 0.74);
-  --grain: 0.035;
   --aurora-a: 0.2;
   --logo-filter: invert(1) brightness(1.15);
 }
@@ -240,18 +237,6 @@ html[data-theme="light"] .app-splash-logo { filter: brightness(0) opacity(0.82) 
 body { background: transparent; color: var(--text); font-family: var(--font-sans); min-height: 100vh; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-feature-settings: "cv11", "ss01"; }
 ::selection { background: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--text); }
 body.player-open { padding-bottom: var(--player-h); }
-/* Ледь помітна плівкова зернистість — фірмова "дорога" деталь сучасних
-   темних інтерфейсів, майже непомітна свідомо, але додає глибини фону. */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: var(--grain);
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-@media (prefers-reduced-motion: reduce) { body::before { display: none; } }
 
 /* NAV */
 nav { background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: saturate(1.4) blur(16px); -webkit-backdrop-filter: saturate(1.4) blur(16px); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; height: 56px; position: sticky; top: 0; z-index: 100; }
@@ -1681,7 +1666,6 @@ html[data-playing] .ambient-band { opacity: calc(var(--aurora-a) * var(--glow-k)
 html[data-playing][data-glow-follow] .ambient-comet { opacity: min(0.9, calc(var(--aurora-a) * var(--glow-k) * 2.6)); }
 html[data-glow-follow] #player-bar { transition: background-position 1s linear; }
 @media (prefers-reduced-motion: reduce) { :root:not([data-motion="full"]) .ambient-band { animation: none; } }
-html[data-grain="off"] body::before { display: none; }
 
 /* ================================================================
    НАЛАШТУВАННЯ
@@ -2074,3 +2058,30 @@ button.badge.album.badge-filter.active { background: var(--accent); color: var(-
    тьмяніють, коли перемикач "Керування плеєром" вимкнено. */
 .shortcut-group-title { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 0.4rem; }
 .settings-card:has(input[data-pref="playerKeys"]:not(:checked)) .shortcut-list.player-keys { opacity: 0.45; }
+
+/* Колесо: підпис не виходить за обідок — max-width задає JS, тут обрізання. */
+.wheel-seg-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+
+/* ================================================================
+   ТЕЛЕФОН (≤768px)
+   ================================================================ */
+@media (max-width: 768px) {
+  /* Випадні меню навбару (мова, тема, сповіщення, профіль, головне меню)
+     прив'язувались до своєї кнопки й на вузькому екрані вилазили ліворуч/
+     праворуч. Тут — під навбаром на всю ширину, з відступами. Точкою відліку
+     стає сам nav (position: sticky), а не кнопка. */
+  nav .dropdown, #nav-menu-dropdown { position: static; }
+  nav .dropdown-menu, nav .dropdown-menu.nav-menu, nav #notif-list {
+    position: absolute; top: calc(100% + 6px); left: 12px; right: 12px;
+    width: auto; min-width: 0 !important; max-width: none;
+    max-height: min(70vh, 540px); overflow-y: auto; transform-origin: top center;
+  }
+  /* Масштаб інтерфейсу — лише для моніторів: на телефоні будь-що понад 100%
+     розсуває сторінку за екран (відео, текст пісні, меню). Розмір тексту на
+     телефоні задає сама система й жест масштабування браузера. */
+  body { zoom: 1 !important; }
+  .setting-row-desktop-only { display: none !important; }
+}
+
+.setting-row-mobile-only { display: none !important; }
+@media (max-width: 768px) { .setting-row-mobile-only { display: flex !important; } }
