@@ -1,0 +1,356 @@
+/* N'Owl — NOCTURNE — фірмовий шар редизайну поверх базових стилів, "аврора", налаштування,
+   адаптивність під монітори.
+   Файли css/*.css підключаються в index.html СТРОГО в цьому порядку (каскад). */
+
+/* ================================================================
+   NOCTURNE — фірмовий шар редизайну
+   ================================================================ */
+
+/* Фон сторінки живе на <html>, а body прозорий — так "аврора" нижче
+   (body::after, z-index:-1) лягає МІЖ фоном і вмістом. */
+html { background: var(--bg); transition: --art 1.4s ease; }
+
+/* (сяйво сторінки — див. блок AMBIENT нижче) */
+
+/* Посилання "Перейти до вмісту" — видиме лише при фокусі з клавіатури. */
+.skip-link {
+  position: fixed; top: 10px; left: 10px; z-index: 10000; transform: translateY(-160%);
+  background: var(--accent); color: var(--on-accent); padding: 0.55rem 0.95rem; border-radius: var(--radius-sm);
+  font-weight: 600; font-size: 0.85rem; text-decoration: none; transition: transform 0.2s var(--ease-out);
+}
+.skip-link:focus-visible { transform: none; }
+#main-content { display: block; height: 0; outline: none; }
+
+/* Фокус — чітке кільце, що повторює заокруглення елемента. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button, [role="button"] { touch-action: manipulation; }
+
+/* ---------- Типографіка ---------- */
+/* Масштаб ІНТЕРФЕЙСУ (налаштування "Розмір інтерфейсу"): zoom масштабує все —
+   текст, кнопки, іконки, відступи в px — як масштаб браузера, а не лише rem-текст.
+   --auto-scale додатково збільшує інтерфейс на великих моніторах (див. нижче). */
+body { zoom: calc(var(--ui-scale) * var(--auto-scale)); }
+body { font-size: 0.906rem; font-optical-sizing: auto; }
+h2 { font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.35rem); font-weight: 800; letter-spacing: -0.015em; }
+h3 { font-family: var(--font-sans); font-weight: 650; letter-spacing: -0.01em; }
+/* Цифри, час, тривалість — табличні цифри Inter (однакова ширина), щоб стовпці
+   не "танцювали"; окремий моноширинний шрифт тут виглядав "кодово". */
+.duration-col, .num-col, .time-row, #p-cur, #p-dur, .wheel-num-input, .battle-progress-seg, .stat-card .value {
+  font-variant-numeric: tabular-nums; letter-spacing: 0;
+}
+.num-col { font-size: 0.74rem; }
+/* Дрібні підписи-"брови" (заголовки таблиць, мітки полів, статистика) лишаються
+   капсом — це заголовки категорій, а не дії. Кнопки/меню — звичайний регістр. */
+thead th, .form-group label, .stat-card .label, .wheel-legend-title, .ext-search-panel-box .es-panel-title {
+  font-family: var(--font-sans); font-size: 0.7rem; font-weight: 650; letter-spacing: 0.1em;
+}
+.dropdown-toggle, .dropdown-menu button, .seg-switch button, .nav-menu a.nav-menu-item, .nav-search input,
+.wheel-spin-btn, .battle-choose-btn, .modal-btn-cancel, .modal-btn-confirm, .rating-chip {
+  font-family: var(--font-sans); text-transform: none; letter-spacing: 0;
+}
+.dropdown-toggle { font-size: 0.8rem; font-weight: 550; height: 36px; border-radius: 999px; padding: 0 0.8rem; }
+.dropdown-menu button, .nav-menu a.nav-menu-item { font-size: 0.85rem; padding: 0.55rem 0.7rem; }
+/* Меню — суцільний фон: воно всередині навбару з backdrop-filter, де вкладене
+   розмиття не працює, і текст сторінки "просвічував" крізь пункти. */
+.dropdown-menu, .nav-search-results { padding: 0.4rem; border-radius: 14px; background: var(--elevated); }
+.wheel-spin-btn { font-size: 1rem; font-weight: 700; }
+.seg-switch { border-radius: 12px; padding: 4px; }
+.seg-switch button { font-size: 0.84rem; font-weight: 550; border-radius: 9px; padding: 0.5rem 0.95rem; }
+.seg-switch button.active { background: var(--elevated); color: var(--text); box-shadow: var(--shadow-sm); }
+.seg-switch button.active .icon { color: var(--accent); }
+
+/* ---------- Навбар: скло + тінь, що з'являється лише при прокручуванні ---------- */
+nav {
+  background: var(--glass); backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent); min-height: 64px;
+}
+@supports (animation-timeline: scroll()) {
+  nav { animation: navLift linear both; animation-timeline: scroll(root); animation-range: 0 120px; }
+  @keyframes navLift { to { box-shadow: 0 10px 30px rgba(var(--shadow-rgb), calc(0.25 * var(--shadow-k))); } }
+}
+.nav-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.01em; }
+.nav-brand img { height: 32px; }
+.nav-search-kbd {
+  position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); pointer-events: none;
+  font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); line-height: 1;
+  padding: 0.2rem 0.45rem; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 6px; background: var(--surface2);
+  transition: opacity 0.15s;
+}
+.nav-search input:focus ~ .nav-search-kbd, .nav-search input:not(:placeholder-shown) ~ .nav-search-kbd { opacity: 0; }
+.nav-search input { padding-right: 2.4rem; }
+@media (hover: none) { .nav-search-kbd { display: none; } }
+
+/* ---------- Картки й поверхні ---------- */
+.stat-card { border-radius: var(--radius-lg); padding: 1.35rem 1.5rem 1.25rem; }
+.stat-card::before {
+  content: ''; position: absolute; left: 1.5rem; right: 1.5rem; top: 0; height: 1px; opacity: 0; transition: opacity 0.3s;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.stat-card:hover::before { opacity: 1; }
+.stat-card .value { font-size: 2.35rem; font-weight: 800; letter-spacing: -0.02em; }
+.table-wrap { border-radius: var(--radius-lg); }
+thead th { padding-top: 0.9rem; padding-bottom: 0.9rem; }
+tbody td { padding-top: 0.85rem; padding-bottom: 0.85rem; }
+/* Рядок, що грає: смуга й тонування в кольорі обкладинки, а не завжди бурштин. */
+tbody tr.playing-row { background: color-mix(in srgb, var(--art) 9%, transparent); box-shadow: inset 3px 0 0 var(--art); }
+.play-row-btn { width: 32px; height: 32px; }
+tbody tr:hover .play-row-btn { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.btn-primary { border: none; }
+.btn-outline:hover { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.modal-overlay { backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px) saturate(1.2); }
+.modal-box { padding: 1.9rem; }
+
+/* ---------- Плеєр-"острівець" ----------
+   Відірваний від країв, заокруглений, скляний і підсвічений кольором
+   обкладинки знизу-зліва — замість суцільної смуги на всю ширину. */
+body.player-open { padding-bottom: calc(var(--player-h) + var(--player-gap) * 2); }
+#player-bar {
+  left: var(--player-gap); right: var(--player-gap); bottom: var(--player-gap);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 70%, transparent); border-radius: 22px;
+  background:
+    radial-gradient(26% 190% at var(--p, 0%) 100%, color-mix(in srgb, var(--art) calc(34% * var(--glow-k)), transparent), transparent 70%),
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--art) calc(20% * var(--glow-k)), transparent),
+      color-mix(in srgb, var(--art2) calc(13% * var(--glow-k)), transparent) 50%,
+      color-mix(in srgb, var(--art3) calc(20% * var(--glow-k)), transparent)),
+    var(--glass);
+  backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: var(--shadow-lg), var(--card-hl);
+}
+#player-bar.visible { animation: playerRise 0.45s var(--ease-spring); }
+@keyframes playerRise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+#player-seek-wrap { left: 22px; right: 22px; top: -1px; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--text) 12%, transparent); }
+#player-seek-wrap:hover { height: 5px; top: -2px; }
+#player-seek-filled { border-radius: 3px; background: linear-gradient(90deg, var(--art), var(--art2), var(--art3)); box-shadow: 0 0 12px color-mix(in srgb, var(--art) 60%, transparent); }
+#player-seek-thumb { background: var(--text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--art) 45%, transparent); }
+#player-cover { width: 58px; height: 58px; border-radius: 12px; border: none; box-shadow: var(--shadow-md); }
+#player-cover.glow { box-shadow: 0 0 0 2px color-mix(in srgb, var(--art) 70%, transparent), 0 8px 26px color-mix(in srgb, var(--art) 40%, transparent); }
+#player-cover-eq span { background: var(--art); }
+#p-title { font-family: var(--font-sans); font-size: 0.95rem; font-weight: 650; letter-spacing: -0.005em; }
+.pc-main { width: 44px; height: 44px; background: var(--text); color: var(--bg); box-shadow: var(--shadow-md); }
+.pc-main:hover { background: var(--text); transform: scale(1.07); box-shadow: 0 6px 22px color-mix(in srgb, var(--art) 45%, transparent); }
+.pc-icon-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.pc-icon-btn.lit { color: var(--art); }
+#vol-slider { background: color-mix(in srgb, var(--text) 18%, transparent); accent-color: var(--art); }
+#video-popup, #karaoke-panel {
+  bottom: calc(var(--player-h) + var(--player-gap) * 2 + 8px); border-radius: 18px;
+  background: var(--glass); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-color: color-mix(in srgb, var(--border-strong) 70%, transparent); box-shadow: var(--shadow-lg);
+}
+#video-popup-frame { border-radius: 0 0 17px 17px; }
+@media (max-width: 768px) {
+  :root { --player-gap: 8px; }
+  #player-bar { border-radius: 18px; }
+  #player-cover { width: 44px; height: 44px; border-radius: 10px; }
+  .pc-main { width: 40px; height: 40px; }
+  /* Навбар у два рядки замість трьох: тема — лише іконкою, без зайвих відступів. */
+  #theme-toggle-label, #theme-dropdown .caret, #lang-dropdown .caret { display: none; }
+  #theme-dropdown { margin: 0 0.4rem !important; }
+  #auth-area { margin-right: 0 !important; }
+  .nav-right { flex-wrap: nowrap; gap: 0; }
+  .nav-login-btn { height: 36px; padding: 0 0.9rem; font-size: 0.8rem; }
+}
+@media (max-width: 768px) {
+  /* Назва пісні — пріоритет: ліва колонка забирає весь залишок, а не рівну частку з кнопками. */
+  #player-bar { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .player-left { max-width: none; flex: 1 1 auto; }
+  .player-right .pc-icon-btn { width: 32px; height: 32px; }
+}
+@media (max-width: 520px) {
+  /* Другорядні дії плеєра (текст, оцінка, плейлист, редагування) лишаються в таблиці/меню. */
+  #btn-karaoke, #btn-rate-current, #btn-playlist-current, #btn-edit-current { display: none !important; }
+  #player-cover { width: 40px; height: 40px; }
+}
+
+/* ---------- Перемикання теми: коло розкривається від точки кліку ---------- */
+html.theme-vt::view-transition-old(root), html.theme-vt::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html.theme-vt::view-transition-new(root) { z-index: 2; }
+
+/* ================================================================
+   AMBIENT — сяйво на всю ширину сторінки
+   Три плями палітри обкладинки (--art/--art2/--art3: ліворуч, центр,
+   праворуч) + "комета", що пливе зліва направо разом із прогресом пісні
+   (--pn 0..1 ставить js/player.js). Під час відтворення сяйво "дихає", на паузі
+   тьмяніє. Анімуються лише transform/opacity — без reflow.
+   ================================================================ */
+html { transition: --art 1.4s ease, --art2 1.7s ease, --art3 2s ease; }
+#ambient {
+  position: fixed; left: 0; right: 0; top: -16vh; height: 78vh; z-index: -1; pointer-events: none; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent);
+          mask-image: linear-gradient(to bottom, #000 45%, transparent);
+}
+/* Прозорість — окремо у смуги й комети (не на #ambient), інакше комета
+   множилась на тьмяність смуги й ставала непомітною. */
+.ambient-band { opacity: calc(var(--aurora-a) * var(--glow-k) * 0.7); transition: opacity 1.2s ease; }
+html[data-playing] .ambient-band { opacity: calc(var(--aurora-a) * var(--glow-k) * 1.15); }
+.ambient-band {
+  position: absolute; inset: 0 -8vw;
+  background:
+    radial-gradient(30% 62% at 8% 45%, var(--art), transparent 72%),
+    radial-gradient(32% 56% at 50% 32%, var(--art2), transparent 72%),
+    radial-gradient(30% 62% at 92% 45%, var(--art3), transparent 72%);
+  filter: blur(64px) saturate(1.2);
+  /* Без нескінченного дрейфу/"дихання" (див. вище) — ціна їх була: повна
+     перемальовка щокадру навіть на простої сторінки. */
+}
+.ambient-comet {
+  position: absolute; top: 0; left: 0; width: 44vw; height: 100%;
+  background: radial-gradient(50% 56% at 50% 40%, var(--art), transparent 72%);
+  filter: blur(46px) saturate(1.3);
+  transform: translate3d(calc(var(--pn, 0) * 100vw - 50%), 0, 0);
+  transition: transform 1.1s linear, opacity 1.2s ease;
+  opacity: 0;
+}
+html[data-playing][data-glow-follow] .ambient-comet { opacity: min(0.9, calc(var(--aurora-a) * var(--glow-k) * 2.6)); }
+html[data-glow-follow] #player-bar { transition: background-position 1s linear; }
+@media (prefers-reduced-motion: reduce) { :root:not([data-motion="full"]) .ambient-band { animation: none; } }
+
+/* ================================================================
+   НАЛАШТУВАННЯ
+   ================================================================ */
+.nav-icon-btn {
+  width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--border); background: none;
+  color: var(--text2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  margin-right: 0.75rem; font-size: 1.05rem; transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+.nav-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+html[data-page="settings"] .nav-icon-btn#nav-settings-btn { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+.settings-lead { color: var(--muted); margin: -0.9rem 0 1.6rem; font-size: 0.92rem; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 1.25rem; align-items: start; }
+.settings-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.2rem 1.4rem 0.5rem; box-shadow: var(--shadow-sm), var(--card-hl);
+}
+.settings-card-head { display: flex; align-items: center; gap: 0.9rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.settings-card-head h3 { font-size: 1.02rem; margin: 0; color: var(--text); }
+.settings-card-head p { color: var(--muted); font-size: 0.8rem; margin-top: 0.1rem; }
+.settings-card-icon {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; font-size: 1.15rem;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 1.25rem;
+  padding: 0.95rem 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+.setting-row:last-child { border-bottom: none; }
+label.setting-row { cursor: pointer; }
+.setting-row-stack { flex-direction: column; align-items: stretch; gap: 0.7rem; }
+.setting-text { min-width: 0; }
+.setting-label { font-weight: 600; font-size: 0.9rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+.setting-hint { color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; line-height: 1.45; }
+.setting-value { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 650; font-size: 0.85rem; }
+.seg-full { display: flex; width: 100%; }
+.seg-full button { flex: 1; justify-content: center; }
+.settings-footer { display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; margin-top: 1.5rem; }
+
+/* Перемикач (switch) — справжній <input type=checkbox> під капотом (клавіатура, скрінрідери). */
+.switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch-track {
+  position: absolute; inset: 0; border-radius: 999px; background: var(--border-strong);
+  transition: background-color 0.25s var(--ease-out), box-shadow 0.2s;
+}
+.switch-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: oklch(1 0 0); box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 0.3s var(--ease-spring);
+}
+.switch input:checked + .switch-track { background: var(--accent); }
+.switch input:checked + .switch-track::after { transform: translateX(18px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Повзунок — заповнення зліва акцентом (--fill ставить js/appearance.js). */
+.range {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; cursor: pointer; outline: none;
+  background: linear-gradient(to right, var(--accent) var(--fill, 66%), var(--border-strong) var(--fill, 66%));
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: oklch(1 0 0);
+  border: 2px solid var(--accent); box-shadow: var(--shadow-sm); transition: transform 0.15s;
+}
+.range::-webkit-slider-thumb:hover { transform: scale(1.12); }
+.range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: oklch(1 0 0); border: 2px solid var(--accent); }
+.range:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
+
+/* Кольорові кружечки акцентів: той самий відтінок, що й реальний акцент. */
+.accent-swatches { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+.accent-swatches button {
+  width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+  background: linear-gradient(135deg, oklch(0.84 0.11 calc(var(--sw-h) + 6)), oklch(0.66 0.14 calc(var(--sw-h) - 8)));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15), var(--shadow-sm);
+  transition: transform 0.2s var(--ease-spring), outline-color 0.2s;
+  outline: 2px solid transparent; outline-offset: 3px;
+}
+.accent-swatches button:hover { transform: scale(1.1); }
+.accent-swatches button.active { outline-color: var(--text); }
+
+.shortcut-list { list-style: none; padding: 0.3rem 0 0.6rem; }
+.shortcut-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.55rem 0; font-size: 0.86rem; color: var(--text2); border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
+.shortcut-list li:last-child { border-bottom: none; }
+kbd {
+  display: inline-block; min-width: 1.6em; text-align: center; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 600;
+  color: var(--text); padding: 0.18rem 0.45rem; border-radius: 6px; background: var(--surface2);
+  border: 1px solid var(--border-strong); border-bottom-width: 2px; line-height: 1.2;
+}
+
+/* ---------- Щільність: компактна ---------- */
+html[data-density="compact"] tbody td { padding-top: 0.42rem; padding-bottom: 0.42rem; font-size: 0.84rem; }
+html[data-density="compact"] thead th { padding-top: 0.6rem; padding-bottom: 0.6rem; }
+html[data-density="compact"] .badge { padding: 1px 7px; font-size: 0.66rem; }
+html[data-density="compact"] .stat-card { padding: 0.95rem 1.2rem; }
+html[data-density="compact"] .stat-card .value { font-size: 1.85rem; }
+html[data-density="compact"] .container { padding-top: 1.6rem; }
+
+/* ---------- Високий контраст ----------
+   Змішування з текстом/фоном ТЕМИ, тож працює однаково в усіх трьох. */
+html[data-contrast="high"] {
+  --muted: color-mix(in oklch, var(--text) 80%, var(--bg));
+  --text2: color-mix(in oklch, var(--text) 92%, var(--bg));
+  --border: color-mix(in oklch, var(--text) 30%, var(--bg));
+  --border-strong: color-mix(in oklch, var(--text) 48%, var(--bg));
+}
+
+@media (max-width: 768px) {
+  .nav-icon-btn { margin-right: 0.4rem; }
+  .settings-card { padding: 1rem 1rem 0.4rem; }
+  .seg-full { flex-wrap: wrap; }
+  .seg-full button { flex: 1 1 40%; }
+}
+@media (max-width: 600px) {
+  /* Рядки з сегментами — підпис зверху, перемикач на всю ширину під ним. */
+  div.setting-row { flex-direction: column; align-items: stretch; gap: 0.7rem; }
+  div.setting-row .seg-switch { display: flex; width: 100%; flex-wrap: nowrap; }
+  div.setting-row .seg-switch button { flex: 1 1 0; justify-content: center; padding-left: 0.4rem; padding-right: 0.4rem; }
+}
+
+/* ================================================================
+   АДАПТИВНІСТЬ ПІД МОНІТОРИ
+   Великі екрани: інтерфейс, розрахований на ~1440px, на 2K/4K займав
+   вузьку смугу посередині з дрібним текстом. --auto-scale плавно
+   збільшує ВСЕ (через zoom на body, див. вище). Медіазапити рахуються за
+   шириною вікна, яку zoom не змінює, тож зворотного зв'язку немає.
+   Вимикається налаштуванням "Збільшувати на великих моніторах".
+   ================================================================ */
+@media (min-width: 2000px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.12; } }
+@media (min-width: 2400px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.25; } }
+@media (min-width: 3000px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.5; } }
+@media (min-width: 3600px) { :root:not([data-auto-scale="off"]) { --auto-scale: 1.75; } }
+
+/* Ноутбуки 1280–1440: трохи щільніше, щоб таблиця влазила без горизонтального скролу. */
+@media (max-width: 1440px) and (min-width: 1081px) {
+  .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+  nav { padding-left: 1.25rem; padding-right: 1.25rem; column-gap: 1rem; }
+  thead th, tbody td { padding-left: 0.75rem; padding-right: 0.75rem; }
+}
+/* Низькі екрани (ноутбуки 768px заввишки, вікно на пів екрана): менші вертикальні відступи. */
+@media (max-height: 820px) and (min-width: 769px) {
+  .container { padding-top: 1.6rem; }
+  .stats-row { margin-bottom: 1.4rem; }
+  .stat-card { padding-top: 1rem; padding-bottom: 0.95rem; }
+  h2 { margin-bottom: 1.1rem; }
+}
+
+/* ================================================================

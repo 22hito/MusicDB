@@ -1,0 +1,492 @@
+/* N'Owl — Компоненти: таблиці, статистика, форми, рекомендації, колесо, батл, граф, іконки.
+   Файли css/*.css підключаються в index.html СТРОГО в цьому порядку (каскад). */
+
+/* TABLE */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow-sm); }
+/* Тонкий темний скролбар замість товстого системного білого — інакше він
+   "з'їдав" ширину і візуально наліз на останній стовпець таблиці. */
+.table-wrap { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-wrap::-webkit-scrollbar-track { background: transparent; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+.table-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.table-wrap::-webkit-scrollbar-corner { background: transparent; }
+/* Власний вертикальний скрол таблиці (≈25-30 рядків видно одразу), а не скрол усієї сторінки. */
+.table-wrap.scroll-table { overflow-y: auto; max-height: 1100px; }
+.table-wrap.scroll-table thead th { position: sticky; top: 0; z-index: 2; }
+/* border-collapse:separate (замість collapse) — з collapse position:sticky на
+   thead th ненадійно працює в багатьох браузерах: рядки таблиці "пролазять"
+   крізь зафіксований заголовок при прокручуванні замість того, щоб ховатись
+   під ним. border-spacing:0 лишає той самий вигляд без видимих проміжків. */
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
+thead tr { background: var(--surface2); }
+thead th { padding: 0.8rem 1rem; text-align: left; font-size: 0.78rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+thead th.sortable { cursor: pointer; user-select: none; transition: color 0.15s, background-color 0.15s; }
+thead th.sortable:hover { color: var(--text); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+thead th.sortable::after { content: '\2195'; margin-left: 0.35em; opacity: 0.35; font-size: 0.85em; display: inline-block; transition: transform 0.2s ease, opacity 0.2s ease; }
+thead th.sortable.sort-asc::after { content: '\2191'; opacity: 1; color: var(--accent); }
+thead th.sortable.sort-desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s, box-shadow 0.25s ease; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--surface2) 75%, transparent); }
+/* inset box-shadow замість ::before — псевдоелемент на <tr> у деяких браузерах
+   рендериться як окрема "фантомна" комірка, зсуваючи всі стовпці праворуч.
+   box-shadow ніколи не бере участі в розкладці, тож зсуву бути не може. */
+tbody tr.playing-row { background: color-mix(in srgb, var(--accent) 7%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+tbody td { padding: 0.8rem 1rem; color: var(--text); font-size: 0.875rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+/* border на <tr> не малюється при border-collapse:separate — розділювач живе на td. */
+tbody tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; background: color-mix(in srgb, var(--accent2) 13%, transparent); color: var(--accent2); border: 1px solid color-mix(in srgb, var(--accent2) 28%, transparent); padding: 2px 9px; font-weight: 500; border-radius: 999px; font-size: 0.7rem; margin: 1px; white-space: nowrap; }
+.badge.album { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); white-space: normal; word-break: normal; overflow-wrap: break-word; max-width: 260px; display: inline-block; line-height: 1.4; }
+.num-col { color: var(--muted); font-size: 0.75rem; }
+.duration-col { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* STATS */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card {
+  position: relative; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface2) 55%, var(--surface)), var(--surface)); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm), var(--card-hl);
+  transition: transform 0.25s cubic-bezier(.2,.8,.2,1), box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.3s ease;
+  animation: fadeInUp 0.5s cubic-bezier(.2,.8,.2,1) backwards;
+}
+.stat-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); box-shadow: var(--shadow-md), var(--card-hl); }
+/* "Прожектор", що йде за курсором — координати задає JS через --mx/--my. */
+.stat-card::after {
+  content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+}
+.stat-card:hover::after { opacity: 1; }
+.stat-card-clickable { cursor: pointer; }
+.stats-row .stat-card:nth-child(1) { animation-delay: 0.03s; }
+.stats-row .stat-card:nth-child(2) { animation-delay: 0.08s; }
+.stats-row .stat-card:nth-child(3) { animation-delay: 0.13s; }
+.stats-row .stat-card:nth-child(4) { animation-delay: 0.18s; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.stat-card .label { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+.stat-card .value { font-family: var(--font-serif); font-size: 2.1rem; font-weight: 700; color: var(--accent); font-variant-numeric: lining-nums tabular-nums; line-height: 1.1; transition: color 0.3s ease; }
+
+/* FORM */
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; max-width: 600px; box-shadow: var(--shadow-sm), var(--card-hl); }
+.ext-search-panel-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm), var(--card-hl); }
+.ext-search-panel-box .es-panel-title { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+.ext-search-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.ext-search-item:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ext-search-item .es-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ext-search-item .es-main strong { color: var(--text); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext-search-item .es-main span { color: var(--muted); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext-search-item .es-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.ext-search-item .es-year { color: var(--muted); font-size: 0.72rem; }
+.ext-search-item .es-genre-badge { background: color-mix(in srgb, var(--accent2) 15%, transparent); color: var(--accent2); border-radius: 4px; padding: 2px 7px; font-size: 0.68rem; white-space: nowrap; }
+.ext-search-empty { color: var(--muted); font-size: 0.8rem; text-align: center; padding: 1.5rem 0; }
+/* Рекомендації — окремі, більші й читабельніші класи (не .ext-search-item,
+   той лишається компактним для автодоповнення в формах пошуку/додавання). */
+.rec-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; padding: 1.1rem 1.4rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+.rec-item:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); transform: translateY(-2px); }
+.rec-item .rec-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.rec-item .rec-main strong { color: var(--text); font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; }
+.rec-item .rec-main .rec-title { color: var(--text2); font-size: 0.95rem; }
+.rec-item .rec-main .rec-reason { color: var(--accent2); font-size: 0.9rem; line-height: 1.55; white-space: normal; }
+.rec-item .es-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.rec-item .es-genre-badge { background: color-mix(in srgb, var(--accent2) 15%, transparent); color: var(--accent2); border-radius: 4px; padding: 3px 9px; font-size: 0.75rem; white-space: nowrap; }
+.form-group { margin-bottom: 1.25rem; }
+.form-group label { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-ui); font-size: 0.875rem; padding: 0.65rem 0.9rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.form-group input:hover, .form-group select:hover, .form-group textarea:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong)); }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--muted); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.hint { font-size: 0.74rem; color: var(--muted); margin-top: 0.3rem; }
+.btn { font-family: var(--font-ui); font-size: 0.84rem; font-weight: 600; letter-spacing: 0; padding: 0.6rem 1.15rem; border-radius: var(--radius-sm); border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; transition: transform 0.2s var(--ease-out), background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, filter 0.2s; }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0) scale(0.97); }
+.btn-primary { background: var(--accent-grad); color: var(--on-accent); border-color: var(--accent); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 18%, transparent); }
+.btn-primary:hover { background: var(--accent-grad); filter: brightness(1.07); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 32%, transparent); }
+.btn-success { background: var(--green); color: var(--on-red); border-color: var(--green); font-size: 0.7rem; padding: 0.35rem 0.9rem; }
+.btn-success:hover { background: color-mix(in srgb, var(--green) 85%, var(--text)); }
+.btn-danger { background: var(--red); color: var(--on-red); border-color: var(--red); font-size: 0.7rem; padding: 0.35rem 0.9rem; }
+.btn-danger:hover { background: color-mix(in srgb, var(--red) 85%, var(--text)); }
+.btn-icon-danger { background: transparent; border: 1px solid var(--border); color: var(--red); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+.btn-icon-danger:hover { border-color: var(--red); background: color-mix(in srgb, var(--red) 10%, transparent); transform: scale(1.08); }
+.btn-icon-danger:active { transform: scale(0.95); }
+.btn-icon-danger svg { width: 16px; height: 16px; }
+.btn-icon-edit { background: transparent; border: 1px solid var(--border); color: var(--accent); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+.btn-icon-edit:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); transform: scale(1.08); }
+.btn-icon-edit:active { transform: scale(0.95); }
+.btn-icon-edit svg { width: 16px; height: 16px; }
+.btn-icon-fav { background: transparent; border: 1px solid var(--border); color: var(--muted); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.15s, color 0.15s, transform 0.15s; }
+.btn-icon-fav:hover { border-color: var(--accent2); color: var(--accent2); transform: scale(1.08); }
+.btn-icon-fav:active { transform: scale(0.95); }
+.btn-icon-fav.active { color: var(--red); border-color: var(--red); animation: favPop 0.35s cubic-bezier(.3,1.5,.5,1); }
+@keyframes favPop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.btn-icon-fav svg { width: 16px; height: 16px; }
+.modal-overlay { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-overlay.open { display: flex; }
+/* Симетричний вихід: .closing тримає display:flex (щоб анімація встигла
+   програтись), а вміст (перша дитина overlay — сам modal-box/battle-box/...)
+   затухає й зменшується. Клас знімає JS-хелпер _closeModalAnimated() після setTimeout. */
+.modal-overlay.closing { display: flex; animation: modalOverlayOut 0.2s ease forwards; }
+.modal-overlay.closing > * { animation: modalIn 0.2s ease reverse forwards; }
+@keyframes modalOverlayOut { to { background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); } }
+.modal-box { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg), var(--card-hl); padding: 1.75rem; width: 320px; max-width: 90vw; animation: modalIn 0.28s cubic-bezier(.2,.9,.3,1.1); }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.94) translateY(10px); } to { opacity: 1; transform: none; } }
+.modal-icon-circle { width: 38px; height: 38px; border-radius: 50%; background: color-mix(in srgb, var(--red) 12%, transparent); display: flex; align-items: center; justify-content: center; color: var(--red); flex-shrink: 0; }
+.modal-icon-circle svg { width: 18px; height: 18px; }
+.modal-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.modal-title-row span { color: var(--text); font-size: 0.95rem; font-weight: 500; }
+.modal-body-text { color: var(--text2); font-size: 0.82rem; line-height: 1.5; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-btn-cancel { background: transparent; border: 1px solid var(--border-strong); color: var(--text); padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.8rem; cursor: pointer; }
+.modal-btn-cancel:hover { border-color: var(--muted); }
+.modal-btn-confirm { background: var(--red); border: none; color: var(--on-red); padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; cursor: pointer; }
+.modal-btn-confirm:hover { background: color-mix(in srgb, var(--red) 85%, var(--text)); }
+.btn-outline { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-outline.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* Колесо фортуни (сторінка page-wheel) */
+/* На цій сторінці навмисно ігноруємо звичайну стелю .container (1300-1600px
+   залежно від режиму) — колесо єдина сторінка, де хочемо зайняти всю ширину
+   екрана, а не лишати порожні поля обабіч, як на решті сайту. */
+#page-wheel .container { max-width: none; padding-left: 3rem; padding-right: 3rem; }
+/* space-between замість center — легенда й картка параметрів роз'їжджаються
+   до самих країв, лишаючи колесу максимум місця в центрі. */
+.wheel-page-layout { display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; justify-content: space-between; }
+.wheel-col { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+/* Легенда — окрема колонка зліва від колеса (а не список під ним), у тій самій
+   картці, що й інші панелі сайту (form-card/ext-search-panel-box). */
+.wheel-legend-col {
+  flex: 0 0 260px; align-self: stretch;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1rem; box-shadow: var(--shadow-sm), var(--card-hl);
+}
+.wheel-legend-title { margin: 0 0 0.8rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+/* Вища стеля (860px, 66vmin) — тепер, коли сторінка займає всю ширину,
+   колесу є куди рости далі, обмежене головно висотою екрана (vmin). */
+.wheel-wrap { position: relative; width: clamp(260px, 66vmin, 860px); height: clamp(260px, 66vmin, 860px); margin: 6px auto 18px; }
+.wheel-disc {
+  width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden;
+  /* Подвійна рамка — вузьке темне обмеження ззовні + золота облямівка —
+     і м'яке навколишнє світіння замість плаского box-shadow дають ефект
+     "медальйона", а не наклейки на чорному тлі. */
+  border: 5px solid var(--accent);
+  box-shadow: 0 0 0 2px var(--surface2), 0 16px 46px rgba(var(--shadow-rgb), calc(0.55 * var(--shadow-k))), 0 0 70px color-mix(in srgb, var(--accent) 12%, transparent);
+  transition: transform 4s cubic-bezier(.17,.67,.32,1.01);
+}
+/* Розмиття диска, поки в центрі показано результат — фокус переходить на
+   напис жанру, а не на строкатий диск позаду нього. filter-transition
+   навмисно оголошений ЛИШЕ тут (у правилі .revealed), а не в базовому
+   .wheel-disc: тоді ЗНЯТТЯ класу (закриття картки або новий спін) більше
+   не має жодного transition для filter у застосованих правилах — розмиття
+   зникає миттєво, а не програє 0.5s назад. Плавною лишається тільки поява. */
+.wheel-disc.revealed { filter: blur(5px); transition: transform 4s cubic-bezier(.17,.67,.32,1.01), filter 0.4s ease; }
+/* Стрілка — краплеподібний "пін" (SVG, не CSS-трикутник) із золотим
+   градієнтом замість плоскої заливки. */
+.wheel-pointer { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); z-index: 5; filter: drop-shadow(0 3px 6px rgba(var(--shadow-rgb), calc(0.5 * var(--shadow-k)))); }
+.wheel-pointer svg { display: block; width: 30px; height: 30px; }
+/* Хаб у центрі — однотонне коло поверх диска (сам диск обертається, хаб —
+   ні, бо це окремий сусідній елемент, а не дитина #wheel-disc), закриває
+   те місце, де всі сектори conic-gradient сходяться в одну точку. */
+.wheel-hub {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  /* max-width/height — на великому колесі 22% давало б хаб, що зжирає забагато
+     радіуса й підступає до підписів; стеля тримає його компактним незалежно
+     від розміру диска. */
+  width: 22%; height: 22%; min-width: 56px; min-height: 56px; max-width: 118px; max-height: 118px; border-radius: 50%;
+  /* Лого — майже чорний силует на прозорому тлі (задумане як ледь помітний
+     водяний знак у навбарі), на темному хабі просто губилось. Тло хаба —
+     акцентний золотий, а сам силует перефарбовуємо у білий фільтром нижче —
+     разом дають контраст, який видно на будь-якому кольорі колеса довкола. */
+  background: radial-gradient(circle at 35% 28%, var(--accent-hi), var(--accent) 72%);
+  border: 3px solid var(--surface2); box-shadow: 0 2px 10px rgba(var(--shadow-rgb), calc(0.4 * var(--shadow-k))), inset 0 -3px 8px rgba(var(--shadow-rgb), calc(0.18 * var(--shadow-k)));
+  display: flex; align-items: center; justify-content: center; overflow: hidden; z-index: 4;
+}
+.wheel-hub img {
+  width: 68%; height: 68%; object-fit: contain; pointer-events: none;
+  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(var(--shadow-rgb), calc(0.45 * var(--shadow-k))));
+}
+.wheel-seg-label {
+  position: absolute; left: 50%; top: 50%; transform-origin: 0 0;
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 700; color: #fff;
+  /* Різкий 1px контур замість розмитої тіні (blur-radius) — на кольоровому
+     тлі саме блюр і виглядав як "розмазаний" текст; суцільний контур того ж
+     розміру, що й товщина букви, лишається чітким на будь-якому фоні. */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px rgba(0,0,0,0.6);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  white-space: nowrap; pointer-events: none;
+}
+/* Результат тепер написаний прямо в центрі колеса (замість блоку під ним) —
+   кругла картка поверх хаба/диска, вищий z-index за все інше в .wheel-wrap.
+   Диск позаду розмивається класом .revealed (див. вище), тож текст лишається
+   читабельним незалежно від кольору сектора під ним. */
+.wheel-result {
+  display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 6; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  width: 62%; height: 62%; max-width: 240px; max-height: 240px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--accent);
+  box-shadow: 0 8px 28px rgba(var(--shadow-rgb), calc(0.5 * var(--shadow-k))); text-align: center; padding: 0.8rem;
+  box-sizing: border-box; animation: wheelResultPop 0.35s cubic-bezier(.2,.9,.3,1.1);
+}
+@keyframes wheelResultPop { 0% { transform: translate(-50%, -50%) scale(0.75); opacity: 0; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+.wheel-result-close {
+  position: absolute; top: 8px; right: 14px; width: 24px; height: 24px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+  font-size: 1rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
+}
+.wheel-result-close:hover { border-color: var(--accent); color: var(--accent); }
+.wheel-result-label { color: var(--muted); font-size: 0.78rem; }
+.wheel-result-genre { color: var(--accent); font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700; line-height: 1.15; word-break: break-word; }
+/* Картка параметрів — той самий стиль поверхні, що й легенда/form-card,
+   замість голих рядків одразу на тлі сторінки. */
+.wheel-params-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm), var(--card-hl); padding: 1.3rem 1.4rem; margin-bottom: 1.2rem; width: 100%; box-sizing: border-box; }
+.wheel-duration-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 1rem; color: var(--muted); font-size: 0.8rem; flex-wrap: wrap; }
+.wheel-duration-row:last-child { margin-bottom: 0; }
+.wheel-input-group { display: flex; align-items: center; gap: 0.5rem; }
+/* Клас, а не input[type=number] — поля тепер type="text" (див.
+   _sanitizeIntInput), інакше цей селектор просто переставав спрацьовувати. */
+.wheel-num-input {
+  width: 56px; text-align: center; flex: 0 0 auto;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: var(--font-ui); font-size: 0.85rem; padding: 0.5rem 0.3rem;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.wheel-num-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
+.wheel-count-max { color: var(--muted); font-size: 0.75rem; }
+.wheel-actions { display: flex; gap: 10px; justify-content: center; margin-top: 0.3rem; }
+/* Велика кнопка запуску — на всю ширину картки, той самий золотий градієнт,
+   що й .btn-primary, але помітніша: це головна дія сторінки. */
+.wheel-spin-btn {
+  width: 100%; padding: 1rem 1.5rem; border: none; border-radius: 10px; cursor: pointer;
+  font-family: var(--font-ui); font-size: 0.95rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--accent-grad); color: var(--on-accent);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 28%, transparent); transition: all 0.2s cubic-bezier(.2,.8,.2,1);
+}
+.wheel-spin-btn:hover:not(:disabled) { box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 40%, transparent); transform: translateY(-2px); }
+.wheel-spin-btn:disabled { opacity: 0.55; cursor: default; }
+.wheel-playlist-col { flex: 1 1 380px; min-width: 300px; max-width: 560px; }
+.wheel-playlist-empty { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 2rem 1rem; }
+/* Гортаючийся список замість подовження сторінки — фіксована стеля висоти. */
+#wheel-playlist-wrap .table-wrap { max-height: 360px; }
+/* Список усіх жанрів колеса з підписами повністю — підписи НА самому колесі
+   для читабельності скорочені й можуть просто не влізти при великій
+   кількості секторів, а тут завжди видно все, незалежно від їх числа. */
+.wheel-legend { display: flex; flex-direction: column; gap: 3px; max-height: 460px; overflow-y: auto; padding-right: 4px; }
+.wheel-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text); padding: 3px 6px; border-radius: 5px; transition: background 0.15s ease; }
+.wheel-legend-item.winner { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); font-weight: 700; }
+.wheel-legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35); }
+
+/* Батл рояль */
+.battle-box {
+  background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  width: min(1000px, 94vw); max-height: 92vh; overflow-y: auto;
+  animation: modalIn 0.28s cubic-bezier(.2,.9,.3,1.1);
+}
+.battle-header {
+  display: flex; align-items: center; justify-content: space-between; position: relative;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.battle-header span { color: var(--muted); font-family: var(--font-ui); font-size: 0.85rem; letter-spacing: 0.3px; }
+/* Абсолютне позиціювання, а не третій flex-елемент у space-between — інакше
+   центр "з'їжджає" вбік залежно від ширини сусідів (лічильника раунду й ✕).
+   .battle-header — той самий клас, що й у заголовку графа схожості (де цієї
+   кнопки нема), тому чіпати сам flex/justify-content там не можна. */
+.battle-hover-toggle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+/* Загальний .btn:hover{transform:translateY(-2px)} має ту саму специфічність
+   (клас+псевдоклас) і, перемагаючи на hover, повністю ЗАМІНЯВ це
+   translate(-50%,-50%) — кнопка "губила" центрування й стрибала. Тут той
+   самий рівень специфічності, але правило нижче в файлі — перемагає воно,
+   і об'єднує підняття з тим самим центруванням замість втрати останнього. */
+.battle-hover-toggle:hover { transform: translate(-50%, calc(-50% - 2px)); }
+.battle-hover-toggle:active { transform: translate(-50%, -50%) scale(0.97); }
+.battle-close-btn { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
+.battle-close-btn:hover { color: var(--text); }
+/* Стрічка прогресу турніру — сегмент на кожен розмір раунду. */
+.battle-progress-ribbon { display: flex; align-items: center; justify-content: center; gap: 0; padding: 10px 18px 0; }
+.battle-progress-seg {
+  font-family: var(--font-ui); font-size: 0.7rem; color: var(--muted); background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; transition: all 0.25s ease;
+}
+.battle-progress-seg.done { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.battle-progress-seg.current {
+  color: var(--on-accent); background: var(--accent-grad);
+  border-color: transparent; font-weight: 700; box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+/* Фінальний сегмент "1" — окремий стан (не .current): турнір уже завершено,
+   а не просто "зараз триває цей раунд", тож підсвічуємо пульсуючим золотим
+   світінням, щоб було явно видно переможний крок. */
+.battle-progress-seg.winner {
+  color: var(--on-accent); background: var(--accent-grad);
+  border-color: transparent; font-weight: 700; animation: battleProgressWinnerPulse 1.6s ease-in-out infinite;
+}
+@keyframes battleProgressWinnerPulse { 0%, 100% { box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent); } 50% { box-shadow: 0 2px 20px color-mix(in srgb, var(--accent) 75%, transparent); } }
+.battle-progress-sep { width: 16px; height: 1px; background: var(--border); flex-shrink: 0; }
+/* Два ряди: відео+VS (media-row) окремо від інфо+кнопки (details-row) —
+   так VS центрується по висоті САМЕ відео, а не всієї колонки разом з
+   текстом і кнопкою нижче (яка тягнула центр вниз). */
+.battle-split { display: flex; flex-direction: column; gap: 0; }
+.battle-media-row { display: flex; align-items: center; gap: 0; padding: 20px 20px 0; margin-bottom: 14px; }
+.battle-details-row { display: flex; align-items: stretch; gap: 0; padding: 0 20px 20px; }
+.battle-side {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center;
+  padding-top: 14px; border-radius: 10px; transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
+}
+/* Порожній розпірник тієї ж ширини, що й .battle-vs — щоб дві сторони
+   details-row лишались вирівняні під своїми відео зверху. */
+.battle-vs-spacer { width: 76px; flex-shrink: 0; }
+/* Обрана сторона (і відео, і інфо+кнопка нижче) коротко спалахує золотим,
+   програна — тьмяніє й трохи стискається — щоб перехід між парами читався
+   як явний результат, а не миттєва підміна контенту. */
+.battle-video-wrap.battle-winner-flash, .battle-side.battle-winner-flash { box-shadow: inset 0 0 0 2px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 25%, transparent); }
+.battle-video-wrap.battle-loser-fade, .battle-side.battle-loser-fade { opacity: 0.35; transform: scale(0.96); }
+.battle-video-wrap {
+  flex: 1; min-width: 0; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden;
+  transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
+}
+.battle-video-wrap iframe { width: 100%; height: 100%; }
+/* Фіксована висота (не min-height) — щоб кнопка "Обрати цю" завжди сиділа на
+   тому самому місці, незалежно від довжини назви пісні/виконавця з обох
+   боків. Замало місця для довгого тексту — рядок обрізається трикрапкою
+   (-webkit-line-clamp), а не розтягує блок і не зсуває кнопку нижче. */
+.battle-side-info { text-align: center; margin-bottom: 14px; height: 92px; overflow: hidden; }
+.battle-side-artist {
+  color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.05rem;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.battle-side-title {
+  color: var(--muted); font-size: 0.85rem; margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.battle-side-notfound { display: none; color: var(--red); font-size: 0.75rem; margin-top: 4px; }
+/* Велика, рішуча кнопка вибору — той самий трактат, що й .wheel-spin-btn. */
+.battle-choose-btn {
+  width: 100%; background: var(--accent-grad); color: var(--on-accent); border: none; border-radius: 10px;
+  padding: 0.85rem 1.2rem; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 25%, transparent); transition: all 0.2s cubic-bezier(.2,.8,.2,1);
+  margin-top: auto; /* підстраховка: приклеює кнопку до низу навіть якщо висоти сторін розійдуться з іншої причини */
+}
+.battle-choose-btn:hover { box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 38%, transparent); transform: translateY(-2px); }
+/* Кругла золота емблема замість дрібного сірого тексту "VS" — велика,
+   контрастна, з подвійним кільцем і легким пульсом для більшої "енергії". */
+.battle-vs { display: flex; align-items: center; justify-content: center; width: 76px; flex-shrink: 0; }
+.battle-vs span {
+  display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-hi), var(--accent) 55%, var(--accent-lo)); color: var(--on-accent);
+  font-family: var(--font-serif); font-weight: 900; font-style: italic; font-size: 1.05rem; letter-spacing: 0.02em;
+  box-shadow: 0 0 0 4px var(--surface), 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent), 0 6px 22px color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: battleVsPulse 2.2s ease-in-out infinite;
+}
+@keyframes battleVsPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+.battle-champion { text-align: center; padding: 50px 20px; position: relative; }
+.battle-champion-label { color: var(--accent); font-size: 1.1rem; margin-bottom: 14px; }
+.battle-champion-artist {
+  color: var(--text); font-family: var(--font-serif); font-weight: 700; font-size: 1.8rem;
+  animation: battleChampionGlow 1.8s ease-in-out infinite;
+}
+@keyframes battleChampionGlow { 0%, 100% { text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 20%, transparent); } 50% { text-shadow: 0 0 26px color-mix(in srgb, var(--accent) 55%, transparent); } }
+.battle-champion-title { color: var(--muted); font-size: 1.05rem; margin: 4px 0 22px; }
+.battle-champion-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.battle-confetti-piece { position: absolute; pointer-events: none; animation-name: battleConfettiBurst; animation-timing-function: ease-out; animation-fill-mode: forwards; z-index: 2; }
+@keyframes battleConfettiBurst {
+  0% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) rotate(360deg); opacity: 0; }
+}
+/* Картки плейлистів на сторінці "Батл рояль" — іконка-чип + hover-підйом,
+   замість голого .ext-search-item (той лишається спільним для інших місць). */
+.battle-pl-card {
+  display: flex; align-items: center; gap: 0.9rem; padding: 0.8rem 1rem; border: 1px solid var(--border); background: var(--surface);
+  border-left: 3px solid var(--accent); border-radius: 8px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.battle-pl-card:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); transform: translateY(-2px); }
+.battle-pl-card-community { border-left-color: var(--accent2); }
+.battle-pl-card-community:hover { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 8%, transparent); }
+.battle-pl-icon {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); color: var(--accent);
+}
+.battle-pl-card-community .battle-pl-icon { color: var(--accent2); }
+.battle-pl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.battle-pl-main strong { color: var(--text); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.battle-pl-main span { color: var(--muted); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.battle-pl-arrow { color: var(--muted); flex-shrink: 0; width: 16px; height: 16px; }
+@media (max-width: 720px) {
+  .battle-media-row, .battle-details-row { flex-direction: column; padding-left: 16px; padding-right: 16px; }
+  .battle-vs { width: 100%; padding: 10px 0; }
+  .battle-vs-spacer { display: none; }
+  .battle-choose-btn { padding: 1rem 1.2rem; font-size: 0.95rem; }
+  .battle-progress-seg { font-size: 0.62rem; padding: 2px 7px; }
+  .battle-progress-sep { width: 8px; }
+}
+
+/* Граф схожості */
+.graph-box {
+  background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  width: min(900px, 94vw); max-height: 92vh; display: flex; flex-direction: column;
+  animation: modalIn 0.28s cubic-bezier(.2,.9,.3,1.1);
+}
+.graph-loading { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 40px 0; }
+.graph-canvas-wrap {
+  position: relative; height: min(560px, 70vh); margin: 0 4px;
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
+  border-radius: 8px; overflow: hidden; cursor: grab;
+}
+.graph-canvas-wrap.panning { cursor: grabbing; }
+.graph-canvas-wrap { touch-action: none; } /* перетягування пальцем — наше, а не прокрутка сторінки */
+.graph-svg { width: 100%; height: 100%; display: block; }
+.graph-svg .graph-edge { transition: opacity 0.15s ease; }
+.graph-svg .graph-node { cursor: pointer; }
+.graph-svg .graph-node circle {
+  transition: r 0.12s ease, opacity 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
+}
+.graph-svg .graph-node:hover circle, .graph-svg .graph-node.hl circle {
+  opacity: 1; stroke: var(--accent); stroke-width: 2px;
+}
+/* Коли щось наведено — притлумлюємо все, що не пов'язане з ним напряму,
+   щоб було видно саме кластер сусідів навіть у густому графі (сотні вузлів). */
+.graph-svg.has-hover .graph-node:not(:hover):not(.hl) circle { opacity: 0.25; }
+.graph-svg.has-hover .graph-edge:not(.hl) { opacity: 0.04 !important; }
+.graph-tooltip {
+  position: absolute; left: 0; top: 0; pointer-events: none; z-index: 10;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 10px; font-size: 0.78rem; color: var(--text); white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(var(--shadow-rgb), calc(0.4 * var(--shadow-k))); opacity: 0; transform: translate(-50%, -135%);
+  transition: opacity 0.1s ease;
+}
+.graph-tooltip.show { opacity: 1; }
+.graph-zoom-controls { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 6; }
+.graph-zoom-controls button {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.graph-zoom-controls button:hover { border-color: var(--accent); color: var(--accent); }
+.graph-hint { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 10px 0 16px; }
+.alert { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 1rem; display: none; }
+.alert.show { display: block; }
+.alert-success { background: color-mix(in srgb, var(--green) 15%, transparent); border: 1px solid color-mix(in srgb, var(--green) 30%, transparent); color: var(--green); }
+/* Спільний клас для іконок зі спрайту (<svg class="icon"><use href="#icon-X">):
+   розмір — 1em (масштабується разом зі шрифтом контексту), колір — currentColor. */
+.icon { width: 1em; height: 1em; display: inline-block; vertical-align: -0.15em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+/* Заповнені іконки (грати, значки-заливки) замість контурних — .icon лишається базою (розмір/vertical-align). */
+.icon-filled { fill: currentColor; stroke: none; }
+.empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.85rem; }
+.empty .icon { font-size: 2rem; display: block; margin: 0 auto 0.5rem; opacity: 0.7; }
+.actions-td { display: flex; gap: 0.4rem; align-items: center; }
+.filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
+.filter-bar input { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-ui); font-size: 0.85rem; padding: 0.6rem 0.95rem; outline: none; width: 340px; max-width: 100%; transition: border-color 0.2s, box-shadow 0.2s; box-shadow: var(--shadow-sm); }
+.filter-bar input::placeholder { color: var(--muted); }
+.filter-bar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.filter-bar select { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-ui); font-size: 0.85rem; padding: 0.6rem 0.95rem; outline: none; cursor: pointer; box-shadow: var(--shadow-sm); }
+.filter-bar select:focus { border-color: var(--accent); }
+
+/* PLAY BTN IN ROW */
+.play-row-btn { background: none; border: none; cursor: pointer; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: color 0.2s, background 0.2s, transform 0.15s; }
+.play-row-btn:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); transform: scale(1.1); }
+.play-row-btn:active { transform: scale(0.92); }
+.play-row-btn.is-playing { color: var(--accent); position: relative; }
+.play-row-btn.is-playing::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: rowPulse 2s ease-in-out infinite; will-change: transform, opacity;
+}
+@keyframes rowPulse { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.35); opacity: 0; } }

@@ -3,9 +3,9 @@
   "private": true,
   "description": "Lint/format tooling for wwwroot/*.js — no runtime dependency, not shipped to the site.",
   "scripts": {
-    "lint": "eslint wwwroot/app.js wwwroot/sw.js",
-    "format": "prettier --write wwwroot/app.js wwwroot/sw.js",
-    "format:check": "prettier --check wwwroot/app.js wwwroot/sw.js"
+    "lint": "eslint wwwroot/js wwwroot/sw.js",
+    "format": "prettier --write wwwroot/js wwwroot/sw.js",
+    "format:check": "prettier --check wwwroot/js wwwroot/sw.js"
   },
   "devDependencies": {
     "eslint": "^9.15.0",

@@ -25,7 +25,7 @@
     if (saved === 'system') saved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     var root = document.documentElement;
     root.setAttribute('data-theme', saved);
-    // Налаштування інтерфейсу (див. PREFS в app.js) — теж до першої відмальовки, без "стрибка".
+    // Налаштування інтерфейсу (див. PREFS у js/appearance.js) — теж до першої відмальовки, без "стрибка".
     try {
       var p = JSON.parse(localStorage.getItem('prefs') || '{}');
       var hues = { amber: 78, coral: 38, rose: 5, lavender: 295, ocean: 235, emerald: 158 };
@@ -48,12 +48,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
 <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
-<link rel="stylesheet" href="/styles.css">
+<!-- Стилі — css/*.css, порядок важливий (каскад): база → компоненти → … → мобільний вигляд. -->
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/player.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/nocturne.css">
+<link rel="stylesheet" href="/css/overlays.css">
+<link rel="stylesheet" href="/css/responsive.css">
+<link rel="stylesheet" href="/css/features.css">
+<link rel="stylesheet" href="/css/mobile-app.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" data-i18n="a11y.skip">Перейти до вмісту</a>
 <!-- Сяйво на всю ширину сторінки: три плями палітри обкладинки + "комета",
-     що рухається зліва направо разом із прогресом пісні (--p ставить app.js). -->
+     що рухається зліва направо разом із прогресом пісні (--p ставить js/player.js). -->
 <div id="ambient" aria-hidden="true"><div class="ambient-band"></div><div class="ambient-comet"></div></div>
 
 <!-- Спільний набір іконок (замість emoji-символів по всьому сайту) — один
@@ -105,7 +114,7 @@
 </svg>
 
 <!-- Сплеш екрана завантаження — чистий HTML/CSS, малюється браузером одразу
-     (до того, як завантажиться й виконається великий app.js), ховається
+     (до того, як завантажаться й виконаються скрипти js/*.js), ховається
      через #splash-hide, викликаний з initApp() коли перші дані готові. -->
 <div id="app-splash">
   <img src="/images/logo.png" alt="" class="app-splash-logo">
@@ -675,7 +684,7 @@
 
 <!-- CHAT: особисті повідомлення + гілки обговорень ком'юніті -->
 <!-- SETTINGS — налаштування інтерфейсу (для всіх, зберігаються на пристрої).
-     Кожен контрол прив'язаний до ключа через data-pref; логіка — PREFS у app.js. -->
+     Кожен контрол прив'язаний до ключа через data-pref; логіка — PREFS у js/appearance.js. -->
 <div id="page-settings" class="page">
   <div class="container">
     <h2><span data-i18n="settings.heading.pre">Налаштування</span> <span class="hl" data-i18n="settings.heading.accent">інтерфейсу</span></h2>
@@ -1156,7 +1165,7 @@
   <div class="shot-viewer-count" id="shot-viewer-count"></div>
 </div>
 
-<!-- Загальне вікно підтвердження (замість браузерного confirm()) — див. confirmModal() в app.js -->
+<!-- Загальне вікно підтвердження (замість браузерного confirm()) — див. confirmModal() у js/profile.js -->
 <div class="modal-overlay" id="confirm-modal-overlay">
   <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-text">
     <div class="modal-title-row">
@@ -1455,7 +1464,7 @@
     </div>
     <div id="graph-loading" class="graph-loading" data-i18n="graph.loading">Обчислюємо розташування…</div>
     <div class="graph-canvas-wrap" id="graph-canvas-wrap">
-      <svg id="graph-svg" class="graph-svg"><g id="graph-viewport"></g></svg>
+      <canvas id="graph-canvas" class="graph-svg"></canvas>
       <div id="graph-tooltip" class="graph-tooltip"></div>
       <div class="graph-zoom-controls">
         <button type="button" onclick="_graphZoomBy(1.3)" title="+">+</button>
@@ -1467,7 +1476,31 @@
   </div>
 </div>
 
-<script src="/app.js"></script>
+<!-- Логіка — js/*.js: звичайні скрипти зі спільними глобальними іменами (onclick="…" у розмітці),
+     тож порядок має значення: i18n першим, main.js (запуск) — останнім. -->
+<script src="/js/i18n.js"></script>
+<script src="/js/navigation.js"></script>
+<script src="/js/helpers.js"></script>
+<script src="/js/songs.js"></script>
+<script src="/js/profile.js"></script>
+<script src="/js/recommendations.js"></script>
+<script src="/js/wheel.js"></script>
+<script src="/js/stats.js"></script>
+<script src="/js/forms.js"></script>
+<script src="/js/appearance.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/player.js"></script>
+<script src="/js/battle.js"></script>
+<script src="/js/artists.js"></script>
+<script src="/js/friends.js"></script>
+<script src="/js/graph.js"></script>
+<script src="/js/top.js"></script>
+<script src="/js/bug-reports.js"></script>
+<script src="/js/chat.js"></script>
+<script src="/js/ratings.js"></script>
+<script src="/js/nav-search.js"></script>
+<script src="/js/realtime.js"></script>
+<script src="/js/main.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
