@@ -1130,6 +1130,21 @@
   <div class="shot-viewer-count" id="shot-viewer-count"></div>
 </div>
 
+<!-- Загальне вікно підтвердження (замість браузерного confirm()) — див. confirmModal() в app.js -->
+<div class="modal-overlay" id="confirm-modal-overlay">
+  <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-text">
+    <div class="modal-title-row">
+      <div class="modal-icon-circle" id="confirm-modal-icon"></div>
+      <span id="confirm-modal-title"></span>
+    </div>
+    <div class="modal-body-text" id="confirm-modal-text"></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" id="confirm-modal-cancel" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" id="confirm-modal-ok"></button>
+    </div>
+  </div>
+</div>
+
 <!-- Модальне вікно підтвердження видалення пісні (замінює браузерний confirm()) -->
 <div class="modal-overlay" id="delete-modal-overlay">
   <div class="modal-box">
