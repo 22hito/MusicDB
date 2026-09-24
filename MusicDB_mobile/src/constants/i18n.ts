@@ -260,6 +260,95 @@ export const I18N = {
     'navSearch.loginForUsers': 'Увійдіть, щоб шукати людей', // NEW
     'chat.clearBtn': 'Видалити чат', // NEW
     'chat.clearConfirm': "Видалити цей чат у себе? У співрозмовника переписка лишиться, а нові повідомлення з'являться тут знову.", // NEW
+    'nav.explore': 'Огляд', // NEW
+    'explore.heading.pre': 'Що', // NEW
+    'explore.heading.accent': 'послухати', // NEW
+    'nav.wheel': 'Колесо фортуни', // NEW
+    'nav.battle': 'Батл рояль', // NEW
+    'nav.artists': 'Виконавці', // NEW
+    'nav.friends': 'Друзі', // NEW
+    'explore.wheelSub': 'Випадковий жанр — готовий плейлист', // NEW
+    'explore.battleSub': 'Турнір пісень з плейлиста', // NEW
+    'explore.artistsSub': 'Каталог, дискографії, підписки', // NEW
+    'wheel.spinBtn': 'Крутити', // NEW
+    'wheel.playBtn': 'Слухати', // NEW
+    'wheel.resultLabel': 'Випав жанр:', // NEW
+    'wheel.legendTitle': 'Жанри на колесі', // NEW
+    'wheel.countLabel': 'Жанрів на колесі', // NEW
+    'wheel.durationLabel': 'Тривалість прокрутки, сек', // NEW
+    'wheel.playlistEmpty': 'Крутніть колесо, щоб сформувати плейлист із випадкового жанру', // NEW
+    'wheel.notEnough': 'Замало жанрів — потрібно хоча б 2 жанри з 5+ піснями', // NEW
+    'battle.heading.pre': 'Батл', // NEW
+    'battle.heading.accent': 'рояль', // NEW
+    'battle.pageOwnHeading': 'Мої плейлисти', // NEW
+    'battle.pageOwnLoginHint': 'Увійдіть, щоб побачити тут свої плейлисти', // NEW
+    'battle.pageOwnEmpty': 'У вас ще немає плейлистів — створіть їх у профілі', // NEW
+    'battle.pagePublicHeading': 'Плейлисти спільноти', // NEW
+    'battle.pagePublicEmpty': 'Ще немає публічних плейлистів — зробіть свій публічним у профілі', // NEW
+    'battle.publicBadge': 'публічний', // NEW
+    'battle.privateBadge': 'приватний', // NEW
+    'battle.chooseSize': 'Оберіть розмір турніру:', // NEW
+    'battle.notEnough': 'Замало пісень у плейлисті — потрібно щонайменше 16.', // NEW
+    'battle.roundLabel': 'Учасників: ', // NEW
+    'battle.vs': 'VS', // NEW
+    'battle.chooseBtn': 'Обрати цю', // NEW
+    'battle.listenBtn': 'Послухати', // NEW
+    'battle.championLabel': 'Переможець', // NEW
+    'battle.listenToWinnerBtn': 'Слухати переможця', // NEW
+    'battle.exitConfirm': 'Вийти з турніру? Прогрес буде втрачено.', // NEW
+    'battle.exit': 'Вийти', // NEW
+    'battle.mobileHint': 'Послухайте обидві пісні й оберіть кращу. Переможці виходять у наступне коло.', // NEW
+    'artists.heading.pre': 'Всі', // NEW
+    'artists.heading.accent': 'виконавці', // NEW
+    'artists.searchPlaceholder': 'Пошук виконавця…', // NEW
+    'artists.empty': 'Нічого не знайдено', // NEW
+    'artist.followBtn': '+ Підписатись', // NEW
+    'artist.unfollowBtn': 'Підписано', // NEW
+    'artist.followers': 'підписників', // NEW
+    'artist.discography': 'Дискографія', // NEW
+    'artist.notFound': 'Виконавця не знайдено', // NEW
+    'friends.searchPlaceholder': 'Пошук людей за іменем…', // NEW
+    'friends.searchEmpty': 'Нікого не знайдено', // NEW
+    'friends.incoming': 'Вхідні запити', // NEW
+    'friends.incomingRequestLabel': 'хоче додати вас у друзі', // NEW
+    'friends.outgoing': 'Надіслані запити', // NEW
+    'friends.myFriends': 'Мої друзі', // NEW
+    'friends.friendsEmpty': 'Ще немає друзів — знайдіть когось через пошук вище', // NEW
+    'friends.addBtn': '+ Додати в друзі', // NEW
+    'friends.pendingLabel': 'Запит надіслано', // NEW
+    'friends.cancelBtn': 'Скасувати', // NEW
+    'friends.acceptBtn': 'Прийняти', // NEW
+    'friends.rejectBtn': 'Відхилити', // NEW
+    'friends.unfriendBtn': 'Розфрендити', // NEW
+    'friends.friendsBadge': 'Друзі', // NEW
+    'friends.unfriendConfirm': 'Видалити {name} з друзів?', // NEW
+    'profile.public.notFound': 'Користувача не знайдено', // NEW
+    'profile.public.memberSince': 'На сайті з', // NEW
+    'profile.public.playlistsTitle': 'Публічні плейлисти', // NEW
+    'profile.public.playlistsEmpty': 'Немає публічних плейлистів', // NEW
+    'profile.public.writeBtn': 'Написати', // NEW
+    'profile.publicToggleHint': 'Натисніть на мітку, щоб зробити плейлист публічним чи приватним — публічні бачать інші в «Батл рояль» і у вашому профілі', // NEW
+    'bugs.menu': 'Повідомити про баг', // NEW
+    'bugs.title': 'Повідомити про баг', // NEW
+    'bugs.describe': 'Що сталося? *', // NEW
+    'bugs.placeholder': 'Що ви робили, що очікували побачити і що сталося натомість…', // NEW
+    'bugs.attachContext': 'Додати технічні дані (пісня, пристрій, версія)', // NEW
+    'bugs.send': 'Надіслати', // NEW
+    'bugs.tooShort': 'Опишіть, будь ласка, трохи докладніше (від 10 символів).', // NEW
+    'bugs.tooMany': 'Забагато звітів за годину — спробуйте пізніше.', // NEW
+    'bugs.thanks': 'Дякуємо! Звіт надіслано адміністраторам.', // NEW
+    'bugs.filter.open': 'Відкриті', // NEW
+    'bugs.filter.resolved': 'Вирішені', // NEW
+    'bugs.filter.all': 'Усі', // NEW
+    'bugs.empty': 'Немає баг-репортів', // NEW
+    'bugs.status.open': 'відкритий', // NEW
+    'bugs.status.resolved': 'вирішений', // NEW
+    'bugs.resolveBtn': 'Позначити вирішеним', // NEW
+    'bugs.reopenBtn': 'Відкрити знову', // NEW
+    'bugs.contextTitle': 'Технічні дані', // NEW
+    'bugs.resolvedBy': 'Вирішив', // NEW
+    'adminHub.bugsTab': 'Баги', // NEW
+    'adminNotif.bug_reported': 'повідомляє про баг', // NEW
   },
   en: {
     'nav.home': 'Home',
@@ -520,6 +609,95 @@ export const I18N = {
     'navSearch.loginForUsers': 'Sign in to search for people', // NEW
     'chat.clearBtn': 'Delete chat', // NEW
     'chat.clearConfirm': 'Delete this chat for yourself? The other person keeps the conversation, and new messages will show up here again.', // NEW
+    'nav.explore': 'Explore', // NEW
+    'explore.heading.pre': 'What to', // NEW
+    'explore.heading.accent': 'listen to', // NEW
+    'nav.wheel': 'Wheel of fortune', // NEW
+    'nav.battle': 'Battle royale', // NEW
+    'nav.artists': 'Artists', // NEW
+    'nav.friends': 'Friends', // NEW
+    'explore.wheelSub': 'A random genre — a ready playlist', // NEW
+    'explore.battleSub': 'A song tournament from a playlist', // NEW
+    'explore.artistsSub': 'Catalog, discographies, follows', // NEW
+    'wheel.spinBtn': 'Spin', // NEW
+    'wheel.playBtn': 'Play', // NEW
+    'wheel.resultLabel': 'You got:', // NEW
+    'wheel.legendTitle': 'Genres on the wheel', // NEW
+    'wheel.countLabel': 'Genres on the wheel', // NEW
+    'wheel.durationLabel': 'Spin duration, sec', // NEW
+    'wheel.playlistEmpty': 'Spin the wheel to build a playlist from a random genre', // NEW
+    'wheel.notEnough': 'Not enough genres — need at least 2 genres with 5+ songs', // NEW
+    'battle.heading.pre': 'Battle', // NEW
+    'battle.heading.accent': 'royale', // NEW
+    'battle.pageOwnHeading': 'My playlists', // NEW
+    'battle.pageOwnLoginHint': 'Log in to see your own playlists here', // NEW
+    'battle.pageOwnEmpty': 'You don\'t have any playlists yet — create one in your profile', // NEW
+    'battle.pagePublicHeading': 'Community playlists', // NEW
+    'battle.pagePublicEmpty': 'No public playlists yet — make one of yours public in your profile', // NEW
+    'battle.publicBadge': 'public', // NEW
+    'battle.privateBadge': 'private', // NEW
+    'battle.chooseSize': 'Choose tournament size:', // NEW
+    'battle.notEnough': 'Not enough songs in this playlist — need at least 16.', // NEW
+    'battle.roundLabel': 'Contestants: ', // NEW
+    'battle.vs': 'VS', // NEW
+    'battle.chooseBtn': 'Pick this one', // NEW
+    'battle.listenBtn': 'Listen', // NEW
+    'battle.championLabel': 'Champion', // NEW
+    'battle.listenToWinnerBtn': 'Listen to the champion', // NEW
+    'battle.exitConfirm': 'Leave the tournament? Progress will be lost.', // NEW
+    'battle.exit': 'Leave', // NEW
+    'battle.mobileHint': 'Listen to both songs and pick the better one. Winners go to the next round.', // NEW
+    'artists.heading.pre': 'All', // NEW
+    'artists.heading.accent': 'artists', // NEW
+    'artists.searchPlaceholder': 'Search for an artist…', // NEW
+    'artists.empty': 'Nothing found', // NEW
+    'artist.followBtn': '+ Follow', // NEW
+    'artist.unfollowBtn': 'Following', // NEW
+    'artist.followers': 'followers', // NEW
+    'artist.discography': 'Discography', // NEW
+    'artist.notFound': 'Artist not found', // NEW
+    'friends.searchPlaceholder': 'Search people by name…', // NEW
+    'friends.searchEmpty': 'No one found', // NEW
+    'friends.incoming': 'Incoming requests', // NEW
+    'friends.incomingRequestLabel': 'wants to add you as a friend', // NEW
+    'friends.outgoing': 'Sent requests', // NEW
+    'friends.myFriends': 'My friends', // NEW
+    'friends.friendsEmpty': 'No friends yet — find someone using the search above', // NEW
+    'friends.addBtn': '+ Add friend', // NEW
+    'friends.pendingLabel': 'Request sent', // NEW
+    'friends.cancelBtn': 'Cancel', // NEW
+    'friends.acceptBtn': 'Accept', // NEW
+    'friends.rejectBtn': 'Reject', // NEW
+    'friends.unfriendBtn': 'Unfriend', // NEW
+    'friends.friendsBadge': 'Friends', // NEW
+    'friends.unfriendConfirm': 'Remove {name} from friends?', // NEW
+    'profile.public.notFound': 'User not found', // NEW
+    'profile.public.memberSince': 'Member since', // NEW
+    'profile.public.playlistsTitle': 'Public playlists', // NEW
+    'profile.public.playlistsEmpty': 'No public playlists', // NEW
+    'profile.public.writeBtn': 'Message', // NEW
+    'profile.publicToggleHint': 'Tap the label to make a playlist public or private — public ones are visible to others in "Battle royale" and on your profile', // NEW
+    'bugs.menu': 'Report a bug', // NEW
+    'bugs.title': 'Report a bug', // NEW
+    'bugs.describe': 'What happened? *', // NEW
+    'bugs.placeholder': 'What you were doing, what you expected and what happened instead…', // NEW
+    'bugs.attachContext': 'Attach technical details (song, device, version)', // NEW
+    'bugs.send': 'Send', // NEW
+    'bugs.tooShort': 'Please describe it in a bit more detail (10+ characters).', // NEW
+    'bugs.tooMany': 'Too many reports this hour — please try again later.', // NEW
+    'bugs.thanks': 'Thank you! The report was sent to the admins.', // NEW
+    'bugs.filter.open': 'Open', // NEW
+    'bugs.filter.resolved': 'Resolved', // NEW
+    'bugs.filter.all': 'All', // NEW
+    'bugs.empty': 'No bug reports', // NEW
+    'bugs.status.open': 'open', // NEW
+    'bugs.status.resolved': 'resolved', // NEW
+    'bugs.resolveBtn': 'Mark resolved', // NEW
+    'bugs.reopenBtn': 'Reopen', // NEW
+    'bugs.contextTitle': 'Technical details', // NEW
+    'bugs.resolvedBy': 'Resolved by', // NEW
+    'adminHub.bugsTab': 'Bugs', // NEW
+    'adminNotif.bug_reported': 'reported a bug', // NEW
   },
 } as const;
 

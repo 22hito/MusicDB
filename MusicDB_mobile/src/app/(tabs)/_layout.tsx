@@ -7,7 +7,7 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { MiniPlayerBar } from '@/player/MiniPlayerBar';
 import { BrandHeader } from '@/components/BrandHeader';
-import { ChatIcon, NoteIcon, PersonIcon, SendIcon, ShieldIcon, StarIcon, TrophyIcon } from '@/components/Icons';
+import { ChatIcon, CompassIcon, NoteIcon, PersonIcon, SendIcon, ShieldIcon, TrophyIcon } from '@/components/Icons';
 
 // Трохи вище за типовий (49-50px), щоб іконки й підписи мали комфортну зону дотику.
 const TAB_BAR_CONTENT_HEIGHT = 58;
@@ -28,8 +28,17 @@ export default function TabsLayout() {
       setAdminBadge(0);
       return;
     }
-    api.getDmUnread().then((d) => setCommunityBadge(d.unread + d.requests)).catch(() => {});
-    if (isAdmin) api.getAdminNotifications(1).then((d) => setAdminBadge(d.unreadCount)).catch(() => {});
+    // Спілкування: непрочитані ЛС + запити на листування + вхідні запити в друзі.
+    Promise.all([
+      api.getDmUnread().catch(() => ({ unread: 0, requests: 0 })),
+      api.getIncomingFriendRequests().catch(() => []),
+    ]).then(([d, fr]) => setCommunityBadge(d.unread + d.requests + fr.length));
+    // Адмін: нові сповіщення + відкриті баг-репорти.
+    if (isAdmin)
+      Promise.all([
+        api.getAdminNotifications(1).then((d) => d.unreadCount).catch(() => 0),
+        api.getOpenBugCount().catch(() => 0),
+      ]).then(([n, bugs]) => setAdminBadge(n + bugs));
   }, [api, authed, isAdmin]);
   useEffect(() => {
     refreshBadges();
@@ -37,7 +46,15 @@ export default function TabsLayout() {
   useEffect(
     () =>
       subscribeRealtime((event) => {
-        if (event === 'dmReceived' || event === 'dmSent' || event === 'dmRequestsChanged' || event === 'adminNotification') refreshBadges();
+        if (
+          event === 'dmReceived' ||
+          event === 'dmSent' ||
+          event === 'dmRequestsChanged' ||
+          event === 'adminNotification' ||
+          event === 'friendsChanged' ||
+          event === 'bugReportsChanged'
+        )
+          refreshBadges();
       }),
     [subscribeRealtime, refreshBadges],
   );
@@ -102,10 +119,10 @@ export default function TabsLayout() {
             }}
           />
           <Tabs.Screen
-            name="recommendations"
+            name="explore"
             options={{
-              title: t('nav.recommendations'),
-              tabBarIcon: ({ color, size }) => <StarIcon color={String(color)} size={size ?? 20} />,
+              title: t('nav.explore'),
+              tabBarIcon: ({ color, size }) => <CompassIcon color={String(color)} size={size ?? 20} />,
             }}
           />
           <Tabs.Screen

@@ -18,7 +18,7 @@ import { CommunityFields } from '@/components/CommunityFields';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { EditIcon } from '@/components/Icons';
 import { RADIUS, SPACING } from '@/constants/theme';
-import type { AdminNotification, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
+import type { AdminNotification, BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
 
@@ -37,11 +37,11 @@ function requestToForm(r: SongRequest): SongFormValues {
 export default function AdminScreen() {
   const { theme, t } = useSettings();
   const api = useMusicApi();
-  const [mode, setMode] = useState<'requests' | 'add' | 'notifications'>('requests');
+  const [mode, setMode] = useState<'requests' | 'add' | 'notifications' | 'bugs'>('requests');
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <View style={styles.segmentRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.segmentRow}>
         <TouchableOpacity
           onPress={() => setMode('requests')}
           style={[styles.segmentBtn, mode === 'requests' && { borderBottomColor: theme.accent }]}
@@ -66,9 +66,25 @@ export default function AdminScreen() {
             {t('adminNotif.tab')}
           </Text>
         </TouchableOpacity>
-      </View>
+        <TouchableOpacity
+          onPress={() => setMode('bugs')}
+          style={[styles.segmentBtn, mode === 'bugs' && { borderBottomColor: theme.accent }]}
+        >
+          <Text style={{ color: mode === 'bugs' ? theme.accent : theme.muted, fontSize: 13, textTransform: 'uppercase' }}>
+            {t('adminHub.bugsTab')}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
 
-      {mode === 'requests' ? <RequestsPanel /> : mode === 'add' ? <AddSongPanel /> : <NotificationsPanel />}
+      {mode === 'requests' ? (
+        <RequestsPanel />
+      ) : mode === 'add' ? (
+        <AddSongPanel />
+      ) : mode === 'notifications' ? (
+        <NotificationsPanel />
+      ) : (
+        <BugsPanel />
+      )}
     </SafeAreaView>
   );
 }
@@ -426,11 +442,110 @@ function NotificationsPanel() {
   );
 }
 
+// Баг-репорти від користувачів: фільтр відкриті/вирішені/усі, перемикання статусу.
+function BugsPanel() {
+  const { theme, t } = useSettings();
+  const { subscribeRealtime } = useApiBridge();
+  const api = useMusicApi();
+  const [filter, setFilter] = useState<BugStatus | 'all'>('open');
+  const [items, setItems] = useState<BugReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  const load = useCallback(() => {
+    api
+      .getBugReports(filter)
+      .then((r) => {
+        setItems(r);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
+  }, [api, filter]);
+
+  useEffect(() => {
+    setLoading(true);
+    load();
+  }, [load]);
+  useEffect(() => subscribeRealtime((event) => event === 'bugReportsChanged' && load()), [subscribeRealtime, load]);
+
+  const setStatus = async (id: number, status: BugStatus) => {
+    setBusyId(id);
+    try {
+      await api.setBugStatus(id, status);
+      load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      <View style={{ marginBottom: SPACING.md }}>
+        <SegmentedPicker<BugStatus | 'all'>
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: 'open', label: t('bugs.filter.open') },
+            { value: 'resolved', label: t('bugs.filter.resolved') },
+            { value: 'all', label: t('bugs.filter.all') },
+          ]}
+        />
+      </View>
+      {loading ? (
+        <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
+      ) : loadError ? (
+        <ErrorState label={t('error.loadFailed')} onRetry={load} />
+      ) : items.length === 0 ? (
+        <EmptyState icon="🐞" label={t('bugs.empty')} />
+      ) : (
+        items.map((b) => (
+          <View key={b.id} style={[styles.reqCard, { backgroundColor: theme.surface, borderColor: b.status === 'open' ? theme.accent : theme.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <Text style={{ color: theme.text, fontWeight: '700' }}>{b.reporter?.displayName ?? t('adminNotif.someone')}</Text>
+              <Text style={{ color: theme.muted, fontSize: 11 }}>{b.createdAt}</Text>
+              <Text style={{ color: b.status === 'open' ? theme.accent : theme.green, fontSize: 11, marginLeft: 'auto' }}>
+                {t(b.status === 'open' ? 'bugs.status.open' : 'bugs.status.resolved')}
+              </Text>
+            </View>
+            <Text style={{ color: theme.text, fontSize: 14, lineHeight: 20, marginTop: 8 }}>{b.description}</Text>
+            {b.context ? (
+              <TouchableOpacity onPress={() => setExpanded((e) => (e === b.id ? null : b.id))} style={{ marginTop: 8 }}>
+                <Text style={{ color: theme.accent, fontSize: 12 }}>
+                  {expanded === b.id ? '▾' : '▸'} {t('bugs.contextTitle')}
+                </Text>
+                {expanded === b.id ? (
+                  <Text selectable style={{ color: theme.muted, fontSize: 12, marginTop: 6, fontFamily: 'monospace' }}>{b.context}</Text>
+                ) : null}
+              </TouchableOpacity>
+            ) : null}
+            {b.resolvedBy ? (
+              <Text style={{ color: theme.muted, fontSize: 11, marginTop: 6 }}>
+                {t('bugs.resolvedBy')}: {b.resolvedBy.displayName}
+              </Text>
+            ) : null}
+            <View style={styles.reqActions}>
+              {b.status === 'open' ? (
+                <Button small variant="success" label={t('bugs.resolveBtn')} loading={busyId === b.id} onPress={() => setStatus(b.id, 'resolved')} />
+              ) : (
+                <Button small variant="outline" label={t('bugs.reopenBtn')} loading={busyId === b.id} onPress={() => setStatus(b.id, 'open')} />
+              )}
+            </View>
+          </View>
+        ))
+      )}
+    </ScrollView>
+  );
+}
+
 const ADMIN_EVENT_KEYS = {
   request_submitted: 'adminNotif.request_submitted',
   request_approved: 'adminNotif.request_approved',
   request_rejected: 'adminNotif.request_rejected',
   song_added: 'adminNotif.song_added',
+  bug_reported: 'adminNotif.bug_reported',
 } as const;
 
 const styles = StyleSheet.create({

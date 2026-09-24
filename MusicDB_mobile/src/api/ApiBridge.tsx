@@ -26,7 +26,7 @@ interface PendingRequest {
 }
 
 export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   query?: Record<string, string | number | undefined | null>;
 }
@@ -39,13 +39,15 @@ export type RealtimeEvent =
   | 'dmSent'
   | 'dmRequestsChanged'
   | 'threadsChanged'
-  | 'ratingChanged';
+  | 'ratingChanged'
+  | 'friendsChanged'
+  | 'bugReportsChanged';
 
 // Ті самі SignalR-події, що слухає сайт (wwwroot/app.js); args — аргументи події
 // (напр. userId співрозмовника для dm*, id гілки, [musicId, avg, count] для оцінки).
 const REALTIME_EVENTS: RealtimeEvent[] = [
   'songsChanged', 'requestsChanged', 'adminNotification', 'dmReceived', 'dmSent',
-  'dmRequestsChanged', 'threadsChanged', 'ratingChanged',
+  'dmRequestsChanged', 'threadsChanged', 'ratingChanged', 'friendsChanged', 'bugReportsChanged',
 ];
 
 interface ApiBridgeState {

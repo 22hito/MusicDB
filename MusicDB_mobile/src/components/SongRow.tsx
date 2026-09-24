@@ -36,6 +36,7 @@ export function SongRow({
   onRate,
   onGenrePress,
   onAlbumPress,
+  onSubmitterPress,
   activeGenre,
   activeAlbum,
 }: {
@@ -58,6 +59,7 @@ export function SongRow({
   // Швидка фільтрація, як на сайті: натиснув жанр/альбом — список лише з ним.
   onGenrePress?: (genre: string) => void;
   onAlbumPress?: (album: string) => void;
+  onSubmitterPress?: (userId: number, name: string) => void;
   activeGenre?: string;
   activeAlbum?: string;
 }) {
@@ -92,12 +94,17 @@ export function SongRow({
           </Text>
           {/* Таблиця_2: нік того, хто додав пісню. */}
           {song.submittedBy ? (
-            <View style={styles.submitterLine}>
+            <TouchableOpacity
+              style={styles.submitterLine}
+              disabled={!onSubmitterPress}
+              hitSlop={6}
+              onPress={() => song.submittedBy && onSubmitterPress?.(song.submittedBy.userId, song.submittedBy.displayName)}
+            >
               <PersonIcon size={11} color={theme.accent} />
               <Text numberOfLines={1} style={[styles.submitter, { color: theme.accent, fontFamily: FONT_MONO_REGULAR }]}>
                 {song.submittedBy.displayName}
               </Text>
-            </View>
+            </TouchableOpacity>
           ) : null}
         </View>
 

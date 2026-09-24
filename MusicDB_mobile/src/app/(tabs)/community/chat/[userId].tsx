@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { TrashIcon } from '@/components/Icons';
+import { openUserProfile } from '@/components/FriendsPanel';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
@@ -80,6 +81,11 @@ export default function ChatScreen() {
       <Stack.Screen
         options={{
           title: params.name || t('chat.tab.dm'),
+          headerTitle: () => (
+            <TouchableOpacity onPress={() => openUserProfile(Number(params.userId), params.name)} hitSlop={8}>
+              <Text numberOfLines={1} style={{ color: theme.text, fontSize: 17, fontWeight: '600' }}>{params.name || t('chat.tab.dm')}</Text>
+            </TouchableOpacity>
+          ),
           headerRight: () =>
             thread?.messages.length ? (
               <TouchableOpacity onPress={clearForMe} hitSlop={10} accessibilityLabel={t('chat.clearBtn')}>

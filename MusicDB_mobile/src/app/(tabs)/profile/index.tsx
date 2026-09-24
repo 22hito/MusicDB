@@ -20,7 +20,8 @@ import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
 import { Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
-import { TrashIcon } from '@/components/Icons';
+import { BugIcon, GlobeIcon, LockIcon, TrashIcon, UsersIcon } from '@/components/Icons';
+import { BugReportModal } from '@/components/BugReportModal';
 import { RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, Profile, Song } from '@/api/types';
 
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
   const [newPlaylistOpen, setNewPlaylistOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
+  const [bugOpen, setBugOpen] = useState(false);
 
   const authenticated = !!currentUser?.authenticated;
 
@@ -118,6 +120,16 @@ export default function ProfileScreen() {
       setPlaylists(pls);
     } finally {
       setCreatingPlaylist(false);
+    }
+  };
+
+  // Публічний плейлист бачать інші: у "Батл рояль" і в публічному профілі.
+  const togglePublic = async (pl: Playlist) => {
+    setPlaylists((prev) => prev.map((p) => (p.id === pl.id ? { ...p, isPublic: !pl.isPublic } : p)));
+    try {
+      await api.setPlaylistPublic(pl.id, !pl.isPublic);
+    } catch {
+      setPlaylists((prev) => prev.map((p) => (p.id === pl.id ? { ...p, isPublic: pl.isPublic } : p)));
     }
   };
 
@@ -273,6 +285,16 @@ export default function ProfileScreen() {
                   {pl.songCount} {t('profile.songsWord')}
                 </Text>
               </View>
+              <TouchableOpacity
+                onPress={() => togglePublic(pl)}
+                hitSlop={6}
+                style={[styles.publicChip, { borderColor: pl.isPublic ? theme.accent2 : theme.border }]}
+              >
+                {pl.isPublic ? <GlobeIcon size={12} color={theme.accent2} /> : <LockIcon size={12} color={theme.muted} />}
+                <Text style={{ color: pl.isPublic ? theme.accent2 : theme.muted, fontSize: 11 }}>
+                  {pl.isPublic ? t('battle.publicBadge') : t('battle.privateBadge')}
+                </Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => deletePlaylist(pl.id)} hitSlop={10} style={{ padding: 6, marginLeft: 6 }}>
                 <TrashIcon size={17} color={theme.red} />
               </TouchableOpacity>
@@ -280,11 +302,29 @@ export default function ProfileScreen() {
           ))
         )}
 
+        {playlists.length ? <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>{t('profile.publicToggleHint')}</Text> : null}
+
+        <View style={{ marginTop: 26, gap: 10 }}>
+          <TouchableOpacity
+            onPress={() => router.push('/community')}
+            style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}
+          >
+            <UsersIcon size={17} color={theme.accent} />
+            <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('nav.friends')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setBugOpen(true)} style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+            <BugIcon size={17} color={theme.accent} />
+            <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('bugs.menu')}</Text>
+          </TouchableOpacity>
+        </View>
+
         <Button label={t('auth.logout')} variant="outline" onPress={logout} style={{ marginTop: 26 }} />
         <TouchableOpacity onPress={openSettingsModal} style={styles.settingsLink} hitSlop={6}>
           <Text style={{ color: theme.muted, fontSize: 13 }}>{t('settings.change')}</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <BugReportModal visible={bugOpen} onClose={() => setBugOpen(false)} />
 
       <Modal visible={newPlaylistOpen} transparent animationType="fade" onRequestClose={() => setNewPlaylistOpen(false)}>
         <View style={styles.overlay}>
@@ -346,6 +386,25 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingVertical: 8,
     marginBottom: 8,
+  },
+  publicChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: RADIUS.pill,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginLeft: 8,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 14,
   },
   newPlaylistBtn: {
     paddingVertical: 6,

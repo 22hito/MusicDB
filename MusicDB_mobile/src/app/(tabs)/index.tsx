@@ -12,6 +12,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { Button, EmptyState, ErrorState, Heading, SegmentedPicker, StatCard } from '@/components/UI';
 import { RatingModal } from '@/components/RatingModal';
 import { SongRow } from '@/components/SongRow';
+import { openUserProfile } from '@/components/FriendsPanel';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { AddToPlaylistModal } from '@/components/AddToPlaylistModal';
@@ -383,6 +384,7 @@ export default function LibraryScreen() {
             onRate={() => setRatingSong(item)}
             onGenrePress={(g) => setGenreFilter((cur) => (cur === g ? '' : g))}
             onAlbumPress={(a) => setAlbumFilter((cur) => (cur === a ? '' : a))}
+            onSubmitterPress={(id, name) => requireAuth(() => openUserProfile(id, name))}
             activeGenre={genreFilter}
             activeAlbum={albumFilter}
           />

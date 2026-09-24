@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -10,6 +11,7 @@ import {
 } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { FONT_MONO_MEDIUM, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
+import { PersonIcon } from './Icons';
 
 export function Heading({ pre, accent }: { pre: string; accent: string }) {
   const { theme } = useSettings();
@@ -281,3 +283,36 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
+
+// Кругла аватарка користувача з фолбеком-іконкою (як .avatar-ph на сайті).
+export function Avatar({ url, size = 40 }: { url: string | null | undefined; size?: number }) {
+  const { theme } = useSettings();
+  if (url) return <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: theme.surface2,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <PersonIcon size={Math.round(size * 0.42)} color={theme.muted} />
+    </View>
+  );
+}
+
+// Заголовок секції всередині екрана (дрібні великі літери, як .section-title на сайті).
+export function SectionTitle({ label, right }: { label: string; right?: React.ReactNode }) {
+  const { theme } = useSettings();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.lg, marginBottom: SPACING.sm }}>
+      <Text style={{ color: theme.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: FONT_MONO_MEDIUM }}>
+        {label}
+      </Text>
+      {right}
+    </View>
+  );
+}
