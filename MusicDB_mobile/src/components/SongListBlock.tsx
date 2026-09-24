@@ -49,5 +49,5 @@ export function SongListBlock({ songs }: { songs: Song[] }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: RADIUS.lg, overflow: 'hidden', marginBottom: SPACING.lg },
+  card: { marginBottom: SPACING.md },
 });

@@ -138,9 +138,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   input: {
-    minHeight: 46,
+    minHeight: 48,
     borderWidth: 1,
-    borderRadius: RADIUS.sm,
+    borderRadius: RADIUS.md,
     paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 14,

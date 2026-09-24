@@ -149,13 +149,13 @@ export const I18N = {
     'settings.language': 'Мова',
     'lang.uk': 'Українська',
     'lang.en': 'English',
-    'settings.title': 'Налаштування сервера',
+    'settings.title': 'Налаштування',
     'settings.apiBase': 'Адреса сервера MusicDB',
     'settings.apiBase.placeholder': 'https://your-server.example.com',
     'settings.apiBase.hint': 'Адреса, на якій запущено MusicDB.Api (той самий бекенд, що й для веб-версії).',
     'settings.save': 'Зберегти й продовжити',
     'settings.invalid': 'Введіть коректну адресу (напр. https://example.com)',
-    'settings.change': 'Змінити сервер',
+    'settings.change': 'Налаштування',
     'nav.settings': 'Сервер',
     'login.title': 'Вхід через Google',
     'login.cancel': 'Скасувати',
@@ -349,6 +349,30 @@ export const I18N = {
     'bugs.resolvedBy': 'Вирішив', // NEW
     'adminHub.bugsTab': 'Баги', // NEW
     'adminNotif.bug_reported': 'повідомляє про баг', // NEW
+    'theme.system': 'Системна', // NEW
+    'settings.accent': 'Акцентний колір', // NEW
+    'settings.accent.hint': 'Кнопки, посилання, цифри статистики. Контраст підлаштовується під тему автоматично.', // NEW
+    'settings.accent.amber': 'Бурштин', // NEW
+    'settings.accent.coral': 'Корал', // NEW
+    'settings.accent.rose': 'Троянда', // NEW
+    'settings.accent.lavender': 'Лаванда', // NEW
+    'settings.accent.ocean': 'Океан', // NEW
+    'settings.accent.emerald': 'Смарагд', // NEW
+    'settings.done': 'Готово', // NEW
+    'settings.sub': 'Зберігаються на цьому пристрої й діють одразу.', // NEW
+    'bugs.attachContextHint': 'Допомагає відтворити помилку: адмін бачить, що саме було відкрито. Без паролів чи особистих даних.', // NEW
+    'bugs.previewSummary': 'Що саме буде надіслано?', // NEW
+    'admin.lyrics': 'Текст пісні (необов\'язково)', // NEW
+    'admin.lyrics.placeholder': 'Вставте текст пісні рядок за рядком, або залиште порожнім', // NEW
+    'player.karaoke': 'Текст', // NEW
+    'player.karaokeEmpty': 'Для цієї пісні ще немає тексту', // NEW
+    'bugs.addScreenshot': 'Додати скріншот', // NEW
+    'bugs.screenshotsHint': 'До 3 зображень, до 5 МБ кожне.', // NEW
+    'bugs.shotTooBig': 'Зображення більше 5 МБ.', // NEW
+    'bugs.shotsTitle': 'Скріншоти', // NEW
+    'battle.undo': 'Крок назад', // NEW
+    'battle.videoHint': 'Натисніть «Послухати» — тут з’явиться відео', // NEW
+    'battle.audioOnly': 'Трек без відео — грає аудіофайл', // NEW
   },
   en: {
     'nav.home': 'Home',
@@ -498,13 +522,13 @@ export const I18N = {
     'settings.language': 'Language',
     'lang.uk': 'Українська',
     'lang.en': 'English',
-    'settings.title': 'Server settings',
+    'settings.title': 'Settings',
     'settings.apiBase': 'MusicDB server address',
     'settings.apiBase.placeholder': 'https://your-server.example.com',
     'settings.apiBase.hint': 'The address MusicDB.Api runs on (the same backend as the web version).',
     'settings.save': 'Save & continue',
     'settings.invalid': 'Enter a valid address (e.g. https://example.com)',
-    'settings.change': 'Change server',
+    'settings.change': 'Settings',
     'nav.settings': 'Server',
     'login.title': 'Sign in with Google',
     'login.cancel': 'Cancel',
@@ -698,6 +722,30 @@ export const I18N = {
     'bugs.resolvedBy': 'Resolved by', // NEW
     'adminHub.bugsTab': 'Bugs', // NEW
     'adminNotif.bug_reported': 'reported a bug', // NEW
+    'theme.system': 'System', // NEW
+    'settings.accent': 'Accent color', // NEW
+    'settings.accent.hint': 'Buttons, links, stat numbers. Contrast adapts to the theme automatically.', // NEW
+    'settings.accent.amber': 'Amber', // NEW
+    'settings.accent.coral': 'Coral', // NEW
+    'settings.accent.rose': 'Rose', // NEW
+    'settings.accent.lavender': 'Lavender', // NEW
+    'settings.accent.ocean': 'Ocean', // NEW
+    'settings.accent.emerald': 'Emerald', // NEW
+    'settings.done': 'Done', // NEW
+    'settings.sub': 'Saved on this device and applied instantly.', // NEW
+    'bugs.attachContextHint': 'Helps reproduce the problem: the admin sees what exactly was open. No passwords or personal data.', // NEW
+    'bugs.previewSummary': 'What exactly will be sent?', // NEW
+    'admin.lyrics': 'Song lyrics (optional)', // NEW
+    'admin.lyrics.placeholder': 'Paste the lyrics line by line, or leave empty', // NEW
+    'player.karaoke': 'Lyrics', // NEW
+    'player.karaokeEmpty': 'No lyrics for this song yet', // NEW
+    'bugs.addScreenshot': 'Add screenshot', // NEW
+    'bugs.screenshotsHint': 'Up to 3 images, 5 MB each.', // NEW
+    'bugs.shotTooBig': 'The image is larger than 5 MB.', // NEW
+    'bugs.shotsTitle': 'Screenshots', // NEW
+    'battle.undo': 'Step back', // NEW
+    'battle.videoHint': 'Tap "Listen" — the video will show up here', // NEW
+    'battle.audioOnly': 'No video for this track — playing the audio file', // NEW
   },
 } as const;
 

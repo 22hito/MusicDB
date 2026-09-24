@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -35,10 +36,20 @@ public class BugReportsTests
         public IGroupManager Groups => throw new NotSupportedException();
     }
 
+    private static readonly LocalAudioStorage Storage = new(
+        new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Uploads:AudioPath"] = Path.Combine(Path.GetTempPath(), "musicdb-test-shots", Guid.NewGuid().ToString("N"))
+        }).Build(),
+        null!);
+
+    private static IFormFile Png(string name = "shot.png", int size = 16) =>
+        new FormFile(new MemoryStream(new byte[size]), 0, size, "screenshots", name);
+
     private static BugReportsController Create(MusicDbContext db, string email, bool admin = false)
     {
         var hub = new NullHub();
-        var controller = new BugReportsController(db, new UserDirectoryService(db), new AdminActivityService(db, hub), hub);
+        var controller = new BugReportsController(db, new UserDirectoryService(db), new AdminActivityService(db, hub), hub, Storage);
         var claims = new List<Claim> { new(ClaimTypes.Email, email), new(ClaimTypes.Name, email.Split('@')[0]) };
         if (admin) claims.Add(new Claim("role", "admin"));
         controller.ControllerContext = new ControllerContext
@@ -99,5 +110,36 @@ public class BugReportsTests
         var open = Assert.IsType<List<BugReportDto>>(((await admin.GetAll("open")).Result as OkObjectResult)!.Value);
         Assert.Null(Assert.Single(open).ResolvedBy);
         Assert.IsType<BadRequestObjectResult>(await admin.SetStatus(id, new SetBugReportStatusDto("deleted")));
+    }
+
+    [Fact]
+    public async Task CreateWithScreenshots_SavesFiles_AndAdminCanOpenThem()
+    {
+        using var db = TestDb.Create();
+        var result = await Create(db, "user@x.com").CreateWithScreenshots("Меню вилазить за екран на телефоні", null, [Png(), Png("b.jpg")]);
+
+        Assert.IsType<OkObjectResult>(result);
+        var report = Assert.Single(db.BugReports);
+        Assert.Equal(2, report.Screenshots.Length);
+        Assert.All(report.Screenshots, n => Assert.StartsWith("shot-", n));
+
+        var admin = Create(db, "admin@x.com", admin: true);
+        var list = Assert.IsType<List<BugReportDto>>(((await admin.GetAll("open")).Result as OkObjectResult)!.Value);
+        Assert.Equal(2, Assert.Single(list).ScreenshotCount);
+        var file = Assert.IsType<PhysicalFileResult>(await admin.GetScreenshot(report.Id, 1));
+        Assert.Equal("image/jpeg", file.ContentType);
+        Assert.IsType<NotFoundResult>(await admin.GetScreenshot(report.Id, 2));
+    }
+
+    [Fact]
+    public async Task CreateWithScreenshots_RejectsWrongFormat_TooManyAndTooBig_WithoutSavingAnything()
+    {
+        using var db = TestDb.Create();
+        var c = Create(db, "user@x.com");
+        Assert.IsType<BadRequestObjectResult>(await c.CreateWithScreenshots("Опис достатньої довжини", null, [Png(), Png("x.exe")]));
+        Assert.IsType<BadRequestObjectResult>(await c.CreateWithScreenshots("Опис достатньої довжини", null, [Png(), Png(), Png(), Png()]));
+        Assert.IsType<BadRequestObjectResult>(await c.CreateWithScreenshots("Опис достатньої довжини", null,
+            [Png(size: (int)AudioFiles.MaxImageBytes + 1)]));
+        Assert.Empty(db.BugReports);
     }
 }

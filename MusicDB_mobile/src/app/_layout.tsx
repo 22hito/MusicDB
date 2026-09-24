@@ -5,16 +5,16 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import {
-  PlayfairDisplay_400Regular,
   PlayfairDisplay_700Bold,
+  PlayfairDisplay_800ExtraBold,
   PlayfairDisplay_900Black,
 } from '@expo-google-fonts/playfair-display';
-import { DMMono_300Light, DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { SettingsProvider, useSettings } from '@/state/SettingsContext';
 import { ApiBridgeProvider } from '@/api/ApiBridge';
 import { FavoritesProvider } from '@/state/FavoritesContext';
 import { PlayerProvider } from '@/player/PlayerContext';
-import { ServerSettingsScreen } from '@/screens/ServerSettingsScreen';
+import { SettingsScreen } from '@/screens/SettingsScreen';
 
 // Раніше тут був expo-router-івський <Stack> ((tabs) + модальний "settings").
 // Виміри (onLayout-логи на кожному рівні дерева) показали, що ЛИШЕ контент
@@ -35,19 +35,15 @@ import { ServerSettingsScreen } from '@/screens/ServerSettingsScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Друкується одразу при завантаженні бандла (ще до першого рендеру) — щоб
-// однозначно бачити в терміналі, що телефон виконує САМЕ цей, щойно
-// перезібраний код, а не застарілий закешований бандл.
-console.log('[DBG2] _layout.tsx module loaded — build marker v2 (Slot, no root Stack)');
-
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    PlayfairDisplay_400Regular,
     PlayfairDisplay_700Bold,
+    PlayfairDisplay_800ExtraBold,
     PlayfairDisplay_900Black,
-    DMMono_300Light,
-    DMMono_400Regular,
-    DMMono_500Medium,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   return (
@@ -58,7 +54,7 @@ export default function RootLayout() {
 }
 
 function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
-  const { ready, apiBase, theme, settingsModalOpen, closeSettingsModal } = useSettings();
+  const { ready, theme, settingsModalOpen, closeSettingsModal } = useSettings();
   const [hidden, setHidden] = useState(false);
 
   const maybeHideSplash = useCallback(async () => {
@@ -73,32 +69,22 @@ function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
   }, [maybeHideSplash]);
 
   if (!fontsLoaded || !ready) {
-    return <View style={{ flex: 1, backgroundColor: '#0d0d0f' }} />;
-  }
-
-  if (!apiBase) {
-    return (
-      <>
-        <StatusBar style="light" />
-        <ServerSettingsScreen onSaved={() => {}} />
-      </>
-    );
+    return <View style={{ flex: 1, backgroundColor: '#090c14' }} />;
   }
 
   return (
     <View
       style={{ flex: 1, backgroundColor: theme.bg }}
-      onLayout={(e) => console.log('[DBG2] RootInner outer View', e.nativeEvent.layout)}
     >
       <ApiBridgeProvider>
         <FavoritesProvider>
           <PlayerProvider>
             <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
-            <View style={{ flex: 1 }} onLayout={(e) => console.log('[DBG2] Slot wrapper View', e.nativeEvent.layout)}>
+            <View style={{ flex: 1 }}>
               <Slot />
             </View>
             <Modal visible={settingsModalOpen} animationType="slide" onRequestClose={closeSettingsModal}>
-              <ServerSettingsScreen onSaved={closeSettingsModal} onCancel={closeSettingsModal} />
+              <SettingsScreen onClose={closeSettingsModal} />
             </Modal>
           </PlayerProvider>
         </FavoritesProvider>

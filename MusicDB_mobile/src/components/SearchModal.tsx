@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: RADIUS.md,
     paddingHorizontal: 12,
-    minHeight: 46,
+    minHeight: 48,
   },
   input: { flex: 1, fontSize: 15, paddingVertical: 10 },
   section: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: SPACING.md, marginBottom: 6 },

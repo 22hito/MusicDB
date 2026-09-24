@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
@@ -16,8 +15,9 @@ import { openUserProfile } from '@/components/FriendsPanel';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { AddToPlaylistModal } from '@/components/AddToPlaylistModal';
-import { ShuffleIcon, SortIcon } from '@/components/Icons';
-import { RADIUS, FONT_MONO_REGULAR, SPACING } from '@/constants/theme';
+import { SelectField } from '@/components/SelectField';
+import { DiscIcon, ShuffleIcon, SortIcon, UsersIcon } from '@/components/Icons';
+import { CONTROL_HEIGHT, FONT_SANS_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Song, SongSource, Stats } from '@/api/types';
 
 type SortKey = 'default' | 'artist' | 'title' | 'release' | 'duration' | 'plays' | 'rating';
@@ -228,6 +228,8 @@ export default function LibraryScreen() {
         genres: values.genres.split(',').map((g) => g.trim()).filter(Boolean),
         youtubeVideoId: values.youtubeVideoId.trim(),
       });
+      // Текст — окремим запитом, як на сайті (undefined — ще не встиг завантажитись, не чіпаємо).
+      if (values.lyrics !== undefined) await api.setLyrics(updated.id, values.lyrics).catch(() => {});
       setSongs((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       setEditSong(null);
     } finally {
@@ -259,14 +261,23 @@ export default function LibraryScreen() {
         data={filtered}
         keyExtractor={(item) => String(item.id)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 110 }}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={{ marginBottom: SPACING.md }}>
+            {/* Як на сайті: спершу статистика 2×2, далі перемикач таблиць, заголовок, пошук. */}
+            {stats ? (
+              <View style={styles.statsRow}>
+                <StatCard style={styles.statCell} label={t('stat.songs')} value={stats.totalSongs} />
+                <StatCard style={styles.statCell} label={t('stat.genres')} value={stats.totalGenres} />
+                <StatCard style={styles.statCell} label={t('stat.albums')} value={stats.totalAlbums} />
+                <StatCard style={styles.statCell} label={t('stat.singles')} value={stats.singles} />
+              </View>
+            ) : null}
+            <View style={{ marginBottom: SPACING.lg }}>
               <SegmentedPicker<SongSource>
                 options={[
-                  { value: 'catalog', label: t('home.source.catalog') },
-                  { value: 'community', label: t('home.source.community') },
+                  { value: 'catalog', label: t('home.source.catalog'), icon: (c) => <DiscIcon size={16} color={c} /> },
+                  { value: 'community', label: t('home.source.community'), icon: (c) => <UsersIcon size={16} color={c} /> },
                 ]}
                 value={source}
                 onChange={setSource}
@@ -280,30 +291,6 @@ export default function LibraryScreen() {
               <Text style={{ color: theme.muted, fontSize: 12, marginTop: -8, marginBottom: SPACING.md }}>{t('home.communityHint')}</Text>
             ) : null}
 
-            {stats ? (
-              <View style={styles.statsRow}>
-                <StatCard label={t('stat.songs')} value={stats.totalSongs} />
-                <StatCard label={t('stat.genres')} value={stats.totalGenres} />
-                <StatCard label={t('stat.albums')} value={stats.totalAlbums} />
-                <StatCard label={t('stat.singles')} value={stats.singles} />
-              </View>
-            ) : null}
-
-            {/* Дії над таблицею: заявка (у таблицю, що відкрита) + "Об'єднати жанри" лише для адміна. */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: SPACING.md }}>
-              <Button
-                label={t(source === 'community' ? 'home.addOwnSongBtn' : 'home.addRequestBtn')}
-                variant="outline"
-                small
-                onPress={() => requireAuth(() => router.push({ pathname: '/request', params: { kind: source } }), t('msg.needLoginForRequest'))}
-              />
-              {isAdmin ? (
-                <Button label={t('admin.normalizeGenresBtn')} variant="outline" small loading={normalizing} onPress={normalizeGenres} />
-              ) : null}
-            </View>
-            {isAdmin && normalizeMsg ? (
-              <Text style={{ color: theme.muted, fontSize: 12, marginTop: -4, marginBottom: SPACING.md }}>{normalizeMsg}</Text>
-            ) : null}
 
             <TextInput
               value={search}
@@ -312,7 +299,7 @@ export default function LibraryScreen() {
               placeholderTextColor={theme.muted}
               style={[
                 styles.search,
-                { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text, fontFamily: FONT_MONO_REGULAR },
+                { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text, fontFamily: FONT_SANS_REGULAR },
               ]}
             />
 
@@ -332,24 +319,19 @@ export default function LibraryScreen() {
             ) : null}
 
             <View style={styles.filterRow}>
-              <View style={[styles.pickerWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                <Picker
-                  selectedValue={genreFilter}
-                  onValueChange={(v) => setGenreFilter(String(v))}
-                  style={{ color: theme.text, height: 46 }}
-                  dropdownIconColor={theme.muted}
-                >
-                  <Picker.Item label={t('filter.allGenres')} value="" />
-                  {allGenres.map((g) => (
-                    <Picker.Item key={g} label={g} value={g} />
-                  ))}
-                </Picker>
-              </View>
+              <SelectField<string>
+                style={{ flex: 1 }}
+                title={t('filter.allGenres')}
+                searchable
+                value={genreFilter}
+                onChange={setGenreFilter}
+                options={[{ value: '', label: t('filter.allGenres') }, ...allGenres.map((g) => ({ value: g, label: g }))]}
+              />
               <TouchableOpacity
                 onPress={() => setSortOpen(true)}
                 style={[
                   styles.shuffleBtn,
-                  { borderColor: sortKey !== 'default' ? theme.accent : theme.border, backgroundColor: sortKey !== 'default' ? `${theme.accent}1a` : 'transparent' },
+                  { borderColor: sortKey !== 'default' ? theme.accent : theme.border, backgroundColor: sortKey !== 'default' ? `${theme.accent}1a` : theme.surface },
                 ]}
                 hitSlop={4}
               >
@@ -359,13 +341,28 @@ export default function LibraryScreen() {
                 onPress={toggleShuffle}
                 style={[
                   styles.shuffleBtn,
-                  { borderColor: shuffleActive ? theme.accent : theme.border, backgroundColor: shuffleActive ? `${theme.accent}1a` : 'transparent' },
+                  { borderColor: shuffleActive ? theme.accent : theme.border, backgroundColor: shuffleActive ? `${theme.accent}1a` : theme.surface },
                 ]}
                 hitSlop={4}
               >
                 <ShuffleIcon size={16} color={shuffleActive ? theme.accent : theme.text} />
               </TouchableOpacity>
             </View>
+            {/* Дії над таблицею: заявка (у таблицю, що відкрита) + "Об'єднати жанри" лише для адміна. */}
+            <View style={{ gap: 10, marginBottom: SPACING.lg }}>
+              <Button
+                label={t(source === 'community' ? 'home.addOwnSongBtn' : 'home.addRequestBtn')}
+                variant="outline"
+                onPress={() => requireAuth(() => router.push({ pathname: '/request', params: { kind: source } }), t('msg.needLoginForRequest'))}
+              />
+              {isAdmin ? (
+                <Button label={t('admin.normalizeGenresBtn')} variant="outline" loading={normalizing} onPress={normalizeGenres} />
+              ) : null}
+            </View>
+            {isAdmin && normalizeMsg ? (
+              <Text style={{ color: theme.muted, fontSize: 12, marginTop: -8, marginBottom: SPACING.lg }}>{normalizeMsg}</Text>
+            ) : null}
+
           </View>
         }
         renderItem={({ item }) => (
@@ -439,6 +436,7 @@ export default function LibraryScreen() {
           onCancel={() => setEditSong(null)}
           onSave={handleSaveEdit}
           saving={savingEdit}
+          loadLyrics={() => api.getLyrics(editSong.id).then((d) => d.lyrics)}
         />
       ) : null}
 
@@ -457,23 +455,25 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: {
-    paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
   },
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
+  },
+  statCell: {
+    flexBasis: '46%',
+    flexGrow: 1,
   },
   search: {
-    minHeight: 46,
+    height: CONTROL_HEIGHT,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderRadius: RADIUS.md,
     paddingHorizontal: 14,
     fontSize: 15,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   chipsRow: {
     flexDirection: 'row',
@@ -492,20 +492,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 10,
+    marginBottom: SPACING.lg,
   },
   pickerWrap: {
     flex: 1,
     height: 46,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: RADIUS.md,
     overflow: 'hidden',
     justifyContent: 'center',
   },
   shuffleBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 8,
+    width: CONTROL_HEIGHT,
+    height: CONTROL_HEIGHT,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

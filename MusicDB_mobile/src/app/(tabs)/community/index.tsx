@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   count: { minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
   requestActions: { flexDirection: 'row', gap: 8, width: '100%', justifyContent: 'flex-end', marginTop: 8 },
-  input: { minHeight: 44, borderWidth: 1, borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginBottom: SPACING.md },
+  input: { minHeight: 48, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginBottom: SPACING.md },
   multiline: { minHeight: 110, textAlignVertical: 'top' },
   newThread: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, marginBottom: SPACING.lg },
 });

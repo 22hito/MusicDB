@@ -16,6 +16,9 @@ public interface IAudioStorage
     // null + error — файл не прийнято (розмір/формат); інакше ім'я збереженого файлу.
     Task<(string? FileName, string? Error)> SaveAsync(IFormFile file);
 
+    // Те саме для картинок (скріншоти баг-репортів) — інші формати й ліміт розміру.
+    Task<(string? FileName, string? Error)> SaveImageAsync(IFormFile file);
+
     // null — файла нема або ім'я підозріле.
     Task<AudioSource?> OpenAsync(string? fileName);
 
@@ -43,6 +46,26 @@ public static class AudioFiles
         [".webm"] = "audio/webm",
     };
 
+    public const long MaxImageBytes = 5L * 1024 * 1024;
+
+    private static readonly Dictionary<string, string> ImageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".png"] = "image/png",
+        [".jpg"] = "image/jpeg",
+        [".jpeg"] = "image/jpeg",
+        [".webp"] = "image/webp",
+        [".gif"] = "image/gif",
+    };
+
+    public static (string? NewName, string? Error) ValidateImage(IFormFile file)
+    {
+        if (file.Length == 0) return (null, "Empty file.");
+        if (file.Length > MaxImageBytes) return (null, $"Image is larger than {MaxImageBytes / 1024 / 1024} MB.");
+        var ext = Path.GetExtension(file.FileName);
+        if (string.IsNullOrEmpty(ext) || !ImageTypes.ContainsKey(ext)) return (null, "Unsupported image format.");
+        return ($"shot-{Guid.NewGuid():N}{ext.ToLowerInvariant()}", null);
+    }
+
     // Власне ім'я (GUID) — ім'я від клієнта ніколи не стає шляхом/ключем.
     public static (string? NewName, string? Error) Validate(IFormFile file)
     {
@@ -57,8 +80,11 @@ public static class AudioFiles
     public static bool IsSafeName(string? fileName) =>
         !string.IsNullOrWhiteSpace(fileName) && fileName == Path.GetFileName(fileName);
 
-    public static string GetContentType(string fileName) =>
-        ContentTypes.GetValueOrDefault(Path.GetExtension(fileName), "application/octet-stream");
+    public static string GetContentType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName);
+        return ContentTypes.GetValueOrDefault(ext) ?? ImageTypes.GetValueOrDefault(ext, "application/octet-stream");
+    }
 
     // Спільна відповідь для /api/songs/{id}/audio і /api/requests/{id}/audio.
     public static IActionResult ToResult(this ControllerBase controller, AudioSource? source) => source switch
@@ -88,9 +114,13 @@ public class LocalAudioStorage : IAudioStorage
         Directory.CreateDirectory(_root);
     }
 
-    public async Task<(string? FileName, string? Error)> SaveAsync(IFormFile file)
+    public Task<(string? FileName, string? Error)> SaveAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.Validate(file));
+
+    public Task<(string? FileName, string? Error)> SaveImageAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.ValidateImage(file));
+
+    private async Task<(string? FileName, string? Error)> SaveCoreAsync(IFormFile file, (string? Name, string? Error) validated)
     {
-        var (name, error) = AudioFiles.Validate(file);
+        var (name, error) = validated;
         if (name is null) return (null, error);
         await using var stream = File.Create(Path.Combine(_root, name));
         await file.CopyToAsync(stream);
@@ -158,9 +188,13 @@ public sealed class R2AudioStorage : IAudioStorage, IDisposable
             });
     }
 
-    public async Task<(string? FileName, string? Error)> SaveAsync(IFormFile file)
+    public Task<(string? FileName, string? Error)> SaveAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.Validate(file));
+
+    public Task<(string? FileName, string? Error)> SaveImageAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.ValidateImage(file));
+
+    private async Task<(string? FileName, string? Error)> SaveCoreAsync(IFormFile file, (string? Name, string? Error) validated)
     {
-        var (name, error) = AudioFiles.Validate(file);
+        var (name, error) = validated;
         if (name is null) return (null, error);
 
         await using var stream = file.OpenReadStream();

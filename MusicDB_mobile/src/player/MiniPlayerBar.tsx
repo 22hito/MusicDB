@@ -3,9 +3,11 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { usePlayer } from './PlayerContext';
 import { useSettings } from '@/state/SettingsContext';
-import { PLAYER_BAR_HEIGHT, FONT_SERIF_BOLD, FONT_MONO_REGULAR } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { PLAYER_BAR_HEIGHT, FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, RADIUS } from '@/constants/theme';
 import {
   CloseIcon,
+  LyricsIcon,
   NextIcon,
   PauseIcon,
   PlayIcon,
@@ -16,6 +18,7 @@ import {
   VideoIcon,
 } from '@/components/Icons';
 import { RatingModal } from '@/components/RatingModal';
+import { LyricsModal } from '@/components/LyricsModal';
 
 function fmtSec(s: number) {
   const sec = Math.max(0, Math.floor(s || 0));
@@ -26,6 +29,7 @@ export function MiniPlayerBar() {
   const p = usePlayer();
   const { theme, t } = useSettings();
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [lyricsOpen, setLyricsOpen] = useState(false);
 
   if (!p.isOpen || !p.current) return null;
   const song = p.current;
@@ -33,14 +37,22 @@ export function MiniPlayerBar() {
   const loading = p.state === 'loading' || p.state === 'buffering';
 
   return (
-    <View style={[styles.wrap, { backgroundColor: theme.mode === 'dark' ? '#0f0f11' : theme.surface, borderTopColor: theme.border }]}>
+    // Плаваюча картка, як .player-bar на телефоні: легкий акцентний градієнт поверх поверхні.
+    <View style={[styles.wrap, { backgroundColor: theme.elevated, borderColor: theme.border }]}>
+      <LinearGradient
+        colors={[`${theme.accent}2e`, `${theme.elevated}00`, `${theme.accent2}26`]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <Slider
         style={styles.seek}
         minimumValue={0}
         maximumValue={1}
         value={Number.isFinite(fraction) ? fraction : 0}
         minimumTrackTintColor={theme.accent}
-        maximumTrackTintColor={theme.mode === 'dark' ? '#1e1e22' : theme.border}
+        maximumTrackTintColor={theme.borderStrong}
         thumbTintColor={theme.accent}
         onSlidingComplete={(v) => p.seekFraction(v)}
       />
@@ -55,33 +67,33 @@ export function MiniPlayerBar() {
         </View>
 
         <View style={styles.meta}>
-          <Text numberOfLines={1} style={[styles.title, { color: theme.text, fontFamily: FONT_SERIF_BOLD }]}>
+          <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>
             {song.title}
             {p.videoNotFound ? t('video.notFoundSuffix') : ''}
           </Text>
-          <Text numberOfLines={1} style={[styles.artist, { color: theme.muted, fontFamily: FONT_MONO_REGULAR }]}>
+          <Text numberOfLines={1} style={[styles.artist, { color: theme.accent }]}>
             {song.artist}
           </Text>
         </View>
 
         <TouchableOpacity onPress={p.prev} style={styles.iconBtn} hitSlop={8}>
-          <PrevIcon size={18} color={theme.muted} />
+          <PrevIcon size={18} color={theme.text2} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={p.toggle}
-          style={[styles.mainBtn, { backgroundColor: theme.accent }]}
+          style={[styles.mainBtn, { backgroundColor: theme.text }]}
           hitSlop={8}
         >
           {loading ? (
             <View style={styles.loadingDot} />
           ) : p.isPlaying ? (
-            <PauseIcon size={17} color={theme.onAccent} />
+            <PauseIcon size={17} color={theme.bg} />
           ) : (
-            <PlayIcon size={17} color={theme.onAccent} />
+            <PlayIcon size={17} color={theme.bg} />
           )}
         </TouchableOpacity>
         <TouchableOpacity onPress={p.next} style={styles.iconBtn} hitSlop={8}>
-          <NextIcon size={18} color={theme.muted} />
+          <NextIcon size={18} color={theme.text2} />
         </TouchableOpacity>
       </View>
 
@@ -93,12 +105,16 @@ export function MiniPlayerBar() {
           <RepeatIcon size={15} color={p.repeat ? theme.accent : theme.muted} />
         </TouchableOpacity>
 
-        <Text style={[styles.time, { color: theme.muted, fontFamily: FONT_MONO_REGULAR }]}>
+        <Text style={[styles.time, { color: theme.muted }]}>
           {fmtSec(p.currentTime)} — {fmtSec(p.duration)}
         </Text>
 
         <View style={{ flex: 1 }} />
 
+        {/* Текст пісні — як кнопка "Текст" (караоке) у плеєрі сайту. */}
+        <TouchableOpacity onPress={() => setLyricsOpen(true)} style={styles.smallIconBtn} hitSlop={10} accessibilityLabel={t('player.karaoke')}>
+          <LyricsIcon size={15} color={lyricsOpen ? theme.accent : theme.muted} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => setRatingOpen(true)} style={styles.smallIconBtn} hitSlop={10}>
           <StarIcon size={15} color={song.avgRating != null ? theme.accent : theme.muted} />
         </TouchableOpacity>
@@ -117,6 +133,7 @@ export function MiniPlayerBar() {
         </TouchableOpacity>
       </View>
       <RatingModal song={ratingOpen ? song : null} onClose={() => setRatingOpen(false)} />
+      <LyricsModal song={lyricsOpen ? song : null} onClose={() => setLyricsOpen(false)} />
     </View>
   );
 }
@@ -124,8 +141,17 @@ export function MiniPlayerBar() {
 const styles = StyleSheet.create({
   wrap: {
     height: PLAYER_BAR_HEIGHT,
-    borderTopWidth: 1,
-    paddingTop: 2,
+    marginHorizontal: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    paddingTop: 4,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
   },
   seek: {
     width: '100%',
@@ -137,12 +163,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     gap: 8,
-    height: 42,
+    height: 46,
   },
   cover: {
-    width: 34,
-    height: 34,
-    borderRadius: 5,
+    width: 40,
+    height: 40,
+    borderRadius: 9,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -157,12 +183,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: FONT_SANS_BOLD,
   },
   artist: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 1,
+    fontFamily: FONT_SANS_MEDIUM,
   },
   iconBtn: {
     width: 30,
@@ -172,9 +199,9 @@ const styles = StyleSheet.create({
     borderRadius: 15,
   },
   mainBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -188,7 +215,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    height: 30,
+    height: 26,
     gap: 6,
   },
   smallIconBtn: {
@@ -201,5 +228,7 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 11,
     marginLeft: 4,
+    fontFamily: FONT_SANS_REGULAR,
+    fontVariant: ['tabular-nums'],
   },
 });

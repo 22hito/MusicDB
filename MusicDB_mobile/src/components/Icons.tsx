@@ -318,3 +318,67 @@ export function ChevronRightIcon({ size = 16, color = '#000' }: IconProps) {
     </Svg>
   );
 }
+
+export function DiscIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={12} r={9.5} />
+      <Circle cx={12} cy={12} r={2.5} />
+    </Svg>
+  );
+}
+
+export function MoonIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z" />
+    </Svg>
+  );
+}
+
+export function SunIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={12} r={4} />
+      <Path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </Svg>
+  );
+}
+
+export function ContrastIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={12} r={9.5} />
+      <Path d="M12 2.5v19a9.5 9.5 0 0 0 0-19z" fill={color} />
+    </Svg>
+  );
+}
+
+export function MonitorIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={2.5} y={3.5} width={19} height={13} rx={2} />
+      <Path d="M8 21h8M12 16.5V21" />
+    </Svg>
+  );
+}
+
+export function SlidersIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+      <Circle cx={16} cy={7} r={2} />
+      <Circle cx={8} cy={17} r={2} />
+    </Svg>
+  );
+}
+
+export function LyricsIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M4 6h11M4 10h11M4 14h7" />
+      <Path d="M17 18.5V8.5l4-1" />
+      <Circle cx={15} cy={18.5} r={2} />
+    </Svg>
+  );
+}

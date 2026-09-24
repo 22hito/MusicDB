@@ -65,7 +65,7 @@ export default function TopSongsScreen() {
         <FlatList
           data={songs}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 110 }}
           ListEmptyComponent={<EmptyState icon="🏆" label={t('top.empty')} />}
           renderItem={({ item }) => (
             <SongRow

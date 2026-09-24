@@ -12,6 +12,7 @@ import type {
   PublicProfile,
   PublicUser,
   CommunitySongInput,
+  PickedAudio,
   Conversation,
   DmRequest,
   DmThread,
@@ -91,6 +92,14 @@ export function useMusicApi() {
       setYoutubeVideo: (id: number, videoId: string) =>
         request<void>(`/api/songs/${id}/youtube-video`, { method: 'PUT', body: { videoId } }),
       deleteSong: (id: number) => request<void>(`/api/songs/${id}`, { method: 'DELETE' }),
+
+      // Текст пісні (окремо від списку, щоб не роздувати його); змінює лише адмін.
+      getLyrics: (id: number) => request<{ lyrics: string | null }>(`/api/songs/${id}/lyrics`),
+      setLyrics: (id: number, lyrics: string) =>
+        request<{ lyrics: string | null }>(`/api/songs/${id}/lyrics`, { method: 'PUT', body: { lyrics } }),
+      getRequestLyrics: (id: number) => request<{ lyrics: string | null }>(`/api/requests/${id}/lyrics`),
+      setRequestLyrics: (id: number, lyrics: string) =>
+        request<{ lyrics: string | null }>(`/api/requests/${id}/lyrics`, { method: 'PUT', body: { lyrics } }),
 
       createCommunitySong: (input: CommunitySongInput) => upload<Song>('/api/songs/community', toCommunityFormData(input)),
 
@@ -217,6 +226,15 @@ export function useMusicApi() {
       // Баг-репорти: надіслати може будь-хто залогінений, переглядає адмін
       sendBugReport: (description: string, context: string | null) =>
         request<{ id: number }>('/api/bug-reports', { method: 'POST', body: { description, context } }),
+      // Зі скріншотами — multipart нативним fetch (картинки не женемо крізь WebView-бридж).
+      sendBugReportWithScreenshots: (description: string, context: string | null, shots: PickedAudio[]) => {
+        const fd = new FormData();
+        fd.append('description', description);
+        if (context) fd.append('context', context);
+        for (const s of shots) fd.append('screenshots', { uri: s.uri, name: s.name, type: s.mimeType } as unknown as Blob);
+        return upload<{ id: number }>('/api/bug-reports/with-screenshots', fd);
+      },
+      bugScreenshotUrl: (id: number, index: number) => `${apiBase}/api/bug-reports/${id}/screenshots/${index}`,
       getBugReports: (status: BugStatus | 'all' = 'open') => request<BugReport[]>('/api/bug-reports', { query: { status } }),
       getOpenBugCount: () => request<number>('/api/bug-reports/open-count'),
       setBugStatus: (id: number, status: BugStatus) =>
