@@ -62,8 +62,6 @@ const I18N = {
     'settings.glowFollow': 'Сяйво йде за піснею',
     'settings.glowFollow.hint': 'Світла пляма пливе сторінкою зліва направо разом із прогресом треку.',
     'settings.glow': 'Інтенсивність сяйва',
-    'settings.grain': 'Плівкова зернистість',
-    'settings.grain.hint': 'Ледь помітна текстура фону.',
     'settings.language': 'Мова',
     'settings.language.sub': 'Мова інтерфейсу',
     'settings.keyboard': 'Клавіатура',
@@ -72,6 +70,7 @@ const I18N = {
     'settings.playerKeys.hint': 'Не спрацьовують, поки ви друкуєте в полі вводу.',
     'settings.key.search': 'Пошук',
     'settings.keysAlways': 'Завжди активні',
+    'settings.uiScale.mobileHint': 'На телефоні інтерфейс завжди 100% — розмір тексту задає система, а збільшити можна жестом.',
     'settings.key.play': 'Відтворення / пауза',
     'settings.key.space': 'Пробіл',
     'settings.key.next': 'Наступна пісня',
@@ -497,8 +496,6 @@ const I18N = {
     'settings.glowFollow': 'Glow follows the song',
     'settings.glowFollow.hint': 'A light spot drifts across the page left to right with the track progress.',
     'settings.glow': 'Glow intensity',
-    'settings.grain': 'Film grain',
-    'settings.grain.hint': 'A barely visible background texture.',
     'settings.language': 'Language',
     'settings.language.sub': 'Interface language',
     'settings.keyboard': 'Keyboard',
@@ -507,6 +504,7 @@ const I18N = {
     'settings.playerKeys.hint': 'Disabled while you are typing in a field.',
     'settings.key.search': 'Search',
     'settings.keysAlways': 'Always on',
+    'settings.uiScale.mobileHint': 'On phones the interface is always 100% — text size follows the system, and you can pinch to zoom.',
     'settings.key.play': 'Play / pause',
     'settings.key.space': 'Space',
     'settings.key.next': 'Next song',
@@ -963,7 +961,11 @@ function showPage(n){
   // View Transitions API — нативний крос-фейд між сторінками (Chrome/Edge,
   // а отже й Electron). Без підтримки (Firefox/Safari) просто миттєво
   // перемикає, як і раніше — жодного regressions, лише бонус там, де є.
-  if(document.startViewTransition && !_reducedMotion()) document.startViewTransition(doSwitch);
+  if(document.startViewTransition && !_reducedMotion()){
+    // Швидкий перехід на ще одну сторінку перериває попередню анімацію — це
+    // нормально, але без catch браузер кидав у консоль "AbortError: Transition was skipped".
+    document.startViewTransition(doSwitch).ready.catch(() => {});
+  }
   else doSwitch();
   // Важкий перерендер відкладаємо на наступний кадр — інакше перехід між сторінками виглядає як підвисання.
   requestAnimationFrame(()=>{
@@ -1640,13 +1642,23 @@ function _renderWheelLabels(disc){
   const hubR = (document.getElementById('wheel-hub')?.clientWidth || 0)/2;
   const discR = disc.clientWidth/2;
   if(!discR) return; // диск ще без розміру (0 у момент переходу сторінки) — дочекаємось ResizeObserver
-  const startR = Math.max(hubR + 28, discR*0.62);
-  const fontSize = _wheelLabelFontSize(n);
+  // Шрифт — пропорційно розміру колеса (на телефоні колесо ~260px, на моніторі до 860px).
+  const baseFont = _wheelLabelFontSize(n) * Math.min(1.35, Math.max(0.72, discR / 220));
+  // Підпис починається якомога ближче до хаба, але не там, де сектор вужчий за
+  // рядок тексту (дуга сектора ≥ 1.3 висоти шрифту) — інакше сусіди злипаються.
+  const minArcR = (1.3 * baseFont * n) / (2 * Math.PI);
+  const startR = Math.max(hubR + 10, minArcR);
+  // Довжина до обідка — більше підпису не можна (раніше довгі назви вилазили за колесо).
+  const avail = Math.max(20, discR - startR - Math.max(8, discR * 0.05));
   disc.innerHTML = wheelGenres.map((g,i)=>{
     const mid = i*segAngle + segAngle/2;
     // rotate(θ) translate(r,0) дивиться на кут (90+θ) від верху — щоб отримати mid, беремо θ = mid-90.
     const rot = mid - 90;
-    return `<span class="wheel-seg-label" style="font-size:${fontSize}px;transform:rotate(${rot}deg) translate(${startR}px, 0);">${esc(abbrGenre(g))}</span>`;
+    const label = abbrGenre(g);
+    // Довга назва спершу зменшує шрифт (до 8px), щоб уміститись; далі — трикрапка
+    // (повна назва є в легенді поруч). 0.62em — середня ширина жирного символу.
+    const fontSize = Math.max(8, Math.min(baseFont, avail / (label.length * 0.62)));
+    return `<span class="wheel-seg-label" title="${esc(g)}" style="font-size:${fontSize.toFixed(1)}px;max-width:${Math.floor(avail)}px;transform:rotate(${rot}deg) translate(${startR.toFixed(1)}px, -50%);">${esc(label)}</span>`;
   }).join('');
 }
 
@@ -2580,7 +2592,7 @@ function _applyArtworkColor(vid){
 // Тема й мова лишаються в окремих ключах 'theme'/'lang' (як і раніше).
 // ================================================================
 const PREF_DEFAULTS = {
-  motion: 'system', artColors: true, glowFollow: true, glow: 100, grain: true,
+  motion: 'system', artColors: true, glowFollow: true, glow: 100,
   accent: 'amber', uiScale: 100, autoScale: true, density: 'comfortable', highContrast: false, playerKeys: true,
 };
 const ACCENT_HUES = { amber: 78, coral: 38, rose: 5, lavender: 295, ocean: 235, emerald: 158 };
@@ -2605,7 +2617,6 @@ function applyPrefs(){
   setAttr('data-motion', PREFS.motion === 'system' ? null : PREFS.motion);
   setAttr('data-density', PREFS.density === 'compact' ? 'compact' : null);
   setAttr('data-contrast', PREFS.highContrast ? 'high' : null);
-  setAttr('data-grain', PREFS.grain ? null : 'off');
   setAttr('data-glow-follow', PREFS.glowFollow ? '' : null);
   if(PREFS.uiScale !== 100) root.style.setProperty('--ui-scale', PREFS.uiScale / 100);
   else root.style.removeProperty('--ui-scale');

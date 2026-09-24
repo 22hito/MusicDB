@@ -32,7 +32,6 @@
       if (p.motion && p.motion !== 'system') root.setAttribute('data-motion', p.motion);
       if (p.density === 'compact') root.setAttribute('data-density', 'compact');
       if (p.highContrast) root.setAttribute('data-contrast', 'high');
-      if (p.grain === false) root.setAttribute('data-grain', 'off');
       var ui = p.uiScale != null ? p.uiScale : p.fontScale;
       if (ui && ui !== 100) root.style.setProperty('--ui-scale', ui / 100);
       if (p.autoScale === false) root.setAttribute('data-auto-scale', 'off');
@@ -699,7 +698,13 @@
           </div>
         </div>
 
-        <div class="setting-row">
+        <div class="setting-row setting-row-mobile-only">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.uiScale">Розмір інтерфейсу</div>
+            <div class="setting-hint" data-i18n="settings.uiScale.mobileHint">На телефоні інтерфейс завжди 100% — розмір тексту задає система, а збільшити можна жестом.</div>
+          </div>
+        </div>
+        <div class="setting-row setting-row-desktop-only">
           <div class="setting-text">
             <div class="setting-label" data-i18n="settings.uiScale">Розмір інтерфейсу</div>
             <div class="setting-hint" data-i18n="settings.uiScale.hint">Масштабує все: текст, кнопки, іконки й відступи.</div>
@@ -713,7 +718,7 @@
           </div>
         </div>
 
-        <label class="setting-row">
+        <label class="setting-row setting-row-desktop-only">
           <div class="setting-text">
             <div class="setting-label" data-i18n="settings.autoScale">Збільшувати на великих моніторах</div>
             <div class="setting-hint" data-i18n="settings.autoScale.hint">На екранах 2K/4K інтерфейс автоматично більший, щоб не губитись посередині.</div>
@@ -783,13 +788,6 @@
           <input type="range" class="range" data-pref="glow" min="0" max="150" step="10">
         </div>
 
-        <label class="setting-row">
-          <div class="setting-text">
-            <div class="setting-label" data-i18n="settings.grain">Плівкова зернистість</div>
-            <div class="setting-hint" data-i18n="settings.grain.hint">Ледь помітна текстура фону.</div>
-          </div>
-          <span class="switch"><input type="checkbox" data-pref="grain"><span class="switch-track"></span></span>
-        </label>
       </section>
 
       <!-- МОВА -->
