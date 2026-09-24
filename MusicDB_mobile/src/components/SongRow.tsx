@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { Badge } from './UI';
+import { MarqueeText } from './MarqueeText';
 import { EditIcon, HeartIcon, PauseIcon, PersonIcon, PlayIcon, PlusIcon, StarIcon, TrashIcon } from './Icons';
 import { FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
@@ -90,12 +91,9 @@ export function SongRow({
         </TouchableOpacity>
 
         <View style={styles.titleWrap}>
-          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.artist, { color: theme.accent }]}>
-            {song.artist}
-          </Text>
-          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.title, { color: theme.text }]}>
-            {song.title}
-          </Text>
+          {/* Біжить лише рядок пісні, що зараз грає, — інакше список "рябить". */}
+          <MarqueeText active={!!isCurrent} style={[styles.artist, { color: theme.accent }]}>{song.artist}</MarqueeText>
+          <MarqueeText active={!!isCurrent} style={[styles.title, { color: theme.text }]}>{song.title}</MarqueeText>
           {/* Таблиця_2: нік того, хто додав пісню. */}
           {song.submittedBy ? (
             <TouchableOpacity

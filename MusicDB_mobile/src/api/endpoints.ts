@@ -234,7 +234,11 @@ export function useMusicApi() {
         for (const s of shots) fd.append('screenshots', { uri: s.uri, name: s.name, type: s.mimeType } as unknown as Blob);
         return upload<{ id: number }>('/api/bug-reports/with-screenshots', fd);
       },
-      bugScreenshotUrl: (id: number, index: number) => `${apiBase}/api/bug-reports/${id}/screenshots/${index}`,
+      // Пряме (підписане R2) посилання — нативний <Image> тягне його без куки сесії.
+      getBugScreenshotLink: async (id: number, index: number) => {
+        const { url } = await request<{ url: string }>(`/api/bug-reports/${id}/screenshots/${index}/link`);
+        return url.startsWith('/') ? `${apiBase}${url}` : url;
+      },
       getBugReports: (status: BugStatus | 'all' = 'open') => request<BugReport[]>('/api/bug-reports', { query: { status } }),
       getOpenBugCount: () => request<number>('/api/bug-reports/open-count'),
       deleteBugReport: (id: number) => request<void>(`/api/bug-reports/${id}`, { method: 'DELETE' }),

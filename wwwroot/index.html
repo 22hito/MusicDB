@@ -1121,6 +1121,15 @@
   </div>
 </div>
 
+<!-- Переглядач скріншотів баг-репорту (замість відкриття в новій вкладці) -->
+<div class="shot-viewer" id="shot-viewer" onclick="if(event.target === this) closeShotViewer()">
+  <button type="button" class="shot-viewer-close" onclick="closeShotViewer()" aria-label="Close"><svg class="icon"><use href="#icon-x"/></svg></button>
+  <button type="button" class="shot-viewer-nav prev" id="shot-viewer-prev" onclick="stepShotViewer(-1)" aria-label="Prev"><svg class="icon"><use href="#icon-arrow-left"/></svg></button>
+  <img id="shot-viewer-img" alt="">
+  <button type="button" class="shot-viewer-nav next" id="shot-viewer-next" onclick="stepShotViewer(1)" aria-label="Next"><svg class="icon"><use href="#icon-arrow-right"/></svg></button>
+  <div class="shot-viewer-count" id="shot-viewer-count"></div>
+</div>
+
 <!-- Модальне вікно підтвердження видалення пісні (замінює браузерний confirm()) -->
 <div class="modal-overlay" id="delete-modal-overlay">
   <div class="modal-box">

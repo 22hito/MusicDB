@@ -459,6 +459,16 @@ function BugsPanel() {
   const [loadError, setLoadError] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [viewer, setViewer] = useState<string | null>(null); // скріншот на весь екран
+  // Прямі посилання на скріншоти (підписані R2 живуть години — для сесії адмінки досить).
+  const [shotLinks, setShotLinks] = useState<Record<number, string[]>>({});
+  useEffect(() => {
+    for (const b of items) {
+      if (!b.screenshotCount || shotLinks[b.id]) continue;
+      Promise.all(Array.from({ length: b.screenshotCount }, (_, i) => api.getBugScreenshotLink(b.id, i).catch(() => '')))
+        .then((urls) => setShotLinks((prev) => ({ ...prev, [b.id]: urls.filter(Boolean) })));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, api]);
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const load = useCallback(() => {
@@ -550,11 +560,12 @@ function BugsPanel() {
             ) : null}
             {b.screenshotCount ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginTop: 10 }}>
-                {Array.from({ length: b.screenshotCount }, (_, i) => (
-                  <TouchableOpacity key={i} onPress={() => setViewer(api.bugScreenshotUrl(b.id, i))}>
-                    <Image source={{ uri: api.bugScreenshotUrl(b.id, i) }} style={[styles.shotThumb, { borderColor: theme.border }]} />
+                {(shotLinks[b.id] ?? []).map((url, i) => (
+                  <TouchableOpacity key={i} onPress={() => setViewer(url)}>
+                    <Image source={{ uri: url }} style={[styles.shotThumb, { borderColor: theme.border, backgroundColor: theme.surface2 }]} />
                   </TouchableOpacity>
                 ))}
+                {!shotLinks[b.id] ? <ActivityIndicator color={theme.accent} style={{ marginLeft: 6 }} /> : null}
               </ScrollView>
             ) : null}
             {b.resolvedBy ? (

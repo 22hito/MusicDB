@@ -19,6 +19,7 @@ import {
 } from '@/components/Icons';
 import { RatingModal } from '@/components/RatingModal';
 import { LyricsModal } from '@/components/LyricsModal';
+import { MarqueeText } from '@/components/MarqueeText';
 
 function fmtSec(s: number) {
   const sec = Math.max(0, Math.floor(s || 0));
@@ -67,13 +68,10 @@ export function MiniPlayerBar() {
         </View>
 
         <View style={styles.meta}>
-          <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>
-            {song.title}
-            {p.videoNotFound ? t('video.notFoundSuffix') : ''}
-          </Text>
-          <Text numberOfLines={1} style={[styles.artist, { color: theme.accent }]}>
-            {song.artist}
-          </Text>
+          <MarqueeText style={[styles.title, { color: theme.text }]}>
+            {`${song.title}${p.videoNotFound ? t('video.notFoundSuffix') : ''}`}
+          </MarqueeText>
+          <MarqueeText style={[styles.artist, { color: theme.accent }]}>{song.artist}</MarqueeText>
         </View>
 
         <TouchableOpacity onPress={p.prev} style={styles.iconBtn} hitSlop={8}>

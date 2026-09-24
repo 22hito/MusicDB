@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
@@ -7,6 +7,7 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
 import { Button, EmptyState, SectionTitle } from '@/components/UI';
+import { MarqueeText } from '@/components/MarqueeText';
 import { ChevronRightIcon, GlobeIcon, NoteIcon, PauseIcon, PlayIcon, TrophyIcon, VideoIcon } from '@/components/Icons';
 import { FONT_MONO_MEDIUM, FONT_MONO_REGULAR, FONT_SANS_BOLD, FONT_SANS_REGULAR, FONT_SERIF_BOLD, PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, PublicPlaylist, Song } from '@/api/types';
@@ -173,7 +174,7 @@ export default function BattleScreen() {
   // Висота відео — щоб увесь матч (стрічка, відео, дві картки, кнопки) вміщався без прокрутки.
   const pad = SPACING.lg;
   const videoW = landscape ? (winW - pad * 3) * 0.48 : winW - pad * 2;
-  const reserved = landscape ? 70 : 330; // стрічка + підпис + картки + нижні кнопки
+  const reserved = landscape ? 70 : 370; // стрічка + підпис + картки (мін. 190) + нижні кнопки
   const videoH = Math.max(90, Math.min((videoW * 9) / 16, (areaH || winH * 0.6) - reserved));
 
   // ─── Стрічка прогресу: 16 → 8 → 4 → 2 → 1 ───
@@ -204,15 +205,26 @@ export default function BattleScreen() {
     const playingThis = isCur && player.isPlaying;
     return (
       <View style={[styles.contender, { backgroundColor: theme.surface, borderColor: isCur ? theme.accent : theme.border }]}>
-        <Text numberOfLines={2} style={[styles.cArtist, { color: theme.accent }]}>{song.artist}</Text>
-        <Text numberOfLines={2} style={[styles.cTitle, { color: theme.text }]}>{song.title}</Text>
-        {song.source === 'community' ? <Text style={{ color: theme.accent2, fontSize: 11, marginTop: 2 }}>{t('home.source.community')}</Text> : null}
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={() => listen(song)} style={[styles.listenBtn, { borderColor: theme.borderStrong, backgroundColor: theme.surface2 }]}>
-          {playingThis ? <PauseIcon size={14} color={theme.accent} /> : <PlayIcon size={13} color={theme.text} />}
-          <Text style={{ color: theme.text, fontSize: 13, fontFamily: FONT_MONO_MEDIUM }}>{t('battle.listenBtn')}</Text>
-        </TouchableOpacity>
-        <Button label={t('battle.chooseBtn')} small onPress={() => choose(side)} style={{ marginTop: 8 }} />
+        {/* По рядку на виконавця й назву: що не влазить — біжить рядком (MarqueeText),
+            тож кнопки нижче завжди на своєму місці. Повна назва — ще й довгим натисканням. */}
+        <Pressable
+          style={styles.cText}
+          onLongPress={() => Alert.alert(song.artist, song.title)}
+          delayLongPress={350}
+        >
+          <MarqueeText style={[styles.cArtist, { color: theme.accent }]}>{song.artist}</MarqueeText>
+          <MarqueeText style={[styles.cTitle, { color: theme.text }]}>{song.title}</MarqueeText>
+          {song.source === 'community' ? (
+            <Text numberOfLines={1} style={{ color: theme.accent2, fontSize: 11, marginTop: 3 }}>{t('home.source.community')}</Text>
+          ) : null}
+        </Pressable>
+        <View style={styles.cActions}>
+          <TouchableOpacity onPress={() => listen(song)} style={[styles.listenBtn, { borderColor: theme.borderStrong, backgroundColor: theme.surface2 }]}>
+            {playingThis ? <PauseIcon size={14} color={theme.accent} /> : <PlayIcon size={13} color={theme.text} />}
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13, fontFamily: FONT_MONO_MEDIUM, flexShrink: 1 }}>{t('battle.listenBtn')}</Text>
+          </TouchableOpacity>
+          <Button label={t('battle.chooseBtn')} small onPress={() => choose(side)} style={styles.chooseBtn} />
+        </View>
       </View>
     );
   };
@@ -269,7 +281,7 @@ export default function BattleScreen() {
                     {contender(a, 0)}
                     {contender(b, 1)}
                     <View pointerEvents="none" style={[styles.vs, { backgroundColor: theme.bg, borderColor: theme.accent }]}>
-                      <Text style={{ color: theme.accent, fontFamily: FONT_SERIF_BOLD, fontSize: 14 }}>{t('battle.vs')}</Text>
+                      <Text style={{ color: theme.accent, fontFamily: FONT_SERIF_BOLD, fontSize: 12 }}>{t('battle.vs')}</Text>
                     </View>
                   </View>
                   {bottomBar}
@@ -361,12 +373,15 @@ const styles = StyleSheet.create({
   ribbon: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: SPACING.lg, flexWrap: 'wrap' },
   ribbonSeg: { minWidth: 34, paddingVertical: 4, paddingHorizontal: 8, borderRadius: RADIUS.pill, borderWidth: 1, alignItems: 'center' },
   matchArea: { flex: 1 },
-  pair: { flexDirection: 'row', gap: 10, flex: 1, maxHeight: 250 },
-  contender: { flex: 1, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md },
-  cArtist: { fontFamily: FONT_SANS_BOLD, fontSize: 15 },
-  cTitle: { fontFamily: FONT_SANS_REGULAR, fontSize: 13.5, marginTop: 3 },
-  listenBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.md, minHeight: 40, marginTop: 10 },
-  vs: { position: 'absolute', left: '50%', top: '38%', marginLeft: -21, width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  pair: { flexDirection: 'row', gap: 10, flex: 1, minHeight: 190, maxHeight: 260, marginTop: 12 },
+  contender: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, paddingTop: SPACING.md + 6 },
+  cText: { flex: 1, minHeight: 0, overflow: 'hidden' },
+  cArtist: { fontFamily: FONT_SANS_BOLD, fontSize: 15, lineHeight: 19 },
+  cTitle: { fontFamily: FONT_SANS_REGULAR, fontSize: 13.5, lineHeight: 18, marginTop: 3 },
+  cActions: { gap: 8, marginTop: 10 },
+  listenBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.md, height: 40, paddingHorizontal: 8 },
+  chooseBtn: { height: 40, minHeight: 40, paddingHorizontal: 8 },
+  vs: { position: 'absolute', left: '50%', top: -14, marginLeft: -17, width: 34, height: 34, borderRadius: 17, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   videoFrame: { borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   bottomBar: { flexDirection: 'row', gap: 10, marginTop: SPACING.md },
   champion: { borderWidth: 1, borderRadius: RADIUS.xl, padding: SPACING.xl, alignItems: 'center' },
