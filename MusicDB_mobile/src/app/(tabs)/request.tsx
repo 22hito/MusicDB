@@ -124,7 +124,8 @@ export default function RequestScreen() {
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3500);
       } catch (e) {
-        const body = (e as { body?: string }).body;
+        // Тіло відповіді сервера, а якщо відповіді не було (мережа) — текст помилки.
+        const body = (e as { body?: string }).body || (e as Error).message;
         setError(`${t('msg.errorSubmittingRequest')}${body ? `
 ${body}` : ''}`);
       } finally {

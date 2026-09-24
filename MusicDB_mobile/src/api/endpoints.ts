@@ -47,6 +47,25 @@ import type {
 // injectJavaScript ненадійно. Кука сесії живе у WebView і в нативний fetch
 // потрапляє не завжди (iOS — ніколи), тож авторизація — токеном завантаження:
 // беремо його через WebView-бридж і передаємо заголовком X-Upload-Token.
+const EXT_BY_MIME: Record<string, string> = {
+  'audio/mpeg': '.mp3', 'audio/mp3': '.mp3', 'audio/mp4': '.m4a', 'audio/x-m4a': '.m4a', 'audio/aac': '.aac',
+  'audio/ogg': '.ogg', 'audio/opus': '.opus', 'audio/wav': '.wav', 'audio/x-wav': '.wav', 'audio/flac': '.flac',
+  'audio/x-flac': '.flac', 'audio/webm': '.webm', 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp',
+  'image/gif': '.gif',
+};
+
+// Файл для FormData з ASCII-іменем. На Android нативний fetch (OkHttp) не пропускає
+// не-ASCII символи в заголовку частини multipart — ім'я на кшталт «Пісня — демо.mp3»
+// валить запит з «Network request failed». Сервер з імені бере лише розширення.
+function filePart(file: { uri: string; name: string; mimeType: string }): Blob {
+  const dot = file.name.lastIndexOf('.');
+  let ext = dot >= 0 ? file.name.slice(dot).toLowerCase() : '';
+  if (!/^\.[a-z0-9]{2,5}$/.test(ext)) ext = EXT_BY_MIME[file.mimeType?.toLowerCase()] ?? '';
+  const base = (dot >= 0 ? file.name.slice(0, dot) : file.name)
+    .normalize('NFKD').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'file';
+  return { uri: file.uri, name: base + ext, type: file.mimeType } as unknown as Blob;
+}
+
 function toCommunityFormData(input: CommunitySongInput): FormData {
   const fd = new FormData();
   fd.append('artist', input.artist);
@@ -57,8 +76,7 @@ function toCommunityFormData(input: CommunitySongInput): FormData {
   if (input.album) fd.append('album', input.album);
   if (input.youtubeVideo) fd.append('youtubeVideo', input.youtubeVideo);
   if (input.audio) {
-    // RN-формат файлу в FormData: { uri, name, type } замість Blob.
-    fd.append('audio', { uri: input.audio.uri, name: input.audio.name, type: input.audio.mimeType } as unknown as Blob);
+    fd.append('audio', filePart(input.audio));
   }
   return fd;
 }
@@ -233,7 +251,7 @@ export function useMusicApi() {
         const fd = new FormData();
         fd.append('description', description);
         if (context) fd.append('context', context);
-        for (const s of shots) fd.append('screenshots', { uri: s.uri, name: s.name, type: s.mimeType } as unknown as Blob);
+        for (const s of shots) fd.append('screenshots', filePart(s));
         return upload<{ id: number }>('/api/bug-reports/with-screenshots', fd);
       },
       // Пряме (підписане R2) посилання — нативний <Image> тягне його без куки сесії.
