@@ -2189,7 +2189,7 @@ button.badge.album.badge-filter.active { background: var(--accent); color: var(-
 /* ═══════════════ МОБІЛЬНА ВЕРСІЯ = ВИГЛЯД МОБІЛЬНОГО ЗАСТОСУНКУ ═══════════════
    Лише ≤768px: компактна шапка (бренд, пошук, дзвіночок, аватар), нижній таббар,
    пісні — картки як у застосунку, плеєр — плаваюча картка над таббаром. */
-.mobile-tabbar, .nav-search-toggle, .mobile-only-item { display: none; }
+.mobile-tabbar, .nav-search-toggle { display: none; }
 .explore-tiles { display: flex; flex-direction: column; gap: 0.6rem; max-width: 640px; }
 .explore-tile { display: flex; align-items: center; gap: 0.9rem; width: 100%; text-align: left; padding: 0.85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--text); cursor: pointer; font: inherit; transition: border-color 0.15s, transform 0.15s; }
 .explore-tile:hover { border-color: var(--accent); transform: translateY(-1px); }
@@ -2205,10 +2205,11 @@ button.badge.album.badge-filter.active { background: var(--accent); color: var(-
 
   /* ── Шапка: бренд · пошук · дзвіночок · аватар ── */
   #tab-home, #nav-menu-dropdown, #lang-dropdown, #theme-dropdown,
-  .nav-dm-btn, .nav-profile-name, .nav-admin-tag, .nav-logout-btn { display: none !important; }
+  .nav-dm-btn, .nav-profile-name, .nav-admin-tag { display: none !important; }
+  /* "Вийти" — лише кнопкою в шапці (як на ПК), компактно. */
+  .nav-logout-btn { padding: 0.3rem 0.6rem !important; font-size: 0.7rem !important; }
   body.authed-mode #nav-settings-btn { display: none !important; }
   .nav-search-toggle { display: inline-flex; }
-  .mobile-only-item { display: block; }
   /* Шапка: бренд ліворуч, кнопки праворуч; пошук — окремим рядком, коли відкритий. */
   nav { grid-template-columns: minmax(0, 1fr) auto !important; grid-template-areas: "left right" "search search"; column-gap: 0.5rem; padding: 0 0.75rem !important; min-height: 56px; height: auto; }
   .nav-left { grid-area: left; }

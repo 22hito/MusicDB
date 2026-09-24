@@ -2947,7 +2947,6 @@ function renderAuthArea() {
           <button onclick="showPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
           <button onclick="openChatPage('dm')" data-i18n="nav.messages">${t('nav.messages')}</button>
           <button onclick="openBugReportModal()"><svg class="icon"><use href="#icon-bug"/></svg> ${t('bugs.menu')}</button>
-          <button class="mobile-only-item" onclick="logout()">${t('auth.logout')}</button>
           ${isAdmin?`<button onclick="showPage('admin-hub')" id="tab-admin-hub" class="nav-menu-item"><svg class="icon"><use href="#icon-settings"/></svg> ${t('nav.adminHub')}<span id="admin-requests-badge" class="badge" style="display:none;margin-left:auto;"></span></button>`:''}
         </div>
       </div>
