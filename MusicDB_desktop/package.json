@@ -1,6 +1,6 @@
 {
   "name": "nowl-desktop",
-  "version": "1.0.4",
+  "version": "1.2.0",
   "description": "Desktop shell for N'Owl (MusicDB) — same live site, plus real OS-level media key support.",
   "main": "main.js",
   "author": "",
@@ -51,10 +51,10 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "artifactName": "NOwl-Setup-${version}.${ext}"
+      "artifactName": "NOwl-Setup.${ext}"
     },
     "portable": {
-      "artifactName": "NOwl-${version}.${ext}"
+      "artifactName": "NOwl-Portable.${ext}"
     }
   },
   "dependencies": {

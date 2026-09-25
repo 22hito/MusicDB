@@ -74,15 +74,25 @@ const DISABLE_WEBAUTHN_JS = `(function(){
 
 let mainWindow = null;
 
+// Версія сайту (та сама, що в налаштуваннях) — у заголовок вікна.
+function setSiteVersionTitle() {
+  fetch(`${SITE_URL}config`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((cfg) => {
+      if (cfg?.version && mainWindow && !mainWindow.isDestroyed()) mainWindow.setTitle(`N'Owl v${cfg.version}`);
+    })
+    .catch(() => {});
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
     minWidth: 480,
     minHeight: 480,
-    // Версія у заголовку — простий, наочний спосіб переконатись, що
-    // автооновлення справді підтягнуло нову збірку (порівняти заголовок
-    // вікна до й після), без потреби лізти в консоль чи логи.
+    // Заголовок — версія N'Owl. Спершу версія самої обгортки, далі — версія
+    // сайту з /config (див. setSiteVersionTitle): сайт оновлюється з кожним
+    // деплоєм, а обгортка — лише з новим релізом, номер у них спільний.
     title: `N'Owl v${app.getVersion()}`,
     icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#0d0d0f',
@@ -116,6 +126,9 @@ function createWindow() {
     mainWindow.webContents.executeJavaScript(DISABLE_WEBAUTHN_JS).catch(() => {});
   });
 
+  // <title> сторінки не перебиває заголовок з версією.
+  mainWindow.on('page-title-updated', (e) => e.preventDefault());
+  mainWindow.webContents.on('did-finish-load', setSiteVersionTitle);
   mainWindow.loadURL(SITE_URL);
 
   // Посилання, що мають відкриватись у новому вікні (напр. "Переглянути на

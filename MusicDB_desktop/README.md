@@ -29,7 +29,16 @@ npm install
 npm run build
 ```
 
-Результат — інсталятор (NSIS) і portable-версія в `dist/`.
+Результат — інсталятор (NSIS) і portable-версія в `dist/`: `NOwl-Setup.exe`, `NOwl-Setup.exe.blockmap`,
+`latest.yml`, `NOwl-Portable.exe`.
+
+**Версія** — спільна з сайтом і мобільним застосунком (`MAJOR.MINOR.PATCH`, див. `CHANGELOG.md`): перед
+збіркою в `package.json` ставиться поточна версія проєкту. Новий реліз потрібен лише коли змінюється сама
+обгортка — сайт у ній оновлюється сам.
+
+**Реліз:** на GitHub → Releases створити реліз з тегом `vX.Y.Z` (та сама версія) і завантажити **всі чотири**
+файли. `latest.yml` обов'язковий — за ним встановлені копії знаходять оновлення. Назви файлів без номера версії,
+тож посилання на сайті (`releases/latest/download/NOwl-Setup.exe`) не треба міняти з кожним релізом.
 
 **Якщо збірка падає з `Cannot create symbolic link : A required privilege
 is not held by the client`** — це не помилка в коді, а стандартне обмеження
