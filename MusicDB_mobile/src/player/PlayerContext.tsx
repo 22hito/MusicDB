@@ -149,6 +149,16 @@ export interface VideoDock {
 
 const PlayerCtx = createContext<PlayerState | null>(null);
 
+// Керування на екрані блокування для пісні, яку грає нативний плеєр.
+function showOnLockScreen(native: AudioPlayer, song: Song) {
+  const artworkUrl = song.youtubeVideoId ? `https://img.youtube.com/vi/${song.youtubeVideoId}/mqdefault.jpg` : undefined;
+  try {
+    native.setActiveForLockScreen(true, { title: song.title, artist: song.artist, albumTitle: song.album ?? undefined, artworkUrl }, { showSeekBackward: true, showSeekForward: true });
+  } catch {
+    // Expo Go / web — без керування на екрані блокування
+  }
+}
+
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const { theme, t, apiBase } = useSettings();
   const { currentUser } = useApiBridge();
@@ -230,12 +240,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         native.replace({ uri: `${apiBase}${song.audioUrl}` });
         native.volume = volume / 100;
         native.play();
-        const artworkUrl = song.youtubeVideoId ? `https://img.youtube.com/vi/${song.youtubeVideoId}/mqdefault.jpg` : undefined;
-        try {
-          native.setActiveForLockScreen(true, { title: song.title, artist: song.artist, albumTitle: song.album ?? undefined, artworkUrl }, { showSeekBackward: true, showSeekForward: true });
-        } catch {
-          // Expo Go / web — без керування на екрані блокування
-        }
+        showOnLockScreen(native, song);
         return;
       }
       // Далі — YouTube у WebView: нативний плеєр зупиняємо й знімаємо з екрана блокування.
@@ -349,9 +354,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const toggleRepeat = useCallback(() => setRepeat((r) => !r), []);
   // Пісня ком'юніті з файлом і YouTube-відео водночас: грає файл (нативно, у фоні),
   // а кнопка відео перемикає її на YouTube з того самого моменту й відкриває відео.
+  // Закрили відео — назад на файл з того самого моменту: YouTube не грає у фоні й
+  // при вимкненому екрані, а нативний плеєр — так (і з керуванням на екрані блокування).
   const toggleVideoPopup = useCallback(() => {
     const native = nativeRef.current;
     const vid = current?.youtubeVideoId;
+    if (videoPopupOpen && modeRef.current === 'yt' && native && current?.audioUrl) {
+      const wasPlaying = state === 'playing' || state === 'buffering' || state === 'loading';
+      postCommand({ cmd: 'stop' });
+      modeRef.current = 'native';
+      setVideoId(null);
+      setVideoPopupOpen(false);
+      native.seekTo(currentTime).catch(() => {});
+      if (wasPlaying) native.play();
+      showOnLockScreen(native, current);
+      return;
+    }
     if (modeRef.current === 'native' && native && vid) {
       const at = native.currentTime || 0;
       native.pause();
@@ -368,7 +386,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setVideoPopupOpen((o) => !o);
-  }, [current, postCommand]);
+  }, [current, postCommand, videoPopupOpen, state, currentTime]);
   const pause = useCallback(() => {
     if (isNative()) nativeRef.current!.pause();
     else postCommand({ cmd: 'pause' });

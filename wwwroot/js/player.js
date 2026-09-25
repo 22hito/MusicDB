@@ -474,8 +474,24 @@ let currentVid = null;
 
 function toggleVideoPopup() {
   if (playerMode === 'file') { _switchFileSongToVideo(); return; }
-  if (videoPopupOpen) closeVideoPopup();
+  if (videoPopupOpen) closeVideoPopupByUser();
   else openVideoPopup();
+}
+// Відео закрив сам користувач (кнопка відео / хрестик): пісня з файлом повертається
+// з YouTube на свій файл з того самого моменту — файл грає й у фоні (телефон, згорнуте вікно).
+function closeVideoPopupByUser() {
+  closeVideoPopup();
+  const s = playerQueue[playerIndex];
+  if (playerMode !== 'yt' || !s?.audioUrl || !currentVid || currentVid !== s.youtubeVideoId) return;
+  let at = 0, wasPlaying = false;
+  try { at = ytPlayer.getCurrentTime() || 0; wasPlaying = isPlaying(); ytPlayer.stopVideo(); } catch(e){}
+  playerMode = 'file';
+  currentVid = null;
+  fileAudio.volume = vol / 100;
+  fileAudio.src = s.audioUrl;
+  fileAudio.addEventListener('loadedmetadata', () => { try { fileAudio.currentTime = at; } catch(e){} }, { once: true });
+  if (wasPlaying) fileAudio.play().catch(() => { setLoad(false); setPP(false); });
+  else { setLoad(false); setPP(false); setEQ(false); }
 }
 
 // Пісня ком'юніті з файлом і YouTube-відео водночас: грає файл, а кнопка відео
