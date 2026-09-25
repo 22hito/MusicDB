@@ -31,24 +31,7 @@ public class RequestsController(
     [HttpPost]
     public async Task<ActionResult<RequestDto>> Create([FromBody] CreateRequestDto dto)
     {
-        // Неанглійські жанри перекладаємо для узгодженості з базою,
-        // оригінал зберігаємо, щоб адмін міг перевірити переклад.
-        var originalGenres = dto.Genres.Select(g => g.Trim()).Where(g => g.Length > 0).ToList();
-        var translatedGenres = new List<string>();
-        var wasAnyTranslated = false;
-
-        foreach (var genre in originalGenres)
-        {
-            if (TranslationService.NeedsTranslation(genre))
-            {
-                translatedGenres.Add(await translationService.TranslateToEnglishAsync(genre));
-                wasAnyTranslated = true;
-            }
-            else
-            {
-                translatedGenres.Add(genre);
-            }
-        }
+        var (genres, originalGenres) = await PrepareGenresAsync(dto.Genres);
 
         var req = new MusicRequest
         {
@@ -56,8 +39,8 @@ public class RequestsController(
             Title = dto.Title.Trim(),
             Release = DateOnly.Parse(dto.Release),
             Duration = DurationParser.ParseToString(dto.Duration),
-            GenreNames = string.Join(", ", translatedGenres),
-            GenreNamesOriginal = wasAnyTranslated ? string.Join(", ", originalGenres) : null,
+            GenreNames = genres,
+            GenreNamesOriginal = originalGenres,
             AlbumTitle = dto.AlbumTitle?.Trim(),
             CreatedAt = DateTime.UtcNow,
             RequesterUserId = await userDirectory.GetCurrentUserIdAsync(User)
@@ -81,6 +64,7 @@ public class RequestsController(
             (audioFile, error) = await audioStorage.SaveAsync(form.Audio);
             if (audioFile is null) return BadRequest(error);
         }
+        var (genres, originalGenres) = await PrepareGenresAsync(input!.Genres);
 
         var req = new MusicRequest
         {
@@ -88,7 +72,8 @@ public class RequestsController(
             Title = input.Title,
             Release = input.Release,
             Duration = DurationParser.ParseToString(input.Duration),
-            GenreNames = string.Join(", ", input.Genres),
+            GenreNames = genres,
+            GenreNamesOriginal = originalGenres,
             AlbumTitle = input.Album,
             CreatedAt = DateTime.UtcNow,
             YoutubeVideoId = input.YoutubeVideoId,
@@ -97,6 +82,27 @@ public class RequestsController(
             AudioFile = audioFile
         };
         return await SaveNewRequestAsync(req);
+    }
+
+    // Жанри заявки — одразу в написанні, як у базі: "Hip-Hop" -> наявний "hip-hop",
+    // "хип хоп" -> "hip hop" (словник), решта неанглійських — перекладом (MyMemory).
+    // Оригінал зберігаємо, якщо щось змінилось по суті, — адмін може перевірити.
+    private async Task<(string Genres, string? Original)> PrepareGenresAsync(IEnumerable<string> raw)
+    {
+        var original = raw.Select(g => g.Trim()).Where(g => g.Length > 0).ToList();
+        var existing = await db.Genres.Select(g => g.GenreName.Trim()).ToListAsync();
+        var result = new List<string>();
+        var changed = false;
+        foreach (var genre in original)
+        {
+            var key = GenreNames.Key(genre);
+            var name = existing.FirstOrDefault(e => GenreNames.Key(e) == key)
+                ?? GenreNames.KnownEnglish(genre)
+                ?? (TranslationService.NeedsTranslation(genre) ? await translationService.TranslateToEnglishAsync(genre) : genre);
+            if (!GenreNames.IsLatin(genre)) changed = true;
+            if (!result.Any(r => GenreNames.Key(r) == GenreNames.Key(name))) result.Add(name);
+        }
+        return (string.Join(", ", result), changed ? string.Join(", ", original) : null);
     }
 
     private async Task<ActionResult<RequestDto>> SaveNewRequestAsync(MusicRequest req)

@@ -59,12 +59,13 @@ function normalizeGenres(){
     })
     .then(data=>{
       if(!data) return;
+      const title = t('admin.normalizeGenresBtn');
       if(data.error){
-        alert(t('admin.normalizeGenresError') + '\n\n' + data.error);
+        infoModal({ title, text: t('admin.normalizeGenresError') + '\n\n' + data.error });
       } else if(data.mergedCount === 0){
-        alert(t('admin.normalizeGenresNone'));
+        infoModal({ title, text: t('admin.normalizeGenresNone') });
       } else {
-        alert(t('admin.normalizeGenresDone').replace('{count}', data.mergedCount) + '\n\n' + data.mergedPairs.join('\n'));
+        infoModal({ title, text: t('admin.normalizeGenresDone').replace('{count}', data.mergedCount) + '\n\n' + data.mergedPairs.join('\n') });
       }
       loadSongs().then(()=>{renderSongs();updateStats();});
     })

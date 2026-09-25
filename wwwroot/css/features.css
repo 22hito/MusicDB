@@ -41,6 +41,9 @@
 
 /* Вікно підтвердження — над будь-якою модалкою (напр. "Вийти з турніру?" поверх батлу). */
 #confirm-modal-overlay { z-index: 1100; }
+/* Багаторядкові повідомлення (список об'єднаних жанрів) — з переносами. */
+#confirm-modal-text { white-space: pre-line; max-height: 50vh; overflow-y: auto; }
+#confirm-modal-icon .icon { width: 22px; height: 22px; }
 
 /* Батл: елементи мобільного вигляду — на ПК приховані. */
 .battle-match-label, .battle-m-hint, .battle-listen-btn, .battle-m-bar { display: none; }

@@ -181,9 +181,10 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
 
             Знайди серед них групи, де кілька рядків насправді позначають
             ОДИН І ТОЙ САМИЙ жанр, але написані по-різному (без пробілу,
-            з дефісом, іншим регістром, скорочено тощо). Наприклад "hardrock"
-            і "hard rock" — один жанр; "Alternative Rock" і "alternative rock" —
-            один жанр. Жанри, які просто СХОЖІ, але є різними музичними
+            з дефісом, іншим регістром, скорочено, іншою мовою чи транслітом
+            тощо). Наприклад "hardrock" і "hard rock" — один жанр; "Alternative
+            Rock" і "alternative rock" — один жанр; "хип хоп" і "hip-hop" — один
+            жанр. Жанри, які просто СХОЖІ, але є різними музичними
             напрямками (наприклад "rock" і "hard rock" як окремі жанри, якщо
             обидва вживаються самостійно) — групувати НЕ треба.
 
@@ -237,7 +238,8 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
 
     // Локальне (без ШІ) групування "очевидних" дублікатів. НЕ через Левенштейн —
     // для коротких назв жанрів та толерантність плутає різні жанри ("trap"/"rap").
-    // Лише точна рівність після зняття регістру/пробілів/дефісів/підкреслень.
+    // Лише точна рівність ключа GenreNames.Key: регістр/пробіли/дефіси, кирилиця
+    // ("хип хоп" = "hip-hop") і латинські синоніми ("r&b" = "rnb").
     private static (List<DuplicateGroup> Groups, List<string> Unmatched) GroupObviousDuplicates(List<string> genres)
     {
         var used = new bool[genres.Count];
@@ -268,25 +270,33 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         return (groups, unmatched);
     }
 
-    // "Hard-Rock" / "hard rock" / "HARDROCK" -> "hardrock" — прибирає лише формат.
-    private static string GenreKey(string g) =>
-        new(g.Trim().ToLowerInvariant().Where(c => c != ' ' && c != '-' && c != '_').ToArray());
+    private static string GenreKey(string g) => GenreNames.Key(g);
 
-    // Обирає малими літерами без дефісів варіант із кластера, інакше найкоротший.
-    private static string PickCanonicalForm(List<string> cluster)
+    // Латинський варіант має перевагу (у базі жанри англійською): малими літерами
+    // без дефісів, інакше найкоротший. Лише кирилиця — англійська назва зі словника.
+    internal static string PickCanonicalForm(List<string> cluster)
     {
-        var clean = cluster.FirstOrDefault(g => g == g.ToLowerInvariant() && !g.Contains('-'));
-        return (clean ?? cluster.OrderBy(g => g.Length).First()).ToLowerInvariant();
+        var latin = cluster.Where(GenreNames.IsLatin).ToList();
+        if (latin.Count == 0)
+            return GenreNames.KnownEnglish(cluster[0]) ?? cluster.OrderBy(g => g.Length).First().ToLowerInvariant();
+        var clean = latin.FirstOrDefault(g => g == g.ToLowerInvariant() && !g.Contains('-'));
+        return (clean ?? latin.OrderBy(g => g.Length).First()).ToLowerInvariant();
     }
+
+    // Без ШІ: відомий кириличний жанр — англійською назвою зі словника, решта — малими літерами.
+    private static string LocalFallback(string candidate) =>
+        GenreNames.KnownEnglish(candidate) ?? candidate.Trim().ToLowerInvariant();
 
     public async Task<string> NormalizeGenreAsync(string candidate, IEnumerable<string> existingGenres)
     {
-        var fallback = candidate.Trim().ToLowerInvariant();
+        var fallback = LocalFallback(candidate);
         var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
 
         // Дешева перевірка без ШІ: точна рівність після зняття формату (див. GenreKey).
         var exactMatch = existingDistinct.FirstOrDefault(g => GenreKey(g) == GenreKey(candidate));
         if (exactMatch != null) return exactMatch;
+        // Відомий кириличний жанр, якого ще нема в базі, — англійська назва без звернення до ШІ.
+        if (GenreNames.KnownEnglish(candidate) is { } known) return known;
 
         var apiKey = config["Gemini:ApiKey"];
         var modelName = config["Gemini:Model"] ?? "gemini-3.6-flash";
@@ -346,7 +356,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
     // жанрів одного збереження, замість окремого виклику на кожен.
     public async Task<List<string>> NormalizeGenresBatchAsync(List<string> candidates, IEnumerable<string> existingGenres)
     {
-        var fallback = candidates.Select(c => c.Trim().ToLowerInvariant()).ToList();
+        var fallback = candidates.Select(LocalFallback).ToList();
         if (candidates.Count == 0) return fallback;
 
         var existingDistinct = existingGenres.Select(g => g.Trim()).Distinct().ToList();
@@ -357,6 +367,7 @@ public class GenreNormalizationService(HttpClient http, IConfiguration config, I
         {
             var exactMatch = existingDistinct.FirstOrDefault(g => GenreKey(g) == GenreKey(candidates[i]));
             if (exactMatch != null) results[i] = exactMatch;
+            else if (GenreNames.KnownEnglish(candidates[i]) is { } known) results[i] = known;
             else pendingIndexes.Add(i);
         }
         if (pendingIndexes.Count == 0) return results.ToList();
