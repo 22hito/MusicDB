@@ -74,6 +74,13 @@
 .wheel-genre-opt.selected { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); border-color: var(--accent); color: var(--accent); }
 .wheel-genre-n { color: var(--muted); font-size: 0.72rem; font-family: var(--font-mono); }
 
+/* Батл за жанром — картка над списками плейлистів. */
+.battle-genre-card { padding: 0.9rem 1rem; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; background: var(--surface); display: flex; flex-direction: column; gap: 0.8rem; }
+.battle-genre-head { display: flex; align-items: center; gap: 0.9rem; }
+.battle-genre-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.battle-genre-row select { flex: 1; min-width: 180px; }
+.battle-genre-row .btn { display: inline-flex; align-items: center; gap: 0.4rem; }
+
 /* Аватарки на сторінці друзів. */
 .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,8 @@ import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
 import { Button, EmptyState, SectionTitle } from '@/components/UI';
 import { MarqueeText } from '@/components/MarqueeText';
-import { ChevronRightIcon, GlobeIcon, NoteIcon, PauseIcon, PlayIcon, TrophyIcon, VideoIcon } from '@/components/Icons';
+import { SelectField } from '@/components/SelectField';
+import { ChevronRightIcon, DiscIcon, GlobeIcon, NoteIcon, PauseIcon, PlayIcon, TrophyIcon, VideoIcon } from '@/components/Icons';
 import { FONT_MONO_MEDIUM, FONT_MONO_REGULAR, FONT_SANS_BOLD, FONT_SANS_REGULAR, FONT_SERIF_BOLD, PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, PublicPlaylist, Song } from '@/api/types';
 
@@ -46,6 +47,9 @@ export default function BattleScreen() {
   const [listsLoading, setListsLoading] = useState(true);
   const [picked, setPicked] = useState<Song[] | null>(null); // пісні плейлиста, для якого обираємо розмір
   const [opening, setOpening] = useState<number | null>(null);
+  // Батл за жанром: пісні обох таблиць, жанри з 16+ піснями.
+  const [allSongs, setAllSongs] = useState<Song[]>([]);
+  const [genre, setGenre] = useState('');
 
   // Стан турніру одним об'єктом — так "Крок назад" просто повертає попередній знімок.
   const [bt, setBt] = useState<BattleState | null>(null);
@@ -55,10 +59,15 @@ export default function BattleScreen() {
 
   const loadLists = useCallback(() => {
     setListsLoading(true);
-    Promise.all([authed ? api.getPlaylists().catch(() => []) : Promise.resolve([]), api.getPublicPlaylists().catch(() => [])])
-      .then(([mine, pub]) => {
+    Promise.all([
+      authed ? api.getPlaylists().catch(() => []) : Promise.resolve([]),
+      api.getPublicPlaylists().catch(() => []),
+      api.getSongs('all').catch(() => [] as Song[]),
+    ])
+      .then(([mine, pub, songsAll]) => {
         setOwn(mine);
         setCommunity(pub);
+        setAllSongs(songsAll);
       })
       .finally(() => setListsLoading(false));
   }, [api, authed]);
@@ -77,6 +86,20 @@ export default function BattleScreen() {
     } finally {
       setOpening(null);
     }
+  };
+
+  const genreOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of allSongs) for (const g of s.genres) counts.set(g, (counts.get(g) || 0) + 1);
+    return [...counts.entries()]
+      .filter(([, n]) => n >= BATTLE_SIZES[0])
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([g, n]) => ({ value: g, label: `${g.replace(/alternative/gi, 'alt')} — ${n}` }));
+  }, [allSongs]);
+  const selectedGenre = genreOptions.some((o) => o.value === genre) ? genre : genreOptions[0]?.value ?? '';
+  // Розмір (16/32/64) — у тому ж вікні, що й для плейлиста; перемішування — у start().
+  const startGenre = () => {
+    if (selectedGenre) setPicked(allSongs.filter((s) => s.genres.includes(selectedGenre)));
   };
 
   const start = (size: number) => {
@@ -315,6 +338,28 @@ export default function BattleScreen() {
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={[styles.genreCard, { backgroundColor: theme.surface, borderColor: theme.border, borderLeftColor: theme.accent }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[styles.plIcon, { backgroundColor: theme.surface2 }]}>
+              <DiscIcon size={16} color={theme.accent} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ color: theme.text, fontWeight: '700' }}>{t('battle.genreHeading')}</Text>
+              <Text style={{ color: theme.muted, fontSize: 12, marginTop: 2 }}>{t('battle.genreHint')}</Text>
+            </View>
+          </View>
+          {listsLoading ? (
+            <ActivityIndicator color={theme.accent} />
+          ) : genreOptions.length ? (
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <SelectField value={selectedGenre} options={genreOptions} onChange={setGenre} title={t('battle.genreHeading')} searchable style={{ flex: 1 }} />
+              <Button label={t('battle.genreStart')} small onPress={startGenre} />
+            </View>
+          ) : (
+            <Text style={{ color: theme.muted, fontSize: 13 }}>{t('battle.genreEmpty')}</Text>
+          )}
+        </View>
+
         <SectionTitle label={t('battle.pageOwnHeading')} />
         {!authed ? (
           <Text style={{ color: theme.muted, fontSize: 13 }}>{t('battle.pageOwnLoginHint')}</Text>
@@ -370,6 +415,7 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.lg, paddingBottom: 120 },
   plCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, marginBottom: SPACING.sm },
   plIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  genreCard: { borderWidth: 1, borderLeftWidth: 3, borderRadius: RADIUS.lg, padding: SPACING.md, gap: SPACING.md, marginBottom: SPACING.sm },
   ribbon: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: SPACING.lg, flexWrap: 'wrap' },
   ribbonSeg: { minWidth: 34, paddingVertical: 4, paddingHorizontal: 8, borderRadius: RADIUS.pill, borderWidth: 1, alignItems: 'center' },
   matchArea: { flex: 1 },

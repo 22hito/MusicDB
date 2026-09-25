@@ -73,8 +73,37 @@ function undoBattle(){
   loadBattleMatch();
 }
 
+// Батл за жанром: пісні обох таблиць (каталог + ком'юніті), жанри від 16 пісень.
+let battleAllSongs = null;
+function _loadBattleGenres(){
+  const select = document.getElementById('battle-genre-select');
+  const fill = list => {
+    battleAllSongs = list;
+    const counts = new Map();
+    for(const s of list) for(const g of s.genres) counts.set(g, (counts.get(g) || 0) + 1);
+    const genres = [...counts.entries()].filter(([, n]) => n >= BATTLE_SIZES[0]).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+    const prev = select.value;
+    select.innerHTML = genres.map(([g, n]) => `<option value="${esc(g)}">${esc(abbrGenre(g))} — ${n}</option>`).join('');
+    if(prev && counts.get(prev) >= BATTLE_SIZES[0]) select.value = prev;
+    const none = !genres.length;
+    document.getElementById('battle-genre-empty').style.display = none ? '' : 'none';
+    select.disabled = none;
+    document.getElementById('battle-genre-start').disabled = none;
+  };
+  if(battleAllSongs) fill(battleAllSongs);
+  fetch('/api/songs?source=all').then(r=>r.ok?r.json():null).then(list=>{ if(list) fill(list); }).catch(()=>{});
+}
+function startGenreBattle(){
+  const genre = document.getElementById('battle-genre-select').value;
+  if(!genre || !battleAllSongs) return;
+  currentPlaylistId = null;
+  currentPlaylistSongs = battleAllSongs.filter(s => s.genres.includes(genre));
+  openBattleSetup(); // розмір (16/32/64) — із тих, на які вистачає пісень; перемішування — у startBattleRoyale
+}
+
 // Сторінка "Батл рояль" у навбарі: власні плейлисти (якщо залогінені) + публічні чужі.
 function openBattlePage(){
+  _loadBattleGenres();
   const ownSection = document.getElementById('battle-page-own-login-hint');
   const ownEmpty = document.getElementById('battle-page-own-empty');
   const ownList = document.getElementById('battle-page-own-list');

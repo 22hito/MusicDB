@@ -574,6 +574,18 @@
 <div id="page-battle" class="page">
   <div class="container">
     <h2><span data-i18n="battle.heading.pre">Батл</span> <span class="hl" data-i18n="battle.heading.accent">рояль</span></h2>
+    <!-- Батл за жанром: 16/32/64 випадкові пісні одного жанру (з обох таблиць). -->
+    <div class="battle-genre-card" style="margin-bottom:2rem;">
+      <div class="battle-genre-head">
+        <div class="battle-pl-icon"><svg class="icon"><use href="#icon-disc"/></svg></div>
+        <div class="battle-pl-main"><strong data-i18n="battle.genreHeading">Батл за жанром</strong><span data-i18n="battle.genreHint">Випадкові пісні одного жанру — жанри, де пісень щонайменше 16</span></div>
+      </div>
+      <div class="battle-genre-row">
+        <select id="battle-genre-select" aria-label="Genre"></select>
+        <button type="button" class="btn btn-primary" id="battle-genre-start" onclick="startGenreBattle()"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="battle.genreStart">Почати</span></button>
+      </div>
+      <div class="hint" id="battle-genre-empty" style="display:none;" data-i18n="battle.genreEmpty">Поки що немає жанру з 16+ піснями</div>
+    </div>
     <div id="battle-page-own-section" style="margin-bottom:2rem;">
       <h3 style="font-size:1.1rem;margin-bottom:0.8rem;" data-i18n="battle.pageOwnHeading">Мої плейлисти</h3>
       <div id="battle-page-own-login-hint" class="empty" style="display:none;"><svg class="icon"><use href="#icon-lock"/></svg><span data-i18n="battle.pageOwnLoginHint">Увійдіть, щоб побачити тут свої плейлисти</span></div>

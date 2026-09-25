@@ -310,6 +310,10 @@ export const I18N = {
     'battle.listenToWinnerBtn': 'Слухати переможця', // NEW
     'battle.exitConfirm': 'Вийти з турніру? Прогрес буде втрачено.', // NEW
     'battle.exit': 'Вийти', // NEW
+    'battle.genreHeading': 'Батл за жанром',
+    'battle.genreHint': 'Випадкові пісні одного жанру — жанри, де пісень щонайменше 16',
+    'battle.genreStart': 'Почати',
+    'battle.genreEmpty': 'Поки що немає жанру з 16+ піснями',
     'battle.mobileHint': 'Послухайте обидві пісні й оберіть кращу. Переможці виходять у наступне коло.', // NEW
     'artists.heading.pre': 'Всі', // NEW
     'artists.heading.accent': 'виконавці', // NEW
@@ -700,6 +704,10 @@ export const I18N = {
     'battle.listenToWinnerBtn': 'Listen to the champion', // NEW
     'battle.exitConfirm': 'Leave the tournament? Progress will be lost.', // NEW
     'battle.exit': 'Leave', // NEW
+    'battle.genreHeading': 'Genre battle',
+    'battle.genreHint': 'Random songs of one genre — genres with at least 16 songs',
+    'battle.genreStart': 'Start',
+    'battle.genreEmpty': 'No genre has 16+ songs yet',
     'battle.mobileHint': 'Listen to both songs and pick the better one. Winners go to the next round.', // NEW
     'artists.heading.pre': 'All', // NEW
     'artists.heading.accent': 'artists', // NEW
