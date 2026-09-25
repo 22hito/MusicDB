@@ -524,7 +524,16 @@
       </div>
       <div class="wheel-col wheel-playlist-col">
         <div class="wheel-params-card">
-          <div class="wheel-duration-row">
+          <!-- Два режими: N випадкових жанрів або жанри, які користувач обрав сам. -->
+          <div class="seg-switch wheel-mode-switch">
+            <button type="button" id="wheel-mode-random" class="active" onclick="setWheelMode('random')"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="wheel.modeRandom">Випадкові</span></button>
+            <button type="button" id="wheel-mode-custom" onclick="setWheelMode('custom')"><svg class="icon"><use href="#icon-sliders"/></svg> <span data-i18n="wheel.modeCustom">Мій вибір</span></button>
+          </div>
+          <div class="wheel-custom-row" id="wheel-custom-row" style="display:none;">
+            <div class="wheel-custom-chips" id="wheel-custom-chips"></div>
+            <button type="button" class="btn btn-outline" onclick="openWheelGenrePicker()"><svg class="icon"><use href="#icon-pencil"/></svg> <span data-i18n="wheel.pickGenresBtn">Обрати жанри</span></button>
+          </div>
+          <div class="wheel-duration-row" id="wheel-count-row">
             <span data-i18n="wheel.countLabel">Кількість жанрів на колесі:</span>
             <span class="wheel-input-group">
               <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); onWheelCountChange();">
@@ -1166,6 +1175,20 @@
   <img id="shot-viewer-img" alt="">
   <button type="button" class="shot-viewer-nav next" id="shot-viewer-next" onclick="stepShotViewer(1)" aria-label="Next"><svg class="icon"><use href="#icon-arrow-right"/></svg></button>
   <div class="shot-viewer-count" id="shot-viewer-count"></div>
+</div>
+
+<!-- Колесо, режим "Мій вибір": які жанри будуть на колесі -->
+<div class="modal-overlay" id="wheel-genres-modal-overlay">
+  <div class="modal-box wheel-genres-box">
+    <div class="modal-title-row"><svg class="icon"><use href="#icon-wheel"/></svg> <span data-i18n="wheel.pickTitle">Жанри для колеса</span></div>
+    <input type="text" id="wheel-genres-search" class="wheel-genres-search" data-i18n-placeholder="wheel.searchPlaceholder" placeholder="Пошук жанру…" oninput="renderWheelGenrePicker()">
+    <div class="wheel-genres-count" id="wheel-genres-count"></div>
+    <div class="wheel-genres-list" id="wheel-genres-list"></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="clearWheelGenrePicker()" data-i18n="wheel.clearBtn">Очистити</button>
+      <button class="modal-btn-confirm" style="background:var(--accent);" onclick="closeWheelGenrePicker()" data-i18n="wheel.doneBtn">Готово</button>
+    </div>
+  </div>
 </div>
 
 <!-- Загальне вікно підтвердження (замість браузерного confirm()) — див. confirmModal() у js/profile.js -->

@@ -49,7 +49,102 @@ function _eligibleWheelGenres(){
 // дефолтне з HTML) значення "2" і ніколи не підставляв нормальний дефолт 10.
 let wheelCountTouched = false;
 
+// ─── Режими: 'random' — N випадкових жанрів (від 5 пісень); 'custom' — жанри,
+// які користувач обрав сам (будь-які, де є хоч одна пісня). Вибір пам'ятає браузер.
+let wheelMode = 'random';
+let wheelCustomGenres = [];
+try {
+  wheelMode = localStorage.getItem('wheel.mode') === 'custom' ? 'custom' : 'random';
+  wheelCustomGenres = JSON.parse(localStorage.getItem('wheel.customGenres') || '[]').filter(g => typeof g === 'string');
+} catch(e){ /* приватне вікно — без запам'ятовування */ }
+function _saveWheelPrefs(){
+  try {
+    localStorage.setItem('wheel.mode', wheelMode);
+    localStorage.setItem('wheel.customGenres', JSON.stringify(wheelCustomGenres));
+  } catch(e){}
+}
+// Жанри з кількістю пісень — для вікна вибору (від найпоширеніших).
+function _wheelGenreCounts(){
+  const counts = new Map();
+  for(const s of songs) for(const g of s.genres) counts.set(g, (counts.get(g) || 0) + 1);
+  return [...counts.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+}
+function _resetWheelResult(){
+  wheelResultGenre = null;
+  document.getElementById('wheel-result').style.display = 'none';
+  document.getElementById('wheel-disc').classList.remove('revealed');
+  document.querySelectorAll('.wheel-legend-item.winner').forEach(el=>el.classList.remove('winner'));
+  document.getElementById('wheel-playlist-empty').style.display = '';
+  document.getElementById('wheel-playlist-wrap').style.display = 'none';
+}
+function setWheelMode(mode){
+  if(wheelSpinning || mode === wheelMode) return;
+  wheelMode = mode;
+  _saveWheelPrefs();
+  _syncWheelModeUi();
+  _resetWheelResult();
+  if(mode === 'custom') _applyWheelCustom(); else _applyWheelCount();
+}
+function _syncWheelModeUi(){
+  const custom = wheelMode === 'custom';
+  document.getElementById('wheel-mode-random').classList.toggle('active', !custom);
+  document.getElementById('wheel-mode-custom').classList.toggle('active', custom);
+  document.getElementById('wheel-count-row').style.display = custom ? 'none' : '';
+  document.getElementById('wheel-custom-row').style.display = custom ? '' : 'none';
+}
+function _applyWheelCustom(){
+  const available = new Set(songs.flatMap(s => s.genres));
+  wheelGenres = wheelCustomGenres.filter(g => available.has(g));
+  _redrawWheel();
+  const chips = document.getElementById('wheel-custom-chips');
+  chips.innerHTML = wheelGenres.length
+    ? wheelGenres.map((g,i) => `<span class="wheel-chip" style="--chip:${_wheelSegColor(i, wheelGenres.length)}">${esc(abbrGenre(g))}<button type="button" onclick="removeWheelCustomGenre(${i})" aria-label="×">×</button></span>`).join('')
+    : `<span class="wheel-custom-empty">${esc(t('wheel.customEmpty'))}</span>`;
+  document.getElementById('wheel-spin-btn').disabled = wheelGenres.length < 2;
+}
+function removeWheelCustomGenre(i){
+  if(wheelSpinning) return;
+  const g = wheelGenres[i];
+  wheelCustomGenres = wheelCustomGenres.filter(x => x !== g);
+  _saveWheelPrefs();
+  _resetWheelResult();
+  _applyWheelCustom();
+}
+function openWheelGenrePicker(){
+  if(wheelSpinning) return;
+  document.getElementById('wheel-genres-search').value = '';
+  renderWheelGenrePicker();
+  document.getElementById('wheel-genres-modal-overlay').classList.add('open');
+}
+function renderWheelGenrePicker(){
+  const q = document.getElementById('wheel-genres-search').value.trim().toLowerCase();
+  const selected = new Set(wheelCustomGenres);
+  const list = _wheelGenreCounts().filter(([g]) => !q || g.toLowerCase().includes(q) || abbrGenre(g).toLowerCase().includes(q));
+  document.getElementById('wheel-genres-list').innerHTML = list.length
+    ? list.map(([g, n]) => `<button type="button" class="wheel-genre-opt${selected.has(g) ? ' selected' : ''}" data-genre="${esc(g)}" onclick="toggleWheelCustomGenre(this.dataset.genre)"><span>${esc(abbrGenre(g))}</span><span class="wheel-genre-n">${n}</span></button>`).join('')
+    : `<div class="wheel-custom-empty">${esc(t('wheel.nothingFound'))}</div>`;
+  document.getElementById('wheel-genres-count').textContent = t('wheel.selectedCount').replace('{n}', wheelCustomGenres.length);
+}
+function toggleWheelCustomGenre(g){
+  wheelCustomGenres = wheelCustomGenres.includes(g) ? wheelCustomGenres.filter(x => x !== g) : [...wheelCustomGenres, g];
+  renderWheelGenrePicker();
+}
+function clearWheelGenrePicker(){
+  wheelCustomGenres = [];
+  renderWheelGenrePicker();
+}
+function closeWheelGenrePicker(){
+  _closeModalAnimated('wheel-genres-modal-overlay');
+  _saveWheelPrefs();
+  _resetWheelResult();
+  _applyWheelCustom();
+}
+document.getElementById('wheel-genres-modal-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeWheelGenrePicker();
+});
+
 function openWheelPage(){
+  _syncWheelModeUi();
   wheelAllGenres = _shuffledCopy(_eligibleWheelGenres());
   const countInput = document.getElementById('wheel-count');
   const total = wheelAllGenres.length;
@@ -62,14 +157,10 @@ function openWheelPage(){
     ? Math.min(Math.max(countInput.min, parseInt(countInput.value) || defaultCount), total || 1)
     : defaultCount;
   document.getElementById('wheel-count-max').textContent = `/ ${total}`;
-  _applyWheelCount();
-  wheelResultGenre = null;
   wheelSpinning = false;
-  document.getElementById('wheel-result').style.display = 'none';
-  document.getElementById('wheel-disc').classList.remove('revealed');
   document.getElementById('wheel-spin-btn').disabled = false;
-  document.getElementById('wheel-playlist-empty').style.display = '';
-  document.getElementById('wheel-playlist-wrap').style.display = 'none';
+  if(wheelMode === 'custom') _applyWheelCustom(); else _applyWheelCount();
+  _resetWheelResult();
 }
 
 // Хрестик на картці результату — ховає її й миттєво знімає розмиття з диска
@@ -98,6 +189,10 @@ function onWheelCountChange(){
 function _applyWheelCount(){
   const v = parseInt(document.getElementById('wheel-count').value) || wheelAllGenres.length;
   wheelGenres = wheelAllGenres.slice(0, v);
+  document.getElementById('wheel-spin-btn').disabled = wheelSpinning;
+  _redrawWheel();
+}
+function _redrawWheel(){
   renderWheelDisc();
   renderWheelLegend();
   const disc = document.getElementById('wheel-disc');
@@ -217,7 +312,7 @@ function _syncWheelSecRange(changedEl){
 }
 
 function spinWheel(){
-  if(wheelSpinning || !wheelGenres.length) return;
+  if(wheelSpinning || wheelGenres.length < (wheelMode === 'custom' ? 2 : 1)) return;
   const secMin = Math.max(1, Math.min(99, parseFloat(document.getElementById('wheel-sec-min').value) || 3));
   const secMax = Math.max(secMin, Math.min(99, parseFloat(document.getElementById('wheel-sec-max').value) || secMin));
   const duration = secMin + Math.random()*(secMax-secMin);

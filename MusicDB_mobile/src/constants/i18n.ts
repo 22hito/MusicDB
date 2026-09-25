@@ -278,6 +278,16 @@ export const I18N = {
     'wheel.resultLabel': 'Випав жанр:', // NEW
     'wheel.legendTitle': 'Жанри на колесі', // NEW
     'wheel.countLabel': 'Жанрів на колесі', // NEW
+    'wheel.modeRandom': 'Випадкові',
+    'wheel.modeCustom': 'Мій вибір',
+    'wheel.pickGenresBtn': 'Обрати жанри',
+    'wheel.pickTitle': 'Жанри для колеса',
+    'wheel.searchPlaceholder': 'Пошук жанру…',
+    'wheel.selectedCount': 'Обрано: {n}',
+    'wheel.customEmpty': 'Оберіть щонайменше 2 жанри',
+    'wheel.clearBtn': 'Очистити',
+    'wheel.doneBtn': 'Готово',
+    'wheel.nothingFound': 'Нічого не знайдено',
     'wheel.durationLabel': 'Тривалість прокрутки, сек', // NEW
     'wheel.playlistEmpty': 'Крутніть колесо, щоб сформувати плейлист із випадкового жанру', // NEW
     'wheel.notEnough': 'Замало жанрів — потрібно хоча б 2 жанри з 5+ піснями', // NEW
@@ -658,6 +668,16 @@ export const I18N = {
     'wheel.resultLabel': 'You got:', // NEW
     'wheel.legendTitle': 'Genres on the wheel', // NEW
     'wheel.countLabel': 'Genres on the wheel', // NEW
+    'wheel.modeRandom': 'Random',
+    'wheel.modeCustom': 'My pick',
+    'wheel.pickGenresBtn': 'Pick genres',
+    'wheel.pickTitle': 'Genres for the wheel',
+    'wheel.searchPlaceholder': 'Search genres…',
+    'wheel.selectedCount': 'Selected: {n}',
+    'wheel.customEmpty': 'Pick at least 2 genres',
+    'wheel.clearBtn': 'Clear',
+    'wheel.doneBtn': 'Done',
+    'wheel.nothingFound': 'Nothing found',
     'wheel.durationLabel': 'Spin duration, sec', // NEW
     'wheel.playlistEmpty': 'Spin the wheel to build a playlist from a random genre', // NEW
     'wheel.notEnough': 'Not enough genres — need at least 2 genres with 5+ songs', // NEW

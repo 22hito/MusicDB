@@ -12,12 +12,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Circle, G, Path, Polygon, Text as SvgText } from 'react-native-svg';
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
-import { Button, EmptyState, ErrorState, SectionTitle } from '@/components/UI';
+import { Button, EmptyState, ErrorState, SectionTitle, SegmentedPicker } from '@/components/UI';
 import { SongListBlock } from '@/components/SongListBlock';
+import { GenrePickerModal } from '@/components/GenrePickerModal';
+import { CloseIcon, ShuffleIcon, SlidersIcon } from '@/components/Icons';
 import { FONT_MONO_MEDIUM, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
@@ -82,7 +85,12 @@ function Stepper({ value, min, max, onChange, disabled }: { value: number; min: 
   );
 }
 
-// Колесо фортуни: випадковий жанр (лише жанри з 5+ піснями) → перемішаний плейлист із нього.
+const KEY_MODE = 'nowl.wheel.mode';
+const KEY_CUSTOM = 'nowl.wheel.customGenres';
+type WheelMode = 'random' | 'custom';
+
+// Колесо фортуни: випадковий жанр → перемішаний плейлист із нього. Два режими, як на сайті:
+// "Випадкові" — N жанрів із 5+ піснями; "Мій вибір" — жанри, які користувач обрав сам.
 export default function WheelScreen() {
   const { theme, t } = useSettings();
   const api = useMusicApi();
@@ -102,6 +110,36 @@ export default function WheelScreen() {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [playlist, setPlaylist] = useState<Song[]>([]);
+  const [mode, setMode] = useState<WheelMode>('random');
+  const [custom, setCustom] = useState<string[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Режим і власний вибір пам'ятаються між запусками.
+  useEffect(() => {
+    Promise.all([AsyncStorage.getItem(KEY_MODE), AsyncStorage.getItem(KEY_CUSTOM)])
+      .then(([m, c]) => {
+        if (m === 'custom') setMode('custom');
+        try {
+          const parsed = JSON.parse(c || '[]');
+          if (Array.isArray(parsed)) setCustom(parsed.filter((g): g is string => typeof g === 'string'));
+        } catch {
+          // зіпсоване значення — починаємо з порожнього вибору
+        }
+      })
+      .catch(() => {});
+  }, []);
+  const saveMode = (m: WheelMode) => {
+    setMode(m);
+    setResult(null);
+    setPlaylist([]);
+    AsyncStorage.setItem(KEY_MODE, m).catch(() => {});
+  };
+  const saveCustom = (next: string[]) => {
+    setCustom(next);
+    setResult(null);
+    setPlaylist([]);
+    AsyncStorage.setItem(KEY_CUSTOM, JSON.stringify(next)).catch(() => {});
+  };
   // Кут лише накопичується (ніколи не скидається через setValue посеред життя
   // екрана): так повторні оберти на нативному драйвері працюють стабільно.
   const rotation = useRef(new Animated.Value(0)).current;
@@ -140,7 +178,17 @@ export default function WheelScreen() {
     load();
   }, [load]);
 
-  const genres = useMemo(() => pool.slice(0, count), [pool, count]);
+  // Усі жанри з кількістю пісень — для вікна вибору (від найпоширеніших).
+  const genreCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of songs) for (const g of s.genres) counts.set(g, (counts.get(g) || 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name, cnt]) => ({ name, count: cnt }));
+  }, [songs]);
+  const genres = useMemo(() => {
+    if (mode === 'random') return pool.slice(0, count);
+    const available = new Set(genreCounts.map((g) => g.name));
+    return custom.filter((g) => available.has(g));
+  }, [mode, pool, count, custom, genreCounts]);
   const n = genres.length;
   const segAngle = n ? 360 / n : 360;
 
@@ -193,15 +241,54 @@ export default function WheelScreen() {
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
-        {pool.length < 2 ? (
+        {genreCounts.length < 2 ? (
           <EmptyState icon="🎡" label={t('wheel.notEnough')} />
         ) : (
           <>
             <View style={[styles.controls, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <View style={styles.controlRow}>
-                <Text style={[styles.controlLabel, { color: theme.muted }]}>{t('wheel.countLabel')}</Text>
-                <Stepper value={count} min={2} max={pool.length} onChange={changeCount} disabled={spinning} />
-              </View>
+              <SegmentedPicker<WheelMode>
+                value={mode}
+                onChange={(m) => !spinning && saveMode(m)}
+                options={[
+                  { value: 'random', label: t('wheel.modeRandom'), icon: (col) => <ShuffleIcon size={14} color={col} /> },
+                  { value: 'custom', label: t('wheel.modeCustom'), icon: (col) => <SlidersIcon size={14} color={col} /> },
+                ]}
+              />
+              {mode === 'random' ? (
+                <View style={styles.controlRow}>
+                  <Text style={[styles.controlLabel, { color: theme.muted }]}>{t('wheel.countLabel')}</Text>
+                  {pool.length >= 2 ? (
+                    <Stepper value={count} min={2} max={pool.length} onChange={changeCount} disabled={spinning} />
+                  ) : (
+                    <Text style={{ color: theme.muted, fontSize: 12, flexShrink: 1 }}>{t('wheel.notEnough')}</Text>
+                  )}
+                </View>
+              ) : (
+                <View style={{ gap: 10 }}>
+                  <View style={styles.chips}>
+                    {genres.length ? (
+                      genres.map((g, i) => (
+                        <View key={g} style={[styles.chip, { borderColor: segColor(i, genres.length), backgroundColor: `${segColor(i, genres.length)}33` }]}>
+                          <Text style={{ color: theme.text, fontSize: 12 }}>{abbrGenre(g)}</Text>
+                          <TouchableOpacity hitSlop={8} disabled={spinning} onPress={() => saveCustom(custom.filter((x) => x !== g))}>
+                            <CloseIcon size={10} color={theme.muted} />
+                          </TouchableOpacity>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={{ color: theme.muted, fontSize: 12 }}>{t('wheel.customEmpty')}</Text>
+                    )}
+                  </View>
+                  <Button
+                    label={t('wheel.pickGenresBtn')}
+                    variant="outline"
+                    small
+                    disabled={spinning}
+                    onPress={() => setPickerOpen(true)}
+                    style={{ alignSelf: 'flex-start' }}
+                  />
+                </View>
+              )}
               <View style={styles.controlRow}>
                 <Text style={[styles.controlLabel, { color: theme.muted }]}>{t('wheel.durationLabel')}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -241,7 +328,7 @@ export default function WheelScreen() {
               </Svg>
             </View>
 
-            <Button label={t('wheel.spinBtn')} onPress={spin} disabled={spinning} style={{ marginTop: SPACING.lg }} />
+            <Button label={t('wheel.spinBtn')} onPress={spin} disabled={spinning || n < 2} style={{ marginTop: SPACING.lg }} />
 
             {result ? (
               <View style={[styles.result, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
@@ -274,6 +361,15 @@ export default function WheelScreen() {
           </>
         )}
       </ScrollView>
+      <GenrePickerModal
+        visible={pickerOpen}
+        genres={genreCounts}
+        selected={custom}
+        onChange={saveCustom}
+        onClose={() => setPickerOpen(false)}
+        title={t('wheel.pickTitle')}
+        format={abbrGenre}
+      />
     </SafeAreaView>
   );
 }
@@ -290,4 +386,6 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.pill, paddingVertical: 4, paddingHorizontal: 9 },
   swatch: { width: 10, height: 10, borderRadius: 5 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.pill, paddingVertical: 5, paddingLeft: 10, paddingRight: 8 },
 });
