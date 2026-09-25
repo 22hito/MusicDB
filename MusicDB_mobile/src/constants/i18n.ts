@@ -324,6 +324,23 @@ export const I18N = {
     'artist.followers': 'підписників', // NEW
     'artist.discography': 'Дискографія', // NEW
     'artist.notFound': 'Виконавця не знайдено', // NEW
+    'artist.kicker': 'Виконавець',
+    'artist.playAll': 'Слухати',
+    'artist.shuffle': 'Перемішати',
+    'artist.editBtn': 'Редагувати',
+    'artist.popular': 'Популярне',
+    'artist.albums': 'Альбоми',
+    'artist.about': 'Про виконавця',
+    'artist.similar': 'Схожі виконавці',
+    'artist.albumsWord': 'альбомів',
+    'artist.listenersWord': 'прослуховувань',
+    'artist.noBio': 'Опису поки немає.',
+    'artist.noBioAdmin': 'Опису поки немає — додайте його через «Редагувати».',
+    'artist.editTitle': 'Сторінка виконавця',
+    'artist.photoUpload': 'Завантажити фото',
+    'artist.photoRemove': 'Прибрати фото',
+    'artist.photoTooLarge': 'Фото більше за 5 МБ',
+    'artist.saveBtn': 'Зберегти',
     'friends.searchPlaceholder': 'Пошук людей за іменем…', // NEW
     'friends.searchEmpty': 'Нікого не знайдено', // NEW
     'friends.incoming': 'Вхідні запити', // NEW
@@ -718,6 +735,23 @@ export const I18N = {
     'artist.followers': 'followers', // NEW
     'artist.discography': 'Discography', // NEW
     'artist.notFound': 'Artist not found', // NEW
+    'artist.kicker': 'Artist',
+    'artist.playAll': 'Play',
+    'artist.shuffle': 'Shuffle',
+    'artist.editBtn': 'Edit',
+    'artist.popular': 'Popular',
+    'artist.albums': 'Albums',
+    'artist.about': 'About',
+    'artist.similar': 'Similar artists',
+    'artist.albumsWord': 'albums',
+    'artist.listenersWord': 'plays',
+    'artist.noBio': 'No bio yet.',
+    'artist.noBioAdmin': 'No bio yet — add one via “Edit”.',
+    'artist.editTitle': 'Artist page',
+    'artist.photoUpload': 'Upload photo',
+    'artist.photoRemove': 'Remove photo',
+    'artist.photoTooLarge': 'Photo is larger than 5 MB',
+    'artist.saveBtn': 'Save',
     'friends.searchPlaceholder': 'Search people by name…', // NEW
     'friends.searchEmpty': 'No one found', // NEW
     'friends.incoming': 'Incoming requests', // NEW

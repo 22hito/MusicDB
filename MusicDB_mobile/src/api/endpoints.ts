@@ -38,6 +38,7 @@ import type {
   Stats,
   UpdateRequestInput,
   UpdateSongInput,
+  SimilarArtist,
 } from './types';
 
 // Тонкі типізовані обгортки над ApiBridge.request(), що дзеркалять
@@ -226,6 +227,15 @@ export function useMusicApi() {
       // Виконавці: каталог, сторінка, підписка
       getArtists: (q?: string) => request<ArtistSummary[]>('/api/artists', { query: { q: q || undefined } }),
       getArtist: (id: number) => request<ArtistDetail>(`/api/artists/${id}`),
+      getSimilarArtists: (id: number) => request<SimilarArtist[]>(`/api/artists/${id}/similar`),
+      // Адмін: опис і фото виконавця (фото — multipart нативним fetch, як файли пісень).
+      updateArtistBio: (id: number, bio: string) => request<ArtistDetail>(`/api/artists/${id}`, { method: 'PUT', body: { bio } }),
+      setArtistImage: (id: number, image: PickedAudio) => {
+        const fd = new FormData();
+        fd.append('image', filePart(image));
+        return upload<ArtistDetail>(`/api/artists/${id}/image`, fd, 'PUT');
+      },
+      deleteArtistImage: (id: number) => request<ArtistDetail>(`/api/artists/${id}/image`, { method: 'DELETE' }),
       followArtist: (id: number) => request<void>(`/api/artists/${id}/follow`, { method: 'POST' }),
       unfollowArtist: (id: number) => request<void>(`/api/artists/${id}/follow`, { method: 'DELETE' }),
 

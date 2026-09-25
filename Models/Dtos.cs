@@ -144,9 +144,14 @@ public record RecommendationDto(SongDto Song, string? Reason);
 
 public record ArtistRefDto(int Id, string Name);
 
-public record ArtistSummaryDto(int Id, string Name, int SongCount);
+public record ArtistSummaryDto(int Id, string Name, int SongCount, string? ImageUrl = null);
 
 public record ArtistDetailDto(int Id, string Name, string? Bio, string? ImageUrl, int SongCount, int FollowerCount, bool IsFollowing);
+
+public record UpdateArtistDto(string? Bio);
+
+// Score — 0..100, наскільки збігаються жанри пісень.
+public record SimilarArtistDto(int Id, string Name, string? ImageUrl, int SongCount, int Score);
 
 public record ArtistNotificationDto(int Id, int ArtistId, string ArtistName, string EventType, string SongLabel, string CreatedAt);
 

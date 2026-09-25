@@ -81,6 +81,76 @@
 .battle-genre-row select { flex: 1; min-width: 180px; }
 .battle-genre-row .btn { display: inline-flex; align-items: center; gap: 0.4rem; }
 
+/* ─── Сторінка виконавця ─── */
+.artist-avatar { --av: var(--accent); width: 148px; height: 148px; border-radius: 50%; flex-shrink: 0; overflow: hidden; display: grid; place-items: center;
+  background: var(--surface2); box-shadow: 0 10px 34px rgba(0,0,0,0.35); border: 2px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+.artist-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.artist-avatar-ph { background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--av) 85%, #fff 15%), color-mix(in srgb, var(--av) 70%, #000 30%));
+  color: #fff; font-family: var(--font-serif); font-weight: 700; font-size: 3rem; letter-spacing: 0.02em; }
+.artist-avatar.sm { width: 84px; height: 84px; box-shadow: none; }
+.artist-avatar.sm.artist-avatar-ph { font-size: 1.8rem; }
+.artist-avatar.xs { width: 40px; height: 40px; box-shadow: none; border-width: 1px; }
+.artist-avatar.xs.artist-avatar-ph { font-size: 0.95rem; }
+.artist-hero { position: relative; display: flex; align-items: flex-end; gap: 1.6rem; padding: 2rem; margin-bottom: 1.8rem; border-radius: var(--radius-lg);
+  overflow: hidden; border: 1px solid var(--border); background: var(--surface); isolation: isolate; }
+.artist-hero-bg { position: absolute; inset: -40px; z-index: -2; background-size: cover; background-position: center; filter: blur(38px) saturate(1.2); opacity: 0.55; transform: scale(1.1); }
+.artist-hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 30%, transparent), var(--surface) 92%); }
+.artist-hero-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.artist-kicker { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.artist-hero h2 { margin: 0; font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1.05; overflow-wrap: anywhere; }
+.artist-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; color: var(--muted); font-size: 0.85rem; }
+.artist-stats b { color: var(--text); font-weight: 700; }
+.artist-genres { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.artist-actions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.4rem; }
+.artist-actions .btn { display: inline-flex; align-items: center; gap: 0.4rem; }
+.artist-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.8rem; align-items: start; }
+.artist-section { margin-bottom: 1.8rem; }
+.artist-section h3 { font-size: 1.05rem; margin: 0 0 0.8rem; }
+.artist-card { padding: 1.1rem 1.2rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.artist-popular { display: flex; flex-direction: column; gap: 2px; }
+.artist-pop-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.45rem 0.6rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+.artist-pop-row:hover { background: var(--surface2); }
+.artist-pop-n { width: 1.2rem; text-align: right; color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; }
+.artist-pop-cover { width: 64px; height: 36px; border-radius: 5px; overflow: hidden; flex-shrink: 0; background: var(--surface2); display: grid; place-items: center; color: var(--muted); }
+.artist-pop-cover img { width: 100%; height: 100%; object-fit: cover; }
+.artist-pop-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.artist-pop-main strong, .artist-pop-main span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artist-pop-main span { color: var(--muted); font-size: 0.78rem; }
+.artist-pop-plays, .artist-pop-dur { color: var(--muted); font-size: 0.78rem; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 0.3rem; }
+.artist-pop-plays .icon { width: 13px; height: 13px; }
+.artist-albums { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+.artist-album { display: flex; flex-direction: column; gap: 0.35rem; text-align: left; background: none; border: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; min-width: 0; }
+.artist-album-cover { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: linear-gradient(135deg, var(--surface2), var(--surface)); border: 1px solid var(--border); display: grid; place-items: center; color: var(--muted); }
+.artist-album-cover img { width: 100%; height: 100%; object-fit: cover; }
+.artist-album-cover > .icon { width: 34px; height: 34px; }
+.artist-album-play { position: absolute; right: 8px; bottom: 8px; width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; opacity: 0; transform: translateY(6px); transition: opacity 0.15s, transform 0.15s; box-shadow: 0 6px 16px rgba(0,0,0,0.35); }
+.artist-album:hover .artist-album-play, .artist-album:focus-visible .artist-album-play { opacity: 1; transform: none; }
+.artist-album strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
+.artist-album > span:last-child { color: var(--muted); font-size: 0.78rem; }
+.artist-bio { white-space: pre-line; font-size: 0.9rem; line-height: 1.55; color: var(--text2, var(--text)); }
+.artist-bio.empty-bio { color: var(--muted); font-style: italic; }
+.artist-similar { display: flex; flex-direction: column; gap: 0.3rem; }
+.artist-similar-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.4rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+.artist-similar-item:hover { background: var(--surface2); }
+.artist-similar-main { display: flex; flex-direction: column; min-width: 0; }
+.artist-similar-main strong { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artist-similar-main span { color: var(--muted); font-size: 0.75rem; }
+.ext-search-item > .artist-avatar + .es-main { flex: 1; min-width: 0; }
+.ext-search-item:has(> .artist-avatar) { align-items: center; gap: 0.8rem; }
+.artist-edit-box { width: min(560px, 94vw); }
+.artist-edit-photo { display: flex; align-items: center; gap: 1.1rem; margin-bottom: 1rem; }
+.artist-edit-photo-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+.artist-edit-photo-actions .btn { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+@media (max-width: 900px) {
+  .artist-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .artist-hero { flex-direction: column; align-items: center; text-align: center; padding: 1.4rem 1rem; gap: 1rem; }
+  .artist-avatar:not(.sm):not(.xs) { width: 116px; height: 116px; }
+  .artist-stats, .artist-genres, .artist-actions { justify-content: center; }
+  .artist-pop-cover { display: none; }
+}
+
 /* Аватарки на сторінці друзів. */
 .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }

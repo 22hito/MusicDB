@@ -192,7 +192,7 @@ window.addEventListener('popstate', () => {
   // іншою сторінкою. Їхніми ж функціями закриття: батл/граф зупиняють свої плеєри й таймери.
   const closers = {
     'battle-modal-overlay': closeBattle, 'battle-setup-modal-overlay': closeBattleSetup, 'graph-modal-overlay': closeGraph,
-    'wheel-genres-modal-overlay': closeWheelGenrePicker,
+    'wheel-genres-modal-overlay': closeWheelGenrePicker, 'artist-edit-modal-overlay': closeArtistEditModal,
     'add-to-playlist-modal-overlay': closeAddToPlaylistModal, 'delete-modal-overlay': closeDeleteModal,
     'edit-request-modal-overlay': closeEditRequestModal, 'edit-song-modal-overlay': closeEditSongModal,
     'rating-modal-overlay': closeRatingModal, 'create-playlist-modal-overlay': closeCreatePlaylistModal,

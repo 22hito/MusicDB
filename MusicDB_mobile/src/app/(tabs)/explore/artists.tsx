@@ -5,7 +5,8 @@ import { router } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { EmptyState, ErrorState } from '@/components/UI';
-import { ChevronRightIcon, MicIcon, SearchIcon } from '@/components/Icons';
+import { ChevronRightIcon, SearchIcon } from '@/components/Icons';
+import { ArtistAvatar } from '@/components/ArtistAvatar';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { ArtistSummary } from '@/api/types';
 
@@ -66,9 +67,7 @@ export default function ArtistsScreen() {
               onPress={() => router.push({ pathname: '/explore/artist/[id]', params: { id: String(item.id), name: item.name } })}
               style={[styles.row, { borderColor: theme.border }]}
             >
-              <View style={[styles.icon, { backgroundColor: theme.surface2 }]}>
-                <MicIcon size={16} color={theme.accent} />
-              </View>
+              <ArtistAvatar name={item.name} imageUrl={item.imageUrl} size={36} />
               <Text numberOfLines={1} style={{ flex: 1, color: theme.text, fontWeight: '600', fontSize: 15 }}>{item.name}</Text>
               <Text style={{ color: theme.muted, fontSize: 12, fontFamily: FONT_MONO_REGULAR }}>
                 {item.songCount} {t('profile.songsWord')}

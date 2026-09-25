@@ -275,6 +275,15 @@ export interface ArtistSummary {
   id: number;
   name: string;
   songCount: number;
+  imageUrl?: string | null;
+}
+
+export interface SimilarArtist {
+  id: number;
+  name: string;
+  imageUrl: string | null;
+  songCount: number;
+  score: number; // 0..100 — збіг жанрів
 }
 
 export interface UserSearchResult {

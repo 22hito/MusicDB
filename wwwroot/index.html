@@ -617,19 +617,53 @@
   <div class="container">
     <div id="artist-not-found" class="empty" style="display:none;"><svg class="icon"><use href="#icon-mic"/></svg><span data-i18n="artist.notFound">Виконавця не знайдено</span></div>
     <div id="artist-content" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.5rem;">
-        <div>
-          <h2 id="artist-name" style="margin-bottom:4px;"></h2>
-          <div id="artist-follower-count" style="color:var(--muted);font-size:0.85rem;"></div>
+      <!-- Шапка: фон з обкладинки, фото (або ініціали), статистика, жанри, дії. -->
+      <section class="artist-hero">
+        <div class="artist-hero-bg" id="artist-hero-bg"></div>
+        <div class="artist-avatar" id="artist-avatar"></div>
+        <div class="artist-hero-main">
+          <div class="artist-kicker" data-i18n="artist.kicker">Виконавець</div>
+          <h2 id="artist-name"></h2>
+          <div class="artist-stats" id="artist-stats"></div>
+          <div class="artist-genres" id="artist-genres"></div>
+          <div class="artist-actions">
+            <button type="button" class="btn btn-primary" onclick="playArtistAll(false)"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="artist.playAll">Слухати</span></button>
+            <button type="button" class="btn btn-outline" onclick="playArtistAll(true)"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="artist.shuffle">Перемішати</span></button>
+            <button type="button" class="btn btn-outline" id="artist-follow-btn" onclick="toggleArtistFollow()"></button>
+            <button type="button" class="btn btn-outline" id="artist-edit-btn" style="display:none;" onclick="openArtistEditModal()"><svg class="icon"><use href="#icon-pencil"/></svg> <span data-i18n="artist.editBtn">Редагувати</span></button>
+          </div>
         </div>
-        <button type="button" class="btn btn-outline" id="artist-follow-btn" onclick="toggleArtistFollow()"></button>
-      </div>
-      <h3 style="font-size:1.05rem;margin-bottom:0.8rem;" data-i18n="artist.discography">Дискографія</h3>
-      <div class="table-wrap mobile-cards">
-        <table>
-          <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th></tr></thead>
-          <tbody id="artist-songs-body"></tbody>
-        </table>
+      </section>
+      <div class="artist-layout">
+        <div class="artist-main-col">
+          <section class="artist-section" id="artist-popular-section">
+            <h3 data-i18n="artist.popular">Популярне</h3>
+            <div class="artist-popular" id="artist-popular"></div>
+          </section>
+          <section class="artist-section" id="artist-albums-section">
+            <h3 data-i18n="artist.albums">Альбоми</h3>
+            <div class="artist-albums" id="artist-albums"></div>
+          </section>
+          <section class="artist-section">
+            <h3 data-i18n="artist.discography">Дискографія</h3>
+            <div class="table-wrap mobile-cards">
+              <table>
+                <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th></tr></thead>
+                <tbody id="artist-songs-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+        <aside class="artist-side-col">
+          <section class="artist-section artist-card">
+            <h3 data-i18n="artist.about">Про виконавця</h3>
+            <div class="artist-bio" id="artist-bio"></div>
+          </section>
+          <section class="artist-section artist-card" id="artist-similar-section">
+            <h3 data-i18n="artist.similar">Схожі виконавці</h3>
+            <div class="artist-similar" id="artist-similar"></div>
+          </section>
+        </aside>
       </div>
     </div>
   </div>
@@ -1199,6 +1233,28 @@
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="clearWheelGenrePicker()" data-i18n="wheel.clearBtn">Очистити</button>
       <button class="modal-btn-confirm" style="background:var(--accent);" onclick="closeWheelGenrePicker()" data-i18n="wheel.doneBtn">Готово</button>
+    </div>
+  </div>
+</div>
+
+<!-- Адмін: опис і фото виконавця -->
+<div class="modal-overlay" id="artist-edit-modal-overlay">
+  <div class="modal-box artist-edit-box">
+    <div class="modal-title-row"><svg class="icon"><use href="#icon-pencil"/></svg> <span data-i18n="artist.editTitle">Сторінка виконавця</span></div>
+    <div class="artist-edit-photo">
+      <div class="artist-avatar sm" id="artist-edit-preview"></div>
+      <div class="artist-edit-photo-actions">
+        <label class="btn btn-outline"><svg class="icon"><use href="#icon-upload"/></svg> <span data-i18n="artist.photoUpload">Завантажити фото</span>
+          <input type="file" id="artist-edit-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onchange="onArtistPhotoSelected(this)"></label>
+        <button type="button" class="btn btn-outline" id="artist-edit-remove" onclick="removeArtistPhoto()" data-i18n="artist.photoRemove">Прибрати фото</button>
+        <div class="hint" data-i18n="artist.photoHint">PNG, JPG, WebP або GIF, до 5 МБ</div>
+      </div>
+    </div>
+    <div class="form-group"><label for="artist-edit-bio" data-i18n="artist.about">Про виконавця</label><textarea id="artist-edit-bio" rows="7" maxlength="5000" style="resize:vertical;"></textarea></div>
+    <div class="hint" id="artist-edit-status" style="min-height:1.2em;"></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeArtistEditModal()" data-i18n="modal.cancel">Скасувати</button>
+      <button class="modal-btn-confirm" style="background:var(--accent);" id="artist-edit-save" onclick="saveArtistEdit()" data-i18n="artist.saveBtn">Зберегти</button>
     </div>
   </div>
 </div>
