@@ -6,7 +6,7 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
 
 - **Конфігурація:** `appsettings.json` + локальний `appsettings.Local.json`; на Azure — змінні середовища
   (подвійне підкреслення замість `:`, напр. `Uploads__R2__Bucket`). Порт — зі змінної `PORT` або `Urls`.
-- **Сервіси:** Scoped — `MusicService`, `UserDirectoryService`, `ArtistActivityService`, `AdminActivityService`;
+- **Сервіси:** Scoped — `MusicService`, `UserDirectoryService`, `TasteService`, `ArtistActivityService`, `AdminActivityService`;
   Singleton — `CatalogCache`, `IAudioStorage` (`R2AudioStorage`, якщо заповнено `Uploads:R2`, інакше
   `LocalAudioStorage`); типізовані `HttpClient` — `TranslationService`, `ExternalMusicSearchService`,
   `GenreNormalizationService`, `RecommendationService`, `LastFmGenreService`.
@@ -35,7 +35,7 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
 | Контролер | Маршрут | Призначення |
 |---|---|---|
 | AdminNotifications | `/api/admin-notifications` | Стрічка дій для адмінів, позначення прочитаним |
-| Artists | `/api/artists` | Каталог виконавців, дискографія, підписка |
+| Artists | `/api/artists` | Каталог виконавців (з фото), дискографія, підписка, схожі виконавці (за жанрами); адмін — опис і фото (`PUT /{id}`, `PUT/DELETE /{id}/image`, фото в R2, віддача — редирект) |
 | BugReports | `/api/bug-reports` | Створення (JSON або multipart з ≤3 скріншотами), список, лічильник відкритих, статус, видалення, скріншот і пряме посилання на нього (адмін) |
 | ExternalSearch | `/api/external-search` | iTunes для автозаповнення заявки; жанри (Last.fm → Gemini) |
 | Favorites | `/api/favorites` | Улюблені пісні |
@@ -53,7 +53,7 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
 | Stats | `/api/stats` | Статистика (з кешем) і Топ-N |
 | Threads | `/api/threads` | Гілки обговорень, відповіді, видалення |
 | UploadToken | `/api/upload-token` | Короткоживучий (10 хв) токен завантаження файлів для мобільного застосунку; видається лише за cookie-сесією. Заголовок `X-Upload-Token` приймається тільки на ендпоінтах завантаження (заявка/пісня ком'юніті, заміна файлу, баг-репорт зі скріншотами) |
-| Users | `/api/users` | Пошук людей, публічний профіль зі статусом стосунків |
+| Users | `/api/users` | Пошук людей, публічний профіль зі статусом стосунків, `GET /taste` — граф «Схожий смак» (люди, ребра схожості, найсхожіші до мене) |
 
 ## DTO
 
@@ -71,16 +71,19 @@ DTO — назовні лише `UserId`.
 | `ArtistActivityService` | Події для підписників на виконавця |
 | `CommunitySongInput` | Валідація форми пісні ком'юніті (файл або YouTube) |
 | `ExternalMusicSearchService` | iTunes Search API з рівнями релевантності |
-| `GenreNormalizationService`, `LastFmGenreService`, `TranslationService` | Нормалізація (Gemini), жанри (Last.fm), переклад назв (MyMemory) |
+| `GenreNames` | Порівняння жанрів без ШІ: регістр/пробіли/дефіси, кирилиця (словник + транслітерація: «хип хоп» = «hip-hop»), синоніми («r&b» = «rnb») |
+| `GenreNormalizationService`, `LastFmGenreService`, `TranslationService` | Нормалізація й пошук дублікатів (спершу `GenreNames`, решта — Gemini), жанри (Last.fm), переклад назв (MyMemory) |
+| `TasteService` | Схожість смаків: улюблені (вага 1) і прослухані (0,3) пісні → вектори виконавців і жанрів; косинус + збіг улюблених. Назовні — лише відсоток і спільні виконавці |
 | `RecommendationService` | ШІ-рекомендації з фолбеком на улюблені жанри |
 | `UserDirectoryService` | email → user id, картки користувачів для DTO |
 | `DurationParser`, `FuzzyText`, `YoutubeUrlParser` | Розбір тривалості, нечіткий пошук, розбір YouTube-посилань |
 
 ## Тести
 
-`Tests/MusicDB.Api.Tests` (xUnit, EF Core InMemory) — 65 тестів: ком'юніті (заявки, повідомлення, обговорення,
-оцінки, сповіщення адмінів), баг-репорти (ліміти, скріншоти, видалення), сховище файлів, кеш каталогу, пошук
-iTunes, нечіткий пошук, `MusicService`, історія, статистика.
+`Tests/MusicDB.Api.Tests` (xUnit, EF Core InMemory) — 105 тестів: ком'юніті (заявки, повідомлення, обговорення,
+оцінки, сповіщення адмінів), баг-репорти (ліміти, скріншоти, видалення), сховище файлів (зокрема формат за
+вмістом), токен завантаження, жанри (`GenreNames`, дублікати, нормалізація без ШІ), схожість смаків, схожі
+виконавці, кеш каталогу, пошук iTunes, нечіткий пошук, `MusicService`, історія, статистика.
 
 ```bash
 dotnet test
