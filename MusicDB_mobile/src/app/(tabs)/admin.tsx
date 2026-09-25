@@ -23,6 +23,7 @@ import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { EditIcon, TrashIcon } from '@/components/Icons';
 import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import { DateField } from '@/components/DateField';
+import { AudioPreview } from '@/components/AudioPreview';
 import type { AdminNotification, BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
@@ -204,8 +205,8 @@ function RequestsPanel() {
                   {t('table.submittedBy')}: <Text style={{ color: theme.accent }}>{r.requester.displayName}</Text>
                 </Text>
               ) : null}
-              {r.audioUrl ? <Text style={{ color: theme.muted, fontSize: 12 }}>· {t('admin.hasAudioFile')}</Text> : null}
             </View>
+            {r.audioUrl ? <AudioPreview getUrl={() => api.getRequestAudioLink(r.id)} /> : null}
             <View style={styles.reqActions}>
               <Button label={t('admin.approveBtn')} variant="success" small loading={busyId === r.id} onPress={() => approve(r.id)} />
               <Button label={t('admin.rejectBtn')} variant="danger" small loading={busyId === r.id} onPress={() => reject(r.id)} />

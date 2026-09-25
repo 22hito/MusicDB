@@ -179,6 +179,33 @@
   .artist-pop-cover { display: none; }
 }
 
+/* Міні-плеєр файлу (заявка в адмінці, редагування пісні) — замість <audio controls>. */
+.mini-audio { display: flex; align-items: center; gap: 0.55rem; width: 270px; max-width: 100%; padding: 0.3rem 0.55rem 0.3rem 0.3rem;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface2); box-sizing: border-box; }
+#edit-song-audio-preview .mini-audio { width: 100%; }
+.mini-audio.playing { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.mini-audio-btn { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); transition: transform 0.15s; }
+.mini-audio-btn:hover { transform: scale(1.08); }
+.mini-audio-btn .icon { width: 13px; height: 13px; }
+.mini-audio-bar { flex: 1; min-width: 40px; height: 6px; border-radius: 3px; background: var(--border); cursor: pointer; position: relative; overflow: hidden; }
+.mini-audio-bar::before { content: ''; position: absolute; inset: -8px 0; } /* більша зона натискання */
+.mini-audio-fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; pointer-events: none; }
+.mini-audio-time { flex-shrink: 0; font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); min-width: 2.6rem; text-align: right; }
+.req-source-cell .mini-audio { margin: 0.2rem 0; }
+.mini-audio-mute { flex-shrink: 0; width: 22px; height: 22px; padding: 0; border: none; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.mini-audio-mute:hover { color: var(--text); }
+.mini-audio-mute svg { width: 16px; height: 16px; }
+/* Гучність: у плеєрі лише іконка (клік — вимкнути звук), повзунок — над нею при наведенні. */
+.mini-audio-volwrap { position: relative; flex-shrink: 0; display: grid; place-items: center; }
+.mini-audio-volpop { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 8px;
+  opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 5; }
+.mini-audio-volwrap:hover .mini-audio-volpop, .mini-audio-volwrap:focus-within .mini-audio-volpop { opacity: 1; pointer-events: auto; }
+.mini-audio-volbox { display: flex; align-items: center; padding: 8px 12px; border-radius: 999px; background: var(--elevated); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+.mini-audio-vol { width: 96px; height: 4px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+/* Телефони/планшети: гучність — кнопками пристрою (програмно браузер її там не змінює). */
+@media (hover: none) and (pointer: coarse) { .mini-audio-volwrap { display: none; } }
+
 /* Аватарки на сторінці друзів. */
 .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }

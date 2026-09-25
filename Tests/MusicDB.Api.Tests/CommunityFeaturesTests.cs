@@ -104,6 +104,24 @@ public class CommunityFeaturesTests
         Assert.Null(req.AudioFile);
     }
 
+    // Посилання для нативного міні-плеєра застосунку: локальне сховище — шлях до ендпоінта файлу.
+    [Fact]
+    public async Task RequestAudioLink_PointsToFile_NotFoundWithoutFile()
+    {
+        using var db = TestDb.Create();
+        var storage = CreateAudioStorage();
+        await CreateRequestsController(db, "user@x.com", storage: storage).CreateCommunity(new CommunitySongForm
+        {
+            Artist = "Me", Title = "Demo", Release = "2025-01-01", Duration = "00:03:00", Genres = "rock", Audio = FakeMp3()
+        });
+        var req = Assert.Single(db.Requests);
+        var admin = CreateRequestsController(db, "admin@x.com", admin: true, storage: storage);
+
+        var ok = Assert.IsType<OkObjectResult>(await admin.GetAudioLink(req.Id));
+        Assert.Equal($"/api/requests/{req.Id}/audio", ok.Value!.GetType().GetProperty("url")!.GetValue(ok.Value));
+        Assert.IsType<NotFoundResult>(await admin.GetAudioLink(req.Id + 1));
+    }
+
     [Fact]
     public async Task ApproveCommunityRequest_CreatesCommunitySongWithSubmitter_AndDoesNotMergeIntoCatalog()
     {

@@ -123,6 +123,18 @@ public class RequestsController(
         return this.ToResult(await audioStorage.OpenAsync(fileName));
     }
 
+    // Пряме (підписане R2) посилання на файл заявки: нативний плеєр застосунку тягне
+    // його без куки сесії. Локальне сховище (розробка) — шлях до ендпоінта вище.
+    [Authorize, AdminOnly]
+    [HttpGet("{id}/audio/link")]
+    public async Task<IActionResult> GetAudioLink(int id)
+    {
+        var fileName = await db.Requests.Where(r => r.Id == id).Select(r => r.AudioFile).FirstOrDefaultAsync();
+        var source = await audioStorage.OpenAsync(fileName);
+        if (source is null) return NotFound();
+        return Ok(new { url = source.RedirectUrl ?? $"/api/requests/{id}/audio" });
+    }
+
     // Дозволяє адміну відредагувати будь-яке поле заявки перед підтвердженням
     // (наприклад, якщо автопереклад жанру виявився неправильним).
     [Authorize, AdminOnly]

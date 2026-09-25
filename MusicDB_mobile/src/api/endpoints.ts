@@ -133,6 +133,11 @@ export function useMusicApi() {
 
       // Requests (заявки на додавання)
       getRequests: () => request<SongRequest[]>('/api/requests'),
+      // Пряме посилання на файл заявки — для нативного міні-плеєра (без куки сесії).
+      getRequestAudioLink: async (id: number) => {
+        const { url } = await request<{ url: string }>(`/api/requests/${id}/audio/link`);
+        return url.startsWith('/') ? `${apiBase}${url}` : url;
+      },
       createRequest: (dto: CreateRequestInput) => request<SongRequest>('/api/requests', { method: 'POST', body: dto }),
       createCommunityRequest: (input: CommunitySongInput) =>
         upload<SongRequest>('/api/requests/community', toCommunityFormData(input)),

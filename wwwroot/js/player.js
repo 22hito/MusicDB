@@ -500,6 +500,101 @@ function _switchFileSongToVideo() {
 }
 
 // ================================================================
+// МІНІ-ПЛЕЄР ФАЙЛУ: прослуховування адміном (заявка ком'юніті, файл у редагуванні
+// пісні) — замість стандартного <audio controls> браузера. Один спільний <audio>:
+// грає лише один міні-плеєр; основний плеєр на цей час стає на паузу.
+// ================================================================
+const miniAudio = new Audio();
+miniAudio.preload = 'none';
+let miniAudioOwner = null;     // .mini-audio, що зараз завантажений у miniAudio
+let miniAudioPendingSeek = null;
+// Гучність міні-плеєрів — спільна й окрема від основного плеєра; браузер її пам'ятає.
+let miniAudioVol = 80, miniAudioMuted = false;
+try { const v = parseInt(localStorage.getItem('miniAudio.vol'), 10); if(v >= 0 && v <= 100) miniAudioVol = v; } catch(e){}
+const MINI_VOL_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const MINI_VOL_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>';
+function miniAudioHtml(src){
+  const off = miniAudioMuted || miniAudioVol === 0;
+  return `<div class="mini-audio" data-src="${esc(src)}">
+    <button type="button" class="mini-audio-btn" onclick="toggleMiniAudio(this.parentElement)" aria-label="Play"><svg class="icon icon-filled"><use href="#icon-play"/></svg></button>
+    <div class="mini-audio-bar" onclick="seekMiniAudio(event, this.parentElement)"><div class="mini-audio-fill"></div></div>
+    <span class="mini-audio-time">0:00</span>
+    <span class="mini-audio-volwrap">
+      <button type="button" class="mini-audio-mute" onclick="toggleMiniAudioMute()" aria-label="${esc(t('player.volume'))}">${off ? MINI_VOL_OFF : MINI_VOL_ON}</button>
+      <span class="mini-audio-volpop"><span class="mini-audio-volbox"><input type="range" class="mini-audio-vol" min="0" max="100" value="${miniAudioMuted ? 0 : miniAudioVol}" oninput="setMiniAudioVolume(this.value)" aria-label="${esc(t('player.volume'))}"></span></span>
+    </span>
+  </div>`;
+}
+function _syncMiniAudioVolume(){
+  miniAudio.volume = miniAudioVol / 100;
+  miniAudio.muted = miniAudioMuted;
+  const off = miniAudioMuted || miniAudioVol === 0;
+  document.querySelectorAll('.mini-audio').forEach(el => {
+    el.querySelector('.mini-audio-mute').innerHTML = off ? MINI_VOL_OFF : MINI_VOL_ON;
+    const range = el.querySelector('.mini-audio-vol');
+    if(document.activeElement !== range) range.value = miniAudioMuted ? 0 : miniAudioVol;
+  });
+}
+function setMiniAudioVolume(v){
+  miniAudioVol = Math.max(0, Math.min(100, parseInt(v, 10) || 0));
+  miniAudioMuted = false;
+  try { localStorage.setItem('miniAudio.vol', String(miniAudioVol)); } catch(e){}
+  _syncMiniAudioVolume();
+}
+function toggleMiniAudioMute(){
+  if(miniAudioVol === 0){ miniAudioVol = 60; miniAudioMuted = false; }
+  else miniAudioMuted = !miniAudioMuted;
+  _syncMiniAudioVolume();
+}
+function _renderMiniAudio(){
+  const el = miniAudioOwner;
+  if(!el) return;
+  if(!document.body.contains(el)){ stopMiniAudio(); return; } // таблицю заявок перемалювали
+  const d = isFinite(miniAudio.duration) ? miniAudio.duration : 0;
+  el.querySelector('.mini-audio-fill').style.width = d ? `${miniAudio.currentTime / d * 100}%` : '0%';
+  el.querySelector('.mini-audio-time').textContent = d ? `${fmtSec(miniAudio.currentTime)} / ${fmtSec(d)}` : fmtSec(miniAudio.currentTime);
+  el.querySelector('.mini-audio-btn use').setAttribute('href', miniAudio.paused ? '#icon-play' : '#icon-pause');
+  el.classList.toggle('playing', !miniAudio.paused);
+}
+function _resetMiniAudioUi(el){
+  if(!el) return;
+  el.classList.remove('playing');
+  el.querySelector('.mini-audio-fill').style.width = '0%';
+  el.querySelector('.mini-audio-time').textContent = '0:00';
+  el.querySelector('.mini-audio-btn use').setAttribute('href', '#icon-play');
+}
+function stopMiniAudio(){
+  miniAudio.pause();
+  _resetMiniAudioUi(miniAudioOwner);
+  miniAudioOwner = null;
+  miniAudioPendingSeek = null;
+  miniAudio.removeAttribute('src');
+  miniAudio.load();
+}
+function toggleMiniAudio(el){
+  if(miniAudioOwner === el && !miniAudio.paused){ miniAudio.pause(); return; }
+  if(miniAudioOwner !== el){ stopMiniAudio(); miniAudioOwner = el; miniAudio.src = el.dataset.src; }
+  if(isPlaying()) _pPause(); // основний плеєр — на паузу, щоб не грало два звуки
+  _syncMiniAudioVolume();
+  miniAudio.play().catch(()=>{});
+}
+function seekMiniAudio(e, el){
+  const rect = e.currentTarget.getBoundingClientRect();
+  const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if(miniAudioOwner !== el){ miniAudioPendingSeek = frac; toggleMiniAudio(el); return; }
+  if(isFinite(miniAudio.duration)) miniAudio.currentTime = frac * miniAudio.duration;
+  else miniAudioPendingSeek = frac;
+}
+miniAudio.addEventListener('loadedmetadata', () => {
+  if(miniAudioPendingSeek != null && isFinite(miniAudio.duration)) miniAudio.currentTime = miniAudioPendingSeek * miniAudio.duration;
+  miniAudioPendingSeek = null;
+  _renderMiniAudio();
+});
+['timeupdate', 'play', 'pause', 'ended'].forEach(ev => miniAudio.addEventListener(ev, _renderMiniAudio));
+// Заграв основний плеєр (файл) чи міні-плеєр батлу — міні-плеєр замовкає.
+document.addEventListener('play', e => { if(e.target !== miniAudio && e.target.id !== 'ms-anchor') miniAudio.pause(); }, true);
+
+// ================================================================
 // КАРАОКЕ: текст поточної пісні (вводить вручну адмін — див. edit-song-lyrics)
 // ================================================================
 let karaokeOpen = false;

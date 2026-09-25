@@ -244,7 +244,7 @@ function renderRequests(){
         <td data-label="${t('table.source')}"><div class="req-source-cell">
           <span class="badge${r.kind==='community'?' source-community':''}">${t(r.kind==='community'?'home.source.community':'home.source.catalog')}</span>
           ${r.requester?`<div class="hint">${t('table.submittedBy')}: <a href="#" class="artist-link" onclick="openUserProfilePage(${r.requester.userId});return false;">${esc(r.requester.displayName)}</a></div>`:''}
-          ${r.audioUrl?`<audio controls preload="none" src="${esc(r.audioUrl)}" class="req-audio"></audio>`:''}
+          ${r.audioUrl?miniAudioHtml(r.audioUrl):''}
           ${r.kind==='community'&&r.youtubeVideoId?`<a class="artist-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(r.youtubeVideoId)}" target="_blank" rel="noopener"><svg class="icon icon-filled"><use href="#icon-play"/></svg> YouTube</a>`:''}
         </div></td>
         <td class="td-actions" data-label="${t('table.action')}"><div class="actions-td">
@@ -384,8 +384,9 @@ function openEditSongModal(id){
   const audioPreview = document.getElementById('edit-song-audio-preview');
   audioGroup.style.display = s.source === 'community' ? '' : 'none';
   document.getElementById('edit-song-audio').value = '';
-  if(s.audioUrl){ audioPreview.src = s.audioUrl; audioPreview.style.display = ''; }
-  else { audioPreview.removeAttribute('src'); audioPreview.style.display = 'none'; }
+  if(miniAudioOwner && audioPreview.contains(miniAudioOwner)) stopMiniAudio();
+  audioPreview.innerHTML = s.audioUrl ? miniAudioHtml(s.audioUrl) : '';
+  audioPreview.style.display = s.audioUrl ? '' : 'none';
   document.getElementById('edit-song-artist').value = s.artist || '';
   document.getElementById('edit-song-title').value = s.title || '';
   document.getElementById('edit-song-release').value = s.release || '';
@@ -412,6 +413,7 @@ function _updateEditSongYoutubeLink(){
   link.style.display = 'inline-block';
 }
 function closeEditSongModal(){
+  if(miniAudioOwner && document.getElementById('edit-song-audio-preview').contains(miniAudioOwner)) stopMiniAudio();
   _closeModalAnimated('edit-song-modal-overlay');
 }
 document.getElementById('edit-song-modal-overlay').addEventListener('click', function(e){
