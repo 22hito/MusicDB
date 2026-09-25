@@ -2,7 +2,7 @@
   "expo": {
     "name": "N'Owl",
     "slug": "musicdb-mobile",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "musicdb",
@@ -81,8 +81,6 @@
     "updates": {
       "url": "https://u.expo.dev/6649fc84-6592-4735-926f-1fccdf1e3769"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    }
+    "runtimeVersion": "1.1.0"
   }
 }

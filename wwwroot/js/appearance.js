@@ -207,6 +207,7 @@ function syncSettingsUI(){
   });
 }
 function loadSettingsPage(){
+  document.getElementById('app-version').textContent = appVersion ? `N'Owl ${appVersion}` : '';
   const link = document.getElementById('settings-profile-link');
   if(link) link.style.display = currentUser?.authenticated ? '' : 'none';
   syncSettingsUI();

@@ -4,6 +4,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MusicDB.Api</RootNamespace>
+    <!-- Версія N'Owl (сайт + мобільний застосунок): MAJOR.MINOR.PATCH, див. CHANGELOG.md -->
+    <Version>1.2.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.103.3" />

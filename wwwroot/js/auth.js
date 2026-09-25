@@ -24,12 +24,14 @@ function _hideSplash(){
   }, Math.max(0, 350 - elapsed));
 }
 
+let appVersion = ''; // версія N'Owl з /config — показується в налаштуваннях
 async function initApp() {
   const [cfgRes, meRes] = await Promise.all([
     fetch('/config').then(r=>r.ok?r.json():{}).catch(()=>({})),
     fetch('/auth/me').then(r=>r.ok?r.json():{authenticated:false}).catch(()=>({authenticated:false}))
   ]);
   if(cfgRes.youtubeApiKeys && cfgRes.youtubeApiKeys.length) ytApiKeys = cfgRes.youtubeApiKeys;
+  if(cfgRes.version) appVersion = cfgRes.version;
   currentUser = meRes;
   if(currentUser?.authenticated){
     try {

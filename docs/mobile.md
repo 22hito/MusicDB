@@ -50,6 +50,10 @@ npx tsc --noEmit -p .                            # перевірка типів
 
 ## Збірка й оновлення
 
+- **Версія** — `expo.version` у `app.json` (та сама, що в `MusicDB.Api.csproj`, див. CHANGELOG). `runtimeVersion`
+  закріплено окремо (`"1.1.0"` — runtime встановленого APK): оновлення «по повітрю» доходять лише до збірок із
+  тим самим runtime. Змінювати `runtimeVersion` — лише разом із новою нативною збіркою (нові нативні модулі тощо).
+
 - **APK:** `eas build --platform android --profile preview` (хмара EAS).
 - **Оновлення «по повітрю» (EAS Update):** канал `preview`, `runtimeVersion` = `version` з `app.json`.
   Кожен пуш у `main`, що змінює `MusicDB_mobile/`, публікує новий JS-код (`.github/workflows/mobile-update.yml`,

@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useSettings } from '@/state/SettingsContext';
@@ -326,6 +327,7 @@ export default function ProfileScreen() {
         </View>
 
         <Button label={t('auth.logout')} variant="outline" onPress={logout} style={{ marginTop: 26 }} />
+        <Text style={{ color: theme.muted, fontSize: 12, textAlign: 'center', marginTop: 18 }}>N'Owl {Constants.expoConfig?.version ?? ''}</Text>
       </ScrollView>
 
       <BugReportModal visible={bugOpen} onClose={() => setBugOpen(false)} />

@@ -261,6 +261,12 @@ app.MapGet("/auth/me", async (HttpContext ctx, UserDirectoryService userDirector
     });
 });
 
+// Версія з <Version> у csproj (без суфікса збірки "+<commit>").
+var AppVersion = (System.Reflection.Assembly.GetExecutingAssembly()
+    .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+    .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "")
+    .Split('+')[0];
+
 app.MapGet("/config", (IConfiguration config) =>
 {
     // Кілька ключів для ротації при вичерпанні денної квоти YouTube Data API —
@@ -271,7 +277,7 @@ app.MapGet("/config", (IConfiguration config) =>
         var single = config["YouTube:ApiKey"];
         keys = string.IsNullOrWhiteSpace(single) ? [] : [single];
     }
-    return Results.Ok(new { youtubeApiKeys = keys });
+    return Results.Ok(new { youtubeApiKeys = keys, version = AppVersion });
 });
 
 app.MapControllers();
