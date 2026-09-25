@@ -37,11 +37,12 @@ function _wheelSegColor(i, n){
 }
 
 // Жанр бере участь у колесі лише якщо в ньому є щонайменше 5 пісень — інакше
-// плейлист по цьому жанру виходив би заскладно коротким.
+// плейлист по цьому жанру виходив би заскладно коротким. Так само і в режимі "Мій вибір".
+const WHEEL_MIN_SONGS = 5;
 function _eligibleWheelGenres(){
   const counts = {};
   for(const s of songs) for(const g of s.genres) counts[g] = (counts[g] || 0) + 1;
-  return Object.keys(counts).filter(g => counts[g] >= 5);
+  return Object.keys(counts).filter(g => counts[g] >= WHEEL_MIN_SONGS);
 }
 
 // true лише після того, як користувач сам змінив поле (onWheelCountChange) —
@@ -63,11 +64,11 @@ function _saveWheelPrefs(){
     localStorage.setItem('wheel.customGenres', JSON.stringify(wheelCustomGenres));
   } catch(e){}
 }
-// Жанри з кількістю пісень — для вікна вибору (від найпоширеніших).
+// Жанри з кількістю пісень (лише від WHEEL_MIN_SONGS) — для вікна вибору, від найпоширеніших.
 function _wheelGenreCounts(){
   const counts = new Map();
   for(const s of songs) for(const g of s.genres) counts.set(g, (counts.get(g) || 0) + 1);
-  return [...counts.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+  return [...counts.entries()].filter(([, n]) => n >= WHEEL_MIN_SONGS).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
 }
 function _resetWheelResult(){
   wheelResultGenre = null;
@@ -92,15 +93,39 @@ function _syncWheelModeUi(){
   document.getElementById('wheel-count-row').style.display = custom ? 'none' : '';
   document.getElementById('wheel-custom-row').style.display = custom ? '' : 'none';
 }
+const WHEEL_CHIPS_LIMIT = 10;
+let wheelChipsExpanded = false;
 function _applyWheelCustom(){
-  const available = new Set(songs.flatMap(s => s.genres));
+  const available = new Set(_eligibleWheelGenres());
   wheelGenres = wheelCustomGenres.filter(g => available.has(g));
   _redrawWheel();
-  const chips = document.getElementById('wheel-custom-chips');
-  chips.innerHTML = wheelGenres.length
-    ? wheelGenres.map((g,i) => `<span class="wheel-chip" style="--chip:${_wheelSegColor(i, wheelGenres.length)}">${esc(abbrGenre(g))}<button type="button" onclick="removeWheelCustomGenre(${i})" aria-label="×">×</button></span>`).join('')
-    : `<span class="wheel-custom-empty">${esc(t('wheel.customEmpty'))}</span>`;
+  _renderWheelChips();
   document.getElementById('wheel-spin-btn').disabled = wheelGenres.length < 2;
+}
+function _renderWheelChips(){
+  const chips = document.getElementById('wheel-custom-chips');
+  const n = wheelGenres.length;
+  if(!n){ chips.innerHTML = `<span class="wheel-custom-empty">${esc(t('wheel.customEmpty'))}</span>`; return; }
+  const shown = wheelChipsExpanded ? n : Math.min(n, WHEEL_CHIPS_LIMIT);
+  const html = wheelGenres.slice(0, shown).map((g,i) =>
+    `<span class="wheel-chip" style="--chip:${_wheelSegColor(i, n)}" title="${esc(g)}">${esc(abbrGenre(g))}<button type="button" onclick="removeWheelCustomGenre(${i})" aria-label="×">×</button></span>`);
+  if(n > WHEEL_CHIPS_LIMIT){
+    html.push(`<button type="button" class="filter-chip-clear wheel-chips-toggle" onclick="toggleWheelChips()">${esc(wheelChipsExpanded ? t('wheel.collapse') : t('wheel.more').replace('{n}', n - shown))}</button>`);
+  }
+  if(n > 1) html.push(`<button type="button" class="filter-chip-clear" onclick="clearWheelCustomGenres()">${esc(t('filter.clearAll'))}</button>`);
+  chips.innerHTML = html.join('');
+}
+function toggleWheelChips(){
+  wheelChipsExpanded = !wheelChipsExpanded;
+  _renderWheelChips();
+}
+function clearWheelCustomGenres(){
+  if(wheelSpinning) return;
+  wheelCustomGenres = [];
+  wheelChipsExpanded = false;
+  _saveWheelPrefs();
+  _resetWheelResult();
+  _applyWheelCustom();
 }
 function removeWheelCustomGenre(i){
   if(wheelSpinning) return;
@@ -265,7 +290,7 @@ function renderWheelLegend(){
   document.getElementById('wheel-legend').innerHTML = wheelGenres.map((g,i)=>`
     <div class="wheel-legend-item" id="wheel-legend-item-${i}">
       <span class="wheel-legend-swatch" style="background:${_wheelSegColor(i,n)}"></span>
-      <span>${esc(g)}</span>
+      <span title="${esc(g)}">${esc(abbrGenre(g))}</span>
     </div>`).join('');
 }
 
@@ -342,7 +367,12 @@ function spinWheel(){
     document.getElementById('wheel-result').style.display = 'flex';
     disc.classList.add('revealed'); // розмиває колесо, поки в центрі показано результат
     document.querySelectorAll('.wheel-legend-item.winner').forEach(el=>el.classList.remove('winner'));
-    document.getElementById(`wheel-legend-item-${winnerIndex}`)?.classList.add('winner');
+    const winnerItem = document.getElementById(`wheel-legend-item-${winnerIndex}`);
+    if(winnerItem){
+      winnerItem.classList.add('winner');
+      const list = document.getElementById('wheel-legend');
+      list.scrollTop = winnerItem.offsetTop - (list.clientHeight - winnerItem.offsetHeight) / 2;
+    }
     renderWheelPlaylist();
   }, duration*1000 + 150);
 }

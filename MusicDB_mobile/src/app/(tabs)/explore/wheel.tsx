@@ -85,6 +85,9 @@ function Stepper({ value, min, max, onChange, disabled }: { value: number; min: 
   );
 }
 
+const MIN_SONGS = 5; // жанр на колесі — лише з 5+ піснями (в обох режимах)
+const CHIPS_LIMIT = 10;
+const LEGEND_LIMIT = 16;
 const KEY_MODE = 'nowl.wheel.mode';
 const KEY_CUSTOM = 'nowl.wheel.customGenres';
 type WheelMode = 'random' | 'custom';
@@ -113,6 +116,8 @@ export default function WheelScreen() {
   const [mode, setMode] = useState<WheelMode>('random');
   const [custom, setCustom] = useState<string[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [chipsExpanded, setChipsExpanded] = useState(false);
+  const [legendExpanded, setLegendExpanded] = useState(false);
 
   // Режим і власний вибір пам'ятаються між запусками.
   useEffect(() => {
@@ -165,7 +170,7 @@ export default function WheelScreen() {
         setSongs(list);
         const counts: Record<string, number> = {};
         for (const s of list) for (const g of s.genres) counts[g] = (counts[g] || 0) + 1;
-        const eligible = shuffled(Object.keys(counts).filter((g) => counts[g] >= 5));
+        const eligible = shuffled(Object.keys(counts).filter((g) => counts[g] >= MIN_SONGS));
         setPool(eligible);
         setCount(Math.max(1, Math.min(10, eligible.length)));
         setLoadError(false);
@@ -178,11 +183,14 @@ export default function WheelScreen() {
     load();
   }, [load]);
 
-  // Усі жанри з кількістю пісень — для вікна вибору (від найпоширеніших).
+  // Жанри з кількістю пісень (як і для випадкового режиму — від MIN_SONGS) — для вікна вибору.
   const genreCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const s of songs) for (const g of s.genres) counts.set(g, (counts.get(g) || 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name, cnt]) => ({ name, count: cnt }));
+    return [...counts.entries()]
+      .filter(([, cnt]) => cnt >= MIN_SONGS)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, cnt]) => ({ name, count: cnt }));
   }, [songs]);
   const genres = useMemo(() => {
     if (mode === 'random') return pool.slice(0, count);
@@ -267,14 +275,28 @@ export default function WheelScreen() {
                 <View style={{ gap: 10 }}>
                   <View style={styles.chips}>
                     {genres.length ? (
-                      genres.map((g, i) => (
-                        <View key={g} style={[styles.chip, { borderColor: segColor(i, genres.length), backgroundColor: `${segColor(i, genres.length)}33` }]}>
-                          <Text style={{ color: theme.text, fontSize: 12 }}>{abbrGenre(g)}</Text>
-                          <TouchableOpacity hitSlop={8} disabled={spinning} onPress={() => saveCustom(custom.filter((x) => x !== g))}>
-                            <CloseIcon size={10} color={theme.muted} />
+                      <>
+                        {(chipsExpanded ? genres : genres.slice(0, CHIPS_LIMIT)).map((g, i) => (
+                          <View key={g} style={[styles.chip, { borderColor: segColor(i, genres.length), backgroundColor: `${segColor(i, genres.length)}33` }]}>
+                            <Text style={{ color: theme.text, fontSize: 12 }}>{abbrGenre(g)}</Text>
+                            <TouchableOpacity hitSlop={8} disabled={spinning} onPress={() => saveCustom(custom.filter((x) => x !== g))}>
+                              <CloseIcon size={10} color={theme.muted} />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                        {genres.length > CHIPS_LIMIT ? (
+                          <TouchableOpacity onPress={() => setChipsExpanded((e) => !e)} style={[styles.dashedChip, { borderColor: theme.border }]}>
+                            <Text style={{ color: theme.text, fontSize: 12 }}>
+                              {chipsExpanded ? t('wheel.collapse') : t('wheel.more').replace('{n}', String(genres.length - CHIPS_LIMIT))}
+                            </Text>
                           </TouchableOpacity>
-                        </View>
-                      ))
+                        ) : null}
+                        {genres.length > 1 ? (
+                          <TouchableOpacity disabled={spinning} onPress={() => saveCustom([])} style={[styles.dashedChip, { borderColor: theme.border }]}>
+                            <Text style={{ color: theme.muted, fontSize: 12 }}>{t('wheel.clearAll')}</Text>
+                          </TouchableOpacity>
+                        ) : null}
+                      </>
                     ) : (
                       <Text style={{ color: theme.muted, fontSize: 12 }}>{t('wheel.customEmpty')}</Text>
                     )}
@@ -351,12 +373,21 @@ export default function WheelScreen() {
 
             <SectionTitle label={t('wheel.legendTitle')} />
             <View style={styles.legend}>
-              {genres.map((g, i) => (
-                <View key={g} style={[styles.legendItem, { borderColor: g === result ? theme.accent : theme.border }]}>
-                  <View style={[styles.swatch, { backgroundColor: segColor(i, n) }]} />
-                  <Text style={{ color: g === result ? theme.accent : theme.text, fontSize: 12 }}>{g}</Text>
-                </View>
-              ))}
+              {genres.map((g, i) =>
+                legendExpanded || i < LEGEND_LIMIT || g === result ? (
+                  <View key={g} style={[styles.legendItem, { borderColor: g === result ? theme.accent : theme.border }]}>
+                    <View style={[styles.swatch, { backgroundColor: segColor(i, n) }]} />
+                    <Text style={{ color: g === result ? theme.accent : theme.text, fontSize: 12 }}>{abbrGenre(g)}</Text>
+                  </View>
+                ) : null,
+              )}
+              {genres.length > LEGEND_LIMIT ? (
+                <TouchableOpacity onPress={() => setLegendExpanded((e) => !e)} style={[styles.dashedChip, { borderColor: theme.border }]}>
+                  <Text style={{ color: theme.text, fontSize: 12 }}>
+                    {legendExpanded ? t('wheel.collapse') : t('wheel.more').replace('{n}', String(genres.length - LEGEND_LIMIT))}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </>
         )}
@@ -388,4 +419,5 @@ const styles = StyleSheet.create({
   swatch: { width: 10, height: 10, borderRadius: 5 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.pill, paddingVertical: 5, paddingLeft: 10, paddingRight: 8 },
+  dashedChip: { borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.pill, paddingVertical: 5, paddingHorizontal: 10, justifyContent: 'center' },
 });

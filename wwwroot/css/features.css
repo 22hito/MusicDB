@@ -61,6 +61,15 @@
 .wheel-chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0 0.2rem; border-radius: 50%; }
 .wheel-chip button:hover { color: var(--text); }
 .wheel-custom-empty { color: var(--muted); font-size: 0.8rem; }
+.wheel-custom-chips .filter-chip-clear { padding: 0.25rem 0.7rem; }
+.wheel-chips-toggle { color: var(--text); }
+/* Легенда: список займає всю висоту картки (картка — висотою з колесо) і прокручується
+   всередині, а не обривається на 460px з порожнечею під ним. */
+.wheel-legend-col { display: flex; flex-direction: column; align-self: flex-start; max-height: calc(clamp(260px, 66vmin, 860px) + 24px); }
+/* Повернутий квадратний блок диска кутами виходив за край сторінки (горизонтальна прокрутка). */
+#page-wheel { overflow-x: clip; }
+.wheel-legend { position: relative; flex: 1 1 auto; min-height: 0; max-height: none; }
+.wheel-legend-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wheel-genres-box { width: min(560px, 94vw); }
 /* Поле пошуку жанрів і вибір жанру для батлу — як інші поля форм. */
 .wheel-genres-search, .battle-genre-row select { width: 100%; background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-ui); font-size: 0.875rem; padding: 0.65rem 0.9rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }

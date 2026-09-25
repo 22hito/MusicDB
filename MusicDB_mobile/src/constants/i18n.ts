@@ -303,6 +303,9 @@ export const I18N = {
     'wheel.clearBtn': 'Очистити',
     'wheel.doneBtn': 'Готово',
     'wheel.nothingFound': 'Нічого не знайдено',
+    'wheel.more': '+{n} ще',
+    'wheel.collapse': 'Згорнути',
+    'wheel.clearAll': 'Скинути всі',
     'wheel.durationLabel': 'Тривалість прокрутки, сек', // NEW
     'wheel.playlistEmpty': 'Крутніть колесо, щоб сформувати плейлист із випадкового жанру', // NEW
     'wheel.notEnough': 'Замало жанрів — потрібно хоча б 2 жанри з 5+ піснями', // NEW
@@ -729,6 +732,9 @@ export const I18N = {
     'wheel.clearBtn': 'Clear',
     'wheel.doneBtn': 'Done',
     'wheel.nothingFound': 'Nothing found',
+    'wheel.more': '+{n} more',
+    'wheel.collapse': 'Collapse',
+    'wheel.clearAll': 'Clear all',
     'wheel.durationLabel': 'Spin duration, sec', // NEW
     'wheel.playlistEmpty': 'Spin the wheel to build a playlist from a random genre', // NEW
     'wheel.notEnough': 'Not enough genres — need at least 2 genres with 5+ songs', // NEW

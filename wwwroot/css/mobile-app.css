@@ -18,6 +18,11 @@
 @media (max-width: 768px) {
   :root { --tabbar-h: 62px; }
 
+  /* Колесо: спершу диск і параметри, легенда — під ними, з прокруткою всередині. */
+  .wheel-page-layout .wheel-col:not(.wheel-playlist-col) { order: 1; }
+  .wheel-page-layout .wheel-playlist-col { order: 2; }
+  .wheel-page-layout .wheel-legend-col { order: 3; flex: 1 1 100%; max-height: 280px; }
+
   /* ── Батл рояль — як у мобільному застосунку: на весь екран, одна рамка з відео
      пісні, яку слухають, дві картки поруч (VS між ними), знизу "Крок назад"/"Вийти". ── */
   #battle-modal-overlay { padding: 0; }
