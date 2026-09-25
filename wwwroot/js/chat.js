@@ -226,12 +226,23 @@ function loadThreads(){
       </div>`).join('');
   }).catch(()=>{});
 }
-function toggleNewThreadForm(){
+// Кнопка "Нова гілка" лише відкриває форму (і ховається, поки та відкрита);
+// закриває — "Скасувати" у формі або Esc.
+function openNewThreadForm(){
   if(!currentUser?.authenticated){ confirmLogin(); return; }
-  const form = document.getElementById('thread-new-form');
-  form.style.display = form.style.display === 'none' ? '' : 'none';
-  if(form.style.display === '') document.getElementById('thread-new-title').focus();
+  document.getElementById('thread-new-form').style.display = '';
+  document.getElementById('threads-new-btn').style.display = 'none';
+  document.getElementById('thread-new-title').focus();
 }
+function closeNewThreadForm(){
+  document.getElementById('thread-new-title').value = '';
+  document.getElementById('thread-new-body').value = '';
+  document.getElementById('thread-new-form').style.display = 'none';
+  document.getElementById('threads-new-btn').style.display = '';
+}
+document.getElementById('thread-new-form').addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ e.preventDefault(); closeNewThreadForm(); }
+});
 function createThread(){
   const title = document.getElementById('thread-new-title').value.trim();
   const body = document.getElementById('thread-new-body').value.trim();
@@ -240,9 +251,7 @@ function createThread(){
     .then(r=>r.ok?r.json():null)
     .then(th=>{
       if(!th){ alert(t('msg.connectionError')); return; }
-      document.getElementById('thread-new-title').value = '';
-      document.getElementById('thread-new-body').value = '';
-      document.getElementById('thread-new-form').style.display = 'none';
+      closeNewThreadForm();
       openThread(th.id);
     })
     .catch(()=>{ alert(t('msg.connectionError')); });

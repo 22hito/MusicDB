@@ -45,6 +45,9 @@
 /* Батл: елементи мобільного вигляду — на ПК приховані. */
 .battle-match-label, .battle-m-hint, .battle-listen-btn, .battle-m-bar { display: none; }
 
+/* Форма нової гілки: "Скасувати" й "Створити" в один ряд праворуч. */
+.thread-new-actions { display: flex; gap: 0.6rem; justify-content: flex-end; flex-wrap: wrap; }
+
 /* Аватарки на сторінці друзів. */
 .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }

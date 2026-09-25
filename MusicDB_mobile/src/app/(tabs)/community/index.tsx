@@ -78,6 +78,12 @@ export default function CommunityScreen() {
     load();
   };
 
+  const cancelNewThread = () => {
+    setNewTitle('');
+    setNewBody('');
+    setNewOpen(false);
+  };
+
   const createThread = async () => {
     if (!newTitle.trim() || !newBody.trim()) return;
     setCreating(true);
@@ -194,13 +200,15 @@ export default function CommunityScreen() {
               placeholderTextColor={theme.muted}
               style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
             />
-            <Button
-              label={t('threads.newBtn')}
-              small
-              style={{ alignSelf: 'flex-start', marginBottom: SPACING.md }}
-              onPress={() => requireAuth(() => setNewOpen((o) => !o))}
-            />
-            {newOpen ? (
+            {/* Кнопка лише відкриває форму; закриває — "Скасувати" у самій формі. */}
+            {!newOpen ? (
+              <Button
+                label={t('threads.newBtn')}
+                small
+                style={{ alignSelf: 'flex-start', marginBottom: SPACING.md }}
+                onPress={() => requireAuth(() => setNewOpen(true))}
+              />
+            ) : (
               <View style={[styles.newThread, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <TextInput
                   value={newTitle}
@@ -219,9 +227,12 @@ export default function CommunityScreen() {
                   placeholderTextColor={theme.muted}
                   style={[styles.input, styles.multiline, { backgroundColor: theme.surface2, borderColor: theme.border, color: theme.text }]}
                 />
-                <Button label={t('threads.createBtn')} small loading={creating} disabled={!newTitle.trim() || !newBody.trim()} onPress={createThread} />
+                <View style={{ flexDirection: 'row', gap: SPACING.sm, justifyContent: 'flex-end' }}>
+                  <Button label={t('common.cancel')} variant="outline" small onPress={cancelNewThread} />
+                  <Button label={t('threads.createBtn')} small loading={creating} disabled={!newTitle.trim() || !newBody.trim()} onPress={createThread} />
+                </View>
               </View>
-            ) : null}
+            )}
             {threads.length === 0 ? (
               <EmptyState icon="🗨️" label={t('threads.empty')} />
             ) : (
