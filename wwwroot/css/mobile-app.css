@@ -97,7 +97,7 @@
   html[data-page="home"] .mtab[data-tab="home"],
   html[data-page="top"] .mtab[data-tab="top"],
   html[data-page="chat"] .mtab[data-tab="chat"], html[data-page="friends"] .mtab[data-tab="chat"], html[data-page="user-profile"] .mtab[data-tab="chat"],
-  html[data-page="explore"] .mtab[data-tab="explore"], html[data-page="wheel"] .mtab[data-tab="explore"], html[data-page="battle"] .mtab[data-tab="explore"],
+  html[data-page="explore"] .mtab[data-tab="explore"], html[data-page="wheel"] .mtab[data-tab="explore"], html[data-page="battle"] .mtab[data-tab="explore"], html[data-page="taste"] .mtab[data-tab="explore"],
   html[data-page="artists"] .mtab[data-tab="explore"], html[data-page="artist"] .mtab[data-tab="explore"], html[data-page="recommendations"] .mtab[data-tab="explore"],
   html[data-page="profile"] .mtab[data-tab="profile"], html[data-page="profile-settings"] .mtab[data-tab="profile"], html[data-page="settings"] .mtab[data-tab="profile"], html[data-page="playlist"] .mtab[data-tab="profile"],
   html[data-page="admin-hub"] .mtab[data-tab="admin"] { color: var(--accent); }

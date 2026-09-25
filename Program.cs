@@ -29,6 +29,7 @@ builder.Services.AddDbContext<MusicDbContext>(opts =>
 
 builder.Services.AddScoped<MusicService>();
 builder.Services.AddScoped<UserDirectoryService>();
+builder.Services.AddScoped<TasteService>();
 builder.Services.AddScoped<ArtistActivityService>();
 builder.Services.AddScoped<AdminActivityService>();
 builder.Services.AddMemoryCache();

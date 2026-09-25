@@ -18,6 +18,7 @@ export default function ExploreLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="wheel" options={{ title: t('nav.wheel') }} />
       <Stack.Screen name="battle" options={{ title: t('nav.battle') }} />
+      <Stack.Screen name="taste" options={{ title: t('nav.taste') }} />
       <Stack.Screen name="artists" options={{ title: t('nav.artists') }} />
       <Stack.Screen name="artist/[id]" options={{ title: '' }} />
     </Stack>

@@ -286,6 +286,40 @@ export interface SimilarArtist {
   score: number; // 0..100 — збіг жанрів
 }
 
+// ─── Схожий смак (GET /api/users/taste) ───
+export interface TasteNode {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  topArtists: ArtistRef[];
+  isMe: boolean;
+  relationshipStatus: string;
+}
+
+export interface TasteEdge {
+  a: number;
+  b: number;
+  weight: number; // 0..1
+}
+
+export interface TasteMatch {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  score: number; // 0..100
+  sharedArtists: ArtistRef[];
+  sharedFavorites: number;
+  relationshipStatus: string;
+}
+
+export interface TasteGraph {
+  meId: number;
+  myItemCount: number;
+  nodes: TasteNode[];
+  edges: TasteEdge[];
+  matches: TasteMatch[];
+}
+
 export interface UserSearchResult {
   userId: number;
   displayName: string;

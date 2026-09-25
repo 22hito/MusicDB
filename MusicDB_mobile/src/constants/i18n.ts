@@ -273,6 +273,21 @@ export const I18N = {
     'explore.wheelSub': 'Випадковий жанр — готовий плейлист', // NEW
     'explore.battleSub': 'Турнір пісень з плейлиста', // NEW
     'explore.artistsSub': 'Каталог, дискографії, підписки', // NEW
+    'nav.taste': 'Схожий смак',
+    'explore.tasteSub': 'Люди з подібними улюбленими піснями й виконавцями',
+    'taste.sub': 'Люди, чиї улюблені пісні та виконавці схожі на ваші. Рахується з улюблених (♥) і прослуханих пісень.',
+    'taste.loginHint': 'Увійдіть, щоб знайти людей зі схожим смаком',
+    'taste.noData': "Додайте пісні в улюблені (♥) або послухайте кілька — і тут з'являться люди зі схожим смаком",
+    'taste.noMatches': 'Поки що нікого зі схожим смаком — загляньте пізніше',
+    'taste.graphPeople': 'Граф людей',
+    'taste.graphArtists': 'Люди й виконавці',
+    'taste.graphHint': 'Ближче — схожіший смак. Натисніть на людину чи виконавця, щоб відкрити сторінку.',
+    'taste.matchesTitle': 'Найсхожіші на вас',
+    'taste.you': 'ви',
+    'taste.friendBadge': 'друг',
+    'taste.sharedArtists': 'Спільне:',
+    'taste.similarGenres': 'Схожі жанри',
+    'taste.sharedFavorites': 'спільних улюблених: {n}',
     'wheel.spinBtn': 'Крутити', // NEW
     'wheel.playBtn': 'Слухати', // NEW
     'wheel.resultLabel': 'Випав жанр:', // NEW
@@ -684,6 +699,21 @@ export const I18N = {
     'explore.wheelSub': 'A random genre — a ready playlist', // NEW
     'explore.battleSub': 'A song tournament from a playlist', // NEW
     'explore.artistsSub': 'Catalog, discographies, follows', // NEW
+    'nav.taste': 'Similar taste',
+    'explore.tasteSub': 'People who love similar songs and artists',
+    'taste.sub': 'People whose favorite songs and artists are close to yours. Based on favorites (♥) and listened songs.',
+    'taste.loginHint': 'Sign in to find people with similar taste',
+    'taste.noData': 'Add some songs to favorites (♥) or listen to a few — people with similar taste will show up here',
+    'taste.noMatches': 'Nobody with similar taste yet — check back later',
+    'taste.graphPeople': 'People graph',
+    'taste.graphArtists': 'People & artists',
+    'taste.graphHint': 'Closer means more alike. Tap a person or artist to open their page.',
+    'taste.matchesTitle': 'Most similar to you',
+    'taste.you': 'you',
+    'taste.friendBadge': 'friend',
+    'taste.sharedArtists': 'In common:',
+    'taste.similarGenres': 'Similar genres',
+    'taste.sharedFavorites': 'shared favorites: {n}',
     'wheel.spinBtn': 'Spin', // NEW
     'wheel.playBtn': 'Play', // NEW
     'wheel.resultLabel': 'You got:', // NEW

@@ -39,6 +39,7 @@ import type {
   UpdateRequestInput,
   UpdateSongInput,
   SimilarArtist,
+  TasteGraph,
 } from './types';
 
 // Тонкі типізовані обгортки над ApiBridge.request(), що дзеркалять
@@ -236,6 +237,8 @@ export function useMusicApi() {
         return upload<ArtistDetail>(`/api/artists/${id}/image`, fd, 'PUT');
       },
       deleteArtistImage: (id: number) => request<ArtistDetail>(`/api/artists/${id}/image`, { method: 'DELETE' }),
+      // Схожий смак: люди, ребра схожості й список найближчих до мене.
+      getTaste: () => request<TasteGraph>('/api/users/taste'),
       followArtist: (id: number) => request<void>(`/api/artists/${id}/follow`, { method: 'POST' }),
       unfollowArtist: (id: number) => request<void>(`/api/artists/${id}/follow`, { method: 'DELETE' }),
 

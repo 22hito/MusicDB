@@ -50,8 +50,9 @@ function _graphFit(){
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   for(let i=0;i<n;i++){ const x=_g.xs[i], y=_g.ys[i]; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
   const w = c.clientWidth || 700, h = c.clientHeight || 500;
-  const s = Math.min((w-pad*2)/Math.max(1,maxX-minX), (h-pad*2)/Math.max(1,maxY-minY), 2);
-  _g.fit = { s, ox: (w - s*(maxX+minX))/2, oy: (h - s*(maxY+minY))/2 };
+  const padB = _g.nodeLabels ? pad + 22 : pad; // місце під підписи нижніх вузлів
+  const s = Math.min((w-pad*2)/Math.max(1,maxX-minX), (h-pad-padB)/Math.max(1,maxY-minY), 2);
+  _g.fit = { s, ox: (w - s*(maxX+minX))/2, oy: pad + ((h-pad-padB) - s*(maxY-minY))/2 - s*minY };
 }
 
 function _graphDraw(){
@@ -97,6 +98,21 @@ function _graphDraw(){
     ctx.fillStyle = color; ctx.fill();
   });
   ctx.globalAlpha = 1;
+  // Позначені вузли (напр. "ви" у графі смаків) — завжди з кільцем.
+  if(_g.ring.length){
+    ctx.lineWidth = 2; ctx.strokeStyle = _g.ringColor;
+    for(const i of _g.ring){ ctx.beginPath(); ctx.arc(pos[i*2], pos[i*2+1], r*1.7, 0, Math.PI*2); ctx.stroke(); }
+  }
+  // Підписи під вузлами — лише для невеликих графів (люди, виконавці), інакше каша.
+  if(_g.nodeLabels){
+    ctx.font = `500 11px ${_g.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for(let i=0;i<n;i++){
+      ctx.globalAlpha = hl && !hl.has(i) ? 0.25 : 0.9;
+      ctx.fillStyle = _g.textColor;
+      ctx.fillText(_g.nodeLabels[i], pos[i*2], pos[i*2+1] + r*1.8 + 2);
+    }
+    ctx.globalAlpha = 1;
+  }
   if(hl){
     for(const i of hl){
       const big = i === hov ? r*1.8 : r*1.25;
@@ -144,7 +160,7 @@ function _graphTick(){
   if(_g.iter < _g.maxIter) _graphRaf = requestAnimationFrame(_graphTick);
 }
 
-function _startGraph(items, simFn, labelFn, colorFn, onClickFn){
+function _startGraph(items, simFn, labelFn, colorFn, onClickFn, opts = {}){
   cancelAnimationFrame(_graphRaf);
   const n = items.length;
   const sim = new Float32Array(n*n);
@@ -168,12 +184,17 @@ function _startGraph(items, simFn, labelFn, colorFn, onClickFn){
   for(let i=0;i<n;i++){ const a = (i/n)*Math.PI*2; xs[i] = 400 + Math.cos(a)*R; ys[i] = 300 + Math.sin(a)*R; }
   const css = getComputedStyle(document.documentElement);
   const accent = (css.getPropertyValue('--accent') || '').trim();
+  const nodeLabels = opts.nodeLabels && n <= 80
+    ? items.map(it => { const s = String(opts.nodeLabels(it)); return s.length > 18 ? s.slice(0, 17) + '…' : s; })
+    : null;
   _g = {
     items, labelFn, onClick: onClickFn, n, sim, edges, adj, colors, colorGroups,
     xs, ys, vx: new Float32Array(n), vy: new Float32Array(n), fx: new Float32Array(n), fy: new Float32Array(n),
     cx: 400, cy: 300, iter: 0, maxIter: n > 200 ? 110 : 160,
     radius: n > 150 ? 3.5 : n > 50 ? 5.5 : 8, hover: null,
     edgeRgb: '200,169,110', ringColor: accent || '#fff', fit: { s: 1, ox: 0, oy: 0 },
+    ring: opts.ring || [], nodeLabels,
+    textColor: (css.getPropertyValue('--text') || '').trim() || '#ddd', font: getComputedStyle(document.body).fontFamily || 'sans-serif',
   };
   _graphRaf = requestAnimationFrame(_graphTick);
 }
@@ -312,14 +333,18 @@ function openSimilarityGraph(kind){
     titleKey = kind === 'albums' ? 'graph.titleAlbums' : 'graph.titleSingles';
   }
 
-  document.getElementById('graph-title').textContent = t(titleKey);
+  _openGraphModal(t(titleKey), items, simFn, labelFn, colorFn, onClickFn);
+}
+
+function _openGraphModal(title, items, simFn, labelFn, colorFn, onClickFn, opts){
+  document.getElementById('graph-title').textContent = title;
   document.getElementById('graph-loading').style.display = 'block';
   _g = null;
   const c = _graphCanvas(); c.getContext('2d').clearRect(0, 0, c.width, c.height);
   _graphView = { x: 0, y: 0, scale: 1 };
   document.getElementById('graph-modal-overlay').classList.add('open');
   // Старт на наступному кадрі — щоб вікно й "завантаження" встигли з'явитись.
-  requestAnimationFrame(() => _startGraph(items, simFn, labelFn, colorFn, onClickFn));
+  requestAnimationFrame(() => _startGraph(items, simFn, labelFn, colorFn, onClickFn, opts));
 }
 
 function closeGraph(){

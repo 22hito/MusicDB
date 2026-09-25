@@ -138,6 +138,7 @@
       <button id="tab-chat" class="nav-menu-item" onclick="openChatPage('threads')"><svg class="icon"><use href="#icon-chat"/></svg> <span data-i18n="nav.discussions">Обговорення</span></button>
       <button id="tab-wheel" class="nav-menu-item" onclick="showPage('wheel')"><svg class="icon"><use href="#icon-wheel"/></svg> <span data-i18n="nav.wheel">Колесо фортуни</span></button>
       <button id="tab-battle" class="nav-menu-item" onclick="showPage('battle')"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="nav.battle">Батл рояль</span></button>
+      <button id="tab-taste" class="nav-menu-item" onclick="showPage('taste')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="nav.taste">Схожий смак</span></button>
       <button id="tab-request" class="nav-menu-item" onclick="openRequestPage()" style="display:none"><svg class="icon"><use href="#icon-plus"/></svg> <span data-i18n="nav.request">Надіслати запит</span></button>
       <button id="tab-recommendations" class="nav-menu-item" onclick="openRecommendationsPage()" style="display:none"><svg class="icon"><use href="#icon-sparkle"/></svg> <span data-i18n="nav.recommendations">Рекомендовано для вас</span></button>
       <!-- Пряме посилання на файл релізу, не /latest/download/ — ім'я файлу
@@ -484,6 +485,7 @@
     <div class="explore-tiles">
       <button type="button" class="explore-tile" onclick="showPage('wheel')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-wheel"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.wheel">Колесо фортуни</strong><span data-i18n="explore.wheelSub">Випадковий жанр — готовий плейлист</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="explore-tile" onclick="showPage('battle')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-trophy"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.battle">Батл рояль</strong><span data-i18n="explore.battleSub">Турнір пісень з плейлиста</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="explore-tile" onclick="showPage('taste')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-users"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.taste">Схожий смак</strong><span data-i18n="explore.tasteSub">Люди з подібними улюбленими піснями й виконавцями</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="explore-tile" onclick="showPage('artists')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-mic"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.artists">Виконавці</strong><span data-i18n="explore.artistsSub">Каталог, дискографії, підписки</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="explore-tile" onclick="openRecommendationsPage()"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-sparkle"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.recommendations">Рекомендовано для вас</strong><span data-i18n="explore.recSub">Підбірка за тим, що ви слухаєте</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="explore-tile" onclick="showPage('top')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-headphones"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.top">Топ 100</strong><span data-i18n="explore.topSub">Найпрослуханіші пісні</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
@@ -665,6 +667,24 @@
           </section>
         </aside>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- СХОЖИЙ СМАК: люди з подібними улюбленими піснями й виконавцями + граф -->
+<div id="page-taste" class="page">
+  <div class="container">
+    <h2><span data-i18n="taste.heading.pre">Схожий</span> <span class="hl" data-i18n="taste.heading.accent">смак</span></h2>
+    <p class="taste-sub" data-i18n="taste.sub">Люди, чиї улюблені пісні та виконавці схожі на ваші. Рахується з улюблених (♥) і прослуханих пісень.</p>
+    <div id="taste-login-hint" class="empty" style="display:none;"><svg class="icon"><use href="#icon-lock"/></svg><span data-i18n="taste.loginHint">Увійдіть, щоб знайти людей зі схожим смаком</span></div>
+    <div id="taste-content" style="display:none;">
+      <div class="taste-actions">
+        <button type="button" class="btn btn-primary taste-graph-btn" onclick="openTasteGraph('people')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="taste.graphPeople">Граф людей</span></button>
+        <button type="button" class="btn btn-outline taste-graph-btn" onclick="openTasteGraph('artists')"><svg class="icon"><use href="#icon-mic"/></svg> <span data-i18n="taste.graphArtists">Люди й виконавці</span></button>
+      </div>
+      <div id="taste-no-data" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="taste.noData">Додайте пісні в улюблені (♥) або послухайте кілька — і тут з'являться люди зі схожим смаком</span></div>
+      <div id="taste-no-matches" class="empty" style="display:none;"><svg class="icon"><use href="#icon-users"/></svg><span data-i18n="taste.noMatches">Поки що нікого зі схожим смаком — загляньте пізніше</span></div>
+      <div id="taste-list" class="taste-list"></div>
     </div>
   </div>
 </div>
@@ -1598,6 +1618,7 @@
 <script src="/js/artists.js"></script>
 <script src="/js/friends.js"></script>
 <script src="/js/graph.js"></script>
+<script src="/js/taste.js"></script>
 <script src="/js/top.js"></script>
 <script src="/js/bug-reports.js"></script>
 <script src="/js/chat.js"></script>

@@ -12,7 +12,7 @@ namespace MusicDB.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UsersController(MusicDbContext db, UserDirectoryService userDirectory) : ControllerBase
+public class UsersController(MusicDbContext db, UserDirectoryService userDirectory, TasteService taste) : ControllerBase
 {
     private string CurrentEmail => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
@@ -48,6 +48,10 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
         }
         return Ok(results);
     }
+
+    // Граф "Схожий смак": люди, ребра схожості й список найближчих до мене.
+    [HttpGet("taste")]
+    public async Task<ActionResult<TasteGraphDto>> Taste() => Ok(await taste.BuildAsync(await CurrentUserIdAsync()));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<PublicProfileDto>> GetById(int id)

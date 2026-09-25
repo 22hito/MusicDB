@@ -173,6 +173,19 @@ public record UserSearchResultDto(int UserId, string DisplayName, string? Avatar
 
 public record FriendRequestDto(int RequestId, int UserId, string DisplayName, string? AvatarUrl, string CreatedAt);
 
+// ─── Схожість смаків (граф людей) ───────────────────────────────────────────────
+// Лише агреговане: відсоток збігу й кілька спільних виконавців — повні списки
+// улюблених назовні не віддаються.
+public record TasteNodeDto(int UserId, string DisplayName, string? AvatarUrl, ArtistRefDto[] TopArtists, bool IsMe, string RelationshipStatus);
+
+// Weight — 0..1 (ребро графа між двома людьми).
+public record TasteEdgeDto(int A, int B, double Weight);
+
+public record TasteMatchDto(int UserId, string DisplayName, string? AvatarUrl, int Score, ArtistRefDto[] SharedArtists, int SharedFavorites, string RelationshipStatus);
+
+// MyItemCount — скільки в мене улюблених + прослуханих (0 — нема з чим порівнювати).
+public record TasteGraphDto(int MeId, int MyItemCount, List<TasteNodeDto> Nodes, List<TasteEdgeDto> Edges, List<TasteMatchDto> Matches);
+
 public record SendFriendRequestDto(int TargetUserId);
 
 // ─── Сповіщення адмінів ─────────────────────────────────────────────────────

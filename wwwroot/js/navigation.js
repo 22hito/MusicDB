@@ -93,6 +93,7 @@ function showPage(n){
     if(n==='recommendations') loadRecommendationsPage();
     if(n==='wheel') openWheelPage();
     if(n==='battle') openBattlePage();
+    if(n==='taste') loadTastePage();
     if(n==='artists') loadArtistsPage();
     if(n==='artist') loadArtistPage();
     if(n==='friends') loadFriendsPage();
@@ -113,7 +114,7 @@ function showPage(n){
 // ================================================================
 const _PAGE_PATHS = {
   top: '/top', artists: '/artists', profile: '/profile', 'profile-settings': '/profile/settings',
-  settings: '/settings', friends: '/friends', wheel: '/wheel', battle: '/battle',
+  settings: '/settings', friends: '/friends', wheel: '/wheel', battle: '/battle', taste: '/taste',
   recommendations: '/recommendations', request: '/request', 'admin-hub': '/admin', explore: '/explore',
 };
 function _pathForPage(n){

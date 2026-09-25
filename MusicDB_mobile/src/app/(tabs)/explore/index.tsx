@@ -7,7 +7,7 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
 import { Badge, EmptyState, ErrorState, Heading, SectionTitle } from '@/components/UI';
-import { ChevronRightIcon, MicIcon, SwordsIcon, WheelIcon } from '@/components/Icons';
+import { ChevronRightIcon, MicIcon, SwordsIcon, UsersIcon, WheelIcon } from '@/components/Icons';
 import { FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
 import type { Recommendation } from '@/api/types';
 
@@ -43,6 +43,7 @@ export default function ExploreScreen() {
   const tiles = [
     { key: 'wheel', icon: WheelIcon, title: t('nav.wheel'), sub: t('explore.wheelSub'), href: '/explore/wheel' as const },
     { key: 'battle', icon: SwordsIcon, title: t('nav.battle'), sub: t('explore.battleSub'), href: '/explore/battle' as const },
+    { key: 'taste', icon: UsersIcon, title: t('nav.taste'), sub: t('explore.tasteSub'), href: '/explore/taste' as const },
     { key: 'artists', icon: MicIcon, title: t('nav.artists'), sub: t('explore.artistsSub'), href: '/explore/artists' as const },
   ];
 
