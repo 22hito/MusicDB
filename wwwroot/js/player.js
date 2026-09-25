@@ -153,7 +153,8 @@ function _loadCurrent(){
     if(videoPopupOpen) closeVideoPopup();
     playerMode='file';
     currentVid=null;
-    document.getElementById('btn-video').classList.add('disabled');
+    // Є ще й YouTube-відео — кнопка відео активна: перемикає пісню на відео (_switchFileSongToVideo).
+    document.getElementById('btn-video').classList.toggle('disabled', !s.youtubeVideoId);
     refreshPlayingState();
     if(karaokeOpen) loadKaraokeLyrics();
     _updateMediaSessionMetadata(s, null);
@@ -282,8 +283,8 @@ async function fetchVid(artist,title){
   return null;
 }
 
-function _load(vid){
-  ytPlayer.loadVideoById(vid);
+function _load(vid, startSeconds = 0){
+  ytPlayer.loadVideoById(startSeconds > 0 ? { videoId: vid, startSeconds } : vid);
   // loadVideoById завжди стартує відтворення, ігноруючи autoplay:0 — коли звук
   // веде нативний попап (Electron), одразу глушимо тут, інакше грає з двох вікон.
   if(_electronPopoutActive)try{ytPlayer.pauseVideo();}catch(e){}
@@ -472,9 +473,30 @@ let videoPopupOpen = false;
 let currentVid = null;
 
 function toggleVideoPopup() {
-  if (playerMode === 'file') return; // файл пісні без відео
+  if (playerMode === 'file') { _switchFileSongToVideo(); return; }
   if (videoPopupOpen) closeVideoPopup();
   else openVideoPopup();
+}
+
+// Пісня ком'юніті з файлом і YouTube-відео водночас: грає файл, а кнопка відео
+// перемикає її на YouTube з того самого моменту й відкриває відео.
+function _switchFileSongToVideo() {
+  const s = playerQueue[playerIndex];
+  const vid = s?.youtubeVideoId;
+  if (!vid) return; // лише файл — відео нема
+  const at = fileAudio.currentTime || 0;
+  _stopFileAudio();
+  playerMode = 'yt';
+  setLoad(true);
+  _onVidReady(vid);
+  const img = document.getElementById('player-cover-img');
+  img.src = 'https://img.youtube.com/vi/' + vid + '/mqdefault.jpg';
+  img.style.display = 'block';
+  document.getElementById('player-cover-ph').style.display = 'none';
+  _applyArtworkColor(vid);
+  _updateMediaSessionMetadata(s, vid);
+  if (ytReady) _load(vid, at); else pendingVid = vid;
+  openVideoPopup();
 }
 
 // ================================================================

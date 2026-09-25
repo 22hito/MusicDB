@@ -347,7 +347,28 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const toggleShuffle = useCallback(() => setShuffle((s) => !s), []);
   const toggleRepeat = useCallback(() => setRepeat((r) => !r), []);
-  const toggleVideoPopup = useCallback(() => setVideoPopupOpen((o) => !o), []);
+  // Пісня ком'юніті з файлом і YouTube-відео водночас: грає файл (нативно, у фоні),
+  // а кнопка відео перемикає її на YouTube з того самого моменту й відкриває відео.
+  const toggleVideoPopup = useCallback(() => {
+    const native = nativeRef.current;
+    const vid = current?.youtubeVideoId;
+    if (modeRef.current === 'native' && native && vid) {
+      const at = native.currentTime || 0;
+      native.pause();
+      try {
+        native.clearLockScreenControls();
+      } catch {
+        // нічого
+      }
+      modeRef.current = 'yt';
+      setVideoId(vid);
+      setState('loading');
+      postCommand({ cmd: 'load', videoId: vid, autoplay: true, startSeconds: at });
+      setVideoPopupOpen(true);
+      return;
+    }
+    setVideoPopupOpen((o) => !o);
+  }, [current, postCommand]);
   const pause = useCallback(() => {
     if (isNative()) nativeRef.current!.pause();
     else postCommand({ cmd: 'pause' });
@@ -378,10 +399,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // YouTube не може грати у фоні — тож поки він грає, не даємо екрану згаснути.
   useEffect(() => {
-    const keep = state === 'playing' && !!current && !current.audioUrl;
+    const keep = state === 'playing' && !!current && !!videoId; // videoId є лише коли грає YouTube
     if (keep) activateKeepAwakeAsync('nowl-player').catch(() => {});
     else deactivateKeepAwake('nowl-player').catch(() => {});
-  }, [state, current]);
+  }, [state, current, videoId]);
 
   const onEngineMessage = useCallback(
     (event: { nativeEvent: { data: string } }) => {
@@ -489,7 +510,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const { width: screenWidth } = useWindowDimensions();
   const popupWidth = Math.min(320, screenWidth - 24);
   // Док має пріоритет над попапом, але лише коли є що показати (відео, не аудіофайл).
-  const docked = !!videoDock && !!videoId && !current?.audioUrl;
+  const docked = !!videoDock && !!videoId;
 
   return (
     <PlayerCtx.Provider value={value}>

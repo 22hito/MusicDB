@@ -62,7 +62,7 @@
     post({ type: 'error', code: e && e.data });
   }
 
-  function createPlayer(videoId, autoplay) {
+  function createPlayer(videoId, autoplay, start) {
     player = new window.YT.Player('yt', {
       width: '100%',
       height: '100%',
@@ -74,7 +74,8 @@
         modestbranding: 1,
         playsinline: 1,
         fs: 1,
-        iv_load_policy: 3
+        iv_load_policy: 3,
+        start: start > 0 ? Math.floor(start) : 0
       },
       events: {
         onReady: onPlayerReady,
@@ -126,9 +127,10 @@
     }
     if (cmd.cmd === 'load') {
       if (!window.YT || !window.YT.Player) { pendingCmd = cmd; return; }
-      if (!player) { createPlayer(cmd.videoId, cmd.autoplay !== false); return; }
+      if (!player) { createPlayer(cmd.videoId, cmd.autoplay !== false, cmd.startSeconds); return; }
       if (!ready) { pendingCmd = cmd; return; }
-      player.loadVideoById(cmd.videoId);
+      // startSeconds — пісня з файлом перемкнулась на відео: продовжуємо з того самого моменту.
+      player.loadVideoById(cmd.startSeconds > 0 ? { videoId: cmd.videoId, startSeconds: cmd.startSeconds } : cmd.videoId);
       if (cmd.autoplay === false) { setTimeout(function () { try { player.pauseVideo(); } catch (e) {} }, 250); }
       return;
     }
@@ -157,7 +159,7 @@
   post({ type: 'pageReady' });
 
   window.onYouTubeIframeAPIReady = function () {
-    if (pendingCmd && pendingCmd.cmd === 'load') { createPlayer(pendingCmd.videoId, pendingCmd.autoplay !== false); pendingCmd = null; }
+    if (pendingCmd && pendingCmd.cmd === 'load') { createPlayer(pendingCmd.videoId, pendingCmd.autoplay !== false, pendingCmd.startSeconds); pendingCmd = null; }
   };
 
   var tag = document.createElement('script');

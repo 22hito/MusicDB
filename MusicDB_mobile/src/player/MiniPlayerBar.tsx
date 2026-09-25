@@ -116,8 +116,8 @@ export function MiniPlayerBar() {
         <TouchableOpacity onPress={() => setRatingOpen(true)} style={styles.smallIconBtn} hitSlop={10}>
           <StarIcon size={15} color={song.avgRating != null ? theme.accent : theme.muted} />
         </TouchableOpacity>
-        {/* Файл пісні ком'юніті — без відео. */}
-        {song.audioUrl ? null : (
+        {/* Лише файл без YouTube-відео — кнопки відео нема; файл + відео — кнопка перемикає на відео. */}
+        {song.audioUrl && !song.youtubeVideoId ? null : (
           <TouchableOpacity
             onPress={p.toggleVideoPopup}
             style={[styles.smallIconBtn, p.videoPopupOpen && { backgroundColor: `${theme.accent}22` }]}
