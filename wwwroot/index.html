@@ -283,7 +283,7 @@
           <div class="form-group">
             <label data-i18n="form.audioFile">Файл пісні</label>
             <input type="file" id="req-audio" accept="audio/*,.mp3,.m4a,.ogg,.opus,.wav,.flac,.aac,.webm" onchange="onCommunityAudioSelected('req')">
-            <div class="hint" data-i18n="form.audioFile.hint">MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов'язково, якщо вказано YouTube-відео.</div>
+            <div class="hint" data-i18n="form.audioFile.hint">MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов'язково, якщо вказано YouTube-відео.</div><div class="hint audio-bg-hint" data-i18n="form.audioFile.bgHint">Порада: з файлом пісня гратиме й у фоні, і з вимкненим екраном. Пісня лише з YouTube-посиланням грає тільки на відкритому екрані.</div>
           </div>
           <div class="form-group">
             <label data-i18n="form.youtube">Посилання на YouTube-відео</label>
@@ -348,7 +348,7 @@
             <div class="form-group">
               <label data-i18n="form.audioFile">Файл пісні</label>
               <input type="file" id="add-audio" accept="audio/*,.mp3,.m4a,.ogg,.opus,.wav,.flac,.aac,.webm" onchange="onCommunityAudioSelected('add')">
-              <div class="hint" data-i18n="form.audioFile.hint">MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов'язково, якщо вказано YouTube-відео.</div>
+              <div class="hint" data-i18n="form.audioFile.hint">MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов'язково, якщо вказано YouTube-відео.</div><div class="hint audio-bg-hint" data-i18n="form.audioFile.bgHint">Порада: з файлом пісня гратиме й у фоні, і з вимкненим екраном. Пісня лише з YouTube-посиланням грає тільки на відкритому екрані.</div>
             </div>
             <div class="form-group">
               <label data-i18n="form.youtube">Посилання на YouTube-відео</label>
@@ -1372,7 +1372,8 @@
       <label data-i18n="form.audioFile">Файл пісні</label>
       <div id="edit-song-audio-preview" style="margin-bottom:0.5rem;"></div>
       <input type="file" id="edit-song-audio" accept="audio/*,.mp3,.m4a,.ogg,.opus,.wav,.flac,.aac,.webm">
-      <div class="hint" data-i18n="admin.audioReplaceHint">Оберіть файл, щоб замінити поточний</div>
+      <div class="hint" id="edit-song-audio-hint" data-i18n="admin.audioReplaceHint">Оберіть файл, щоб замінити поточний</div>
+      <div class="hint audio-bg-hint" data-i18n="form.audioFile.bgHint">Порада: з файлом пісня гратиме й у фоні, і з вимкненим екраном. Пісня лише з YouTube-посиланням грає тільки на відкритому екрані.</div>
     </div>
     <div class="form-group">
       <label data-i18n="admin.lyrics">Текст пісні (необов'язково)</label>

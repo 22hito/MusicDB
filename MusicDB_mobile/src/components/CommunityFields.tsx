@@ -51,7 +51,8 @@ export function CommunityFields({
           </TouchableOpacity>
         ) : null}
       </View>
-      <Text style={[styles.hint, { color: theme.muted }]}>{t('form.audioFile.hint')}</Text>
+      <Text style={[styles.hint, { color: theme.muted, marginBottom: 2 }]}>{t('form.audioFile.hint')}</Text>
+      <Text style={[styles.hint, { color: theme.accent }]}>{t('form.audioFile.bgHint')}</Text>
       <Field
         label={t('form.youtube')}
         value={youtube}

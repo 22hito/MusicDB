@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
@@ -230,7 +230,18 @@ export default function LibraryScreen() {
       });
       // Текст — окремим запитом, як на сайті (undefined — ще не встиг завантажитись, не чіпаємо).
       if (values.lyrics !== undefined) await api.setLyrics(updated.id, values.lyrics).catch(() => {});
-      setSongs((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+      // Новий файл пісні ком'юніті — після цього пісня гратиме файлом (фон, екран блокування).
+      let fresh = updated;
+      if (values.audio) {
+        try {
+          await api.replaceSongAudio(updated.id, values.audio);
+          fresh = await api.getSong(updated.id).catch(() => updated);
+        } catch (e) {
+          Alert.alert(t('common.error'), (e as { body?: string }).body || t('msg.connectionError'));
+          return;
+        }
+      }
+      setSongs((prev) => prev.map((s) => (s.id === fresh.id ? fresh : s)));
       setEditSong(null);
     } finally {
       setSavingEdit(false);
@@ -437,6 +448,7 @@ export default function LibraryScreen() {
           onSave={handleSaveEdit}
           saving={savingEdit}
           loadLyrics={() => api.getLyrics(editSong.id).then((d) => d.lyrics)}
+          audioFile={editSong.source === 'community' ? { has: !!editSong.audioUrl } : undefined}
         />
       ) : null}
 

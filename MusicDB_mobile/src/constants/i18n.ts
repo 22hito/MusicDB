@@ -197,6 +197,11 @@ export const I18N = {
     'form.audioFile': 'Файл пісні', // NEW
     'form.audioPick': 'Обрати файл…', // NEW
     'form.audioFile.hint': 'MP3, M4A, OGG, WAV, FLAC — до 25 МБ. Необов\'язково, якщо вказано YouTube-відео.', // NEW
+    'form.audioFile.bgHint': 'Порада: з файлом пісня гратиме й у фоні, і з вимкненим екраном. Пісня лише з YouTube-посиланням грає тільки на відкритому екрані.',
+    'admin.audioAddBtn': 'Додати файл пісні',
+    'admin.audioReplaceBtn': 'Замінити файл пісні',
+    'admin.audioHasFile': 'Файл уже є — новий замінить його',
+    'admin.audioNoFile': 'Файлу ще немає',
     'form.youtube': 'Посилання на YouTube-відео', // NEW
     'form.youtube.placeholder': 'ID або посилання на відео', // NEW
     'msg.audioTooLarge': 'Файл більший за 25 МБ.', // NEW
@@ -626,6 +631,11 @@ export const I18N = {
     'form.audioFile': 'Song file', // NEW
     'form.audioPick': 'Choose a file…', // NEW
     'form.audioFile.hint': 'MP3, M4A, OGG, WAV, FLAC — up to 25 MB. Optional if a YouTube video is given.', // NEW
+    'form.audioFile.bgHint': 'Tip: with a file the song keeps playing in the background and with the screen off. A song with only a YouTube link plays only while the screen is on.',
+    'admin.audioAddBtn': 'Add a song file',
+    'admin.audioReplaceBtn': 'Replace the song file',
+    'admin.audioHasFile': 'There is a file already — a new one replaces it',
+    'admin.audioNoFile': 'No file yet',
     'form.youtube': 'YouTube video link', // NEW
     'form.youtube.placeholder': 'Video ID or link', // NEW
     'msg.audioTooLarge': 'The file is larger than 25 MB.', // NEW

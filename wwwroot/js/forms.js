@@ -387,6 +387,10 @@ function openEditSongModal(id){
   if(miniAudioOwner && audioPreview.contains(miniAudioOwner)) stopMiniAudio();
   audioPreview.innerHTML = s.audioUrl ? miniAudioHtml(s.audioUrl) : '';
   audioPreview.style.display = s.audioUrl ? '' : 'none';
+  // Файлу ще нема — адмін може додати його сам (тоді пісня гратиме й у фоні).
+  const audioHint = document.getElementById('edit-song-audio-hint');
+  audioHint.dataset.i18n = s.audioUrl ? 'admin.audioReplaceHint' : 'admin.audioAddHint';
+  audioHint.textContent = t(audioHint.dataset.i18n);
   document.getElementById('edit-song-artist').value = s.artist || '';
   document.getElementById('edit-song-title').value = s.title || '';
   document.getElementById('edit-song-release').value = s.release || '';

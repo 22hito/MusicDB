@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import { useSettings } from '@/state/SettingsContext';
 import { Button, Field } from './UI';
 import { DateField } from './DateField';
-import { RADIUS, SPACING } from '@/constants/theme';
+import { CloseIcon, UploadIcon } from './Icons';
+import { MAX_AUDIO_BYTES } from './CommunityFields';
+import { FONT_MONO_MEDIUM, RADIUS, SPACING } from '@/constants/theme';
+import type { PickedAudio } from '@/api/types';
 
 export interface SongFormValues {
   artist: string;
@@ -14,6 +18,7 @@ export interface SongFormValues {
   genres: string; // comma-separated
   youtubeVideoId: string; // ID або повне посилання — бекенд сам розбирає; порожньо = скинути кеш
   lyrics?: string; // текст пісні; undefined — ще не завантажено
+  audio?: PickedAudio | null; // новий файл пісні (лише ком'юніті) — додати або замінити
 }
 
 export function SongFormModal({
@@ -24,6 +29,7 @@ export function SongFormModal({
   onSave,
   saving,
   loadLyrics,
+  audioFile,
 }: {
   visible: boolean;
   title: string;
@@ -33,6 +39,8 @@ export function SongFormModal({
   saving?: boolean;
   // Текст пісні тягнеться окремим запитом (як і на сайті) — підставляємо, коли прийде.
   loadLyrics?: () => Promise<string | null>;
+  // Файл пісні (лише пісні ком'юніті): has — чи вже є файл.
+  audioFile?: { has: boolean };
 }) {
   const { theme, t } = useSettings();
   const [values, setValues] = useState<SongFormValues>(initial);
@@ -51,6 +59,17 @@ export function SongFormModal({
   }, [visible]);
 
   const set = (k: keyof SongFormValues) => (v: string) => setValues((s) => ({ ...s, [k]: v }));
+
+  const pickAudio = async () => {
+    const res = await DocumentPicker.getDocumentAsync({ type: 'audio/*', copyToCacheDirectory: true, multiple: false });
+    if (res.canceled || !res.assets?.length) return;
+    const a = res.assets[0];
+    if (a.size && a.size > MAX_AUDIO_BYTES) {
+      Alert.alert(t('common.error'), t('msg.audioTooLarge'));
+      return;
+    }
+    setValues((s) => ({ ...s, audio: { uri: a.uri, name: a.name, mimeType: a.mimeType || 'audio/mpeg', size: a.size } }));
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -84,6 +103,26 @@ export function SongFormModal({
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {audioFile ? (
+              <View style={{ marginBottom: SPACING.lg }}>
+                <Text style={[styles.fileLabel, { color: theme.text2 }]}>{t('form.audioFile')}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity onPress={pickAudio} style={[styles.pickBtn, { borderColor: theme.accent }]}>
+                    <UploadIcon size={16} color={theme.accent} />
+                    <Text numberOfLines={1} style={{ color: theme.accent, flexShrink: 1, fontFamily: FONT_MONO_MEDIUM, fontSize: 13 }}>
+                      {values.audio ? values.audio.name : t(audioFile.has ? 'admin.audioReplaceBtn' : 'admin.audioAddBtn')}
+                    </Text>
+                  </TouchableOpacity>
+                  {values.audio ? (
+                    <TouchableOpacity onPress={() => setValues((s) => ({ ...s, audio: null }))} hitSlop={10} style={{ padding: 6 }}>
+                      <CloseIcon size={14} color={theme.muted} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+                <Text style={{ color: theme.muted, fontSize: 12, marginTop: 5 }}>{t(audioFile.has ? 'admin.audioHasFile' : 'admin.audioNoFile')}</Text>
+                <Text style={{ color: theme.accent, fontSize: 12, marginTop: 3 }}>{t('form.audioFile.bgHint')}</Text>
+              </View>
+            ) : null}
             {loadLyrics ? (
               <Field
                 label={t('admin.lyrics')}
@@ -127,4 +166,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginTop: 12,
   },
+  fileLabel: { fontSize: 13, marginBottom: 7, fontWeight: '600' },
+  pickBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.md, paddingHorizontal: 14 },
 });

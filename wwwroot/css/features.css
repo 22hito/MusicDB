@@ -206,6 +206,9 @@
 /* Телефони/планшети: гучність — кнопками пристрою (програмно браузер її там не змінює). */
 @media (hover: none) and (pointer: coarse) { .mini-audio-volwrap { display: none; } }
 
+/* Підказка про фон біля поля файлу пісні. */
+.audio-bg-hint { color: var(--accent); opacity: 0.85; }
+
 /* Аватарки на сторінці друзів. */
 .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }

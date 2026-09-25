@@ -114,6 +114,12 @@ export function useMusicApi() {
       setYoutubeVideo: (id: number, videoId: string) =>
         request<void>(`/api/songs/${id}/youtube-video`, { method: 'PUT', body: { videoId } }),
       deleteSong: (id: number) => request<void>(`/api/songs/${id}`, { method: 'DELETE' }),
+      // Додати/замінити файл пісні ком'юніті (адмін) — multipart нативним fetch.
+      replaceSongAudio: (id: number, audio: PickedAudio) => {
+        const fd = new FormData();
+        fd.append('audio', filePart(audio));
+        return upload<void>(`/api/songs/${id}/audio`, fd, 'PUT');
+      },
 
       // Текст пісні (окремо від списку, щоб не роздувати його); змінює лише адмін.
       getLyrics: (id: number) => request<{ lyrics: string | null }>(`/api/songs/${id}/lyrics`),
