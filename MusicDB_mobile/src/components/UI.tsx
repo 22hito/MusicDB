@@ -117,15 +117,16 @@ export function Badge({ label, kind = 'genre', active }: { label: string; kind?:
 }
 
 // Картка статистики — як .stat-card: дрібна розріджена мітка + велике число Playfair.
-export function StatCard({ label, value, style }: { label: string; value: number | string; style?: StyleProp<ViewStyle> }) {
+export function StatCard({ label, value, style, onPress }: { label: string; value: number | string; style?: StyleProp<ViewStyle>; onPress?: () => void }) {
   const { theme } = useSettings();
+  const Wrap = onPress ? TouchableOpacity : View;
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }, style]}>
+    <Wrap onPress={onPress} style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }, style]}>
       <Text numberOfLines={1} style={[styles.statLabel, { color: theme.muted }]}>
         {label}
       </Text>
       <Text style={[styles.statValue, { color: theme.accent }]}>{value}</Text>
-    </View>
+    </Wrap>
   );
 }
 

@@ -1592,8 +1592,14 @@
 <!-- Граф схожості: композиції/жанри/альбоми/сингли -->
 <div class="modal-overlay" id="graph-modal-overlay">
   <div class="graph-box">
-    <div class="battle-header">
+    <div class="battle-header graph-header">
       <span id="graph-title"></span>
+      <!-- Граф пісень: знайти пісню — граф навколо неї (вона в центрі й виділена). -->
+      <div class="graph-search" id="graph-search" style="display:none;">
+        <input type="text" id="graph-search-input" autocomplete="off" data-i18n-placeholder="graph.searchPlaceholder" placeholder="Знайти пісню…" oninput="onGraphSearchInput()">
+        <div class="graph-search-results" id="graph-search-results"></div>
+      </div>
+      <button type="button" class="btn btn-outline graph-back-btn" id="graph-back-btn" style="display:none;" onclick="openSimilarityGraph('songs')" data-i18n="graph.allSongs">← Усі пісні</button>
       <button class="battle-close-btn" onclick="closeGraph()"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
     <div id="graph-loading" class="graph-loading" data-i18n="graph.loading">Обчислюємо розташування…</div>

@@ -14,6 +14,7 @@ import { SongRow } from '@/components/SongRow';
 import { openUserProfile } from '@/components/FriendsPanel';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
+import { SongGraphModal } from '@/components/SongGraphModal';
 import { AddToPlaylistModal } from '@/components/AddToPlaylistModal';
 import { SelectField } from '@/components/SelectField';
 import { DiscIcon, ShuffleIcon, SortIcon, UsersIcon } from '@/components/Icons';
@@ -77,6 +78,7 @@ export default function LibraryScreen() {
   const [sortKey, setSortKey] = useState<SortKey>('default');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [sortOpen, setSortOpen] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false); // граф навколо пісні (картка "Композицій")
 
   const [addToPlaylistId, setAddToPlaylistId] = useState<number | null>(null);
   const [editSong, setEditSong] = useState<Song | null>(null);
@@ -278,7 +280,7 @@ export default function LibraryScreen() {
             {/* Як на сайті: спершу статистика 2×2, далі перемикач таблиць, заголовок, пошук. */}
             {stats ? (
               <View style={styles.statsRow}>
-                <StatCard style={styles.statCell} label={t('stat.songs')} value={stats.totalSongs} />
+                <StatCard style={styles.statCell} label={t('stat.songs')} value={stats.totalSongs} onPress={() => setGraphOpen(true)} />
                 <StatCard style={styles.statCell} label={t('stat.genres')} value={stats.totalGenres} />
                 <StatCard style={styles.statCell} label={t('stat.albums')} value={stats.totalAlbums} />
                 <StatCard style={styles.statCell} label={t('stat.singles')} value={stats.singles} />
@@ -436,6 +438,13 @@ export default function LibraryScreen() {
       </Modal>
 
       <RatingModal song={ratingSong} onClose={() => setRatingSong(null)} />
+      <SongGraphModal
+        visible={graphOpen}
+        songs={songs}
+        initialId={player.current?.id}
+        onClose={() => setGraphOpen(false)}
+        onPlay={(s) => player.playFrom(songs, s.id)}
+      />
 
       <AddToPlaylistModal visible={addToPlaylistId !== null} musicId={addToPlaylistId} onClose={() => setAddToPlaylistId(null)} />
 

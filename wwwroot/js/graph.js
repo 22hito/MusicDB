@@ -417,11 +417,65 @@ function openSimilarityGraph(kind){
     titleKey = kind === 'albums' ? 'graph.titleAlbums' : 'graph.titleSingles';
   }
 
-  _openGraphModal(t(titleKey), items, simFn, labelFn, colorFn, onClickFn);
+  _openGraphModal(t(titleKey), items, simFn, labelFn, colorFn, onClickFn, { search: kind === 'songs' });
 }
 
-function _openGraphModal(title, items, simFn, labelFn, colorFn, onClickFn, opts){
+// ─── Граф навколо пісні: обрана — в центрі й виділена, навколо — найсхожіші ───
+// Радіально, як карта смаку: відстань від центру — за схожістю (кола 80/60/40%),
+// поруч — пісні того самого виконавця; лінії — лише від центру, щоб не було каші.
+const GRAPH_EGO_SIZE = 20;
+const EGO_R_MIN = 90, EGO_R_MAX = 280;
+function _egoRadius(v){ return EGO_R_MIN + (1 - Math.max(0, Math.min(1, v))) * (EGO_R_MAX - EGO_R_MIN); }
+function _songSim(a, b){
+  const genre = _jaccard(_genreSet(a), _genreSet(b));
+  const sameArtist = a.artist && (b.artist || '').toLowerCase() === a.artist.toLowerCase() ? 0.3 : 0;
+  const sameAlbum = a.album && b.album === a.album ? 0.1 : 0;
+  return Math.min(1, genre * 0.8 + sameArtist + sameAlbum);
+}
+function openSongEgoGraph(songId){
+  const center = songs.find(s => s.id === songId);
+  if(!center) return;
+  const scored = songs.filter(s => s.id !== songId).map(s => ({ s, v: _songSim(center, s) }))
+    .filter(x => x.v > 0).sort((a,b) => b.v - a.v).slice(0, GRAPH_EGO_SIZE);
+  const items = [center, ...scored.map(x => x.s)];
+  const score = new Map(scored.map(x => [x.s.id, x.v]));
+  const order = scored.map((x,k) => k + 1)
+    .sort((a,b) => (items[a].artist || '').localeCompare(items[b].artist || '') || score.get(items[b].id) - score.get(items[a].id));
+  const positions = items.map(() => [400, 300]);
+  order.forEach((i, k) => {
+    const ang = -Math.PI/2 + ((k + 0.5) / order.length) * Math.PI * 2;
+    // Сусіди почергово трохи ближче/далі — підписи густих ділянок не наповзають.
+    const r = _egoRadius(score.get(items[i].id)) + (k % 2 ? 22 : 0);
+    positions[i] = [400 + Math.cos(ang) * r, 300 + Math.sin(ang) * r];
+  });
+  _openGraphModal(t('graph.egoTitle').replace('{song}', `${center.artist} — ${center.title}`), items,
+    (i,j) => (i === 0 ? score.get(items[j].id) : j === 0 ? score.get(items[i].id) : 0) || 0,
+    s => s.id === center.id ? `${s.artist} — ${s.title} · ${t('graph.egoPlay')}` : `${s.artist} — ${s.title} · ${Math.round(score.get(s.id)*100)}%`,
+    (s,i) => i === 0 ? '#c8a96e' : WHEEL_COLORS[(i % (WHEEL_COLORS.length - 1)) + 1],
+    s => { if(s.id === center.id){ closeGraph(); playSong(s.id); } else openSongEgoGraph(s.id); },
+    { positions, ring: [0], radius: 7, sizes: items.map((s,i) => i === 0 ? 2.2 : 0.8 + (score.get(s.id) || 0) * 0.6),
+      rings: [80, 60, 40].map(p => ({ r: _egoRadius(p / 100), label: `${p}%` })),
+      nodeLabels: s => s.title, radialLabels: true, hint: t('graph.egoHint'), search: true, back: true });
+}
+function onGraphSearchInput(){
+  const q = document.getElementById('graph-search-input').value.trim().toLowerCase();
+  const box = document.getElementById('graph-search-results');
+  if(q.length < 2){ box.innerHTML = ''; box.classList.remove('open'); return; }
+  const found = songs.filter(s => `${s.artist} ${s.title}`.toLowerCase().includes(q)).slice(0, 8);
+  box.innerHTML = found.length
+    ? found.map(s => `<button type="button" onclick="openSongEgoGraph(${s.id})"><strong>${esc(s.title)}</strong><span>${esc(s.artist)}</span></button>`).join('')
+    : `<div class="graph-search-empty">${esc(t('table.empty'))}</div>`;
+  box.classList.add('open');
+}
+
+function _openGraphModal(title, items, simFn, labelFn, colorFn, onClickFn, opts = {}){
   document.getElementById('graph-title').textContent = title;
+  document.getElementById('graph-search').style.display = opts.search ? '' : 'none';
+  document.getElementById('graph-back-btn').style.display = opts.back ? '' : 'none';
+  document.getElementById('graph-search-input').value = '';
+  const results = document.getElementById('graph-search-results');
+  results.innerHTML = ''; results.classList.remove('open');
+  document.querySelector('#graph-modal-overlay .graph-hint').textContent = opts.hint || t('graph.hint');
   document.getElementById('graph-loading').style.display = 'block';
   _g = null;
   const c = _graphCanvas(); c.getContext('2d').clearRect(0, 0, c.width, c.height);
