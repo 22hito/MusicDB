@@ -3,6 +3,7 @@ import { useApiBridge } from './ApiBridge';
 import { useSettings } from '@/state/SettingsContext';
 import type {
   AdminNotificationsSummary,
+  NotificationsSummary,
   ArtistDetail,
   ArtistSummary,
   BugReport,
@@ -225,6 +226,11 @@ export function useMusicApi() {
         request<ThreadPost>(`/api/threads/${id}/posts`, { method: 'POST', body: { body } }),
       deleteThread: (id: number) => request<void>(`/api/threads/${id}`, { method: 'DELETE' }),
       deleteThreadPost: (postId: number) => request<void>(`/api/threads/posts/${postId}`, { method: 'DELETE' }),
+
+      // Сповіщення про виконавців (підписки) — дзвіночок у шапці
+      getNotifications: (limit = 30) => request<NotificationsSummary>('/api/notifications', { query: { limit } }),
+      markNotificationsRead: () => request<void>('/api/notifications/mark-read', { method: 'POST' }),
+      markNotificationRead: (eventId: number) => request<void>(`/api/notifications/${eventId}/mark-read`, { method: 'POST' }),
 
       // Сповіщення адмінів ("hito схвалює запит …")
       getAdminNotifications: (limit = 30) =>

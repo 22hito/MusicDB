@@ -26,15 +26,6 @@ interface SettingsState {
   lang: Lang;
   setLang: (lang: Lang) => void;
   t: (key: keyof typeof I18N['uk'], vars?: Record<string, string | number>) => string;
-  // Екран налаштувань показується як звичайний <Modal>, а не окремий route —
-  // навмисно уникаємо expo-router-івського <Stack> (native-stack) тут: у ньому є
-  // активний і поки не випущений у стабільну версію upstream-баг у
-  // react-native-screens на Fabric/New Architecture (Android), через який
-  // контент native-stack-сцени займає лише половину екрана
-  // (github.com/software-mansion/react-native-screens/issues/2933).
-  settingsModalOpen: boolean;
-  openSettingsModal: () => void;
-  closeSettingsModal: () => void;
 }
 
 const SettingsContext = createContext<SettingsState | null>(null);
@@ -46,9 +37,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemePref>('system');
   const [accent, setAccentState] = useState<AccentKey>('amber');
   const [lang, setLangState] = useState<Lang>('uk');
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const openSettingsModal = useCallback(() => setSettingsModalOpen(true), []);
-  const closeSettingsModal = useCallback(() => setSettingsModalOpen(false), []);
 
   useEffect(() => {
     (async () => {
@@ -111,9 +99,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       lang,
       setLang,
       t,
-      settingsModalOpen,
-      openSettingsModal,
-      closeSettingsModal,
     }),
     [
       ready,
@@ -126,9 +111,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       lang,
       setLang,
       t,
-      settingsModalOpen,
-      openSettingsModal,
-      closeSettingsModal,
     ],
   );
 

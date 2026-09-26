@@ -101,6 +101,8 @@
   <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
   <symbol id="icon-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
   <symbol id="icon-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></symbol>
+  <symbol id="icon-sort" viewBox="0 0 24 24"><path d="M7 4v16M3.5 7.5 7 4l3.5 3.5M17 20V4M13.5 16.5 17 20l3.5-3.5"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.6-3.4 8.3-8 9-4.6-.7-8-4.4-8-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></symbol>
   <symbol id="icon-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
   <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></symbol>
   <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
@@ -209,6 +211,7 @@
     <div class="filter-bar">
       <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="debouncedRenderSongs()">
       <select id="filter-genre" onchange="renderSongs()" aria-label="Жанр" data-i18n-title="filter.allGenres"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
+      <label class="m-sort m-only" id="m-sort" data-i18n-title="sort.button" title="Сортувати"><svg class="icon"><use href="#icon-sort"/></svg><select id="m-sort-select" onchange="onMobileSortChange(this.value)" aria-label="Сортувати"></select></label>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="table.shuffle">Перемішати</span></button>
       <!-- Дії над таблицею — в одному рядку з фільтрами, притиснуті праворуч.
            "Об'єднати жанри" — лише для адмінів (показує renderAuthArea, ендпоінт теж [AdminOnly]). -->
@@ -380,17 +383,27 @@
      page-profile-settings нижче) -->
 <div id="page-profile" class="page">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.5rem;">
-      <div style="display:flex;align-items:center;gap:1rem;">
-        <img id="profile-view-picture" src="" style="width:56px;height:56px;border-radius:50%;border:1px solid var(--border);object-fit:cover;display:none;">
-        <span id="profile-view-picture-ph" style="width:56px;height:56px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--muted);"><svg class="icon"><use href="#icon-user"/></svg></span>
-        <div>
-          <h2 style="margin-bottom:2px;"><span data-i18n="profile.heading.pre">Мій</span> <span class="hl" data-i18n="profile.heading.accent">профіль</span></h2>
-          <div id="profile-view-name" style="color:var(--text);font-size:0.95rem;font-weight:600;"></div>
-          <div id="profile-view-email" style="color:var(--muted);font-size:0.78rem;"></div>
+    <h2><span data-i18n="profile.heading.pre">Мій</span> <span class="hl" data-i18n="profile.heading.accent">профіль</span></h2>
+    <div class="form-card profile-card">
+      <div class="profile-card-top">
+        <label class="profile-avatar-pick" data-i18n-title="profile.avatarHint" title="Оберіть зображення з пристрою">
+          <img id="profile-view-picture" src="" alt="" style="display:none;">
+          <span id="profile-view-picture-ph"></span>
+          <span class="profile-avatar-edit"><svg class="icon"><use href="#icon-pencil"/></svg></span>
+          <input type="file" id="profile-avatar-file" accept="image/*" onchange="onAvatarFileSelected(event)" hidden>
+        </label>
+        <div class="profile-card-id">
+          <div id="profile-view-name" class="profile-card-name"></div>
+          <div id="profile-view-email" class="profile-card-email"></div>
+          <span id="profile-view-admin" class="profile-admin-badge" style="display:none;">ADMIN</span>
         </div>
       </div>
-      <button class="btn btn-outline" onclick="showPage('profile-settings')"><svg class="icon"><use href="#icon-settings"/></svg> <span data-i18n="nav.profileSettings">Налаштування</span></button>
+      <button type="button" class="profile-avatar-remove" id="profile-avatar-remove" onclick="removeAvatar()" style="display:none;" data-i18n="profile.avatarReset">Прибрати аватар</button>
+      <div class="form-group">
+        <label for="profile-display-name" data-i18n="profile.displayName">Нікнейм</label>
+        <input type="text" id="profile-display-name" maxlength="50" data-i18n-placeholder="profile.displayName.placeholder" placeholder="Наприклад, MusicLover228">
+      </div>
+      <button class="btn btn-primary" id="profile-save-btn" onclick="saveProfile()" data-i18n="profile.saveBtn">Зберегти</button>
     </div>
 
     <div class="stats-row" style="margin-bottom:2rem;">
@@ -407,7 +420,7 @@
     <div id="profile-favorites-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-heart-broken"/></svg><span data-i18n="profile.favoritesEmpty">Ще немає улюблених пісень</span></div>
     <div class="table-wrap mobile-cards" style="margin-bottom:2rem;">
       <table>
-        <thead><tr><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
+        <thead><tr><th style="width:40px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th><th></th></tr></thead>
         <tbody id="profile-favorites-body"></tbody>
       </table>
     </div>
@@ -418,40 +431,17 @@
     </div>
     <div id="profile-playlists-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="profile.playlistsEmpty">Ще немає плейлистів</span></div>
     <div id="profile-playlists-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+
+    <div class="profile-links m-only">
+      <button type="button" class="profile-link" onclick="openChatPage('friends')"><svg class="icon"><use href="#icon-users"/></svg><span data-i18n="nav.friends">Друзі</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="profile-link" onclick="openBugReportModal()"><svg class="icon"><use href="#icon-bug"/></svg><span data-i18n="bugs.menu">Повідомити про баг</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="profile-link" onclick="showPage('settings')"><svg class="icon"><use href="#icon-sliders"/></svg><span data-i18n="nav.settings">Налаштування</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
+    </div>
+    <button type="button" class="btn btn-outline profile-logout m-only" onclick="logout()" data-i18n="auth.logout">Вийти</button>
   </div>
 </div>
 
 <!-- PROFILE SETTINGS (нікнейм/аватарка — раніше було частиною page-profile) -->
-<div id="page-profile-settings" class="page">
-  <div class="container">
-    <button class="btn btn-outline" onclick="showPage('profile')" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="profile.backToProfile">До профілю</span></button>
-    <h2><span data-i18n="profileSettings.heading.pre">Налаштування</span> <span class="hl" data-i18n="profileSettings.heading.accent">профілю</span></h2>
-
-    <div class="form-card" style="max-width:600px;">
-      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
-        <img id="profile-picture" src="" style="width:56px;height:56px;border-radius:50%;border:1px solid var(--border);object-fit:cover;display:none;">
-        <div>
-          <div id="profile-name" style="color:var(--text);font-size:1.1rem;font-weight:600;"></div>
-          <div id="profile-email" style="color:var(--muted);font-size:0.8rem;"></div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label data-i18n="profile.avatar">Аватарка</label>
-        <input type="file" id="profile-avatar-file" accept="image/*" onchange="onAvatarFileSelected(event)">
-        <div class="hint">
-          <span data-i18n="profile.avatarHint">Оберіть зображення з пристрою</span> —
-          <a href="#" onclick="removeAvatar();return false;" style="color:var(--accent);" data-i18n="profile.avatarRemove">прибрати й повернути фото з Google</a>
-        </div>
-      </div>
-      <div class="form-group">
-        <label data-i18n="profile.displayName">Нікнейм (відображається замість імені Google)</label>
-        <input type="text" id="profile-display-name" data-i18n-placeholder="profile.displayName.placeholder" placeholder="Наприклад, MusicLover228">
-      </div>
-      <button class="btn btn-primary" onclick="saveProfile()" data-i18n="profile.saveBtn">Зберегти</button>
-    </div>
-  </div>
-</div>
-
 <!-- PLAYLIST DETAIL -->
 <div id="page-playlist" class="page">
   <div class="container">
@@ -484,7 +474,6 @@
       <button type="button" class="explore-tile" onclick="showPage('taste')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-users"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.taste">Схожий смак</strong><span data-i18n="explore.tasteSub">Люди з подібними улюбленими піснями й виконавцями</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="explore-tile" onclick="showPage('artists')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-mic"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.artists">Виконавці</strong><span data-i18n="explore.artistsSub">Каталог, дискографії, підписки</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="explore-tile" onclick="openRecommendationsPage()"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-sparkle"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.recommendations">Рекомендовано для вас</strong><span data-i18n="explore.recSub">Підбірка за тим, що ви слухаєте</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
-      <button type="button" class="explore-tile" onclick="showPage('top')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-headphones"/></svg></span><span class="explore-tile-text"><strong data-i18n="nav.top">Топ 100</strong><span data-i18n="explore.topSub">Найпрослуханіші пісні</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
     </div>
   </div>
 </div>
@@ -698,42 +687,10 @@
 </div>
 
 <!-- FRIENDS: пошук людей, вхідні/надіслані запити, список друзів -->
-<div id="page-friends" class="page">
-  <div class="container">
-    <h2><span data-i18n="friends.heading.pre">Мої</span> <span class="hl" data-i18n="friends.heading.accent">друзі</span></h2>
-
-    <div style="margin-bottom:2rem;">
-      <div class="filter-bar" style="margin-bottom:0;">
-        <input type="text" id="friends-search" data-i18n-placeholder="friends.searchPlaceholder" placeholder="Пошук людей за іменем…" oninput="onFriendsSearchInput()">
-      </div>
-      <div id="friends-search-empty" class="empty" style="display:none;padding:1rem 0;"><span data-i18n="friends.searchEmpty">Нікого не знайдено</span></div>
-      <div id="friends-search-results" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.6rem;"></div>
-    </div>
-
-    <div style="margin-bottom:2rem;">
-      <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.incoming">Вхідні запити</h3>
-      <div id="friends-incoming-empty" class="empty" style="display:none;"><span data-i18n="friends.incomingEmpty">Немає вхідних запитів</span></div>
-      <div id="friends-incoming-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
-    </div>
-
-    <div style="margin-bottom:2rem;">
-      <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.outgoing">Надіслані запити</h3>
-      <div id="friends-outgoing-empty" class="empty" style="display:none;"><span data-i18n="friends.outgoingEmpty">Немає надісланих запитів</span></div>
-      <div id="friends-outgoing-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
-    </div>
-
-    <div>
-      <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.myFriends">Мої друзі</h3>
-      <div id="friends-list-empty" class="empty" style="display:none;"><span data-i18n="friends.friendsEmpty">Ще немає друзів — знайдіть когось через пошук вище</span></div>
-      <div id="friends-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
-    </div>
-  </div>
-</div>
-
 <!-- USER PROFILE: публічний профіль іншого користувача (id -> openUserProfilePage) -->
 <div id="page-user-profile" class="page">
   <div class="container">
-    <button class="btn btn-outline" onclick="showPage('friends')" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="profile.public.back">До друзів</span></button>
+    <button class="btn btn-outline" onclick="openChatPage('friends')" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="profile.public.back">До друзів</span></button>
     <div id="user-profile-not-found" class="empty" style="display:none;"><span data-i18n="profile.public.notFound">Користувача не знайдено</span></div>
     <div id="user-profile-content" style="display:none;">
       <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
@@ -941,7 +898,7 @@
     </div>
 
     <div class="settings-footer">
-      <button class="btn btn-outline" id="settings-profile-link" onclick="showPage('profile-settings')" style="display:none"><svg class="icon"><use href="#icon-user"/></svg> <span data-i18n="settings.profileLink">Нікнейм і аватар</span></button>
+      <button class="btn btn-outline" id="settings-profile-link" onclick="showPage('profile')" style="display:none"><svg class="icon"><use href="#icon-user"/></svg> <span data-i18n="settings.profileLink">Нікнейм і аватар</span></button>
       <button class="btn btn-outline" onclick="resetPrefs()"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="settings.reset">Скинути до стандартних</span></button>
     </div>
     <p class="app-version" id="app-version" style="color:var(--muted);font-size:0.75rem;margin-top:1.4rem;text-align:center;"></p>
@@ -951,10 +908,46 @@
 <div id="page-chat" class="page">
   <div class="container">
     <h2><span data-i18n="chat.heading.pre">Спілкування</span> <span class="hl" data-i18n="chat.heading.accent">ком'юніті</span></h2>
-    <div class="seg-switch" style="margin-bottom:1.5rem;">
-      <button type="button" id="chat-tab-dm" onclick="switchChatTab('dm')"><svg class="icon"><use href="#icon-chat"/></svg> <span data-i18n="chat.tab.dm">Особисті повідомлення</span><span class="count-badge" id="chat-tab-dm-badge" style="display:none;"></span></button>
-      <button type="button" id="chat-tab-requests" onclick="switchChatTab('requests')"><svg class="icon"><use href="#icon-inbox"/></svg> <span data-i18n="chat.tab.requests">Запити на листування</span><span class="count-badge" id="chat-tab-requests-badge" style="display:none;"></span></button>
+    <div class="seg-switch chat-tabs">
       <button type="button" id="chat-tab-threads" class="active" onclick="switchChatTab('threads')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="chat.tab.threads">Обговорення</span></button>
+      <button type="button" id="chat-tab-friends" onclick="switchChatTab('friends')"><svg class="icon"><use href="#icon-user"/></svg> <span data-i18n="chat.tab.friends">Друзі</span><span class="count-badge" id="chat-tab-friends-badge" style="display:none;"></span></button>
+      <button type="button" id="chat-tab-dm" onclick="switchChatTab('dm')"><svg class="icon"><use href="#icon-chat"/></svg> <span data-i18n="chat.tab.dm">Особисті</span><span class="count-badge" id="chat-tab-dm-badge" style="display:none;"></span></button>
+    </div>
+    <!-- Особисті: чати й запити на листування — підвкладки. -->
+    <div class="seg-switch seg-sub chat-subtabs" id="chat-dm-subtabs" style="display:none;">
+      <button type="button" id="chat-sub-dm" class="active" onclick="switchChatTab('dm')"><span data-i18n="chat.tab.chats">Чати</span><span class="count-badge" id="chat-sub-dm-badge" style="display:none;"></span></button>
+      <button type="button" id="chat-sub-requests" onclick="switchChatTab('requests')"><span data-i18n="chat.tab.requests">Запити</span><span class="count-badge" id="chat-tab-requests-badge" style="display:none;"></span></button>
+    </div>
+
+    <div id="chat-friends-section" style="display:none;">
+      <div id="chat-friends-login-hint" class="empty" style="display:none;"><svg class="icon"><use href="#icon-lock"/></svg><span data-i18n="friends.loginHint">Увійдіть, щоб додавати друзів</span></div>
+      <div id="chat-friends-body">
+  <div style="margin-bottom:2rem;">
+        <div class="filter-bar" style="margin-bottom:0;">
+          <input type="text" id="friends-search" data-i18n-placeholder="friends.searchPlaceholder" placeholder="Пошук людей за іменем…" oninput="onFriendsSearchInput()">
+        </div>
+        <div id="friends-search-empty" class="empty" style="display:none;padding:1rem 0;"><span data-i18n="friends.searchEmpty">Нікого не знайдено</span></div>
+        <div id="friends-search-results" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.6rem;"></div>
+      </div>
+
+      <div style="margin-bottom:2rem;">
+        <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.incoming">Вхідні запити</h3>
+        <div id="friends-incoming-empty" class="empty" style="display:none;"><span data-i18n="friends.incomingEmpty">Немає вхідних запитів</span></div>
+        <div id="friends-incoming-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+      </div>
+
+      <div style="margin-bottom:2rem;">
+        <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.outgoing">Надіслані запити</h3>
+        <div id="friends-outgoing-empty" class="empty" style="display:none;"><span data-i18n="friends.outgoingEmpty">Немає надісланих запитів</span></div>
+        <div id="friends-outgoing-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+      </div>
+
+      <div>
+        <h3 style="font-size:1.05rem;margin-bottom:0.6rem;" data-i18n="friends.myFriends">Мої друзі</h3>
+        <div id="friends-list-empty" class="empty" style="display:none;"><span data-i18n="friends.friendsEmpty">Ще немає друзів — знайдіть когось через пошук вище</span></div>
+        <div id="friends-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+      </div>
+      </div>
     </div>
 
     <!-- Вхідні запити на листування: не-друзі можуть написати лише одне
@@ -1030,9 +1023,9 @@
   <button type="button" class="mtab" data-tab="home" onclick="showHome('catalog')"><svg class="icon"><use href="#icon-music"/></svg><span data-i18n="nav.library">Бібліотека</span></button>
   <button type="button" class="mtab" data-tab="top" onclick="showPage('top')"><svg class="icon"><use href="#icon-trophy"/></svg><span data-i18n="nav.topShort">Топ</span></button>
   <button type="button" class="mtab" data-tab="chat" onclick="openChatPage('threads')"><svg class="icon"><use href="#icon-chat"/></svg><span data-i18n="nav.social">Спілкування</span><span class="mtab-badge" id="mtab-chat-badge"></span></button>
-  <button type="button" class="mtab" data-tab="explore" onclick="showPage('explore')"><svg class="icon"><use href="#icon-sparkle"/></svg><span data-i18n="nav.explore">Огляд</span></button>
-  <button type="button" class="mtab" data-tab="profile" onclick="openProfileTab()"><svg class="icon"><use href="#icon-user"/></svg><span data-i18n="nav.profile">Профіль</span></button>
-  <button type="button" class="mtab mtab-admin" data-tab="admin" onclick="showPage('admin-hub')"><svg class="icon"><use href="#icon-settings"/></svg><span data-i18n="nav.adminShort">Адмін</span><span class="mtab-badge" id="mtab-admin-badge"></span></button>
+  <button type="button" class="mtab" data-tab="explore" onclick="showPage('explore')"><svg class="icon"><use href="#icon-sparkle"/></svg><span data-i18n="nav.explore">Цікаве</span></button>
+  <button type="button" class="mtab" data-tab="settings" onclick="showPage('settings')"><svg class="icon"><use href="#icon-sliders"/></svg><span data-i18n="nav.settings">Налаштування</span></button>
+  <button type="button" class="mtab mtab-admin" data-tab="admin" onclick="showPage('admin-hub')"><svg class="icon"><use href="#icon-shield"/></svg><span data-i18n="nav.adminShort">Адмін</span><span class="mtab-badge" id="mtab-admin-badge"></span></button>
 </div>
 
 <div id="player-bar">

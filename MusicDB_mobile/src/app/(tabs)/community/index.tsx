@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
@@ -13,17 +13,26 @@ import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Conversation, DmRequest, ThreadSummary } from '@/api/types';
 
 type Tab = 'dm' | 'requests' | 'threads' | 'friends';
+type MainTab = 'threads' | 'friends' | 'dm';
 
-// "Спілкування": особисті повідомлення (друзям — вільно, іншим — через запит),
-// вхідні запити на листування і гілки обговорень ком'юніті — як сторінка чату на сайті.
+// "Спілкування" — як на сайті: вкладки Обговорення · Друзі · Особисті, а в "Особистих" —
+// підвкладки Чати / Запити на листування (друзям — вільно, іншим — через запит).
+// ?tab=friends|dm|requests відкриває потрібну вкладку (з профілю, сповіщень).
+const TABS: Tab[] = ['dm', 'requests', 'threads', 'friends'];
 export default function CommunityScreen() {
   const { theme, t } = useSettings();
   const { currentUser, subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const requireAuth = useRequireAuth();
   const authed = !!currentUser?.authenticated;
+  const params = useLocalSearchParams<{ tab?: string }>();
 
   const [tab, setTab] = useState<Tab>('threads');
+  const [dmUnread, setDmUnread] = useState(0);
+  useEffect(() => {
+    if (params.tab && (TABS as string[]).includes(params.tab)) setTab(params.tab as Tab);
+  }, [params.tab]);
+  const mainTab: MainTab = tab === 'requests' ? 'dm' : tab;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<DmRequest[]>([]);
   const [friendRequests, setFriendRequests] = useState(0);
@@ -43,6 +52,7 @@ export default function CommunityScreen() {
       else if (authed && tab === 'requests') setRequests(await api.getDmRequests());
       if (authed) api.getDmRequests().then(setRequests).catch(() => {});
       if (authed) api.getIncomingFriendRequests().then((r) => setFriendRequests(r.length)).catch(() => {});
+      if (authed) api.getDmUnread().then((d) => setDmUnread(d.unread)).catch(() => {});
     } catch {
       // лишаємо попередні дані
     } finally {
@@ -99,11 +109,14 @@ export default function CommunityScreen() {
   };
 
 
-  const tabs: { value: Tab; label: string }[] = [
+  const tabs: { value: MainTab; label: string; badge?: number }[] = [
     { value: 'threads', label: t('chat.tab.threads') },
-    { value: 'dm', label: t('chat.tab.dm') },
-    { value: 'requests', label: requests.length ? `${t('chat.tab.requests')} (${requests.length})` : t('chat.tab.requests') },
-    { value: 'friends', label: friendRequests ? `${t('nav.friends')} (${friendRequests})` : t('nav.friends') },
+    { value: 'friends', label: t('chat.tab.friends'), badge: friendRequests },
+    { value: 'dm', label: t('chat.tab.dm'), badge: dmUnread + requests.length },
+  ];
+  const subTabs: { value: Tab; label: string; badge?: number }[] = [
+    { value: 'dm', label: t('chat.tab.chats'), badge: dmUnread },
+    { value: 'requests', label: t('chat.tab.requests'), badge: requests.length },
   ];
 
   return (
@@ -114,8 +127,9 @@ export default function CommunityScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={theme.accent} />}
       >
         <Heading pre={t('chat.heading.pre')} accent={t('chat.heading.accent')} />
-        <View style={{ marginBottom: SPACING.lg }}>
-          <SegmentedPicker<Tab> options={tabs} value={tab} onChange={setTab} />
+        <View style={{ marginBottom: SPACING.lg, gap: SPACING.sm }}>
+          <SegmentedPicker<MainTab> fill options={tabs} value={mainTab} onChange={setTab} />
+          {mainTab === 'dm' && authed ? <SegmentedPicker<Tab> fill options={subTabs} value={tab} onChange={setTab} /> : null}
         </View>
 
         {tab !== 'threads' && !authed ? (

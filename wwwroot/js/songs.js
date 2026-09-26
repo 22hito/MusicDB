@@ -25,6 +25,37 @@ function sortSongs(key){
   renderSongs();
 }
 
+// Телефон: таблиця — картками без заголовків, тож сортування — окремим списком
+// (як кнопка сортування в застосунку). Значення "ключ:напрям".
+const _M_SORT_KEYS = ['artist', 'title', 'release', 'duration', 'plays', 'rating'];
+let _mSortLang = null;
+function _syncMobileSort(){
+  const sel = document.getElementById('m-sort-select');
+  if(!sel) return;
+  if(_mSortLang !== currentLang){
+    _mSortLang = currentLang;
+    sel.innerHTML = `<option value="">${esc(t('sort.default'))}</option>` + _M_SORT_KEYS.map(k =>
+      [1, -1].map(d => `<option value="${k}:${d}">${esc(t('table.' + k))} ${d > 0 ? '↑' : '↓'}</option>`).join('')).join('');
+  }
+  sel.value = sortKey && _M_SORT_KEYS.includes(sortKey) ? `${sortKey}:${sortDir}` : '';
+  document.getElementById('m-sort').classList.toggle('active', !!sel.value);
+}
+function onMobileSortChange(v){
+  const [k, d] = v.split(':');
+  sortKey = k || null;
+  sortDir = +d || 1;
+  if(shuffleActive){
+    shuffleActive=false;
+    shuffleOrderMap=new Map();
+    document.getElementById('shuffle-table-btn').classList.remove('active');
+  }
+  document.querySelectorAll('th.sortable').forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.getAttribute('data-sort-key')===sortKey) th.classList.add(sortDir>0?'sort-asc':'sort-desc');
+  });
+  renderSongs();
+}
+
 function _sortVal(s, key){
   switch(key){
     case 'genres': return s.genres.length?s.genres[0].toLowerCase():'';

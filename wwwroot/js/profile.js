@@ -6,15 +6,28 @@
 // ================================================================
 let profileAvatarValue = null;   // поточне значення аватарки, яке буде надіслано при збереженні
 let profileGooglePicture = null; // фото з Google-акаунту (фолбек, якщо своєї аватарки нема)
+// Картка профілю (як у застосунку): аватар натисканням, нікнейм і "Зберегти" — прямо тут.
+let _profileLabel = '';
+function _renderProfileAvatar(){
+  const shown = profileAvatarValue || profileGooglePicture;
+  const picEl = document.getElementById('profile-view-picture');
+  const picPh = document.getElementById('profile-view-picture-ph');
+  // .avatar-initials задає display з !important — тож при фото знімаємо клас, а не лише ховаємо.
+  if(shown){ picEl.src = shown; picEl.style.display = ''; picPh.style.display = 'none'; picPh.classList.remove('avatar-initials'); picPh.textContent = ''; }
+  else { picEl.style.display = 'none'; picPh.style.display = ''; fillAvatarPlaceholder(picPh, _profileLabel); }
+  document.getElementById('profile-avatar-remove').style.display = profileAvatarValue ? '' : 'none';
+}
 function loadProfilePage(){
   fetch('/api/profile').then(r=>r.json()).then(p=>{
-    document.getElementById('profile-view-name').textContent = p.displayName || p.name || p.email;
+    _profileLabel = p.displayName || p.name || p.email;
+    document.getElementById('profile-view-name').textContent = _profileLabel;
     document.getElementById('profile-view-email').textContent = p.email;
-    const shownPic = p.avatarUrl || p.picture;
-    const picEl = document.getElementById('profile-view-picture');
-    const picPh = document.getElementById('profile-view-picture-ph');
-    if(shownPic){ picEl.src = shownPic; picEl.style.display = ''; picPh.style.display = 'none'; }
-    else { picEl.style.display = 'none'; picPh.style.display = ''; }
+    document.getElementById('profile-view-admin').style.display = p.isAdmin ? '' : 'none';
+    document.getElementById('profile-display-name').value = p.displayName || '';
+    document.getElementById('profile-avatar-file').value = '';
+    profileAvatarValue = p.avatarUrl || null;
+    profileGooglePicture = p.picture || null;
+    _renderProfileAvatar();
     document.getElementById('profile-stat-listened').textContent = p.totalListened;
     document.getElementById('profile-stat-favorites').textContent = p.favoritesCount;
     document.getElementById('profile-stat-playlists').textContent = p.playlistsCount;
@@ -29,20 +42,6 @@ function loadProfilePage(){
   loadProfileFavorites();
   loadProfilePlaylists();
 }
-// Раніше було частиною loadProfilePage() — виділено окремо, коли
-// редагування нікнейму/аватарки переїхало на свою сторінку "Налаштування".
-function loadProfileSettingsPage(){
-  fetch('/api/profile').then(r=>r.json()).then(p=>{
-    document.getElementById('profile-name').textContent = p.displayName || p.name || p.email;
-    document.getElementById('profile-email').textContent = p.email;
-    document.getElementById('profile-display-name').value = p.displayName || '';
-    profileAvatarValue = p.avatarUrl || null;
-    profileGooglePicture = p.picture || null;
-    const pic = document.getElementById('profile-picture');
-    const shown = p.avatarUrl || p.picture;
-    if(shown){ pic.src = shown; pic.style.display = 'block'; } else pic.style.display = 'none';
-  }).catch(()=>{});
-}
 // Конвертує обрану аватарку в base64 для прев'ю; надсилається лише при "Зберегти".
 function onAvatarFileSelected(event){
   const file = event.target.files[0];
@@ -50,18 +49,14 @@ function onAvatarFileSelected(event){
   const reader = new FileReader();
   reader.onload = () => {
     profileAvatarValue = reader.result;
-    const pic = document.getElementById('profile-picture');
-    pic.src = profileAvatarValue;
-    pic.style.display = 'block';
+    _renderProfileAvatar();
   };
   reader.readAsDataURL(file);
 }
 function removeAvatar(){
   profileAvatarValue = null;
   document.getElementById('profile-avatar-file').value = '';
-  const pic = document.getElementById('profile-picture');
-  if(profileGooglePicture){ pic.src = profileGooglePicture; pic.style.display = 'block'; }
-  else pic.style.display = 'none';
+  _renderProfileAvatar();
 }
 function saveProfile(){
   const displayName = document.getElementById('profile-display-name').value.trim();
@@ -69,22 +64,37 @@ function saveProfile(){
     .then(r=>{
       if(!r.ok){ alert(t('msg.connectionError')); return; }
       if(currentUser){ currentUser.displayName = displayName || null; currentUser.avatarUrl = profileAvatarValue; }
-      loadProfileSettingsPage();
+      loadProfilePage();
       renderAuthArea();
     })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
+// Улюблені відтворюються чергою — як у застосунку (▶ у кожному рядку).
+let _profileFavorites = [];
+function playFromFavorites(id){
+  if(!_profileFavorites.length) return;
+  playerQueue = _profileFavorites.slice();
+  playerIndex = Math.max(0, playerQueue.findIndex(s=>s.id===id));
+  _loadCurrent();
+}
 function loadProfileFavorites(){
   fetch('/api/favorites').then(r=>r.json()).then(list=>{
+    _profileFavorites = list;
     const tbody = document.getElementById('profile-favorites-body');
     document.getElementById('profile-favorites-empty').style.display = list.length ? 'none' : '';
-    tbody.innerHTML = list.map(s=>`
-      <tr>
-        <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
-        <td data-label="${t('table.title')}">${esc(s.title)}</td>
-        <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
+    const curId = playerQueue[playerIndex]?.id ?? null;
+    tbody.innerHTML = list.map(s=>{
+      const isPlay = s.id===curId;
+      const btnIcon = isPlay&&isPlaying() ? ROW_PAUSE_ICON : ROW_PLAY_ICON;
+      return `
+      <tr data-id="${s.id}" class="${isPlay?'playing-row':''}">
+        <td class="td-icon-lead" data-label=""><button class="play-row-btn${isPlay?' is-playing':''}" data-icon="${btnIcon===ROW_PAUSE_ICON?'pause':'play'}" onclick="toggleOrPlay(${s.id}, playFromFavorites)">${btnIcon}</button></td>
+        <td class="td-artist" data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
+        <td class="td-title" data-label="${t('table.title')}">${esc(s.title)}</td>
+        <td class="td-genres" data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
         <td class="td-icon-trail" data-label=""><button class="btn-icon-fav active" onclick="removeFavoriteFromProfile(${s.id})" title="${t('profile.favToggle')}"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button></td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }).catch(()=>{});
 }
 function removeFavoriteFromProfile(musicId){

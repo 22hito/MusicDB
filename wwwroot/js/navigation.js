@@ -31,30 +31,32 @@ function _findSong(id){
 
 // ================================================================
 // ─── Мобільна навігація (як у застосунку): таббар, розгортний пошук ───
-function openProfileTab(){
-  if(currentUser?.authenticated) showPage('profile');
-  else confirmLogin();
-}
+// Той самий поріг, що й у css/mobile-app.css.
+function _isPhoneLayout(){ return window.matchMedia('(max-width: 768px)').matches; }
 function toggleMobileSearch(force){
   const open = force ?? !document.body.classList.contains('m-search-open');
   document.body.classList.toggle('m-search-open', open);
   if(open) setTimeout(() => document.getElementById('nav-search-input')?.focus(), 30);
 }
-// Лічильники на вкладках таббару дублюють бейджі шапки (ЛС / адмін-запити).
+// Лічильники на вкладках таббару — з бейджів шапки: Спілкування — ЛС, запити й запити в друзі,
+// Адмін — заявки, що чекають, + відкриті баг-репорти (як у застосунку).
 function _syncTabbarBadges(){
-  const copy = (fromId, toId) => {
-    const from = document.getElementById(fromId), to = document.getElementById(toId);
-    if(!to) return;
-    const text = from && from.style.display !== 'none' ? from.textContent.trim() : '';
-    to.textContent = text;
-    to.classList.toggle('show', !!text && text !== '0');
+  const num = id => {
+    const el = document.getElementById(id);
+    return el && el.style.display !== 'none' ? parseInt(el.textContent, 10) || 0 : 0;
   };
-  copy('dm-badge', 'mtab-chat-badge');
-  copy('admin-requests-badge', 'mtab-admin-badge');
+  const set = (toId, n) => {
+    const to = document.getElementById(toId);
+    if(!to) return;
+    to.textContent = n > 99 ? '99+' : n || '';
+    to.classList.toggle('show', n > 0);
+  };
+  set('mtab-chat-badge', num('dm-badge') + num('chat-tab-friends-badge'));
+  set('mtab-admin-badge', num('admin-requests-badge') + num('admin-bugs-badge'));
 }
 if(typeof MutationObserver === 'function'){
   const _badgeObs = new MutationObserver(() => _syncTabbarBadges());
-  const _watchBadges = () => ['dm-badge', 'admin-requests-badge'].forEach(id => {
+  const _watchBadges = () => ['dm-badge', 'chat-tab-friends-badge', 'admin-requests-badge', 'admin-bugs-badge'].forEach(id => {
     const el = document.getElementById(id);
     if(el && !el._mtabWatched){ el._mtabWatched = true; _badgeObs.observe(el, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['style'] }); }
   });
@@ -89,14 +91,12 @@ function showPage(n){
     if(n==='top') loadTopSongsPage();
     if(n==='admin-hub'){ switchAdminHubTab(_pendingAdminHubTab || 'requests'); _pendingAdminHubTab = null; renderRequests(); }
     if(n==='profile') loadProfilePage();
-    if(n==='profile-settings') loadProfileSettingsPage();
     if(n==='recommendations') loadRecommendationsPage();
     if(n==='wheel') openWheelPage();
     if(n==='battle') openBattlePage();
     if(n==='taste') loadTastePage();
     if(n==='artists') loadArtistsPage();
     if(n==='artist') loadArtistPage();
-    if(n==='friends') loadFriendsPage();
     if(n==='user-profile') loadUserProfilePage();
     if(n==='settings') loadSettingsPage();
     if(n==='chat') loadChatPage();
@@ -113,15 +113,15 @@ function showPage(n){
 // Сервер віддає index.html на будь-який не-API шлях (MapFallbackToFile).
 // ================================================================
 const _PAGE_PATHS = {
-  top: '/top', artists: '/artists', profile: '/profile', 'profile-settings': '/profile/settings',
-  settings: '/settings', friends: '/friends', wheel: '/wheel', battle: '/battle', taste: '/taste',
+  top: '/top', artists: '/artists', profile: '/profile',
+  settings: '/settings', wheel: '/wheel', battle: '/battle', taste: '/taste',
   recommendations: '/recommendations', request: '/request', 'admin-hub': '/admin', explore: '/explore',
 };
 function _pathForPage(n){
   if(n === 'home') return homeSource === 'community' ? '/community' : '/';
   if(n === 'artist') return currentArtistId != null ? `/artist/${currentArtistId}` : '/artists';
   if(n === 'playlist') return currentPlaylistId != null ? `/playlist/${currentPlaylistId}` : '/profile';
-  if(n === 'user-profile') return currentProfileUserId != null ? `/user/${currentProfileUserId}` : '/friends';
+  if(n === 'user-profile') return currentProfileUserId != null ? `/user/${currentProfileUserId}` : '/chat/friends';
   if(n === 'chat') return chatTab && chatTab !== 'threads' ? `/chat/${chatTab}` : '/chat';
   return _PAGE_PATHS[n] || '/';
 }
@@ -130,10 +130,12 @@ function _parsePath(path){
   let m;
   if(p === '/') return { page: 'home', source: 'catalog' };
   if(p === '/community') return { page: 'home', source: 'community' };
+  if(p === '/profile/settings') return { page: 'profile' }; // стара адреса: нікнейм і аватар тепер у картці профілю
   if((m = p.match(/^\/artist\/(\d+)$/))) return { page: 'artist', id: +m[1] };
   if((m = p.match(/^\/playlist\/(\d+)$/))) return { page: 'playlist', id: +m[1] };
   if((m = p.match(/^\/user\/(\d+)$/))) return { page: 'user-profile', id: +m[1] };
-  if((m = p.match(/^\/chat(?:\/(dm|requests|threads))?$/))) return { page: 'chat', tab: m[1] || 'threads' };
+  if((m = p.match(/^\/chat(?:\/(dm|requests|threads|friends))?$/))) return { page: 'chat', tab: m[1] || 'threads' };
+  if(p === '/friends') return { page: 'chat', tab: 'friends' }; // стара адреса сторінки друзів
   const page = Object.keys(_PAGE_PATHS).find(k => _PAGE_PATHS[k] === p);
   return page ? { page } : { page: 'home', source: 'catalog' };
 }
@@ -173,7 +175,7 @@ function _restoreScroll(y){
 // (а не confirm("Увійти?") при кожному "назад").
 function _openRoute(r){
   const authed = !!currentUser?.authenticated;
-  const needsAuth = ['profile', 'profile-settings', 'friends', 'recommendations', 'request', 'user-profile', 'playlist'];
+  const needsAuth = ['profile', 'recommendations', 'request', 'user-profile', 'playlist'];
   if((needsAuth.includes(r.page) && !authed) || (r.page === 'admin-hub' && !currentUser?.isAdmin)){
     r = { page: 'home', source: 'catalog' };
     history.replaceState({ page: 'home', scrollY: 0 }, '', '/');

@@ -42,11 +42,11 @@ if (window.signalR) {
   rtConn.on('friendsChanged', (otherUserId, name, kind) => {
     refreshNotifBadge();
     if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
-    if(document.getElementById('page-friends')?.classList.contains('active')) loadFriendsPage();
+    if(_friendsTabOpen()) loadFriendsPage();
     if(document.getElementById('page-user-profile')?.classList.contains('active') && currentProfileUserId === otherUserId) loadUserProfilePage();
     // Дружба змінює і право писати без запиту на листування.
     if(document.getElementById('page-chat')?.classList.contains('active') && chatTab === 'dm' && currentChatUserId === otherUserId) loadDmThread();
-    if(name && kind === 'request') showToast(t('toast.friendRequest').replace('{name}', name), () => showPage('friends'));
+    if(name && kind === 'request') showToast(t('toast.friendRequest').replace('{name}', name), () => openChatPage('friends'));
     if(name && kind === 'accepted') showToast(t('toast.friendAccepted').replace('{name}', name), () => openUserProfilePage(otherUserId));
   });
   rtConn.on('threadsChanged', (threadId) => {

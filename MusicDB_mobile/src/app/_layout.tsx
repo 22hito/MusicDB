@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Modal, View } from 'react-native';
+import { View } from 'react-native';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -14,7 +14,6 @@ import { SettingsProvider, useSettings } from '@/state/SettingsContext';
 import { ApiBridgeProvider } from '@/api/ApiBridge';
 import { FavoritesProvider } from '@/state/FavoritesContext';
 import { PlayerProvider } from '@/player/PlayerContext';
-import { SettingsScreen } from '@/screens/SettingsScreen';
 import { UpdateBanner } from '@/components/UpdateBanner';
 
 // Раніше тут був expo-router-івський <Stack> ((tabs) + модальний "settings").
@@ -29,9 +28,8 @@ import { UpdateBanner } from '@/components/UpdateBanner';
 // підтверджено багатьма незалежними командами, "half screen blank/black").
 // Спільнота підтверджує: баг є ТІЛЬКИ в native-stack, не в звичайному
 // (не-screens) навігаторі. Ми не використовуємо жодних push/pop-переходів
-// на цьому рівні (лише "показати вкладки" і "показати налаштування" —
-// останнє тепер звичайний <Modal>, як логін чи підтвердження видалення в
-// цьому проєкті), тож <Stack> тут був не потрібен — <Slot /> рендерить
+// на цьому рівні (лише "показати вкладки"; налаштування — теж вкладка),
+// тож <Stack> тут був не потрібен — <Slot /> рендерить
 // поточний маршрут узагалі без native Screen-контейнера.
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -55,7 +53,7 @@ export default function RootLayout() {
 }
 
 function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
-  const { ready, theme, settingsModalOpen, closeSettingsModal } = useSettings();
+  const { ready, theme } = useSettings();
   const [hidden, setHidden] = useState(false);
 
   const maybeHideSplash = useCallback(async () => {
@@ -85,9 +83,6 @@ function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
               <Slot />
             </View>
             <UpdateBanner />
-            <Modal visible={settingsModalOpen} animationType="slide" onRequestClose={closeSettingsModal}>
-              <SettingsScreen onClose={closeSettingsModal} />
-            </Modal>
           </PlayerProvider>
         </FavoritesProvider>
       </ApiBridgeProvider>

@@ -35,8 +35,12 @@ function runFriendsSearch(){
       </div>`).join('');
   }).catch(()=>{});
 }
+// Друзі — вкладка сторінки "Спілкування" (раніше окрема сторінка /friends).
+function _friendsTabOpen(){
+  return !!document.getElementById('page-chat')?.classList.contains('active') && chatTab === 'friends';
+}
 function loadFriendsPage(){
-  if(!currentUser?.authenticated){ showPage('home'); login(); return; }
+  if(!currentUser?.authenticated) return;
   document.getElementById('friends-search').value = '';
   document.getElementById('friends-search-results').innerHTML = '';
 
@@ -72,7 +76,7 @@ function loadFriendsPage(){
 }
 function sendFriendRequest(targetUserId){
   fetch('/api/friends/requests', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ targetUserId }) })
-    .then(r=>{ if(r.ok){ runFriendsSearch(); if(document.getElementById('page-friends').classList.contains('active')) loadFriendsPage(); if(currentProfileUserId===targetUserId) loadUserProfilePage(); } else alert(t('msg.connectionError')); })
+    .then(r=>{ if(r.ok){ runFriendsSearch(); if(_friendsTabOpen()) loadFriendsPage(); if(currentProfileUserId===targetUserId) loadUserProfilePage(); } else alert(t('msg.connectionError')); })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
 function acceptFriendRequest(requestId){

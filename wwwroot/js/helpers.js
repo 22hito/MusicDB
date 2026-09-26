@@ -6,6 +6,8 @@
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 // Скорочення довгих назв жанрів лише для відображення (у базі й фільтрах лишається повна назва).
 function abbrGenre(name){return String(name).replace(/alternative/gi,'alt');}
+// "00:04:16" → "4:16" — для компактних карток (години лишаються, якщо є).
+function shortDur(d){return String(d||'').replace(/^00:0?(?=\d:)/,'');}
 
 // Аватар користувача без фото (ні з Google, ні свого) — ініціали на кольоровому тлі,
 // колір стабільний для імені (та сама палітра, що в колеса й виконавців).

@@ -266,6 +266,21 @@ export interface AdminNotification {
   createdAt: string;
 }
 
+// Події виконавців, на яких підписаний користувач (дзвіночок) — лише непрочитані.
+export interface ArtistNotification {
+  id: number;
+  artistId: number;
+  artistName: string;
+  eventType: 'song_added' | 'song_removed' | 'lyrics_added' | string;
+  songLabel: string;
+  createdAt: string;
+}
+
+export interface NotificationsSummary {
+  unreadCount: number;
+  recent: ArtistNotification[];
+}
+
 export interface AdminNotificationsSummary {
   unreadCount: number;
   recent: AdminNotification[];

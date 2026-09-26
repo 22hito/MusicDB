@@ -8,7 +8,7 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { MiniPlayerBar } from '@/player/MiniPlayerBar';
 import { BrandHeader } from '@/components/BrandHeader';
-import { ChatIcon, CompassIcon, NoteIcon, PersonIcon, SendIcon, ShieldIcon, TrophyIcon } from '@/components/Icons';
+import { ChatIcon, NoteIcon, PersonIcon, SendIcon, ShieldIcon, SlidersIcon, SparkleIcon, TrophyIcon } from '@/components/Icons';
 
 // Трохи вище за типовий (49-50px), щоб іконки й підписи мали комфортну зону дотику.
 const TAB_BAR_CONTENT_HEIGHT = 58;
@@ -20,7 +20,8 @@ export default function TabsLayout() {
   const isAdmin = !!currentUser?.isAdmin;
   const authed = !!currentUser?.authenticated;
 
-  // Лічильники на вкладках: непрочитані ЛС + запити на листування; нові сповіщення адміна.
+  // Лічильники на вкладках: непрочитані ЛС + запити на листування + запити в друзі;
+  // адмін — заявки, що чекають, + відкриті баг-репорти (сповіщення — у дзвіночку шапки).
   const [communityBadge, setCommunityBadge] = useState(0);
   const [adminBadge, setAdminBadge] = useState(0);
   const refreshBadges = useCallback(() => {
@@ -34,12 +35,11 @@ export default function TabsLayout() {
       api.getDmUnread().catch(() => ({ unread: 0, requests: 0 })),
       api.getIncomingFriendRequests().catch(() => []),
     ]).then(([d, fr]) => setCommunityBadge(d.unread + d.requests + fr.length));
-    // Адмін: нові сповіщення + відкриті баг-репорти.
     if (isAdmin)
       Promise.all([
-        api.getAdminNotifications(1).then((d) => d.unreadCount).catch(() => 0),
+        api.getRequests().then((r) => r.length).catch(() => 0),
         api.getOpenBugCount().catch(() => 0),
-      ]).then(([n, bugs]) => setAdminBadge(n + bugs));
+      ]).then(([reqs, bugs]) => setAdminBadge(reqs + bugs));
   }, [api, authed, isAdmin]);
   useEffect(() => {
     refreshBadges();
@@ -51,7 +51,7 @@ export default function TabsLayout() {
           event === 'dmReceived' ||
           event === 'dmSent' ||
           event === 'dmRequestsChanged' ||
-          event === 'adminNotification' ||
+          event === 'requestsChanged' ||
           event === 'friendsChanged' ||
           event === 'bugReportsChanged'
         )
@@ -96,14 +96,14 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="top"
             options={{
-              title: t('nav.top'),
+              title: t('nav.topShort'),
               tabBarIcon: ({ color, size }) => <TrophyIcon color={String(color)} size={size ?? 20} />,
             }}
           />
           <Tabs.Screen
             name="community"
             options={{
-              title: t('nav.community'),
+              title: t('nav.social'),
               tabBarBadge: communityBadge > 0 ? (communityBadge > 99 ? '99+' : communityBadge) : undefined,
               tabBarBadgeStyle: { backgroundColor: theme.accent, color: theme.onAccent },
               tabBarIcon: ({ color, size }) => <ChatIcon color={String(color)} size={size ?? 20} />,
@@ -123,14 +123,23 @@ export default function TabsLayout() {
             name="explore"
             options={{
               title: t('nav.explore'),
-              tabBarIcon: ({ color, size }) => <CompassIcon color={String(color)} size={size ?? 20} />,
+              tabBarIcon: ({ color, size }) => <SparkleIcon color={String(color)} size={size ?? 20} />,
             }}
           />
+          {/* Профіль — аватаром у шапці (як на мобільному сайті), замість нього у таббарі — налаштування. */}
           <Tabs.Screen
             name="profile"
             options={{
+              href: null,
               title: t('nav.profile'),
               tabBarIcon: ({ color, size }) => <PersonIcon color={String(color)} size={size ?? 20} />,
+            }}
+          />
+          <Tabs.Screen
+            name="settings"
+            options={{
+              title: t('settings.title'),
+              tabBarIcon: ({ color, size }) => <SlidersIcon color={String(color)} size={size ?? 20} />,
             }}
           />
           <Tabs.Screen

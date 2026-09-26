@@ -10,6 +10,8 @@ export const I18N = {
     'nav.library': 'Бібліотека', // NEW
     'nav.admin.tab': 'Адмін', // NEW
     'nav.top': 'Топ 100', // NEW
+    'nav.topShort': 'Топ',
+    'nav.social': 'Спілкування',
     'top.heading.pre': 'Топ 100', // NEW
     'top.heading.accent': 'найпрослуханіших', // NEW
     'top.empty': 'Ще немає прослуховувань', // NEW
@@ -214,7 +216,22 @@ export const I18N = {
     'adminNotif.request_rejected': 'відхиляє запит', // NEW
     'adminNotif.song_added': 'додав', // NEW
     'notif.markAllRead': 'Позначити все прочитаним', // NEW
-    'notif.empty': 'Немає нових сповіщень', // NEW
+    'notif.empty': 'Поки немає сповіщень',
+    'notif.event.songAdded': 'додано нову пісню',
+    'notif.event.songRemoved': 'видалено пісню',
+    'notif.event.lyricsAdded': 'додано текст пісні',
+    'notif.sectionTitle': 'Підписки й друзі',
+    'adminNotif.sectionTitle': 'Адміністрування',
+    'notif.markOneRead': 'Позначити прочитаним',
+    'notif.bellTitle': 'Сповіщення',
+    'explore.recSub': 'Підбірка за тим, що ви слухаєте',
+    'adminHub.requestsTab': 'Запити',
+    'adminHub.addTab': 'Додати пісню',
+    'adminHub.heading.pre': 'Адмін',
+    'adminHub.heading.accent': 'панель',
+    'chat.tab.friends': 'Друзі',
+    'chat.tab.chats': 'Чати',
+    'profile.avatarReset': 'Прибрати аватар',
     'rating.title': 'Оцінка пісні', // NEW
     'rating.summary': 'Середня оцінка: {avg} / 100 · оцінок: {count}', // NEW
     'rating.noRatings': 'Ще ніхто не оцінив', // NEW
@@ -227,8 +244,8 @@ export const I18N = {
     'rating.noReviews': 'Рецензій ще немає', // NEW
     'chat.heading.pre': 'Спілкування', // NEW
     'chat.heading.accent': 'ком\'юніті', // NEW
-    'chat.tab.dm': 'Особисті', // NEW
-    'chat.tab.requests': 'Запити', // NEW
+    'chat.tab.dm': 'Особисті',
+    'chat.tab.requests': 'Запити',
     'chat.tab.threads': 'Обговорення', // NEW
     'chat.loginHint': 'Увійдіть, щоб листуватися', // NEW
     'chat.newHintMobile': 'Нова розмова — через пошук людей (іконка лупи вгорі).', // NEW
@@ -268,7 +285,7 @@ export const I18N = {
     'navSearch.loginForUsers': 'Увійдіть, щоб шукати людей', // NEW
     'chat.clearBtn': 'Видалити чат', // NEW
     'chat.clearConfirm': "Видалити цей чат у себе? У співрозмовника переписка лишиться, а нові повідомлення з'являться тут знову.", // NEW
-    'nav.explore': 'Огляд', // NEW
+    'nav.explore': 'Цікаве',
     'explore.heading.pre': 'Що', // NEW
     'explore.heading.accent': 'послухати', // NEW
     'nav.wheel': 'Колесо фортуни', // NEW
@@ -418,7 +435,7 @@ export const I18N = {
     'bugs.reopenBtn': 'Відкрити знову', // NEW
     'bugs.contextTitle': 'Технічні дані', // NEW
     'bugs.resolvedBy': 'Вирішив', // NEW
-    'adminHub.bugsTab': 'Баги', // NEW
+    'adminHub.bugsTab': 'Баг-репорти',
     'adminNotif.bug_reported': 'повідомляє про баг', // NEW
     'theme.system': 'Системна', // NEW
     'settings.accent': 'Акцентний колір', // NEW
@@ -459,6 +476,8 @@ export const I18N = {
     'nav.library': 'Library',
     'nav.admin.tab': 'Admin',
     'nav.top': 'Top 100', // NEW
+    'nav.topShort': 'Top',
+    'nav.social': 'Community',
     'top.heading.pre': 'Top 100', // NEW
     'top.heading.accent': 'most played', // NEW
     'top.empty': 'No listens yet', // NEW
@@ -662,7 +681,22 @@ export const I18N = {
     'adminNotif.request_rejected': 'rejected a request', // NEW
     'adminNotif.song_added': 'added', // NEW
     'notif.markAllRead': 'Mark all as read', // NEW
-    'notif.empty': 'No new notifications', // NEW
+    'notif.empty': 'No notifications yet',
+    'notif.event.songAdded': 'added a new song',
+    'notif.event.songRemoved': 'removed a song',
+    'notif.event.lyricsAdded': 'added lyrics for a song',
+    'notif.sectionTitle': 'Follows & friends',
+    'adminNotif.sectionTitle': 'Administration',
+    'notif.markOneRead': 'Mark as read',
+    'notif.bellTitle': 'Notifications',
+    'explore.recSub': 'Picks based on what you listen to',
+    'adminHub.requestsTab': 'Requests',
+    'adminHub.addTab': 'Add song',
+    'adminHub.heading.pre': 'Admin',
+    'adminHub.heading.accent': 'panel',
+    'chat.tab.friends': 'Friends',
+    'chat.tab.chats': 'Chats',
+    'profile.avatarReset': 'Remove avatar',
     'rating.title': 'Rate the song', // NEW
     'rating.summary': 'Average score: {avg} / 100 · ratings: {count}', // NEW
     'rating.noRatings': 'No ratings yet', // NEW
@@ -675,8 +709,8 @@ export const I18N = {
     'rating.noReviews': 'No reviews yet', // NEW
     'chat.heading.pre': 'Community', // NEW
     'chat.heading.accent': 'chat', // NEW
-    'chat.tab.dm': 'Messages', // NEW
-    'chat.tab.requests': 'Requests', // NEW
+    'chat.tab.dm': 'Private',
+    'chat.tab.requests': 'Requests',
     'chat.tab.threads': 'Discussions', // NEW
     'chat.loginHint': 'Sign in to send messages', // NEW
     'chat.newHintMobile': 'Start a new conversation via people search (the magnifier icon at the top).', // NEW
@@ -716,7 +750,7 @@ export const I18N = {
     'navSearch.loginForUsers': 'Sign in to search for people', // NEW
     'chat.clearBtn': 'Delete chat', // NEW
     'chat.clearConfirm': 'Delete this chat for yourself? The other person keeps the conversation, and new messages will show up here again.', // NEW
-    'nav.explore': 'Explore', // NEW
+    'nav.explore': 'Explore',
     'explore.heading.pre': 'What to', // NEW
     'explore.heading.accent': 'listen to', // NEW
     'nav.wheel': 'Wheel of fortune', // NEW
@@ -866,7 +900,7 @@ export const I18N = {
     'bugs.reopenBtn': 'Reopen', // NEW
     'bugs.contextTitle': 'Technical details', // NEW
     'bugs.resolvedBy': 'Resolved by', // NEW
-    'adminHub.bugsTab': 'Bugs', // NEW
+    'adminHub.bugsTab': 'Bug reports',
     'adminNotif.bug_reported': 'reported a bug', // NEW
     'theme.system': 'System', // NEW
     'settings.accent': 'Accent color', // NEW

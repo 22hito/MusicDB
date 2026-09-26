@@ -13,16 +13,25 @@ function openChatPage(tab){
   showPage('chat');
 }
 function loadChatPage(){ switchChatTab(chatTab); }
+// Вкладки: Обговорення · Друзі · Особисті (у "Особистих" — підвкладки Чати / Запити).
 function switchChatTab(tab){
   const authed = !!currentUser?.authenticated;
   if(tab==='requests' && !authed) tab = 'dm'; // там же й підказка "увійдіть"
   chatTab = tab;
-  ['dm','requests','threads'].forEach(k=>{
-    document.getElementById(`chat-tab-${k}`).classList.toggle('active', tab===k);
+  const main = tab==='requests' ? 'dm' : tab;
+  ['threads','friends','dm'].forEach(k=> document.getElementById(`chat-tab-${k}`).classList.toggle('active', main===k));
+  ['threads','friends','dm','requests'].forEach(k=>{
     document.getElementById(`chat-${k}-section`).style.display = tab===k ? '' : 'none';
   });
-  document.getElementById('chat-tab-requests').style.display = authed ? '' : 'none';
-  if(tab==='dm'){
+  document.getElementById('chat-dm-subtabs').style.display = authed && main==='dm' ? '' : 'none';
+  document.getElementById('chat-sub-dm').classList.toggle('active', tab==='dm');
+  document.getElementById('chat-sub-requests').classList.toggle('active', tab==='requests');
+  if(document.getElementById('page-chat').classList.contains('active')) _routerOnShowPage('chat');
+  if(tab==='friends'){
+    document.getElementById('chat-friends-login-hint').style.display = authed ? 'none' : '';
+    document.getElementById('chat-friends-body').style.display = authed ? '' : 'none';
+    if(authed) loadFriendsPage();
+  } else if(tab==='dm'){
     document.getElementById('chat-dm-login-hint').style.display = authed ? 'none' : '';
     document.getElementById('chat-dm-layout').style.display = authed ? '' : 'none';
     if(!authed) return;
@@ -57,7 +66,8 @@ function refreshDmBadge(){
     setBadge('dm-badge', d.unread + d.requests);
     _unreadCounts.dm = d.unread + d.requests;
     _updateTitleBadge();
-    setBadge('chat-tab-dm-badge', d.unread);
+    setBadge('chat-tab-dm-badge', d.unread + d.requests);
+    setBadge('chat-sub-dm-badge', d.unread);
     setBadge('chat-tab-requests-badge', d.requests);
   }).catch(()=>{});
 }

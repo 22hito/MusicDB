@@ -3,8 +3,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { Badge } from './UI';
 import { MarqueeText } from './MarqueeText';
-import { EditIcon, HeartIcon, PauseIcon, PersonIcon, PlayIcon, PlusIcon, StarIcon, TrashIcon } from './Icons';
-import { FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, RADIUS, SPACING } from '@/constants/theme';
+import { EditIcon, EyeIcon, HeartIcon, PauseIcon, PersonIcon, PlayIcon, PlusIcon, StarIcon, TrashIcon } from './Icons';
+import { FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, FONT_SANS_SEMIBOLD, RADIUS } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
 function fmtDate(d: string) {
@@ -18,8 +18,20 @@ function abbrGenre(name: string) {
   return name.replace(/alternative/gi, 'alt');
 }
 
+// "00:04:16" → "4:16" — як у картках мобільного сайту (години лишаються, якщо є).
+function shortDur(d: string) {
+  return (d || '').replace(/^00:0?(?=\d:)/, '');
+}
+
+// Місця 1–3 у Топ 100 — "медалі" (ті самі кольори, що на мобільному сайті).
+const MEDALS = ['#e6b94f', '#c9d1dc', '#d49a5e'];
+
+// Компактна картка пісні — та сама, що на мобільному сайті:
+// ▶ · виконавець/назва · оцінка · ♡ +; під нею "дата · тривалість · 👁 N", жанри, альбом
+// і (для адміна) ✎ 🗑 праворуч. rank — варіант для Топ 100: місце, альбом і прослуховування.
 export function SongRow({
   song,
+  rank,
   isCurrent,
   isPlaying,
   isFavorite,
@@ -42,6 +54,7 @@ export function SongRow({
   activeAlbum,
 }: {
   song: Song;
+  rank?: number;
   isCurrent?: boolean;
   isPlaying?: boolean;
   isFavorite?: boolean;
@@ -65,10 +78,12 @@ export function SongRow({
   activeAlbum?: string;
 }) {
   const { theme, t } = useSettings();
+  const top = rank != null;
   const wantFavorite = showFavorite ?? authenticated;
-  const wantAddToPlaylist = showAddToPlaylist ?? authenticated;
-  const wantEdit = showEdit ?? isAdmin;
-  const wantDelete = showDelete ?? isAdmin;
+  const wantAddToPlaylist = !top && (showAddToPlaylist ?? authenticated);
+  const wantEdit = !top && (showEdit ?? isAdmin);
+  const wantDelete = !top && (showDelete ?? isAdmin);
+  const medal = rank != null && rank <= 3 ? MEDALS[rank - 1] : null;
 
   return (
     <View
@@ -78,15 +93,20 @@ export function SongRow({
       ]}
     >
       <View style={styles.topLine}>
+        {top ? (
+          <View style={[styles.rank, medal ? { backgroundColor: `${medal}38` } : null]}>
+            <Text style={[styles.rankText, { color: medal ?? theme.muted }]}>{rank}</Text>
+          </View>
+        ) : null}
         <TouchableOpacity
           onPress={onPlay}
           style={[styles.playBtn, { backgroundColor: isCurrent ? theme.accent : theme.surface2, borderColor: isCurrent ? theme.accent : theme.border }]}
-          hitSlop={10}
+          hitSlop={8}
         >
           {isCurrent && isPlaying ? (
-            <PauseIcon size={14} color={theme.onAccent} />
+            <PauseIcon size={13} color={theme.onAccent} />
           ) : (
-            <PlayIcon size={13} color={isCurrent ? theme.onAccent : theme.text} />
+            <PlayIcon size={12} color={isCurrent ? theme.onAccent : theme.text} />
           )}
         </TouchableOpacity>
 
@@ -95,7 +115,7 @@ export function SongRow({
           <MarqueeText active={!!isCurrent} style={[styles.artist, { color: theme.accent }]}>{song.artist}</MarqueeText>
           <MarqueeText active={!!isCurrent} style={[styles.title, { color: theme.text }]}>{song.title}</MarqueeText>
           {/* Таблиця_2: нік того, хто додав пісню. */}
-          {song.submittedBy ? (
+          {!top && song.submittedBy ? (
             <TouchableOpacity
               style={styles.submitterLine}
               disabled={!onSubmitterPress}
@@ -108,9 +128,19 @@ export function SongRow({
               </Text>
             </TouchableOpacity>
           ) : null}
+          {top && song.album ? (
+            <View style={{ flexDirection: 'row', marginTop: 4 }}>
+              <Badge small label={song.album} kind="album" />
+            </View>
+          ) : null}
         </View>
 
-        {onRate ? (
+        {top ? (
+          <View style={styles.plays}>
+            <EyeIcon size={13} color={theme.muted} />
+            <Text style={{ color: theme.text, fontSize: 13, fontFamily: FONT_SANS_SEMIBOLD }}>{song.playCount ?? 0}</Text>
+          </View>
+        ) : onRate ? (
           <TouchableOpacity onPress={onRate} hitSlop={8} style={[styles.ratingChip, { borderColor: theme.border }]}>
             <StarIcon size={12} color={song.avgRating != null ? theme.accent : theme.muted} filled={song.avgRating != null} />
             <Text style={{ color: song.avgRating != null ? theme.accent : theme.muted, fontSize: 12, fontFamily: FONT_SANS_REGULAR }}>
@@ -120,46 +150,53 @@ export function SongRow({
         ) : null}
 
         {wantFavorite ? (
-          <TouchableOpacity onPress={onToggleFavorite} hitSlop={8} style={styles.actionIcon}>
+          <TouchableOpacity onPress={onToggleFavorite} hitSlop={6} style={styles.actionIcon}>
             <HeartIcon size={17} color={isFavorite ? theme.red : theme.muted} filled={!!isFavorite} />
           </TouchableOpacity>
         ) : null}
         {wantAddToPlaylist ? (
-          <TouchableOpacity onPress={onAddToPlaylist} hitSlop={8} style={styles.actionIcon}>
+          <TouchableOpacity onPress={onAddToPlaylist} hitSlop={6} style={styles.actionIcon}>
             <PlusIcon size={17} color={theme.muted} />
-          </TouchableOpacity>
-        ) : null}
-        {wantEdit ? (
-          <TouchableOpacity onPress={onEdit} hitSlop={8} style={styles.actionIcon}>
-            <EditIcon size={16} color={theme.accent} />
-          </TouchableOpacity>
-        ) : null}
-        {wantDelete ? (
-          <TouchableOpacity onPress={onDelete} hitSlop={8} style={styles.actionIcon}>
-            <TrashIcon size={16} color={theme.red} />
           </TouchableOpacity>
         ) : null}
       </View>
 
-      <View style={styles.metaLine}>
-        <Text style={[styles.metaText, { color: theme.muted, fontFamily: FONT_SANS_REGULAR }]}>
-          {fmtDate(song.release)} · {song.duration} · 👁 {song.playCount ?? 0}
-        </Text>
-        <View style={styles.badgesWrap}>
-          {song.genres.slice(0, 3).map((g) => (
-            <TouchableOpacity key={g} disabled={!onGenrePress} onPress={() => onGenrePress?.(g)} hitSlop={4}>
-              <Badge label={g === activeGenre ? `✓ ${abbrGenre(g)}` : abbrGenre(g)} kind="genre" />
+      {!top ? (
+        <View style={styles.metaLine}>
+          <View style={styles.metaWrap}>
+            <View style={styles.metaInfo}>
+              <Text style={[styles.metaText, { color: theme.muted }]}>
+                {fmtDate(song.release)} · {shortDur(song.duration)} ·
+              </Text>
+              <EyeIcon size={12} color={theme.muted} />
+              <Text style={[styles.metaText, { color: theme.muted }]}>{song.playCount ?? 0}</Text>
+            </View>
+            {song.genres.slice(0, 3).map((g) => (
+              <TouchableOpacity key={g} disabled={!onGenrePress} onPress={() => onGenrePress?.(g)} hitSlop={4}>
+                <Badge small label={abbrGenre(g)} kind="genre" active={g === activeGenre} />
+              </TouchableOpacity>
+            ))}
+            {song.genres.length > 3 ? <Text style={[styles.metaText, { color: theme.muted }]}>+{song.genres.length - 3}</Text> : null}
+            {song.album ? (
+              <TouchableOpacity disabled={!onAlbumPress} onPress={() => onAlbumPress?.(song.album!)} hitSlop={4}>
+                <Badge small label={song.album} kind="album" active={song.album === activeAlbum} />
+              </TouchableOpacity>
+            ) : (
+              <Text style={[styles.metaText, { color: theme.muted }]}>{t('table.single')}</Text>
+            )}
+          </View>
+          {wantEdit ? (
+            <TouchableOpacity onPress={onEdit} hitSlop={6} style={styles.actionIcon}>
+              <EditIcon size={16} color={theme.accent} />
             </TouchableOpacity>
-          ))}
-          {song.album ? (
-            <TouchableOpacity disabled={!onAlbumPress} onPress={() => onAlbumPress?.(song.album!)} hitSlop={4}>
-              <Badge label={song.album === activeAlbum ? `✓ ${song.album}` : song.album} kind="album" />
+          ) : null}
+          {wantDelete ? (
+            <TouchableOpacity onPress={onDelete} hitSlop={6} style={styles.actionIcon}>
+              <TrashIcon size={16} color={theme.red} />
             </TouchableOpacity>
-          ) : (
-            <Text style={[styles.singleLabel, { color: theme.muted }]}>{t('table.single')}</Text>
-          )}
+          ) : null}
         </View>
-      </View>
+      ) : null}
     </View>
   );
 }
@@ -168,19 +205,31 @@ const styles = StyleSheet.create({
   row: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    marginBottom: 10,
+    paddingVertical: 10,
+    paddingLeft: 11,
+    paddingRight: 8,
+    marginBottom: 8,
   },
   topLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+  },
+  rank: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: {
+    fontSize: 12.5,
+    fontFamily: FONT_SANS_BOLD,
   },
   playBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -190,12 +239,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   artist: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontFamily: FONT_SANS_BOLD,
   },
   title: {
-    fontSize: 14,
-    marginTop: 2,
+    fontSize: 13.5,
+    marginTop: 1,
     fontFamily: FONT_SANS_REGULAR,
   },
   submitterLine: {
@@ -217,29 +266,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
+  plays: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   actionIcon: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },
   metaLine: {
-    marginTop: 8,
-    marginLeft: 46,
+    marginTop: 6,
+    marginLeft: 42,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  metaWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 5,
+  },
+  metaInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 4,
+    marginRight: 2,
   },
   metaText: {
     fontSize: 12,
-  },
-  badgesWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  singleLabel: {
-    fontSize: 12,
+    fontFamily: FONT_SANS_REGULAR,
   },
 });

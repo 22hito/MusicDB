@@ -363,6 +363,35 @@ export function MonitorIcon({ size = 18, color = '#000' }: IconProps) {
   );
 }
 
+// Прослуховування — те саме "око", що й у картках сайту.
+export function EyeIcon({ size = 14, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+      <Circle cx={12} cy={12} r={3} />
+    </Svg>
+  );
+}
+
+export function CheckIcon({ size = 16, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      <Polyline points="20 6 9 17 4 12" />
+    </Svg>
+  );
+}
+
+// "Цікаве" — та сама іскра, що й у таббарі сайту.
+export function SparkleIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+      <Circle cx={19} cy={5} r={1} />
+      <Circle cx={5} cy={19} r={1} />
+    </Svg>
+  );
+}
+
 export function SlidersIcon({ size = 18, color = '#000' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

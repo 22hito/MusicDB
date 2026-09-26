@@ -21,13 +21,13 @@ import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
 import { Avatar, Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
-import { BugIcon, ChevronRightIcon, GlobeIcon, LockIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
+import { BugIcon, ChevronRightIcon, EditIcon, GlobeIcon, LockIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
 import { BugReportModal } from '@/components/BugReportModal';
 import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, Profile, Song } from '@/api/types';
 
 export default function ProfileScreen() {
-  const { theme, t, openSettingsModal } = useSettings();
+  const { theme, t } = useSettings();
   const { currentUser, authChecked, openLogin, logout, refreshCurrentUser } = useApiBridge();
   const api = useMusicApi();
   const { favoriteIds, toggleFavorite, reload: reloadFavorites } = useFavorites();
@@ -156,7 +156,7 @@ export default function ProfileScreen() {
             {t('auth.loginRequiredGeneric')}
           </Text>
           <Button label={t('auth.loginBtn')} onPress={openLogin} />
-          <TouchableOpacity onPress={openSettingsModal} style={styles.settingsLink} hitSlop={6}>
+          <TouchableOpacity onPress={() => router.push('/settings')} style={styles.settingsLink} hitSlop={6}>
             <Text style={{ color: theme.muted, fontSize: 13 }}>{t('settings.change')}</Text>
           </TouchableOpacity>
         </View>
@@ -189,12 +189,16 @@ export default function ProfileScreen() {
 
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.avatarRow}>
-            <TouchableOpacity onPress={pickAvatar}>
+            {/* Натиснути аватар — обрати нове фото (олівець — підказка, як на сайті). */}
+            <TouchableOpacity onPress={pickAvatar} accessibilityLabel={t('profile.avatarHint')}>
               {avatarSrc ? (
                 <Image source={{ uri: avatarSrc }} style={[styles.avatar, { borderColor: theme.border }]} />
               ) : (
                 <Avatar url={null} name={profile?.displayName || profile?.name || profile?.email} size={60} />
               )}
+              <View style={[styles.avatarEdit, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
+                <EditIcon size={11} color={theme.accent} />
+              </View>
             </TouchableOpacity>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text numberOfLines={1} style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
@@ -208,9 +212,11 @@ export default function ProfileScreen() {
               ) : null}
             </View>
           </View>
-          <TouchableOpacity onPress={removeAvatar} hitSlop={6} style={styles.removeAvatarBtn}>
-            <Text style={{ color: theme.accent, fontSize: 13 }}>{t('profile.avatarRemove')}</Text>
-          </TouchableOpacity>
+          {avatarValue ? (
+            <TouchableOpacity onPress={removeAvatar} hitSlop={6} style={styles.removeAvatarBtn}>
+              <Text style={{ color: theme.accent, fontSize: 13 }}>{t('profile.avatarReset')}</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <Field
             label={t('profile.displayName')}
@@ -305,7 +311,7 @@ export default function ProfileScreen() {
 
         <View style={{ marginTop: 26, gap: 10 }}>
           <TouchableOpacity
-            onPress={() => router.push('/community')}
+            onPress={() => router.push({ pathname: '/community', params: { tab: 'friends' } })}
             style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}
           >
             <UsersIcon size={17} color={theme.accent} />
@@ -317,7 +323,7 @@ export default function ProfileScreen() {
             <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('bugs.menu')}</Text>
             <ChevronRightIcon size={14} color={theme.muted} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={openSettingsModal} style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+          <TouchableOpacity onPress={() => router.push('/settings')} style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
             <SlidersIcon size={17} color={theme.accent} />
             <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('settings.change')}</Text>
             <ChevronRightIcon size={14} color={theme.muted} />
@@ -386,6 +392,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     paddingHorizontal: 6,
     marginTop: 5,
+  },
+  avatarEdit: {
+    position: 'absolute',
+    right: -3,
+    bottom: -3,
+    width: 23,
+    height: 23,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   removeAvatarBtn: {
     alignSelf: 'flex-start',

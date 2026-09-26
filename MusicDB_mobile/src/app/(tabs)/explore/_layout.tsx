@@ -2,8 +2,7 @@ import React from 'react';
 import { Stack } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
 
-// "Огляд": рекомендації + вхід у колесо фортуни, батл рояль і каталог виконавців
-// (на сайті це пункти випадного меню навбару).
+// "Цікаве": плитки колеса фортуни, батлу, схожого смаку, виконавців і рекомендацій.
 export default function ExploreLayout() {
   const { theme, t } = useSettings();
   return (
@@ -20,6 +19,7 @@ export default function ExploreLayout() {
       <Stack.Screen name="battle" options={{ title: t('nav.battle') }} />
       <Stack.Screen name="taste" options={{ title: t('nav.taste') }} />
       <Stack.Screen name="artists" options={{ title: t('nav.artists') }} />
+      <Stack.Screen name="recommendations" options={{ title: t('nav.recommendations') }} />
       <Stack.Screen name="artist/[id]" options={{ title: '' }} />
     </Stack>
   );

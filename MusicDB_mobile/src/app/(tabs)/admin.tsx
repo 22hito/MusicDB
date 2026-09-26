@@ -24,7 +24,7 @@ import { EditIcon, TrashIcon } from '@/components/Icons';
 import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import { DateField } from '@/components/DateField';
 import { AudioPreview } from '@/components/AudioPreview';
-import type { AdminNotification, BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
+import type { BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
 
@@ -40,57 +40,64 @@ function requestToForm(r: SongRequest): SongFormValues {
   };
 }
 
+// Адмін-панель — як на сайті: заголовок і вкладки-кнопки Запити · Додати пісню · Баг-репорти
+// (сповіщення адміна — у дзвіночку шапки, разом з іншими сповіщеннями).
+type AdminMode = 'requests' | 'add' | 'bugs';
 export default function AdminScreen() {
   const { theme, t } = useSettings();
   const api = useMusicApi();
-  const [mode, setMode] = useState<'requests' | 'add' | 'notifications' | 'bugs'>('requests');
+  const { subscribeRealtime } = useApiBridge();
+  const [mode, setMode] = useState<AdminMode>('requests');
+  const [openBugs, setOpenBugs] = useState(0);
+  const refreshBugs = useCallback(() => {
+    api.getOpenBugCount().then(setOpenBugs).catch(() => {});
+  }, [api]);
+  useEffect(() => {
+    refreshBugs();
+  }, [refreshBugs]);
+  useEffect(
+    () =>
+      subscribeRealtime((event) => {
+        if (event === 'bugReportsChanged') refreshBugs();
+      }),
+    [subscribeRealtime, refreshBugs],
+  );
+
+  const tabs: { key: AdminMode; label: string; badge?: number }[] = [
+    { key: 'requests', label: t('adminHub.requestsTab') },
+    { key: 'add', label: t('adminHub.addTab') },
+    { key: 'bugs', label: t('adminHub.bugsTab'), badge: openBugs },
+  ];
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.segmentRow}>
-        <TouchableOpacity
-          onPress={() => setMode('requests')}
-          style={[styles.segmentBtn, mode === 'requests' && { borderBottomColor: theme.accent }]}
-        >
-          <Text style={{ color: mode === 'requests' ? theme.accent : theme.muted, fontSize: 13, textTransform: 'uppercase' }}>
-            {t('nav.admin')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setMode('add')}
-          style={[styles.segmentBtn, mode === 'add' && { borderBottomColor: theme.accent }]}
-        >
-          <Text style={{ color: mode === 'add' ? theme.accent : theme.muted, fontSize: 13, textTransform: 'uppercase' }}>
-            {t('nav.add')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setMode('notifications')}
-          style={[styles.segmentBtn, mode === 'notifications' && { borderBottomColor: theme.accent }]}
-        >
-          <Text style={{ color: mode === 'notifications' ? theme.accent : theme.muted, fontSize: 13, textTransform: 'uppercase' }}>
-            {t('adminNotif.tab')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setMode('bugs')}
-          style={[styles.segmentBtn, mode === 'bugs' && { borderBottomColor: theme.accent }]}
-        >
-          <Text style={{ color: mode === 'bugs' ? theme.accent : theme.muted, fontSize: 13, textTransform: 'uppercase' }}>
-            {t('adminHub.bugsTab')}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <View style={styles.hubHead}>
+        <Heading pre={t('adminHub.heading.pre')} accent={t('adminHub.heading.accent')} />
+        <View style={styles.hubTabs}>
+          {tabs.map(({ key, label, badge }) => {
+            const active = mode === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                onPress={() => setMode(key)}
+                style={[
+                  styles.hubTab,
+                  { borderColor: active ? theme.accent : theme.border, backgroundColor: active ? `${theme.accent}1a` : theme.surface },
+                ]}
+              >
+                <Text style={{ color: active ? theme.accent : theme.text, fontSize: 13, fontWeight: '600' }}>{label}</Text>
+                {badge ? (
+                  <View style={[styles.hubBadge, { backgroundColor: theme.accent }]}>
+                    <Text style={{ color: theme.onAccent, fontSize: 10.5, fontWeight: '700' }}>{badge > 99 ? '99+' : badge}</Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
-      {mode === 'requests' ? (
-        <RequestsPanel />
-      ) : mode === 'add' ? (
-        <AddSongPanel />
-      ) : mode === 'notifications' ? (
-        <NotificationsPanel />
-      ) : (
-        <BugsPanel />
-      )}
+      {mode === 'requests' ? <RequestsPanel /> : mode === 'add' ? <AddSongPanel /> : <BugsPanel onChanged={refreshBugs} />}
     </SafeAreaView>
   );
 }
@@ -385,73 +392,8 @@ function AddSongPanel() {
   );
 }
 
-// Сповіщення адміна: нові заявки й дії ІНШИХ адмінів ("hito схвалює запит …").
-function NotificationsPanel() {
-  const { theme, t } = useSettings();
-  const { subscribeRealtime } = useApiBridge();
-  const api = useMusicApi();
-  const [items, setItems] = useState<AdminNotification[]>([]);
-  const [unread, setUnread] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(() => {
-    api
-      .getAdminNotifications()
-      .then((d) => {
-        setItems(d.recent);
-        setUnread(d.unreadCount);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [api]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-  useEffect(
-    () =>
-      subscribeRealtime((event) => {
-        if (event === 'adminNotification') load();
-      }),
-    [subscribeRealtime, load],
-  );
-
-  const markRead = async () => {
-    await api.markAdminNotificationsRead().catch(() => {});
-    load();
-  };
-
-  if (loading) return <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />;
-
-  return (
-    <ScrollView contentContainerStyle={styles.content}>
-      {unread > 0 ? (
-        <Button label={t('notif.markAllRead')} variant="outline" small onPress={markRead} style={{ alignSelf: 'flex-end', marginBottom: SPACING.md }} />
-      ) : null}
-      {items.length === 0 ? (
-        <EmptyState icon="🔔" label={t('notif.empty')} />
-      ) : (
-        items.map((n, i) => (
-          <View
-            key={n.id}
-            style={[styles.reqCard, { backgroundColor: theme.surface, borderColor: i < unread ? theme.accent : theme.border }]}
-          >
-            <Text style={{ color: theme.text, fontSize: 14 }}>
-              <Text style={{ fontWeight: '700' }}>{n.actor?.displayName ?? t('adminNotif.someone')}</Text>{' '}
-              {t(ADMIN_EVENT_KEYS[n.eventType])}
-              {n.source === 'community' ? ` · ${t('home.source.community')}` : ''}
-            </Text>
-            <Text style={{ color: theme.muted, fontSize: 13, marginTop: 3 }}>{n.label}</Text>
-            <Text style={{ color: theme.muted, fontSize: 11, marginTop: 3 }}>{n.createdAt}</Text>
-          </View>
-        ))
-      )}
-    </ScrollView>
-  );
-}
-
 // Баг-репорти від користувачів: фільтр відкриті/вирішені/усі, перемикання статусу.
-function BugsPanel() {
+function BugsPanel({ onChanged }: { onChanged?: () => void }) {
   const { theme, t } = useSettings();
   const { subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
@@ -501,6 +443,7 @@ function BugsPanel() {
           try {
             await api.deleteBugReport(id);
             setItems((prev) => prev.filter((x) => x.id !== id));
+            onChanged?.();
           } catch {
             Alert.alert(t('error.loadFailed'));
           } finally {
@@ -515,6 +458,7 @@ function BugsPanel() {
     try {
       await api.setBugStatus(id, status);
       load();
+      onChanged?.();
     } finally {
       setBusyId(null);
     }
@@ -602,28 +546,20 @@ function BugsPanel() {
   );
 }
 
-const ADMIN_EVENT_KEYS = {
-  request_submitted: 'adminNotif.request_submitted',
-  request_approved: 'adminNotif.request_approved',
-  request_rejected: 'adminNotif.request_rejected',
-  song_added: 'adminNotif.song_added',
-  bug_reported: 'adminNotif.bug_reported',
-} as const;
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  segmentRow: {
+  hubHead: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg },
+  hubTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  hubTab: {
     flexDirection: 'row',
-    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 38,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
   },
-  segmentBtn: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginRight: 24,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
+  hubBadge: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
   // Запас під плаваючий міні-плеєр — щоб нижні кнопки не ховались під ним.
   content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: PLAYER_BAR_HEIGHT + 60 },
   reqCard: {

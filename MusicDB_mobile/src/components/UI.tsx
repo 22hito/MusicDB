@@ -104,12 +104,12 @@ export function Button({
 }
 
 // Жанр — фіолетова "таблетка" (--accent2), альбом — акцентна, як у таблиці сайту.
-export function Badge({ label, kind = 'genre', active }: { label: string; kind?: 'genre' | 'album'; active?: boolean }) {
+export function Badge({ label, kind = 'genre', active, small }: { label: string; kind?: 'genre' | 'album'; active?: boolean; small?: boolean }) {
   const { theme } = useSettings();
   const c = kind === 'album' ? theme.accent : theme.accent2;
   return (
-    <View style={[styles.badge, { backgroundColor: active ? `${c}40` : `${c}1f`, borderColor: active ? c : `${c}59` }]}>
-      <Text numberOfLines={kind === 'album' ? 2 : 1} style={[styles.badgeText, { color: c }]}>
+    <View style={[styles.badge, small && styles.badgeSmall, { backgroundColor: active ? `${c}40` : `${c}1f`, borderColor: active ? c : `${c}59` }]}>
+      <Text numberOfLines={kind === 'album' ? 2 : 1} style={[styles.badgeText, small && styles.badgeTextSmall, { color: c }]}>
         {label}
       </Text>
     </View>
@@ -161,14 +161,16 @@ export function SegmentedPicker<T extends string>({
   options,
   value,
   onChange,
+  fill,
 }: {
-  options: { value: T; label: string; icon?: (color: string) => React.ReactNode }[];
+  options: { value: T; label: string; icon?: (color: string) => React.ReactNode; badge?: number }[];
   value: T;
   onChange: (value: T) => void;
+  fill?: boolean; // на всю ширину, одним рядком (вкладки спілкування, перемикач таблиць)
 }) {
   const { theme } = useSettings();
   return (
-    <View style={[styles.segmented, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+    <View style={[styles.segmented, fill && styles.segmentedFill, { borderColor: theme.border, backgroundColor: theme.surface }]}>
       {options.map((opt) => {
         const active = opt.value === value;
         const color = active ? theme.text : theme.muted;
@@ -176,10 +178,16 @@ export function SegmentedPicker<T extends string>({
           <TouchableOpacity
             key={opt.value}
             onPress={() => onChange(opt.value)}
-            style={[styles.segmentBtn, active && { backgroundColor: theme.surface2 }]}
+            style={[styles.segmentBtn, fill && styles.segmentBtnFill, active && { backgroundColor: theme.surface2 }]}
           >
             {opt.icon ? opt.icon(active ? theme.accent : theme.muted) : null}
-            <Text style={[styles.segmentText, { color }]}>{opt.label}</Text>
+            <Text numberOfLines={1} style={[styles.segmentText, { color }]}>{opt.label}</Text>
+            {/* Лічильник (як .count-badge на сайті): запити, непрочитані. */}
+            {opt.badge ? (
+              <View style={[styles.segmentBadge, { backgroundColor: theme.accent }]}>
+                <Text style={[styles.segmentBadgeText, { color: theme.onAccent }]}>{opt.badge > 99 ? '99+' : opt.badge}</Text>
+              </View>
+            ) : null}
           </TouchableOpacity>
         );
       })}
@@ -294,24 +302,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FONT_SANS_MEDIUM,
   },
+  // Компактний (картки пісень): відступи між чипами задає контейнер через gap.
+  badgeSmall: { paddingVertical: 2, paddingHorizontal: 8, marginRight: 0, marginBottom: 0 },
+  badgeTextSmall: { fontSize: 11 },
   statCard: {
     flex: 1,
     minWidth: 100,
     borderWidth: 1,
     borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
+    // Компактніше — як лічильники на мобільному сайті.
+    paddingVertical: SPACING.md,
+    paddingHorizontal: 14,
   },
   statLabel: {
-    fontSize: 10.5,
+    fontSize: 10,
     textTransform: 'uppercase',
     letterSpacing: 1.3,
     marginBottom: 6,
     fontFamily: FONT_SANS_SEMIBOLD,
   },
   statValue: {
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 27,
+    lineHeight: 32,
     fontFamily: FONT_SERIF_BLACK,
   },
   empty: {
@@ -337,8 +349,32 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 13,
   },
+  segmentedFill: {
+    alignSelf: 'stretch',
+    flexWrap: 'nowrap',
+  },
+  segmentBtnFill: {
+    flexGrow: 1,
+    flexShrink: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    gap: 5,
+  },
   segmentText: {
     fontSize: 14,
+    fontFamily: FONT_SANS_SEMIBOLD,
+    flexShrink: 1,
+  },
+  segmentBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentBadgeText: {
+    fontSize: 10.5,
     fontFamily: FONT_SANS_SEMIBOLD,
   },
   fieldLabel: {

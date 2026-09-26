@@ -12,8 +12,9 @@ import { SongRow } from '@/components/SongRow';
 import { SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
-// Топ-10 найпрослуханіших — GET /api/stats/top-songs, вже відсортовано
-// сервером за кількістю унікальних слухачів.
+// Топ 100 найпрослуханіших — GET /api/stats/top-songs, вже відсортовано
+// сервером за кількістю унікальних слухачів. Картки — гібрид, як на мобільному сайті:
+// місце (1–3 — медалі), ▶, виконавець/назва/альбом, прослуховування, ♡.
 export default function TopSongsScreen() {
   const { theme, t } = useSettings();
   const { currentUser, subscribeRealtime } = useApiBridge();
@@ -67,16 +68,15 @@ export default function TopSongsScreen() {
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 110 }}
           ListEmptyComponent={<EmptyState icon="🏆" label={t('top.empty')} />}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <SongRow
               song={item}
+              rank={index + 1}
               isCurrent={player.current?.id === item.id}
               isPlaying={player.isPlaying}
               isFavorite={favoriteIds.has(item.id)}
               isAdmin={isAdmin}
               authenticated={authenticated}
-              showEdit={false}
-              showDelete={false}
               onPlay={() => player.playFrom(songs, item.id)}
               onToggleFavorite={() => requireAuth(() => toggleFavorite(item.id))}
             />

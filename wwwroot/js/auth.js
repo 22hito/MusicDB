@@ -90,14 +90,14 @@ function renderAuthArea() {
         <svg class="icon"><use href="#icon-chat"/></svg><span id="dm-badge" class="badge" style="display:none;margin-left:2px;"></span>
       </button>
       <div class="dropdown" id="profile-dropdown">
-        <button class="dropdown-toggle" onclick="toggleDropdown(event,'profile-dropdown')" title="${t('nav.profile')}" style="height:auto;padding:0.25rem 0.6rem 0.25rem 0.3rem;">
+        <button class="dropdown-toggle" onclick="if(_isPhoneLayout()){ showPage('profile'); return; } toggleDropdown(event,'profile-dropdown')" title="${t('nav.profile')}" style="height:auto;padding:0.25rem 0.6rem 0.25rem 0.3rem;">
           ${pic}
           <span class="nav-profile-name" style="color:var(--muted);font-size:0.78rem;font-family:var(--font-ui);">${esc(displayLabel)}</span>
         </button>
         <div class="dropdown-menu">
           <button onclick="showPage('profile')" data-i18n="nav.profile">${t('nav.profile')}</button>
           <button onclick="showPage('settings')" id="tab-settings" class="nav-menu-item" data-i18n="nav.settings">${t('nav.settings')}</button>
-          <button onclick="showPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
+          <button onclick="openChatPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
           <button onclick="openChatPage('dm')" data-i18n="nav.messages">${t('nav.messages')}</button>
           <button onclick="openBugReportModal()"><svg class="icon"><use href="#icon-bug"/></svg> ${t('bugs.menu')}</button>
           ${isAdmin?`<button onclick="showPage('admin-hub')" id="tab-admin-hub" class="nav-menu-item"><svg class="icon"><use href="#icon-settings"/></svg> ${t('nav.adminHub')}<span id="admin-requests-badge" class="badge" style="display:none;margin-left:auto;"></span></button>`:''}
@@ -132,6 +132,8 @@ function refreshNotifBadge(){
     currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null)
   ]).then(([notif, incoming, adminNotif])=>{
     const count = (notif?.unreadCount || 0) + (incoming?.length || 0) + (adminNotif?.unreadCount || 0);
+    const fb = document.getElementById('chat-tab-friends-badge');
+    if(fb){ fb.textContent = incoming?.length || ''; fb.style.display = incoming?.length ? '' : 'none'; }
     if(count > 0){ badge.textContent = count > 99 ? '99+' : count; badge.style.display = ''; }
     else { badge.style.display = 'none'; }
     _unreadCounts.notif = count;

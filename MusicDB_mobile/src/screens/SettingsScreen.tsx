@@ -1,9 +1,10 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSettings } from '@/state/SettingsContext';
-import { Button, Card, SegmentedPicker } from '@/components/UI';
+import { Card, SegmentedPicker } from '@/components/UI';
 import { ContrastIcon, MonitorIcon, MoonIcon, SunIcon } from '@/components/Icons';
 import {
   ACCENT_KEYS,
@@ -18,13 +19,14 @@ import type { Lang } from '@/constants/i18n';
 
 // Налаштування інтерфейсу — як картка "Вигляд" на сторінці налаштувань сайту:
 // тема, акцентний колір, мова. Адреси сервера тут немає (див. SettingsContext).
-export function SettingsScreen({ onClose }: { onClose: () => void }) {
+// Вкладка таббару "Налаштування" (як на мобільному сайті).
+export function SettingsScreen() {
   const { theme, t, themeMode, setThemeMode, accent, setAccent, lang, setLang } = useSettings();
 
   const label = (text: string) => <Text style={[styles.label, { color: theme.text }]}>{text}</Text>;
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
         <Text style={[styles.sub, { color: theme.muted }]}>{t('settings.sub')}</Text>
@@ -79,7 +81,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
           </View>
         </Card>
 
-        <Button label={t('settings.done')} onPress={onClose} style={{ marginTop: SPACING.xl }} />
+        <Text style={[styles.version, { color: theme.muted }]}>N'Owl {Constants.expoConfig?.version ?? ''}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -87,7 +89,9 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: SPACING.xl, paddingBottom: 40 },
+  // Відступи як в інших вкладках + запас під міні-плеєр.
+  content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm, paddingBottom: 140 },
+  version: { fontSize: 12, textAlign: 'center', marginTop: 22 },
   title: { fontFamily: FONT_SERIF_BLACK, fontSize: 30, lineHeight: 36, marginTop: SPACING.md },
   sub: { fontFamily: FONT_SANS_REGULAR, fontSize: 14, lineHeight: 20, marginTop: 6, marginBottom: SPACING.xl },
   label: { fontFamily: FONT_SANS_SEMIBOLD, fontSize: 15, marginBottom: 10 },

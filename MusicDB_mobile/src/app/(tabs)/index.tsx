@@ -288,6 +288,7 @@ export default function LibraryScreen() {
             ) : null}
             <View style={{ marginBottom: SPACING.lg }}>
               <SegmentedPicker<SongSource>
+                fill
                 options={[
                   { value: 'catalog', label: t('home.source.catalog'), icon: (c) => <DiscIcon size={16} color={c} /> },
                   { value: 'community', label: t('home.source.community'), icon: (c) => <UsersIcon size={16} color={c} /> },
@@ -481,8 +482,8 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: SPACING.xl,
+    gap: 8,
+    marginBottom: SPACING.lg,
   },
   statCell: {
     flexBasis: '46%',

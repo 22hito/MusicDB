@@ -12,14 +12,17 @@ app/
   (tabs)/
     index.tsx             Бібліотека: каталог і ком'юніті
     top.tsx               Топ 100
-    community/            Спілкування: обговорення, ЛС, запити, друзі; chat/[userId], thread/[id], user/[id]
-    explore/              Огляд і рекомендації; wheel, battle, taste, artists, artist/[id]
-    profile/              Профіль, playlist/[id]
-    admin.tsx             Адмінка: заявки, додавання, сповіщення, баги
+    community/            Спілкування: обговорення, друзі, особисті (чати / запити); ?tab=friends|dm|requests;
+                          chat/[userId], thread/[id], user/[id]
+    explore/              Цікаве: плитки; wheel, battle, taste, artists, recommendations, artist/[id]
+    profile/              Профіль (відкривається аватаром у шапці), playlist/[id]
+    settings.tsx          Налаштування: тема, акцент, мова
+    admin.tsx             Адмінка: заявки, додавання, баги (сповіщення — у дзвіночку шапки)
     request.tsx           Форма заявки (з файлом для ком'юніті)
 api/        ApiBridge.tsx (запити й SignalR через прихований WebView), endpoints.ts, types.ts
-components/ UI-кіт, SongRow, SongListBlock, MarqueeText, SelectField, DateField, GenrePickerModal,
-            ForceGraph (граф на SVG), ArtistAvatar, модалки (оцінки, текст, баг-репорт…)
+components/ UI-кіт, BrandHeader (пошук, дзвіночок, аватар), SongRow, SongListBlock, MarqueeText, SelectField,
+            DateField, GenrePickerModal, ForceGraph (граф на SVG), SongGraphModal, ArtistAvatar,
+            модалки (сповіщення, оцінки, текст, баг-репорт…)
 player/     PlayerContext.tsx, MiniPlayerBar.tsx
 state/      SettingsContext (тема, акцент, мова), FavoritesContext
 constants/  theme.ts, i18n.ts
