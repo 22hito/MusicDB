@@ -201,8 +201,21 @@ export function Field({ label, hint, style, ...rest }: TextInputProps & { label:
   );
 }
 
-// Кругла аватарка користувача з фолбеком-іконкою (як .avatar-ph на сайті).
-export function Avatar({ url, size = 40 }: { url: string | null | undefined; size?: number }) {
+// Аватар без фото (ні з Google, ні свого) — ініціали на кольоровому тлі, колір
+// стабільний для імені; та сама палітра й логіка, що avatarHtml на сайті.
+const AVATAR_COLORS = ['#c8a96e', '#8a6fb0', '#4f8c6f', '#b5555a', '#5b84a8', '#c98a4b', '#6fa89e', '#9a6b8f', '#7d9153', '#b0703f', '#5f6fa0', '#a3824f'];
+export function avatarColor(name: string | null | undefined) {
+  let h = 0;
+  for (const ch of String(name || '?')) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+export function avatarInitials(name: string | null | undefined) {
+  const words = String(name || '').trim().split(/[\s._\-@]+/).filter(Boolean);
+  return words.slice(0, 2).map((w) => [...w][0]).join('').toUpperCase() || '?';
+}
+
+// Кругла аватарка користувача: фото або ініціали (name); без імені — силует.
+export function Avatar({ url, size = 40, name }: { url: string | null | undefined; size?: number; name?: string | null }) {
   const { theme } = useSettings();
   if (url) return <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
   return (
@@ -211,12 +224,16 @@ export function Avatar({ url, size = 40 }: { url: string | null | undefined; siz
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: theme.surface2,
+        backgroundColor: name ? avatarColor(name) : theme.surface2,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <PersonIcon size={Math.round(size * 0.42)} color={theme.muted} />
+      {name ? (
+        <Text style={{ color: '#fff', fontFamily: FONT_SERIF_BLACK, fontSize: Math.round(size * 0.38) }}>{avatarInitials(name)}</Text>
+      ) : (
+        <PersonIcon size={Math.round(size * 0.42)} color={theme.muted} />
+      )}
     </View>
   );
 }

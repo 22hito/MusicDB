@@ -8,6 +8,7 @@ import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
 import { ChatIcon, CloseIcon, PersonIcon, PlayIcon, SearchIcon } from './Icons';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
+import { Avatar } from './UI';
 import type { ArtistSummary, Song, UserSearchResult } from '@/api/types';
 
 // Глобальний пошук, як у навбарі сайту: пісні (обидві таблиці), виконавці, люди.
@@ -129,7 +130,7 @@ export function SearchModal({ visible, onClose }: { visible: boolean; onClose: (
           {users.map((u) =>
             row(
               `u${u.userId}`,
-              u.avatarUrl ? <Image source={{ uri: u.avatarUrl }} style={styles.avatar} /> : <PersonIcon size={16} color={theme.muted} />,
+              <Avatar url={u.avatarUrl} name={u.displayName} size={24} />,
               u.displayName,
               u.relationshipStatus === 'friends' ? t('friends.friendsBadge') : null,
               () => {

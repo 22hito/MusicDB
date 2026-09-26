@@ -75,10 +75,10 @@ function renderAuthArea() {
 
   if (authed) {
     const avatarSrc = currentUser.avatarUrl || currentUser.picture;
+    const displayLabel = currentUser.displayName || currentUser.name || currentUser.email || '';
     const pic = avatarSrc
       ? `<img src="${avatarSrc}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover;">`
-      : `<span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:var(--muted);"><svg class="icon"><use href="#icon-user"/></svg></span>`;
-    const displayLabel = currentUser.displayName || currentUser.name || currentUser.email || '';
+      : avatarHtml(null, displayLabel, 'nav-avatar');
     area.innerHTML = `
       <div class="dropdown" id="notif-dropdown" style="margin-right:0.3rem;">
         <button class="dropdown-toggle" onclick="toggleDropdown(event,'notif-dropdown'); onOpenNotifDropdown();" title="${t('notif.bellTitle')}">

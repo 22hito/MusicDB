@@ -19,7 +19,7 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
-import { Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from '@/components/UI';
+import { Avatar, Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
 import { BugIcon, ChevronRightIcon, GlobeIcon, LockIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
 import { BugReportModal } from '@/components/BugReportModal';
@@ -193,9 +193,7 @@ export default function ProfileScreen() {
               {avatarSrc ? (
                 <Image source={{ uri: avatarSrc }} style={[styles.avatar, { borderColor: theme.border }]} />
               ) : (
-                <View style={[styles.avatar, styles.avatarPh, { borderColor: theme.border, backgroundColor: theme.surface2 }]}>
-                  <Text style={{ fontSize: 22 }}>👤</Text>
-                </View>
+                <Avatar url={null} name={profile?.displayName || profile?.name || profile?.email} size={60} />
               )}
             </TouchableOpacity>
             <View style={{ flex: 1, minWidth: 0 }}>

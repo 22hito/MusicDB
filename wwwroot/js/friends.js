@@ -17,11 +17,9 @@ function _friendActionButtonHtml(u){
     return `<button class="btn btn-primary" onclick="event.stopPropagation();acceptFriendRequestFromUser(${u.userId})">${t('friends.acceptBtn')}</button>`;
   return `<button class="btn btn-primary" onclick="event.stopPropagation();sendFriendRequest(${u.userId})">${t('friends.addBtn')}</button>`;
 }
-// Аватарка в рядках сторінки друзів (пошук, запити, друзі) — або ініціал-заглушка.
-function _friendAvatarHtml(url){
-  return url
-    ? `<img class="friend-avatar" src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
-    : `<span class="friend-avatar friend-avatar-ph"><svg class="icon"><use href="#icon-user"/></svg></span>`;
+// Аватарка в рядках сторінки друзів (пошук, запити, друзі) — фото або ініціали.
+function _friendAvatarHtml(url, name){
+  return avatarHtml(url, name, 'friend-avatar');
 }
 function runFriendsSearch(){
   const q = document.getElementById('friends-search').value.trim();
@@ -32,7 +30,7 @@ function runFriendsSearch(){
     empty.style.display = list.length ? 'none' : '';
     wrap.innerHTML = list.map(u=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${u.userId})">
-        ${_friendAvatarHtml(u.avatarUrl)}<div class="es-main"><strong>${esc(u.displayName)}</strong></div>
+        ${_friendAvatarHtml(u.avatarUrl, u.displayName)}<div class="es-main"><strong>${esc(u.displayName)}</strong></div>
         ${_friendActionButtonHtml(u)}
       </div>`).join('');
   }).catch(()=>{});
@@ -46,7 +44,7 @@ function loadFriendsPage(){
     document.getElementById('friends-incoming-empty').style.display = list.length ? 'none' : '';
     document.getElementById('friends-incoming-list').innerHTML = list.map(r=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${r.userId})">
-        ${_friendAvatarHtml(r.avatarUrl)}<div class="es-main"><strong>${esc(r.displayName)}</strong></div>
+        ${_friendAvatarHtml(r.avatarUrl, r.displayName)}<div class="es-main"><strong>${esc(r.displayName)}</strong></div>
         <div style="display:flex;gap:6px;">
           <button class="btn btn-primary" onclick="event.stopPropagation();acceptFriendRequest(${r.requestId})">${t('friends.acceptBtn')}</button>
           <button class="btn btn-outline" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.rejectBtn')}</button>
@@ -58,7 +56,7 @@ function loadFriendsPage(){
     document.getElementById('friends-outgoing-empty').style.display = list.length ? 'none' : '';
     document.getElementById('friends-outgoing-list').innerHTML = list.map(r=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${r.userId})">
-        ${_friendAvatarHtml(r.avatarUrl)}<div class="es-main"><strong>${esc(r.displayName)}</strong></div>
+        ${_friendAvatarHtml(r.avatarUrl, r.displayName)}<div class="es-main"><strong>${esc(r.displayName)}</strong></div>
         <button class="btn btn-outline" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.cancelBtn')}</button>
       </div>`).join('');
   }).catch(()=>{});
@@ -67,7 +65,7 @@ function loadFriendsPage(){
     document.getElementById('friends-list-empty').style.display = list.length ? 'none' : '';
     document.getElementById('friends-list').innerHTML = list.map(u=>`
       <div class="ext-search-item" onclick="openUserProfilePage(${u.userId})">
-        ${_friendAvatarHtml(u.avatarUrl)}<div class="es-main"><strong>${esc(u.displayName)}</strong></div>
+        ${_friendAvatarHtml(u.avatarUrl, u.displayName)}<div class="es-main"><strong>${esc(u.displayName)}</strong></div>
         <button class="btn btn-outline" onclick="event.stopPropagation();unfriendUser(${u.userId})">${t('friends.unfriendBtn')}</button>
       </div>`).join('');
   }).catch(()=>{});
@@ -121,7 +119,7 @@ function loadUserProfilePage(){
     const img = document.getElementById('user-profile-avatar');
     const ph = document.getElementById('user-profile-avatar-ph');
     if(u.avatarUrl){ img.src = u.avatarUrl; img.style.display = ''; ph.style.display = 'none'; }
-    else { img.style.display = 'none'; ph.style.display = ''; }
+    else { img.style.display = 'none'; ph.style.display = ''; fillAvatarPlaceholder(ph, u.displayName); }
 
     document.getElementById('user-profile-stat-listened').textContent = u.totalListened ?? 0;
     document.getElementById('user-profile-stat-favorites').textContent = u.favoritesCount ?? 0;

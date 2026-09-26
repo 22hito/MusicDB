@@ -44,7 +44,7 @@ async function runNavSearch(q){
     </button>`).join('');
   const usersHtml = users.map(u=>`
     <button type="button" class="nav-search-item" onclick="_hideNavSearch();openUserProfilePage(${u.userId})">
-      ${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" alt="">` : `<svg class="icon"><use href="#icon-user"/></svg>`}
+      ${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" alt="">` : avatarHtml(null, u.displayName, 'nsi-avatar')}
       <span class="nsi-main"><strong>${esc(u.displayName)}</strong></span>
     </button>`).join('');
   const html = section(t('navSearch.songs'), songsHtml) + section(t('navSearch.artists'), artistsHtml) + section(t('navSearch.users'), usersHtml);

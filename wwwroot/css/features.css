@@ -209,6 +209,45 @@
 /* Підказка про фон біля поля файлу пісні. */
 .audio-bg-hint { color: var(--accent); opacity: 0.85; }
 
+/* Аватар без фото — ініціали на кольоровому тлі (avatarHtml / fillAvatarPlaceholder). */
+.avatar-initials { --av: var(--accent); display: inline-flex !important; align-items: center; justify-content: center; flex-shrink: 0;
+  background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--av) 85%, #fff 15%), color-mix(in srgb, var(--av) 70%, #000 30%)) !important;
+  color: #fff !important; font-family: var(--font-serif); font-weight: 700; letter-spacing: 0.02em; border-color: transparent !important; line-height: 1; }
+.friend-avatar.avatar-initials { font-size: 0.85rem; }
+.taste-card .friend-avatar.avatar-initials { font-size: 1rem; }
+.chat-conv-ph.avatar-initials { font-size: 0.8rem; }
+.nav-avatar { width: 28px; height: 28px; border-radius: 50%; font-size: 0.72rem; }
+.nsi-avatar { width: 26px; height: 26px; border-radius: 50%; font-size: 0.7rem; }
+#profile-view-picture-ph.avatar-initials { font-size: 1.35rem; }
+
+/* Картка профілю — як у застосунку: аватар (натиснути — змінити), ім'я, пошта, ADMIN, нікнейм. */
+.profile-card { max-width: 640px; margin-bottom: 1.5rem; padding: 1.1rem 1.2rem 1.2rem; }
+.profile-card-top { display: flex; align-items: center; gap: 14px; margin-bottom: 0.5rem; }
+.profile-avatar-pick { position: relative; width: 60px; height: 60px; flex-shrink: 0; cursor: pointer; border-radius: 50%; }
+.profile-avatar-pick #profile-view-picture, .profile-avatar-pick #profile-view-picture-ph { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: var(--surface2); display: flex; }
+.profile-avatar-edit { position: absolute; right: -3px; bottom: -3px; width: 23px; height: 23px; border-radius: 50%; background: var(--elevated); border: 1px solid var(--border); color: var(--accent); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
+.profile-avatar-edit .icon { width: 11px; height: 11px; }
+.profile-avatar-pick:hover .profile-avatar-edit { border-color: var(--accent); }
+.profile-card-id { min-width: 0; flex: 1; }
+.profile-card-name { font-weight: 700; font-size: 1.05rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-card-email { color: var(--muted); font-size: 0.8rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-admin-badge { display: inline-block; margin-top: 6px; background: var(--accent); color: var(--on-accent); font: 800 0.62rem var(--font-ui); letter-spacing: 0.04em; padding: 0.12rem 0.45rem; border-radius: 4px; }
+.profile-avatar-remove { background: none; border: none; color: var(--accent); font: inherit; font-size: 0.8rem; padding: 0.2rem 0; margin-bottom: 0.3rem; cursor: pointer; }
+.profile-card .form-group { margin-bottom: 0.8rem; }
+/* Спілкування: Обговорення · Друзі · Особисті; в "Особистих" — підвкладки Чати / Запити. */
+.chat-tabs, .chat-subtabs { display: flex; width: fit-content; }
+.chat-tabs { margin-bottom: 1.2rem; }
+.chat-subtabs { margin: -0.5rem 0 1.2rem; }
+.seg-sub button { font-size: 0.78rem; padding: 0.4rem 0.9rem; }
+/* Кінець профілю на телефоні: посилання й "Вийти". */
+.profile-links { display: flex; flex-direction: column; gap: 10px; margin-top: 1.6rem; }
+.profile-link { display: flex; align-items: center; gap: 12px; width: 100%; padding: 0.85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--text); font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer; }
+.profile-link .icon { width: 17px; height: 17px; color: var(--accent); flex-shrink: 0; }
+.profile-link span { flex: 1; }
+.profile-link .icon.chev { width: 14px; height: 14px; color: var(--muted); }
+.profile-logout { width: 100%; justify-content: center; margin-top: 1.4rem; }
+#user-profile-avatar-ph.avatar-initials { font-size: 1.6rem; }
+
 /* Аватарки на сторінці друзів. */
 .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
 .ext-search-item:has(> .friend-avatar) { align-items: center; gap: 0.8rem; }

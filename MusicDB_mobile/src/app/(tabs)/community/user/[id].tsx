@@ -136,7 +136,7 @@ export default function UserProfileScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.head, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Avatar url={profile.avatarUrl} size={72} />
+            <Avatar url={profile.avatarUrl} size={72} name={profile.displayName} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ color: theme.text, fontFamily: FONT_SERIF_BOLD, fontSize: 20 }}>{profile.displayName}</Text>
               {profile.memberSince ? (

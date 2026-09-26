@@ -111,7 +111,7 @@ export function FriendsPanel({ onChanged }: { onChanged?: () => void }) {
   const row = (key: string, u: { userId: number; displayName: string; avatarUrl: string | null }, sub: string | null, right: React.ReactNode) => (
     <View key={key} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       <TouchableOpacity style={styles.who} onPress={() => openUserProfile(u.userId, u.displayName)}>
-        <Avatar url={u.avatarUrl} />
+        <Avatar url={u.avatarUrl} name={u.displayName} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={{ color: theme.text, fontWeight: '700' }}>{u.displayName}</Text>
           {sub ? <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 12, marginTop: 2 }}>{sub}</Text> : null}

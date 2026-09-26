@@ -75,7 +75,7 @@ function loadDmRequests(){
     document.getElementById('chat-requests-empty').style.display = list.length ? 'none' : '';
     document.getElementById('chat-requests-list').innerHTML = list.map(r=>`
       <div class="dm-request-card">
-        ${r.avatarUrl ? `<img src="${esc(r.avatarUrl)}" alt="">` : `<span class="chat-conv-ph"><svg class="icon"><use href="#icon-user"/></svg></span>`}
+        ${r.avatarUrl ? `<img src="${esc(r.avatarUrl)}" alt="">` : avatarHtml(null, r.displayName, 'chat-conv-ph')}
         <div class="dm-request-main">
           <div><a href="#" class="artist-link" onclick="openUserProfilePage(${r.userId});return false;"><strong>${esc(r.displayName)}</strong></a> <span class="hint">· ${esc(r.createdAt)}</span></div>
           <div class="dm-request-preview">${esc(r.preview)}</div>
@@ -117,7 +117,7 @@ function loadConversations(){
     document.getElementById('chat-conversations-empty').style.display = (list.length || showPending) ? 'none' : '';
     const item = c => `
       <div class="chat-conv${c.userId===currentChatUserId?' active':''}" onclick="selectConversation(${c.userId})">
-        ${c.avatarUrl ? `<img src="${esc(c.avatarUrl)}" alt="">` : `<span class="chat-conv-ph"><svg class="icon"><use href="#icon-user"/></svg></span>`}
+        ${c.avatarUrl ? `<img src="${esc(c.avatarUrl)}" alt="">` : avatarHtml(null, c.displayName, 'chat-conv-ph')}
         <div class="chat-conv-main">
           <div class="chat-conv-top"><strong>${esc(c.displayName)}</strong>${c.unreadCount?`<span class="count-badge">${c.unreadCount}</span>`:''}</div>
           <div class="chat-conv-last">${c.state==='pending_outgoing'?`<span class="badge">${esc(t('chat.pendingLabel'))}</span> `:''}${c.lastFromMe?`${esc(t('chat.you'))}: `:''}${esc(c.lastMessage)}</div>

@@ -6,7 +6,7 @@ import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { Button, EmptyState, Heading, SegmentedPicker } from '@/components/UI';
+import { Avatar, Button, EmptyState, Heading, SegmentedPicker } from '@/components/UI';
 import { ChatIcon, PersonIcon } from '@/components/Icons';
 import { FriendsPanel, openUserProfile } from '@/components/FriendsPanel';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
@@ -98,14 +98,6 @@ export default function CommunityScreen() {
     }
   };
 
-  const Avatar = ({ url }: { url: string | null }) =>
-    url ? (
-      <Image source={{ uri: url }} style={styles.avatar} />
-    ) : (
-      <View style={[styles.avatar, { backgroundColor: theme.surface2, alignItems: 'center', justifyContent: 'center' }]}>
-        <PersonIcon size={16} color={theme.muted} />
-      </View>
-    );
 
   const tabs: { value: Tab; label: string }[] = [
     { value: 'threads', label: t('chat.tab.threads') },
@@ -147,7 +139,7 @@ export default function CommunityScreen() {
                   style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
                   onPress={() => router.push({ pathname: '/community/chat/[userId]', params: { userId: String(c.userId), name: c.displayName } })}
                 >
-                  <Avatar url={c.avatarUrl} />
+                  <Avatar url={c.avatarUrl} name={c.displayName} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={styles.rowBetween}>
                       <Text numberOfLines={1} style={{ color: theme.text, fontWeight: '700', flexShrink: 1 }}>{c.displayName}</Text>
@@ -176,7 +168,7 @@ export default function CommunityScreen() {
               requests.map((r) => (
                 <View key={r.userId} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border, flexWrap: 'wrap' }]}>
                   <TouchableOpacity onPress={() => openUserProfile(r.userId, r.displayName)}>
-                    <Avatar url={r.avatarUrl} />
+                    <Avatar url={r.avatarUrl} name={r.displayName} />
                   </TouchableOpacity>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={{ color: theme.text, fontWeight: '700' }}>{r.displayName}</Text>
