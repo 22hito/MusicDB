@@ -45,14 +45,24 @@ function _graphScreen(i){
   return [v.x + v.scale*(f.ox + f.s*_g.xs[i]), v.y + v.scale*(f.oy + f.s*_g.ys[i])];
 }
 // Вписує поточну розкладку в розмір канви (з відступом) — перераховується, поки граф "осідає".
+// Кола-позначки (opts.rings) теж мають уміститись, тож їх межі враховуються.
 function _graphFit(){
   const c = _graphCanvas(), n = _g.n, pad = 24;
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   for(let i=0;i<n;i++){ const x=_g.xs[i], y=_g.ys[i]; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  if(_g.rings){
+    const R = Math.max(..._g.rings.map(r => r.r));
+    minX = Math.min(minX, _g.cx-R); maxX = Math.max(maxX, _g.cx+R); minY = Math.min(minY, _g.cy-R); maxY = Math.max(maxY, _g.cy+R);
+  }
   const w = c.clientWidth || 700, h = c.clientHeight || 500;
   const padB = _g.nodeLabels ? pad + 22 : pad; // місце під підписи нижніх вузлів
   const s = Math.min((w-pad*2)/Math.max(1,maxX-minX), (h-pad-padB)/Math.max(1,maxY-minY), 2);
   _g.fit = { s, ox: (w - s*(maxX+minX))/2, oy: pad + ((h-pad-padB) - s*(maxY-minY))/2 - s*minY };
+}
+// Радіус вузла на екрані: базовий × масштаб × власний розмір вузла (opts.sizes).
+function _graphNodeR(i){
+  const r = _g.radius * Math.min(2.2, Math.max(1, Math.sqrt(_graphView.scale)));
+  return _g.sizes ? r * _g.sizes[i] : r;
 }
 
 function _graphDraw(){
@@ -70,9 +80,25 @@ function _graphDraw(){
   for(let i=0;i<n;i++){ const p = _graphScreen(i); pos[i*2]=p[0]; pos[i*2+1]=p[1]; }
   const edgeRgb = _g.edgeRgb;
 
+  // Кола-позначки навколо центру (карта смаку: 75% / 50% / 25% збігу).
+  if(_g.rings){
+    const f = _g.fit, v = _graphView;
+    const ccx = v.x + v.scale*(f.ox + f.s*_g.cx), ccy = v.y + v.scale*(f.oy + f.s*_g.cy);
+    ctx.save();
+    ctx.setLineDash([4, 6]); ctx.lineWidth = 1;
+    ctx.font = `600 10px ${_g.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    for(const ring of _g.rings){
+      const rr = ring.r * f.s * v.scale;
+      ctx.beginPath(); ctx.arc(ccx, ccy, rr, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(${edgeRgb},0.22)`; ctx.stroke();
+      if(ring.label){ ctx.fillStyle = `rgba(${edgeRgb},0.75)`; ctx.fillText(ring.label, ccx, ccy - rr - 3); }
+    }
+    ctx.restore();
+  }
+
   // Ребра — кількома пакетами за силою (один stroke на пакет, а не на ребро).
   const buckets = [[], [], [], []];
-  for(const e of _g.edges){ buckets[Math.min(3, Math.floor((e[2]-GRAPH_SIM_THRESHOLD)/0.2))].push(e); }
+  for(const e of _g.edges){ buckets[Math.max(0, Math.min(3, Math.floor((e[2]-GRAPH_SIM_THRESHOLD)/0.2)))].push(e); }
   ctx.lineCap = 'round';
   buckets.forEach((list, b) => {
     if(!list.length) return;
@@ -88,48 +114,88 @@ function _graphDraw(){
     ctx.strokeStyle = `rgba(${edgeRgb},0.8)`; ctx.lineWidth = 2; ctx.stroke();
   }
 
-  // Вузли — пакетами за кольором.
-  const r = _g.radius * Math.min(2.2, Math.max(1, Math.sqrt(_graphView.scale)));
   const hl = hov != null ? new Set([hov, ..._g.adj[hov]]) : null;
-  _g.colorGroups.forEach((idxs, color) => {
-    ctx.beginPath();
-    for(const i of idxs){ if(hl && hl.has(i)) continue; ctx.moveTo(pos[i*2]+r, pos[i*2+1]); ctx.arc(pos[i*2], pos[i*2+1], r, 0, Math.PI*2); }
-    ctx.globalAlpha = hl ? 0.22 : 1;
-    ctx.fillStyle = color; ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-  // Позначені вузли (напр. "ви" у графі смаків) — завжди з кільцем.
+  if(_g.rich){
+    // Вузли з аватарками/ініціалами й різним розміром — поштучно (їх небагато).
+    for(let i=0;i<n;i++){
+      const x = pos[i*2], y = pos[i*2+1];
+      const ri = _graphNodeR(i) * (i === hov ? 1.15 : 1);
+      ctx.globalAlpha = hl && !hl.has(i) ? 0.3 : 1;
+      const img = _g.images?.[i];
+      ctx.beginPath(); ctx.arc(x, y, ri, 0, Math.PI*2);
+      ctx.fillStyle = _g.avColors?.[i] || _g.colors[i]; ctx.fill();
+      if(img && img.complete && img.naturalWidth){
+        ctx.save(); ctx.beginPath(); ctx.arc(x, y, ri, 0, Math.PI*2); ctx.clip();
+        ctx.drawImage(img, x-ri, y-ri, ri*2, ri*2);
+        ctx.restore();
+      } else if(_g.initials?.[i]){
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `700 ${Math.max(8, Math.round(ri*0.8))}px ${_g.serif}`;
+        ctx.fillText(_g.initials[i], x, y + 1);
+      }
+      // Обідок: позначені вузли (друзі / спільні виконавці) — своїм кольором, решта — тонкий кольору вузла.
+      const mark = _g.marks?.get(i);
+      ctx.lineWidth = mark ? 2.5 : 1.5;
+      ctx.strokeStyle = mark || _g.colors[i];
+      ctx.beginPath(); ctx.arc(x, y, ri, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  } else {
+    // Вузли — пакетами за кольором.
+    const r = _graphNodeR(0);
+    _g.colorGroups.forEach((idxs, color) => {
+      ctx.beginPath();
+      for(const i of idxs){ if(hl && hl.has(i)) continue; ctx.moveTo(pos[i*2]+r, pos[i*2+1]); ctx.arc(pos[i*2], pos[i*2+1], r, 0, Math.PI*2); }
+      ctx.globalAlpha = hl ? 0.22 : 1;
+      ctx.fillStyle = color; ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if(hl){
+      for(const i of hl){
+        const big = i === hov ? r*1.8 : r*1.25;
+        ctx.beginPath(); ctx.arc(pos[i*2], pos[i*2+1], big, 0, Math.PI*2);
+        ctx.fillStyle = _g.colors[i]; ctx.fill();
+        ctx.lineWidth = i === hov ? 2 : 1; ctx.strokeStyle = _g.ringColor; ctx.stroke();
+      }
+    }
+  }
+  // Позначені вузли (напр. "ви" у графі смаків чи обрана пісня) — завжди з кільцем.
   if(_g.ring.length){
     ctx.lineWidth = 2; ctx.strokeStyle = _g.ringColor;
-    for(const i of _g.ring){ ctx.beginPath(); ctx.arc(pos[i*2], pos[i*2+1], r*1.7, 0, Math.PI*2); ctx.stroke(); }
+    for(const i of _g.ring){ ctx.beginPath(); ctx.arc(pos[i*2], pos[i*2+1], _graphNodeR(i)*1.45 + 3, 0, Math.PI*2); ctx.stroke(); }
   }
   // Підписи під вузлами — лише для невеликих графів (люди, виконавці), інакше каша.
   if(_g.nodeLabels){
-    ctx.font = `500 11px ${_g.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.font = `500 11px ${_g.font}`;
+    // Радіальні розкладки: підпис — назовні від центру (менше наповзань), центральний вузол — під ним.
+    const f = _g.fit, v = _graphView;
+    const ccx = v.x + v.scale*(f.ox + f.s*_g.cx), ccy = v.y + v.scale*(f.oy + f.s*_g.cy);
     for(let i=0;i<n;i++){
       ctx.globalAlpha = hl && !hl.has(i) ? 0.25 : 0.9;
       ctx.fillStyle = _g.textColor;
-      ctx.fillText(_g.nodeLabels[i], pos[i*2], pos[i*2+1] + r*1.8 + 2);
+      const x = pos[i*2], y = pos[i*2+1], dx = x - ccx, dy = y - ccy, d = Math.hypot(dx, dy);
+      const ri = _graphNodeR(i) * (_g.ring.includes(i) ? 1.45 : 1);
+      if(_g.radialLabels && d > 1){
+        const ux = dx / d, uy = dy / d;
+        ctx.textAlign = Math.abs(ux) < 0.3 ? 'center' : ux > 0 ? 'left' : 'right';
+        ctx.textBaseline = Math.abs(uy) < 0.3 ? 'middle' : uy > 0 ? 'top' : 'bottom';
+        ctx.fillText(_g.nodeLabels[i], x + ux*(ri + 5), y + uy*(ri + 5));
+      } else {
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(_g.nodeLabels[i], x, y + ri + 6);
+      }
     }
     ctx.globalAlpha = 1;
-  }
-  if(hl){
-    for(const i of hl){
-      const big = i === hov ? r*1.8 : r*1.25;
-      ctx.beginPath(); ctx.arc(pos[i*2], pos[i*2+1], big, 0, Math.PI*2);
-      ctx.fillStyle = _g.colors[i]; ctx.fill();
-      ctx.lineWidth = i === hov ? 2 : 1; ctx.strokeStyle = _g.ringColor; ctx.stroke();
-    }
   }
 }
 
 // Один крок фізики (відштовхування всіх, притягання схожих, тяжіння до центру) —
-// кожну пару рахуємо ОДИН раз і застосовуємо до обох вузлів.
+// кожну пару рахуємо ОДИН раз і застосовуємо до обох вузлів. opts.pin — вузол, закріплений у центрі.
 function _graphStep(){
   const { n, xs, ys, vx, vy, sim } = _g;
   const fx = _g.fx, fy = _g.fy;
   fx.fill(0); fy.fill(0);
-  const repelK = 5000, springK = 0.02, centerK = 0.004;
+  const repelK = _g.rich ? 9000 : 5000, springK = 0.02, centerK = 0.004;
   for(let i=0;i<n;i++){
     const xi = xs[i], yi = ys[i], row = i*n;
     for(let j=i+1;j<n;j++){
@@ -149,6 +215,7 @@ function _graphStep(){
     vy[i] = (vy[i] + fy[i] + (cy-ys[i])*centerK)*0.82;
     xs[i]+=vx[i]; ys[i]+=vy[i];
   }
+  if(_g.pin != null){ xs[_g.pin] = cx; ys[_g.pin] = cy; vx[_g.pin] = vy[_g.pin] = 0; }
 }
 function _graphTick(){
   if(!_g) return;
@@ -160,6 +227,10 @@ function _graphTick(){
   if(_g.iter < _g.maxIter) _graphRaf = requestAnimationFrame(_graphTick);
 }
 
+// opts: nodeLabels(item) — підпис під вузлом; ring — індекси з кільцем; pin — вузол у центрі;
+// positions — готова розкладка [[x,y]] (без фізики, центр 400×300); sizes — множник радіуса;
+// images — URL фото; initials / avatarColors — ініціали на кольоровому тлі; marks — Map(індекс → колір обідка);
+// rings — [{r, label}] кола-позначки навколо центру; radius — базовий радіус.
 function _startGraph(items, simFn, labelFn, colorFn, onClickFn, opts = {}){
   cancelAnimationFrame(_graphRaf);
   const n = items.length;
@@ -182,32 +253,45 @@ function _startGraph(items, simFn, labelFn, colorFn, onClickFn, opts = {}){
   const xs = new Float32Array(n), ys = new Float32Array(n);
   const R = 250;
   for(let i=0;i<n;i++){ const a = (i/n)*Math.PI*2; xs[i] = 400 + Math.cos(a)*R; ys[i] = 300 + Math.sin(a)*R; }
+  if(opts.positions) opts.positions.forEach(([x, y], i) => { xs[i] = x; ys[i] = y; });
   const css = getComputedStyle(document.documentElement);
   const accent = (css.getPropertyValue('--accent') || '').trim();
   const nodeLabels = opts.nodeLabels && n <= 80
     ? items.map(it => { const s = String(opts.nodeLabels(it)); return s.length > 18 ? s.slice(0, 17) + '…' : s; })
     : null;
+  const images = opts.images ? opts.images.map(u => {
+    if(!u) return null;
+    const im = new Image();
+    im.referrerPolicy = 'no-referrer';
+    im.onload = _graphRequestDraw;
+    im.src = u;
+    return im;
+  }) : null;
   _g = {
     items, labelFn, onClick: onClickFn, n, sim, edges, adj, colors, colorGroups,
     xs, ys, vx: new Float32Array(n), vy: new Float32Array(n), fx: new Float32Array(n), fy: new Float32Array(n),
-    cx: 400, cy: 300, iter: 0, maxIter: n > 200 ? 110 : 160,
-    radius: n > 150 ? 3.5 : n > 50 ? 5.5 : 8, hover: null,
+    cx: 400, cy: 300, iter: 0, maxIter: opts.positions ? 0 : n > 200 ? 110 : 160,
+    radius: opts.radius || (n > 150 ? 3.5 : n > 50 ? 5.5 : 8), hover: null,
     edgeRgb: '200,169,110', ringColor: accent || '#fff', fit: { s: 1, ox: 0, oy: 0 },
-    ring: opts.ring || [], nodeLabels,
+    ring: opts.ring || [], nodeLabels, pin: opts.pin ?? null,
+    rich: !!(opts.sizes || opts.images || opts.initials), sizes: opts.sizes || null, images,
+    initials: opts.initials || null, avColors: opts.avatarColors || null, marks: opts.marks || null, rings: opts.rings || null,
+    radialLabels: !!opts.radialLabels,
     textColor: (css.getPropertyValue('--text') || '').trim() || '#ddd', font: getComputedStyle(document.body).fontFamily || 'sans-serif',
+    serif: (css.getPropertyValue('--font-serif') || '').trim() || 'serif',
   };
   _graphRaf = requestAnimationFrame(_graphTick);
 }
 
-// Найближчий вузол під курсором (у межах радіуса + запас) — простий перебір, n ≤ кілька сотень.
+// Найближчий вузол під курсором (у межах радіуса вузла + запас) — простий перебір, n ≤ кілька сотень.
 function _graphHitTest(px, py){
   if(!_g) return null;
-  const r = _g.radius * Math.min(2.2, Math.max(1, Math.sqrt(_graphView.scale))) + 5;
-  let best = null, bestD = r*r;
+  let best = null, bestD = Infinity;
   for(let i=0;i<_g.n;i++){
     const [x,y] = _graphScreen(i);
     const d = (x-px)*(x-px)+(y-py)*(y-py);
-    if(d <= bestD){ bestD = d; best = i; }
+    const lim = (_graphNodeR(i) + 5) ** 2;
+    if(d <= lim && d < bestD){ bestD = d; best = i; }
   }
   return best;
 }

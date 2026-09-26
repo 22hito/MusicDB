@@ -66,7 +66,15 @@ public class TasteAndArtistsTests
         var graph = await new TasteService(db).BuildAsync(1);
 
         Assert.Equal([1, 2, 3], graph.Nodes.Select(n => n.UserId).Order());
-        Assert.True(graph.Nodes.Single(n => n.UserId == 1).IsMe);
+        var me = graph.Nodes.Single(n => n.UserId == 1);
+        Assert.True(me.IsMe);
+        Assert.Equal(100, me.Score);
+        Assert.Equal(2, me.ItemCount);
+        Assert.True(graph.Nodes.Single(n => n.UserId == 2).Score > graph.Nodes.Single(n => n.UserId == 3).Score);
+        // Картка "Ваш смак": мої виконавці, жанри (назви з бази), улюблені.
+        Assert.Contains(graph.MyTopArtists!, a => a.Name == "AC/DC");
+        Assert.Contains("rock", graph.MyTopGenres!);
+        Assert.Equal(2, graph.MyFavorites);
         Assert.Equal(2, graph.MyItemCount);
         Assert.Contains(graph.Edges, e => (e.A, e.B) == (1, 2));
         Assert.DoesNotContain(graph.Edges, e => e.A == 3 || e.B == 3);

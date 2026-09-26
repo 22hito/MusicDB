@@ -176,7 +176,10 @@ public record FriendRequestDto(int RequestId, int UserId, string DisplayName, st
 // ─── Схожість смаків (граф людей) ───────────────────────────────────────────────
 // Лише агреговане: відсоток збігу й кілька спільних виконавців — повні списки
 // улюблених назовні не віддаються.
-public record TasteNodeDto(int UserId, string DisplayName, string? AvatarUrl, ArtistRefDto[] TopArtists, bool IsMe, string RelationshipStatus);
+// Score — збіг зі мною 0..100 (у мене — 100): для "карти смаку" (ближче до центру = схожіше).
+// ItemCount — скільки пісень у смаку (улюблені + прослухані): розмір вузла.
+public record TasteNodeDto(int UserId, string DisplayName, string? AvatarUrl, ArtistRefDto[] TopArtists, bool IsMe, string RelationshipStatus,
+    int Score = 0, int ItemCount = 0);
 
 // Weight — 0..1 (ребро графа між двома людьми).
 public record TasteEdgeDto(int A, int B, double Weight);
@@ -184,7 +187,9 @@ public record TasteEdgeDto(int A, int B, double Weight);
 public record TasteMatchDto(int UserId, string DisplayName, string? AvatarUrl, int Score, ArtistRefDto[] SharedArtists, int SharedFavorites, string RelationshipStatus);
 
 // MyItemCount — скільки в мене улюблених + прослуханих (0 — нема з чим порівнювати).
-public record TasteGraphDto(int MeId, int MyItemCount, List<TasteNodeDto> Nodes, List<TasteEdgeDto> Edges, List<TasteMatchDto> Matches);
+// MyTopArtists / MyTopGenres / MyFavorites — картка "Ваш смак" (лише мої дані).
+public record TasteGraphDto(int MeId, int MyItemCount, List<TasteNodeDto> Nodes, List<TasteEdgeDto> Edges, List<TasteMatchDto> Matches,
+    ArtistRefDto[]? MyTopArtists = null, string[]? MyTopGenres = null, int MyFavorites = 0);
 
 public record SendFriendRequestDto(int TargetUserId);
 

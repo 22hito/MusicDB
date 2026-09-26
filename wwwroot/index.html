@@ -674,11 +674,23 @@
     <p class="taste-sub" data-i18n="taste.sub">Люди, чиї улюблені пісні та виконавці схожі на ваші. Рахується з улюблених (♥) і прослуханих пісень.</p>
     <div id="taste-login-hint" class="empty" style="display:none;"><svg class="icon"><use href="#icon-lock"/></svg><span data-i18n="taste.loginHint">Увійдіть, щоб знайти людей зі схожим смаком</span></div>
     <div id="taste-content" style="display:none;">
-      <div class="taste-actions">
-        <button type="button" class="btn btn-primary taste-graph-btn" onclick="openTasteGraph('people')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="taste.graphPeople">Граф людей</span></button>
-        <button type="button" class="btn btn-outline taste-graph-btn" onclick="openTasteGraph('artists')"><svg class="icon"><use href="#icon-mic"/></svg> <span data-i18n="taste.graphArtists">Люди й виконавці</span></button>
+      <!-- Ваш смак: топ-виконавці, жанри, скільки пісень у смаку. -->
+      <section class="taste-me" id="taste-me" style="display:none;">
+        <div class="taste-me-head"><h3 data-i18n="taste.meTitle">Ваш смак</h3><span class="taste-me-stats" id="taste-me-stats"></span></div>
+        <div class="taste-me-artists" id="taste-me-artists"></div>
+        <div class="taste-me-genres" id="taste-me-genres"></div>
+      </section>
+      <!-- Два режими графа — однаковими плитками. -->
+      <div class="taste-modes">
+        <button type="button" class="explore-tile taste-mode" onclick="openTasteGraph('people')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-users"/></svg></span><span class="explore-tile-text"><strong data-i18n="taste.graphPeople">Карта смаку</strong><span data-i18n="taste.graphPeopleSub">Ви в центрі — ближче ті, чий смак схожіший</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
+        <button type="button" class="explore-tile taste-mode" onclick="openTasteGraph('artists')"><span class="explore-tile-icon"><svg class="icon"><use href="#icon-mic"/></svg></span><span class="explore-tile-text"><strong data-i18n="taste.graphArtists">Люди й виконавці</strong><span data-i18n="taste.graphArtistsSub">Хто кого слухає і де ваші смаки перетинаються</span></span><svg class="icon explore-tile-arrow"><use href="#icon-arrow-right"/></svg></button>
       </div>
       <div id="taste-no-data" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="taste.noData">Додайте пісні в улюблені (♥) або послухайте кілька — і тут з'являться люди зі схожим смаком</span></div>
+      <div class="seg-switch taste-filter" id="taste-filter" style="display:none;">
+        <button type="button" data-f="all" class="active" onclick="setTasteFilter('all')" data-i18n="taste.filterAll">Усі</button>
+        <button type="button" data-f="friends" onclick="setTasteFilter('friends')" data-i18n="taste.filterFriends">Друзі</button>
+        <button type="button" data-f="others" onclick="setTasteFilter('others')" data-i18n="taste.filterOthers">Інші</button>
+      </div>
       <div id="taste-no-matches" class="empty" style="display:none;"><svg class="icon"><use href="#icon-users"/></svg><span data-i18n="taste.noMatches">Поки що нікого зі схожим смаком — загляньте пізніше</span></div>
       <div id="taste-list" class="taste-list"></div>
     </div>

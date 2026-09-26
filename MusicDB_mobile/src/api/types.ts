@@ -294,6 +294,8 @@ export interface TasteNode {
   topArtists: ArtistRef[];
   isMe: boolean;
   relationshipStatus: string;
+  score: number; // збіг зі мною 0..100 (у мене — 100)
+  itemCount: number; // пісень у смаку (улюблені + прослухані)
 }
 
 export interface TasteEdge {
@@ -318,6 +320,9 @@ export interface TasteGraph {
   nodes: TasteNode[];
   edges: TasteEdge[];
   matches: TasteMatch[];
+  myTopArtists: ArtistRef[];
+  myTopGenres: string[];
+  myFavorites: number;
 }
 
 export interface UserSearchResult {

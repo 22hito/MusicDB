@@ -44,8 +44,10 @@ public class TasteService(MusicDbContext db)
         var artistRows = await db.MusicArtists.Select(ma => new { ma.MusicId, ma.ArtistId, ma.Artist.Name }).ToListAsync();
         var artistsByMusic = artistRows.ToLookup(r => r.MusicId, r => r.ArtistId);
         var artistNames = artistRows.GroupBy(r => r.ArtistId).ToDictionary(g => g.Key, g => g.First().Name);
-        var genresByMusic = (await db.MusicGenres.Select(mg => new { mg.MusicId, mg.Genre.GenreName }).ToListAsync())
-            .ToLookup(r => r.MusicId, r => GenreNames.Key(r.GenreName));
+        var genreRows = await db.MusicGenres.Select(mg => new { mg.MusicId, mg.Genre.GenreName }).ToListAsync();
+        var genresByMusic = genreRows.ToLookup(r => r.MusicId, r => GenreNames.Key(r.GenreName));
+        // Ключ жанру -> назва для показу (перше написання з бази).
+        var genreNames = genreRows.GroupBy(r => GenreNames.Key(r.GenreName)).ToDictionary(g => g.Key, g => g.First().GenreName.Trim());
 
         var tastes = new Dictionary<int, Taste>();
         foreach (var (uid, songs) in weights)
@@ -69,11 +71,14 @@ public class TasteService(MusicDbContext db)
 
         var cards = await UserDirectoryService.GetUserCardsAsync(db, nodeIds);
         var relations = await RelationsAsync(meId);
+        tastes.TryGetValue(meId, out var myTaste);
 
         var nodes = nodeIds.Where(cards.ContainsKey).Select(id => new TasteNodeDto(
             id, cards[id].DisplayName, cards[id].AvatarUrl,
             TopArtists(tastes[id], artistNames, 3), id == meId,
-            id == meId ? "self" : relations.GetValueOrDefault(id, "none"))).ToList();
+            id == meId ? "self" : relations.GetValueOrDefault(id, "none"),
+            id == meId ? 100 : myTaste is null ? 0 : (int)Math.Round(Similarity(myTaste, tastes[id]) * 100),
+            weights[id].Count)).ToList();
 
         var ids = nodes.Select(n => n.UserId).ToList();
         var edges = new Dictionary<(int, int), double>();
@@ -102,7 +107,10 @@ public class TasteService(MusicDbContext db)
         }
 
         return new TasteGraphDto(meId, mine is null ? 0 : weights[meId].Count, nodes,
-            edges.Select(e => new TasteEdgeDto(e.Key.Item1, e.Key.Item2, e.Value)).ToList(), matches);
+            edges.Select(e => new TasteEdgeDto(e.Key.Item1, e.Key.Item2, e.Value)).ToList(), matches,
+            mine is null ? [] : TopArtists(mine, artistNames, 6),
+            mine is null ? [] : mine.Genres.OrderByDescending(kv => kv.Value).Take(5).Select(kv => genreNames.GetValueOrDefault(kv.Key, kv.Key)).ToArray(),
+            mine?.Favorites.Count ?? 0);
     }
 
     // 0..1. Без улюблених в одного з двох — лише виконавці й жанри (прослухане).

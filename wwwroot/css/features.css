@@ -92,10 +92,45 @@
 
 /* Сторінка "Схожий смак". */
 .taste-sub { color: var(--muted); font-size: 0.9rem; margin: -0.4rem 0 1.2rem; max-width: 680px; }
-.taste-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
-.taste-actions .btn { display: inline-flex; align-items: center; gap: 0.45rem; }
+.taste-me { padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.taste-me-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.taste-me-head h3 { margin: 0; font-size: 1.05rem; }
+.taste-me-stats { color: var(--muted); font-size: 0.8rem; }
+.taste-me-artists { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.taste-me-artist { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.25rem 0.7rem 0.25rem 0.25rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font: inherit; font-size: 0.82rem; cursor: pointer; }
+.taste-me-artist:hover { border-color: var(--accent); }
+.taste-me-artist .artist-avatar.xs { width: 26px; height: 26px; }
+.taste-me-artist .artist-avatar.xs.artist-avatar-ph { font-size: 0.7rem; }
+.taste-me-genres { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.taste-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.6rem; margin-bottom: 1.2rem; }
+.taste-mode:disabled { opacity: 0.5; cursor: default; transform: none; }
+.taste-filter { margin-bottom: 0.9rem; }
 .taste-list { display: flex; flex-direction: column; gap: 0.6rem; }
-.taste-card { display: flex; align-items: center; gap: 0.9rem; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+.taste-card { display: block; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+.taste-card-top { display: flex; align-items: center; gap: 0.9rem; }
+.taste-actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.65rem 0 0 calc(44px + 0.9rem); align-items: center; }
+.taste-act { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+.taste-act .icon { width: 13px; height: 13px; }
+.taste-act-note { color: var(--muted); font-size: 0.78rem; }
+/* Пошук пісні у вікні графа. */
+.graph-header { gap: 0.7rem; }
+.graph-header #graph-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graph-search { position: relative; width: min(280px, 45vw); }
+.graph-search input { width: 100%; background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text); font: inherit; font-size: 0.82rem; padding: 0.45rem 0.7rem; outline: none; }
+.graph-search input:focus { border-color: var(--accent); }
+.graph-search-results { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 5; background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); max-height: 300px; overflow-y: auto; }
+.graph-search-results.open { display: block; }
+.graph-search-results button { display: flex; flex-direction: column; width: 100%; text-align: left; padding: 0.45rem 0.7rem; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); font: inherit; cursor: pointer; }
+.graph-search-results button:hover { background: var(--surface2); }
+.graph-search-results button strong { font-size: 0.82rem; }
+.graph-search-results button span { color: var(--muted); font-size: 0.74rem; }
+.graph-search-empty { padding: 0.6rem 0.7rem; color: var(--muted); font-size: 0.8rem; }
+.graph-back-btn { padding: 0.35rem 0.7rem; font-size: 0.78rem; white-space: nowrap; }
+@media (max-width: 600px) {
+  .graph-header { flex-wrap: wrap; }
+  .graph-search { order: 3; width: 100%; }
+  .taste-actions-row { margin-left: 0; }
+}
 .taste-card:hover { border-color: var(--accent); transform: translateY(-1px); }
 .taste-card .friend-avatar { width: 44px; height: 44px; }
 .taste-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
