@@ -109,6 +109,16 @@ async function fetchVideoId(
 
 type PlayState = 'idle' | 'loading' | 'buffering' | 'playing' | 'paused' | 'ended';
 
+// Копія масиву у випадковому порядку (Fisher–Yates).
+function shuffled<T>(arr: T[]): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 interface PlayerState {
   queue: Song[];
   index: number;
@@ -125,6 +135,19 @@ interface PlayerState {
   videoPopupOpen: boolean;
   isOpen: boolean;
   playFrom: (list: Song[], songId: number) => void;
+  // Черга — як на сайті: "Моя черга" грає перед рештою списку й не губиться при playFrom.
+  userQueue: Song[];
+  addToQueue: (song: Song, playNext?: boolean) => void;
+  addManyToQueue: (songs: Song[]) => void;
+  playNow: (song: Song) => void;
+  playFromUserQueue: (i: number) => void;
+  moveInUserQueue: (i: number, dir: -1 | 1) => void;
+  removeFromUserQueue: (i: number) => void;
+  clearUserQueue: () => void;
+  jumpToUpcoming: (i: number) => void;
+  removeUpcoming: (i: number) => void;
+  clearUpcoming: () => void;
+  startNewQueue: () => void;
   toggle: () => void;
   next: () => void;
   prev: () => void;
@@ -179,6 +202,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const [queue, setQueue] = useState<Song[]>([]);
   const [index, setIndex] = useState(0);
+  const [userQueue, setUserQueue] = useState<Song[]>([]);
+  // "Перемішати" — як на сайті: решту списку перемішано наперед (тож "Далі" видно);
+  // вимкнули — повертається порядок до перемішування.
+  const unshuffledRef = useRef<Song[] | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [videoNotFound, setVideoNotFound] = useState(false);
   const [state, setState] = useState<PlayState>('idle');
@@ -280,11 +307,86 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id, pageReady]);
 
-  const playFrom = useCallback((list: Song[], songId: number) => {
-    setQueue(list);
-    const idx = list.findIndex((s) => s.id === songId);
-    setIndex(idx >= 0 ? idx : 0);
+  const playFrom = useCallback(
+    (list: Song[], songId: number) => {
+      const idx = Math.max(0, list.findIndex((s) => s.id === songId));
+      if (shuffle && list.length > 1) {
+        unshuffledRef.current = list;
+        setQueue([list[idx], ...shuffled(list.filter((_, i) => i !== idx))]);
+        setIndex(0);
+        return;
+      }
+      setQueue(list);
+      setIndex(idx);
+    },
+    [shuffle],
+  );
+
+  // ─── Черга ───
+  const insertAfterCurrent = useCallback(
+    (song: Song) => {
+      if (!queue.length) {
+        setQueue([song]);
+        setIndex(0);
+        return;
+      }
+      setQueue((q) => [...q.slice(0, index + 1), song, ...q.slice(index + 1)]);
+      setIndex(index + 1);
+    },
+    [queue.length, index],
+  );
+  const addToQueue = useCallback(
+    (song: Song, playNext = false) => {
+      if (!queue.length) {
+        setQueue([song]);
+        setIndex(0);
+        return;
+      }
+      setUserQueue((uq) => (playNext ? [song, ...uq] : [...uq, song]));
+    },
+    [queue.length],
+  );
+  const addManyToQueue = useCallback(
+    (songs: Song[]) => {
+      if (!songs.length) return;
+      if (!queue.length) {
+        setQueue(songs);
+        setIndex(0);
+        return;
+      }
+      setUserQueue((uq) => [...uq, ...songs]);
+    },
+    [queue.length],
+  );
+  const playFromUserQueue = useCallback(
+    (i: number) => {
+      const s = userQueue[i];
+      if (!s) return;
+      setUserQueue((uq) => uq.filter((_, k) => k !== i));
+      insertAfterCurrent(s);
+    },
+    [userQueue, insertAfterCurrent],
+  );
+  const moveInUserQueue = useCallback((i: number, dir: -1 | 1) => {
+    setUserQueue((uq) => {
+      const j = i + dir;
+      if (j < 0 || j >= uq.length) return uq;
+      const next = uq.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
   }, []);
+  const removeFromUserQueue = useCallback((i: number) => setUserQueue((uq) => uq.filter((_, k) => k !== i)), []);
+  const clearUserQueue = useCallback(() => setUserQueue([]), []);
+  const jumpToUpcoming = useCallback((i: number) => setIndex(index + 1 + i), [index]);
+  const removeUpcoming = useCallback((i: number) => setQueue((q) => q.filter((_, k) => k !== index + 1 + i)), [index]);
+  const clearUpcoming = useCallback(() => setQueue((q) => q.slice(0, index + 1)), [index]);
+  const startNewQueue = useCallback(() => {
+    setUserQueue([]);
+    setQueue((q) => q.slice(index, index + 1));
+    setIndex(0);
+    unshuffledRef.current = null;
+  }, [index]);
 
   const isNative = () => modeRef.current === 'native' && !!nativeRef.current;
 
@@ -298,10 +400,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     else postCommand({ cmd: 'play' });
   }, [state, postCommand]);
 
+  // Наступна: спершу "Моя черга", далі — список (shuffle вже перемішав його наперед).
   const next = useCallback(() => {
+    if (userQueue.length) {
+      const [s, ...rest] = userQueue;
+      setUserQueue(rest);
+      insertAfterCurrent(s);
+      return;
+    }
     if (!queue.length) return;
-    setIndex((i) => (shuffle ? Math.floor(Math.random() * queue.length) : (i + 1) % queue.length));
-  }, [queue.length, shuffle]);
+    setIndex((i) => (i + 1) % queue.length);
+  }, [queue.length, userQueue, insertAfterCurrent]);
 
   const prev = useCallback(() => {
     if (!queue.length) return;
@@ -327,6 +436,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     modeRef.current = 'yt';
     setQueue([]);
     setIndex(0);
+    setUserQueue([]);
+    unshuffledRef.current = null;
     setVideoId(null);
     setState('idle');
     setVideoPopupOpen(false);
@@ -350,7 +461,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     [postCommand],
   );
 
-  const toggleShuffle = useCallback(() => setShuffle((s) => !s), []);
+  const toggleShuffle = useCallback(() => {
+    const cur = queue[index];
+    if (!shuffle) {
+      if (cur && queue.length > 1) {
+        unshuffledRef.current = queue;
+        setQueue([cur, ...shuffled(queue.filter((_, i) => i !== index))]);
+        setIndex(0);
+      }
+      setShuffle(true);
+      return;
+    }
+    const orig = unshuffledRef.current;
+    const i = cur && orig ? orig.findIndex((s) => s.id === cur.id) : -1;
+    if (orig && i >= 0) {
+      setQueue(orig);
+      setIndex(i);
+    }
+    unshuffledRef.current = null;
+    setShuffle(false);
+  }, [shuffle, queue, index]);
   const toggleRepeat = useCallback(() => setRepeat((r) => !r), []);
   // Пісня ком'юніті з файлом і YouTube-відео водночас: грає файл (нативно, у фоні),
   // а кнопка відео перемикає її на YouTube з того самого моменту й відкриває відео.
@@ -483,6 +613,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       videoPopupOpen,
       isOpen,
       playFrom,
+      userQueue,
+      addToQueue,
+      addManyToQueue,
+      playNow: insertAfterCurrent,
+      playFromUserQueue,
+      moveInUserQueue,
+      removeFromUserQueue,
+      clearUserQueue,
+      jumpToUpcoming,
+      removeUpcoming,
+      clearUpcoming,
+      startNewQueue,
       toggle,
       next,
       prev,
@@ -512,6 +654,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       videoPopupOpen,
       isOpen,
       playFrom,
+      userQueue,
+      addToQueue,
+      addManyToQueue,
+      insertAfterCurrent,
+      playFromUserQueue,
+      moveInUserQueue,
+      removeFromUserQueue,
+      clearUserQueue,
+      jumpToUpcoming,
+      removeUpcoming,
+      clearUpcoming,
+      startNewQueue,
       toggle,
       next,
       prev,

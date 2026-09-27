@@ -336,3 +336,43 @@
 .modal-icon-circle.info .icon { width: 18px; height: 18px; }
 .modal-btn-confirm.neutral { background: var(--accent); color: var(--on-accent); }
 .modal-btn-confirm.neutral:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }
+
+/* ── Черга плеєра (queue.js): панель праворуч над плеєром; на телефоні — аркуш ── */
+.queue-panel { position: fixed; right: var(--player-gap); top: 72px; bottom: calc(var(--player-h) + var(--player-gap) * 2); width: min(390px, calc(100vw - 24px));
+  z-index: 190; display: flex; flex-direction: column; background: color-mix(in srgb, var(--elevated) 94%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md);
+  opacity: 0; transform: translateX(16px); pointer-events: none; transition: opacity 0.18s ease, transform 0.22s var(--ease-spring, ease); }
+.queue-panel.open { opacity: 1; transform: none; pointer-events: auto; }
+.queue-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 8px 16px; }
+.queue-head strong { flex: 1; font-family: var(--font-serif); font-size: 1.2rem; }
+.queue-search { display: flex; align-items: center; gap: 8px; margin: 0 12px 8px; padding: 0 10px; height: 38px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--muted); }
+.queue-search .icon { width: 15px; height: 15px; flex-shrink: 0; }
+.queue-search input { flex: 1; min-width: 0; border: none; background: none; color: var(--text); font: inherit; font-size: 0.85rem; outline: none; padding: 0; height: auto; }
+.queue-search-results { margin: 0 12px 8px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); max-height: 280px; overflow-y: auto; }
+.queue-body { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.q-section { margin-top: 10px; }
+.q-section-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 6px; font-size: 0.68rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.q-section-head b { color: var(--accent); margin-left: 4px; }
+.q-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; cursor: pointer; transition: background 0.15s; }
+.q-row:hover { background: var(--surface2); }
+.q-row.q-current { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.q-row.q-current .q-main strong { color: var(--accent); }
+.q-cover { width: 40px; height: 40px; border-radius: 7px; overflow: hidden; flex-shrink: 0; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.q-cover img { width: 100%; height: 100%; object-fit: cover; }
+.q-cover .icon { width: 16px; height: 16px; }
+.q-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.q-main strong { font-size: 0.86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-main span { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-acts { display: flex; gap: 2px; flex-shrink: 0; opacity: 0.55; transition: opacity 0.15s; }
+.q-row:hover .q-acts, .q-current .q-acts { opacity: 1; }
+.q-btn { width: 28px; height: 28px; border: none; border-radius: 7px; background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.q-btn:hover { background: var(--surface2); color: var(--text); }
+.q-btn.dim { opacity: 0.3; pointer-events: none; }
+.q-btn .icon { width: 14px; height: 14px; }
+.q-link { background: none; border: none; color: var(--accent); font: inherit; font-size: 0.72rem; letter-spacing: 0; text-transform: none; cursor: pointer; padding: 2px 4px; }
+.q-empty { color: var(--muted); font-size: 0.78rem; padding: 6px 8px 8px; line-height: 1.4; }
+#btn-queue.lit { color: var(--accent); }
+/* "Грати наступною" / "Додати в чергу" у вікні "Додати в плейлист" */
+.atp-queue { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+.atp-queue .btn { justify-content: center; font-size: 0.78rem; padding: 0.5rem 0.6rem; }

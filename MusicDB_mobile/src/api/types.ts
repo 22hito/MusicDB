@@ -266,6 +266,12 @@ export interface AdminNotification {
   createdAt: string;
 }
 
+// Нещодавно прослухані (GET /api/history) — пісня й коли слухали востаннє.
+export interface HistoryItem {
+  song: Song;
+  listenedAt: string;
+}
+
 // Події виконавців, на яких підписаний користувач (дзвіночок) — лише непрочитані.
 export interface ArtistNotification {
   id: number;

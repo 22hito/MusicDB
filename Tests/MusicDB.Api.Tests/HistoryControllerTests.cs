@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using MusicDB.Api.Controllers;
 using MusicDB.Api.Data;
 using MusicDB.Api.Models;
+using MusicDB.Api.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MusicDB.Api.Tests;
 
@@ -11,7 +14,9 @@ public class HistoryControllerTests
 {
     private static HistoryController CreateController(MusicDbContext db, string? email)
     {
-        var controller = new HistoryController(db);
+        var musicService = new MusicService(db, new GenreNormalizationService(new HttpClient(),
+            new ConfigurationBuilder().Build(), NullLogger<GenreNormalizationService>.Instance));
+        var controller = new HistoryController(db, musicService);
         var identity = email is null
             ? new ClaimsIdentity()
             : new ClaimsIdentity([new Claim(ClaimTypes.Email, email)], "TestAuth");
@@ -57,6 +62,28 @@ public class HistoryControllerTests
         await CreateController(db, "b@x.com").Log(new LogListenDto(1));
 
         Assert.Equal(2, db.ListeningHistory.Count());
+    }
+
+    [Fact]
+    public async Task Log_Relisten_MovesSongToTopOfRecent()
+    {
+        using var db = TestDb.Create();
+        db.Songs.AddRange(
+            new Music { Id = 1, Artist = "A", Title = "First", Duration = TimeSpan.FromMinutes(3) },
+            new Music { Id = 2, Artist = "B", Title = "Second", Duration = TimeSpan.FromMinutes(3) });
+        db.ListeningHistory.AddRange(
+            new ListeningHistory { UserEmail = "user@x.com", MusicId = 1, ListenedAt = DateTime.UtcNow.AddHours(-2) },
+            new ListeningHistory { UserEmail = "user@x.com", MusicId = 2, ListenedAt = DateTime.UtcNow.AddHours(-1) },
+            new ListeningHistory { UserEmail = "other@x.com", MusicId = 2 });
+        await db.SaveChangesAsync();
+        var controller = CreateController(db, "user@x.com");
+
+        await controller.Log(new LogListenDto(1));
+        var result = await controller.Recent();
+
+        var items = Assert.IsType<List<HistoryItemDto>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal([1, 2], items.Select(i => i.Song.Id));
+        Assert.Equal(3, db.ListeningHistory.Count()); // повторне прослуховування не додає запис
     }
 
     [Fact]

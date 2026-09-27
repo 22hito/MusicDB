@@ -447,7 +447,12 @@ export default function LibraryScreen() {
         onPlay={(s) => player.playFrom(songs, s.id)}
       />
 
-      <AddToPlaylistModal visible={addToPlaylistId !== null} musicId={addToPlaylistId} onClose={() => setAddToPlaylistId(null)} />
+      <AddToPlaylistModal
+        visible={addToPlaylistId !== null}
+        musicId={addToPlaylistId}
+        song={songs.find((s) => s.id === addToPlaylistId) ?? null}
+        onClose={() => setAddToPlaylistId(null)}
+      />
 
       {editSong ? (
         <SongFormModal

@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { PLAYER_BAR_HEIGHT, FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, RADIUS } from '@/constants/theme';
 import {
   CloseIcon,
+  QueueIcon,
   LyricsIcon,
   NextIcon,
   PauseIcon,
@@ -20,6 +21,7 @@ import {
 import { RatingModal } from '@/components/RatingModal';
 import { LyricsModal } from '@/components/LyricsModal';
 import { MarqueeText } from '@/components/MarqueeText';
+import { QueueModal } from '@/components/QueueModal';
 
 function fmtSec(s: number) {
   const sec = Math.max(0, Math.floor(s || 0));
@@ -31,6 +33,7 @@ export function MiniPlayerBar() {
   const { theme, t } = useSettings();
   const [ratingOpen, setRatingOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(false);
+  const [queueOpen, setQueueOpen] = useState(false);
 
   if (!p.isOpen || !p.current) return null;
   const song = p.current;
@@ -58,41 +61,54 @@ export function MiniPlayerBar() {
         onSlidingComplete={(v) => p.seekFraction(v)}
       />
 
+      {/* Три частини: боки однакової ширини — кнопка паузи точно по центру (як на сайті). */}
       <View style={styles.mainRow}>
-        <View style={[styles.cover, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
-          {p.videoId ? (
-            <Image source={{ uri: `https://img.youtube.com/vi/${p.videoId}/mqdefault.jpg` }} style={styles.coverImg} />
-          ) : (
-            <Text style={{ color: theme.muted, fontSize: 18 }}>♪</Text>
-          )}
+        <View style={styles.side}>
+          <View style={[styles.cover, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
+            {p.videoId ? (
+              <Image source={{ uri: `https://img.youtube.com/vi/${p.videoId}/mqdefault.jpg` }} style={styles.coverImg} />
+            ) : (
+              <Text style={{ color: theme.muted, fontSize: 18 }}>♪</Text>
+            )}
+          </View>
+          <View style={styles.meta}>
+            <MarqueeText style={[styles.title, { color: theme.text }]}>
+              {`${song.title}${p.videoNotFound ? t('video.notFoundSuffix') : ''}`}
+            </MarqueeText>
+            <MarqueeText style={[styles.artist, { color: theme.accent }]}>{song.artist}</MarqueeText>
+          </View>
         </View>
 
-        <View style={styles.meta}>
-          <MarqueeText style={[styles.title, { color: theme.text }]}>
-            {`${song.title}${p.videoNotFound ? t('video.notFoundSuffix') : ''}`}
-          </MarqueeText>
-          <MarqueeText style={[styles.artist, { color: theme.accent }]}>{song.artist}</MarqueeText>
+        <View style={styles.controls}>
+          <TouchableOpacity onPress={p.prev} style={styles.iconBtn} hitSlop={8}>
+            <PrevIcon size={18} color={theme.text2} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={p.toggle}
+            style={[styles.mainBtn, { backgroundColor: theme.text }]}
+            hitSlop={8}
+          >
+            {loading ? (
+              <View style={styles.loadingDot} />
+            ) : p.isPlaying ? (
+              <PauseIcon size={17} color={theme.bg} />
+            ) : (
+              <PlayIcon size={17} color={theme.bg} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={p.next} style={styles.iconBtn} hitSlop={8}>
+            <NextIcon size={18} color={theme.text2} />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={p.prev} style={styles.iconBtn} hitSlop={8}>
-          <PrevIcon size={18} color={theme.text2} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={p.toggle}
-          style={[styles.mainBtn, { backgroundColor: theme.text }]}
-          hitSlop={8}
-        >
-          {loading ? (
-            <View style={styles.loadingDot} />
-          ) : p.isPlaying ? (
-            <PauseIcon size={17} color={theme.bg} />
-          ) : (
-            <PlayIcon size={17} color={theme.bg} />
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity onPress={p.next} style={styles.iconBtn} hitSlop={8}>
-          <NextIcon size={18} color={theme.text2} />
-        </TouchableOpacity>
+        <View style={[styles.side, styles.sideRight]}>
+          <TouchableOpacity onPress={() => setQueueOpen(true)} style={styles.iconBtn} hitSlop={8} accessibilityLabel={t('queue.title')}>
+            <QueueIcon size={18} color={queueOpen || p.userQueue.length ? theme.accent : theme.text2} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={p.close} style={styles.iconBtn} hitSlop={8}>
+            <CloseIcon size={13} color={theme.muted} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.subRow}>
@@ -126,12 +142,10 @@ export function MiniPlayerBar() {
             <VideoIcon size={15} color={p.videoPopupOpen ? theme.accent : theme.muted} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={p.close} style={styles.smallIconBtn} hitSlop={10}>
-          <CloseIcon size={13} color={theme.muted} />
-        </TouchableOpacity>
       </View>
       <RatingModal song={ratingOpen ? song : null} onClose={() => setRatingOpen(false)} />
       <LyricsModal song={lyricsOpen ? song : null} onClose={() => setLyricsOpen(false)} />
+      <QueueModal visible={queueOpen} onClose={() => setQueueOpen(false)} />
     </View>
   );
 }
@@ -163,9 +177,25 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 46,
   },
+  side: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sideRight: {
+    justifyContent: 'flex-end',
+    gap: 2,
+  },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   cover: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 9,
     borderWidth: 1,
     alignItems: 'center',

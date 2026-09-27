@@ -119,6 +119,14 @@
   html[data-page="settings"] .mtab[data-tab="settings"],
   html[data-page="admin-hub"] .mtab[data-tab="admin"] { color: var(--accent); }
 
+  /* Плеєр: кнопка паузи — точно по центру (боки однакової ширини). */
+  #player-bar { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important; }
+  #player-bar .player-right { justify-content: flex-end; gap: 0; }
+  #player-bar .player-right .pc-icon-btn, #player-bar .close-btn { width: 30px; height: 30px; }
+  /* Черга — аркуш над плеєром на всю ширину. */
+  .queue-panel { left: 8px; right: 8px; width: auto; top: 64px; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--player-h) + var(--player-gap) * 2); transform: translateY(16px); z-index: 205; }
+  .q-acts { opacity: 1; }
+
   /* ── Місце під таббар і плаваючий плеєр ── */
   body { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 12px); }
   body.player-open { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--player-h) + var(--player-gap) * 3); }

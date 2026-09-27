@@ -3,21 +3,26 @@ import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { Button } from './UI';
+import { PlayIcon, QueueIcon } from './Icons';
+import { usePlayer } from '@/player/PlayerContext';
 import { RADIUS, SPACING } from '@/constants/theme';
-import type { Playlist } from '@/api/types';
+import type { Playlist, Song } from '@/api/types';
 
 export function AddToPlaylistModal({
   visible,
   musicId,
+  song,
   onClose,
   onAdded,
 }: {
   visible: boolean;
   musicId: number | null;
+  song?: Song | null; // є пісня — зверху "Грати наступною" / "Додати в чергу" (як на сайті)
   onClose: () => void;
   onAdded?: () => void;
 }) {
   const { theme, t } = useSettings();
+  const player = usePlayer();
   const api = useMusicApi();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,6 +79,31 @@ export function AddToPlaylistModal({
             {t('profile.addToPlaylistTitle')}
           </Text>
 
+          {song ? (
+            <View style={styles.queueRow}>
+              <TouchableOpacity
+                onPress={() => {
+                  player.addToQueue(song, true);
+                  onClose();
+                }}
+                style={[styles.queueBtn, { borderColor: theme.border }]}
+              >
+                <PlayIcon size={13} color={theme.accent} />
+                <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13 }}>{t('queue.playNext')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  player.addToQueue(song);
+                  onClose();
+                }}
+                style={[styles.queueBtn, { borderColor: theme.border }]}
+              >
+                <QueueIcon size={15} color={theme.accent} />
+                <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13 }}>{t('queue.add')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
           <ScrollView style={{ maxHeight: 240, marginBottom: 14 }} showsVerticalScrollIndicator={false}>
             {!loading && playlists.length === 0 ? (
               <Text style={{ color: theme.muted, fontSize: 14 }}>{t('profile.playlistsEmpty')}</Text>
@@ -128,6 +158,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: SPACING.xl,
   },
+  queueRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  queueBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 8 },
   playlistRow: {
     flexDirection: 'row',
     alignItems: 'center',

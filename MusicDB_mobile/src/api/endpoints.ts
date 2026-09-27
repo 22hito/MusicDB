@@ -4,6 +4,7 @@ import { useSettings } from '@/state/SettingsContext';
 import type {
   AdminNotificationsSummary,
   NotificationsSummary,
+  HistoryItem,
   ArtistDetail,
   ArtistSummary,
   BugReport,
@@ -183,6 +184,7 @@ export function useMusicApi() {
 
       // History
       logListen: (musicId: number) => request<void>('/api/history', { method: 'POST', body: { musicId } }),
+      getHistory: (limit = 30) => request<HistoryItem[]>('/api/history', { query: { limit } }),
 
       // Recommendations
       getRecommendations: (lang: string) => request<Recommendation[]>('/api/recommendations', { query: { lang } }),

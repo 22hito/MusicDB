@@ -123,7 +123,9 @@ function playPlaylistFromStart(){
 }
 
 function _loadCurrent(){
+  _queueBeforeLoad();
   const s=playerQueue[playerIndex];if(!s)return;
+  _queueAfterLoad(s);
   listenLogged=false;
   userIntendedPlaying=true;
   _setMarqueeText(document.getElementById('p-title'), s.title);
@@ -298,10 +300,11 @@ function playerToggle(){
   else ytPlayer.playVideo();
 }
 
+// Спершу "Моя черга" (queue.js); shuffle вже перемішав решту списку наперед.
 function playerNext(){
+  if(_takeFromUserQueue()){ _loadCurrent(); return; }
   if(!playerQueue.length)return;
-  if(shuffle)playerIndex=Math.floor(Math.random()*playerQueue.length);
-  else playerIndex=(playerIndex+1)%playerQueue.length;
+  playerIndex=(playerIndex+1)%playerQueue.length;
   _loadCurrent();
 }
 
@@ -355,7 +358,12 @@ function playerClose(){
   if(anchor) anchor.pause();
 }
 
-function toggleShuffle(){shuffle=!shuffle;document.getElementById('btn-shuffle').classList.toggle('lit',shuffle);}
+function toggleShuffle(){
+  shuffle=!shuffle;
+  document.getElementById('btn-shuffle').classList.toggle('lit',shuffle);
+  if(shuffle) _shuffleUpcoming(); else _unshuffle();
+  if(_queueOpen) renderQueuePanel();
+}
 function toggleRepeat(){repeat=!repeat;document.getElementById('btn-repeat').classList.toggle('lit',repeat);}
 
 function setVolume(v){

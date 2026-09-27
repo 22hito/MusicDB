@@ -22,8 +22,10 @@ let requests = [];
 function activeSongs(){ return homeSource === 'community' ? communitySongs : songs; }
 // Пошук пісні в обох таблицях — для модалок редагування/видалення/оцінки.
 function _findSong(id){
-  return songs.find(x=>x.id===id) || communitySongs.find(x=>x.id===id)
-    || playerQueue.find(x=>x.id===id) || currentTopSongs.find(x=>x.id===id) || null;
+  const lists = [songs, communitySongs, playerQueue, userQueue, currentTopSongs, currentArtistSongs,
+    currentPlaylistSongs, _profileFavorites, _recentServer.map(r => r.song)];
+  for(const list of lists){ const s = list.find(x=>x.id===id); if(s) return s; }
+  return null;
 }
 
 // ================================================================

@@ -43,7 +43,12 @@ export function SongListBlock({ songs }: { songs: Song[] }) {
         />
       ))}
       <RatingModal song={ratingSong} onClose={() => setRatingSong(null)} />
-      <AddToPlaylistModal visible={playlistSongId !== null} musicId={playlistSongId} onClose={() => setPlaylistSongId(null)} />
+      <AddToPlaylistModal
+        visible={playlistSongId !== null}
+        musicId={playlistSongId}
+        song={songs.find((s) => s.id === playlistSongId) ?? null}
+        onClose={() => setPlaylistSongId(null)}
+      />
     </View>
   );
 }

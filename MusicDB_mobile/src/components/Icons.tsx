@@ -373,6 +373,42 @@ export function EyeIcon({ size = 14, color = '#000' }: IconProps) {
   );
 }
 
+export function HeadphonesIcon({ size = 16, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M3 14v-2a9 9 0 0 1 18 0v2" />
+      <Rect x={3} y={14} width={4} height={7} rx={1.5} />
+      <Rect x={17} y={14} width={4} height={7} rx={1.5} />
+    </Svg>
+  );
+}
+
+export function ArrowUpIcon({ size = 16, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 19V5M5 12l7-7 7 7" />
+    </Svg>
+  );
+}
+
+export function ArrowDownIcon({ size = 16, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 5v14M5 12l7 7 7-7" />
+    </Svg>
+  );
+}
+
+// Черга — список із трикутником "грає далі" (як кнопка черги в плеєрі сайту).
+export function QueueIcon({ size = 16, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M3 6h13M3 12h13M3 18h8" />
+      <Path d="M16 15.5v6l5-3z" />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ size = 16, color = '#000' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">

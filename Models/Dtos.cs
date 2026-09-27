@@ -137,6 +137,9 @@ public record PublicPlaylistDto(int Id, string Name, int SongCount, string Owner
 
 public record LogListenDto(int MusicId);
 
+// Нещодавно прослухані: пісня й коли її слухали востаннє (UTC).
+public record HistoryItemDto(SongDto Song, DateTime ListenedAt);
+
 // Рекомендація з коротким поясненням від ШІ, чому саме ця пісня.
 public record RecommendationDto(SongDto Song, string? Reason);
 
