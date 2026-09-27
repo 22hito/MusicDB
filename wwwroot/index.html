@@ -387,39 +387,67 @@
      page-profile-settings нижче) -->
 <div id="page-profile" class="page">
   <div class="container">
-    <h2><span data-i18n="profile.heading.pre">Мій</span> <span class="hl" data-i18n="profile.heading.accent">профіль</span></h2>
-    <div class="form-card profile-card">
-      <div class="profile-card-top">
+    <!-- Шапка профілю: аватар, ім'я, улюблені жанри, "Редагувати" (форма — лише за кнопкою),
+         лічильники-кнопки: Прослухано → історія, Улюблених / Плейлистів → до розділу. -->
+    <section class="profile-hero" id="profile-hero">
+      <div class="profile-hero-bg" id="profile-hero-bg"></div>
+      <div class="profile-hero-main">
         <label class="profile-avatar-pick" data-i18n-title="profile.avatarHint" title="Оберіть зображення з пристрою">
           <img id="profile-view-picture" src="" alt="" style="display:none;">
           <span id="profile-view-picture-ph"></span>
           <span class="profile-avatar-edit"><svg class="icon"><use href="#icon-pencil"/></svg></span>
-          <input type="file" id="profile-avatar-file" accept="image/*" onchange="onAvatarFileSelected(event)" hidden>
+          <input type="file" id="profile-avatar-file" accept="image/*" onchange="onAvatarFileSelected(event)" hidden disabled>
         </label>
-        <div class="profile-card-id">
-          <div id="profile-view-name" class="profile-card-name"></div>
-          <div id="profile-view-email" class="profile-card-email"></div>
-          <span id="profile-view-admin" class="profile-admin-badge" style="display:none;">ADMIN</span>
+        <div class="profile-hero-id">
+          <span class="profile-hero-label" data-i18n="profile.heroLabel">Профіль</span>
+          <div class="profile-hero-name"><span id="profile-view-name"></span><span id="profile-view-admin" class="profile-admin-badge" style="display:none;">ADMIN</span></div>
+          <div id="profile-view-email" class="profile-hero-email"></div>
+          <div id="profile-top-genres" class="profile-hero-genres"></div>
+        </div>
+        <button type="button" class="btn btn-outline profile-edit-btn" id="profile-edit-btn" onclick="toggleProfileEdit()" data-i18n-title="profile.editBtn" title="Редагувати"><svg class="icon"><use href="#icon-pencil"/></svg> <span data-i18n="profile.editBtn">Редагувати</span></button>
+      </div>
+      <div class="profile-edit" id="profile-edit" hidden>
+        <div class="profile-edit-avatar">
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('profile-avatar-file').click()"><svg class="icon"><use href="#icon-upload"/></svg> <span data-i18n="profile.changePhoto">Змінити фото</span></button>
+          <button type="button" class="profile-avatar-remove" id="profile-avatar-remove" onclick="removeAvatar()" style="display:none;" data-i18n="profile.avatarReset">Прибрати аватар</button>
+        </div>
+        <div class="form-group">
+          <label for="profile-display-name" data-i18n="profile.displayName">Нікнейм</label>
+          <input type="text" id="profile-display-name" maxlength="50" data-i18n-placeholder="profile.displayName.placeholder" placeholder="Наприклад, MusicLover228">
+        </div>
+        <div class="profile-edit-actions">
+          <button type="button" class="btn btn-outline" onclick="toggleProfileEdit(false)" data-i18n="modal.cancel">Скасувати</button>
+          <button type="button" class="btn btn-primary" id="profile-save-btn" onclick="saveProfile()" data-i18n="profile.saveBtn">Зберегти</button>
         </div>
       </div>
-      <button type="button" class="profile-avatar-remove" id="profile-avatar-remove" onclick="removeAvatar()" style="display:none;" data-i18n="profile.avatarReset">Прибрати аватар</button>
-      <div class="form-group">
-        <label for="profile-display-name" data-i18n="profile.displayName">Нікнейм</label>
-        <input type="text" id="profile-display-name" maxlength="50" data-i18n-placeholder="profile.displayName.placeholder" placeholder="Наприклад, MusicLover228">
+      <div class="profile-stats">
+        <button type="button" class="profile-stat" id="profile-stat-btn-listened" onclick="toggleProfileHistory()" aria-expanded="false">
+          <span class="profile-stat-icon"><svg class="icon"><use href="#icon-headphones"/></svg></span>
+          <span class="profile-stat-text"><b id="profile-stat-listened">0</b><span data-i18n="profile.totalListened">Прослухано</span></span>
+          <svg class="icon profile-stat-arrow"><use href="#icon-chevron-down"/></svg>
+        </button>
+        <button type="button" class="profile-stat" onclick="scrollToProfileSection('profile-favorites-section')">
+          <span class="profile-stat-icon"><svg class="icon"><use href="#icon-heart"/></svg></span>
+          <span class="profile-stat-text"><b id="profile-stat-favorites">0</b><span data-i18n="profile.favoritesCount">Улюблених</span></span>
+          <svg class="icon profile-stat-arrow"><use href="#icon-arrow-down"/></svg>
+        </button>
+        <button type="button" class="profile-stat" onclick="scrollToProfileSection('profile-playlists-section')">
+          <span class="profile-stat-icon"><svg class="icon"><use href="#icon-disc"/></svg></span>
+          <span class="profile-stat-text"><b id="profile-stat-playlists">0</b><span data-i18n="profile.playlistsCount">Плейлистів</span></span>
+          <svg class="icon profile-stat-arrow"><use href="#icon-arrow-down"/></svg>
+        </button>
       </div>
-      <button class="btn btn-primary" id="profile-save-btn" onclick="saveProfile()" data-i18n="profile.saveBtn">Зберегти</button>
-    </div>
+    </section>
 
-    <div class="stats-row" style="margin-bottom:2rem;">
-      <div class="stat-card"><div class="label" data-i18n="profile.totalListened">Прослухано</div><div class="value" id="profile-stat-listened">0</div></div>
-      <div class="stat-card"><div class="label" data-i18n="profile.favoritesCount">Улюблених</div><div class="value" id="profile-stat-favorites">0</div></div>
-      <div class="stat-card"><div class="label" data-i18n="profile.playlistsCount">Плейлистів</div><div class="value" id="profile-stat-playlists">0</div></div>
-    </div>
-    <div id="profile-top-genres-wrap" style="margin-bottom:2rem;display:none;">
-      <div style="color:var(--muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem;" data-i18n="profile.topGenres">Улюблені жанри</div>
-      <div id="profile-top-genres"></div>
-    </div>
+    <section class="profile-section" id="profile-history-section" hidden>
+      <div class="profile-section-head">
+        <h2 data-i18n="queue.recent">Нещодавно прослухані</h2>
+        <button type="button" class="btn btn-outline" id="profile-history-play" onclick="playProfileHistory(0)"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="artist.playAll">Слухати</span></button>
+      </div>
+      <div id="profile-history-list" class="profile-history-list"></div>
+    </section>
 
+    <section class="profile-section" id="profile-favorites-section">
     <h2 style="font-size:1.3rem;" data-i18n="profile.favoritesTitle">Улюблені пісні</h2>
     <div id="profile-favorites-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-heart-broken"/></svg><span data-i18n="profile.favoritesEmpty">Ще немає улюблених пісень</span></div>
     <div class="table-wrap mobile-cards" style="margin-bottom:2rem;">
@@ -428,13 +456,16 @@
         <tbody id="profile-favorites-body"></tbody>
       </table>
     </div>
+    </section>
 
+    <section class="profile-section" id="profile-playlists-section">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h2 style="font-size:1.3rem;margin-bottom:0;" data-i18n="profile.playlistsTitle">Мої плейлисти</h2>
       <button class="btn btn-outline" onclick="createPlaylist()" data-i18n="profile.newPlaylistBtn">+ Новий плейлист</button>
     </div>
     <div id="profile-playlists-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-headphones"/></svg><span data-i18n="profile.playlistsEmpty">Ще немає плейлистів</span></div>
     <div id="profile-playlists-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+    </section>
 
     <div class="profile-links m-only">
       <button type="button" class="profile-link" onclick="openChatPage('friends')"><svg class="icon"><use href="#icon-users"/></svg><span data-i18n="nav.friends">Друзі</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
@@ -902,7 +933,6 @@
     </div>
 
     <div class="settings-footer">
-      <button class="btn btn-outline" id="settings-profile-link" onclick="showPage('profile')" style="display:none"><svg class="icon"><use href="#icon-user"/></svg> <span data-i18n="settings.profileLink">Нікнейм і аватар</span></button>
       <button class="btn btn-outline" onclick="resetPrefs()"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="settings.reset">Скинути до стандартних</span></button>
     </div>
     <p class="app-version" id="app-version" style="color:var(--muted);font-size:0.75rem;margin-top:1.4rem;text-align:center;"></p>

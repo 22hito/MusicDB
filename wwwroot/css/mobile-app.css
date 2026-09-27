@@ -220,11 +220,6 @@
   #profile-favorites-body tr[data-id] > td.td-genres .badge { font-size: 0.66rem; padding: 0.12rem 0.45rem; }
   #profile-favorites-body tr[data-id] .btn-icon-fav { width: 30px; height: 30px; border: none; background: none; }
 
-  /* Профіль — як у застосунку: три лічильники в рядок. */
-  #page-profile .stats-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 1.2rem !important; }
-  #page-profile .stat-card { padding: 0.7rem 0.75rem 0.65rem; }
-  #page-profile .stat-card .label { font-size: 0.56rem; letter-spacing: 0.06em; overflow: hidden; text-overflow: ellipsis; }
-  #page-profile .stat-card .value { font-size: 1.5rem; line-height: 1.15; }
 
   /* Картка пісні — компактна (як SongRow застосунку): ▶ · виконавець/назва · оцінка · ♡ +;
      під нею один рядок "дата · тривалість · 👁 N", жанри, альбом; ✎ 🗑 адміна — праворуч у ньому ж. */

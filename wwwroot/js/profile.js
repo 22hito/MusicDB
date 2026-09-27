@@ -6,8 +6,9 @@
 // ================================================================
 let profileAvatarValue = null;   // поточне значення аватарки, яке буде надіслано при збереженні
 let profileGooglePicture = null; // фото з Google-акаунту (фолбек, якщо своєї аватарки нема)
-// Картка профілю (як у застосунку): аватар натисканням, нікнейм і "Зберегти" — прямо тут.
+// Шапка профілю: аватар, ім'я, жанри; редагування (фото, нікнейм) — лише після "Редагувати".
 let _profileLabel = '';
+let _profileLoaded = null; // останні збережені значення — "Скасувати" повертає їх
 function _renderProfileAvatar(){
   const shown = profileAvatarValue || profileGooglePicture;
   const picEl = document.getElementById('profile-view-picture');
@@ -16,6 +17,77 @@ function _renderProfileAvatar(){
   if(shown){ picEl.src = shown; picEl.style.display = ''; picPh.style.display = 'none'; picPh.classList.remove('avatar-initials'); picPh.textContent = ''; }
   else { picEl.style.display = 'none'; picPh.style.display = ''; fillAvatarPlaceholder(picPh, _profileLabel); }
   document.getElementById('profile-avatar-remove').style.display = profileAvatarValue ? '' : 'none';
+  // Тло шапки — розмите фото або колір імені.
+  const bg = document.getElementById('profile-hero-bg');
+  bg.style.backgroundImage = shown ? `url("${shown}")` : '';
+  bg.style.setProperty('--av', avatarColor(_profileLabel));
+}
+function toggleProfileEdit(force){
+  const hero = document.getElementById('profile-hero');
+  const open = force ?? !hero.classList.contains('editing');
+  if(!open && _profileLoaded){ // скасування — повертаємо збережене
+    profileAvatarValue = _profileLoaded.avatarUrl;
+    document.getElementById('profile-display-name').value = _profileLoaded.displayName;
+    document.getElementById('profile-avatar-file').value = '';
+    _renderProfileAvatar();
+  }
+  hero.classList.toggle('editing', open);
+  document.getElementById('profile-edit').hidden = !open;
+  document.getElementById('profile-avatar-file').disabled = !open;
+  document.getElementById('profile-edit-btn').classList.toggle('active', open);
+  if(open) document.getElementById('profile-display-name').focus();
+}
+// Лічильники: плавно "набігають" до значення (без анімації — якщо рух вимкнено).
+function _countUp(el, target){
+  target = +target || 0;
+  if(_reducedMotion() || target < 2){ el.textContent = target; return; }
+  const t0 = performance.now(), dur = 700;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur);
+    el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
+    if(k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function scrollToProfileSection(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({ behavior: _reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+// "Прослухано" — розгортає нещодавно прослухані (ті самі, що й у черзі плеєра).
+function toggleProfileHistory(force){
+  const sec = document.getElementById('profile-history-section');
+  const open = force ?? sec.hidden;
+  sec.hidden = !open;
+  document.getElementById('profile-stat-btn-listened').setAttribute('aria-expanded', String(open));
+  document.getElementById('profile-stat-btn-listened').classList.toggle('active', open);
+  if(!open) return;
+  const list = document.getElementById('profile-history-list');
+  list.innerHTML = `<div class="q-empty">${esc(t('notif.loading'))}</div>`;
+  loadRecentHistory().then(items => {
+    document.getElementById('profile-history-play').style.display = items.length ? '' : 'none';
+    list.innerHTML = items.length ? items.map((r, i) => _queueRowHtml(r.song, {
+      onclick: `playProfileHistory(${i})`,
+      meta: esc(_timeAgo(r.listenedAt)),
+      acts: _qBtn('plus', t('queue.add'), `addToQueue(${r.song.id})`),
+    })).join('') : `<div class="q-empty">${esc(t('queue.recentEmpty'))}</div>`;
+  });
+  scrollToProfileSection('profile-history-section');
+}
+function playProfileHistory(i){
+  const list = _recentServer.map(r => r.song);
+  if(!list.length) return;
+  playerQueue = list.slice();
+  playerIndex = Math.min(i, list.length - 1);
+  _loadCurrent();
+}
+// Жанр із профілю — бібліотека, відфільтрована за ним.
+function openLibraryGenre(g){
+  showHome('catalog');
+  const sel = document.getElementById('filter-genre');
+  if([...sel.options].some(o => o.value === g)) sel.value = g;
+  renderSongs();
 }
 function loadProfilePage(){
   fetch('/api/profile').then(r=>r.json()).then(p=>{
@@ -27,16 +99,13 @@ function loadProfilePage(){
     document.getElementById('profile-avatar-file').value = '';
     profileAvatarValue = p.avatarUrl || null;
     profileGooglePicture = p.picture || null;
+    _profileLoaded = { displayName: p.displayName || '', avatarUrl: p.avatarUrl || null };
     _renderProfileAvatar();
-    document.getElementById('profile-stat-listened').textContent = p.totalListened;
-    document.getElementById('profile-stat-favorites').textContent = p.favoritesCount;
-    document.getElementById('profile-stat-playlists').textContent = p.playlistsCount;
-
-    const genresWrap = document.getElementById('profile-top-genres-wrap');
-    if(p.topGenres && p.topGenres.length){
-      document.getElementById('profile-top-genres').innerHTML = p.topGenres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('');
-      genresWrap.style.display = 'block';
-    } else genresWrap.style.display = 'none';
+    _countUp(document.getElementById('profile-stat-listened'), p.totalListened);
+    _countUp(document.getElementById('profile-stat-favorites'), p.favoritesCount);
+    _countUp(document.getElementById('profile-stat-playlists'), p.playlistsCount);
+    document.getElementById('profile-top-genres').innerHTML = (p.topGenres || []).map(g=>
+      `<button type="button" class="badge badge-filter" data-v="${esc(g)}" onclick="openLibraryGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('');
   }).catch(()=>{});
 
   loadProfileFavorites();
@@ -64,6 +133,8 @@ function saveProfile(){
     .then(r=>{
       if(!r.ok){ alert(t('msg.connectionError')); return; }
       if(currentUser){ currentUser.displayName = displayName || null; currentUser.avatarUrl = profileAvatarValue; }
+      _profileLoaded = { displayName, avatarUrl: profileAvatarValue };
+      toggleProfileEdit(false);
       loadProfilePage();
       renderAuthArea();
     })

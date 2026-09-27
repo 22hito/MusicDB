@@ -364,20 +364,68 @@
 .nsi-avatar { width: 26px; height: 26px; border-radius: 50%; font-size: 0.7rem; }
 #profile-view-picture-ph.avatar-initials { font-size: 1.35rem; }
 
-/* Картка профілю — як у застосунку: аватар (натиснути — змінити), ім'я, пошта, ADMIN, нікнейм. */
-.profile-card { max-width: 640px; margin-bottom: 1.5rem; padding: 1.1rem 1.2rem 1.2rem; }
-.profile-card-top { display: flex; align-items: center; gap: 14px; margin-bottom: 0.5rem; }
-.profile-avatar-pick { position: relative; width: 60px; height: 60px; flex-shrink: 0; cursor: pointer; border-radius: 50%; }
-.profile-avatar-pick #profile-view-picture, .profile-avatar-pick #profile-view-picture-ph { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: var(--surface2); display: flex; }
-.profile-avatar-edit { position: absolute; right: -3px; bottom: -3px; width: 23px; height: 23px; border-radius: 50%; background: var(--elevated); border: 1px solid var(--border); color: var(--accent); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
-.profile-avatar-edit .icon { width: 11px; height: 11px; }
-.profile-avatar-pick:hover .profile-avatar-edit { border-color: var(--accent); }
-.profile-card-id { min-width: 0; flex: 1; }
-.profile-card-name { font-weight: 700; font-size: 1.05rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.profile-card-email { color: var(--muted); font-size: 0.8rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.profile-admin-badge { display: inline-block; margin-top: 6px; background: var(--accent); color: var(--on-accent); font: 800 0.62rem var(--font-ui); letter-spacing: 0.04em; padding: 0.12rem 0.45rem; border-radius: 4px; }
-.profile-avatar-remove { background: none; border: none; color: var(--accent); font: inherit; font-size: 0.8rem; padding: 0.2rem 0; margin-bottom: 0.3rem; cursor: pointer; }
-.profile-card .form-group { margin-bottom: 0.8rem; }
+/* Шапка профілю: розмите фото/колір тлом, аватар, ім'я, жанри, "Редагувати", лічильники-кнопки. */
+.profile-hero { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); margin-bottom: 1.6rem; }
+.profile-hero-bg { --av: var(--accent); position: absolute; inset: -40px; background-color: var(--av); background-size: cover; background-position: center; filter: blur(46px) saturate(1.3); opacity: 0.28; }
+.profile-hero-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, var(--surface) 88%); }
+.profile-hero-main { position: relative; display: flex; align-items: center; gap: 1.3rem; padding: 1.6rem 1.6rem 1.2rem; }
+.profile-avatar-pick { position: relative; width: 104px; height: 104px; flex-shrink: 0; border-radius: 50%; }
+.profile-avatar-pick #profile-view-picture, .profile-avatar-pick #profile-view-picture-ph { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; background: var(--surface2); display: flex; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent), 0 12px 30px rgba(0,0,0,0.3); }
+#profile-view-picture-ph.avatar-initials { font-size: 2.3rem; }
+.profile-avatar-edit { position: absolute; right: 2px; bottom: 2px; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: none; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
+.profile-avatar-edit .icon { width: 14px; height: 14px; }
+.profile-hero.editing .profile-avatar-pick { cursor: pointer; }
+.profile-hero.editing .profile-avatar-edit { display: flex; }
+.profile-hero-id { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.profile-hero-label { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.profile-hero-name { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-family: var(--font-serif); font-size: 2.2rem; font-weight: 800; line-height: 1.1; min-width: 0; }
+.profile-hero-name > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.profile-hero-email { color: var(--muted); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-hero-genres { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.profile-hero-genres .badge { margin: 0; cursor: pointer; }
+.profile-admin-badge { display: inline-block; background: var(--accent); color: var(--on-accent); font: 800 0.62rem var(--font-ui); letter-spacing: 0.06em; padding: 0.18rem 0.5rem; border-radius: 5px; }
+.profile-edit-btn { align-self: flex-start; flex-shrink: 0; }
+.profile-edit-btn.active { border-color: var(--accent); color: var(--accent); }
+.profile-edit { position: relative; margin: 0 1.6rem 1.2rem; padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--surface2) 70%, transparent); max-width: 560px; animation: dropIn 0.16s ease; }
+.profile-edit-avatar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.profile-avatar-remove { background: none; border: none; color: var(--accent); font: inherit; font-size: 0.82rem; padding: 0.2rem 0; cursor: pointer; }
+.profile-edit .form-group { margin-bottom: 0.9rem; }
+.profile-edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.profile-stats { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 1.6rem 1.6rem; }
+.profile-stat { display: flex; align-items: center; gap: 12px; padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--surface2) 55%, transparent); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform 0.15s ease, border-color 0.15s, background 0.15s; min-width: 0; }
+.profile-stat:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); background: color-mix(in srgb, var(--accent) 7%, var(--surface2)); }
+.profile-stat.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); }
+.profile-stat-icon { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); }
+.profile-stat-icon .icon { width: 19px; height: 19px; }
+.profile-stat-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.profile-stat-text b { font-family: var(--font-serif); font-size: 1.7rem; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
+.profile-stat-text span { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-stat-arrow { width: 16px; height: 16px; color: var(--muted); flex-shrink: 0; transition: transform 0.2s; }
+.profile-stat:hover .profile-stat-arrow { color: var(--accent); }
+.profile-stat.active .profile-stat-arrow { transform: rotate(180deg); color: var(--accent); }
+.profile-section { scroll-margin-top: 80px; margin-bottom: 1.6rem; border-radius: var(--radius-lg); }
+.profile-section.flash { animation: profileFlash 1.2s ease; }
+@keyframes profileFlash { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 25% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); } }
+.profile-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.8rem; }
+.profile-section-head h2 { font-size: 1.3rem; margin: 0; }
+.profile-history-list { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); padding: 6px; max-height: 420px; overflow-y: auto; }
+@media (max-width: 768px) {
+  .profile-hero-main { flex-wrap: wrap; padding: 1.2rem 1rem 1rem; gap: 1rem; }
+  .profile-avatar-pick, .profile-avatar-pick #profile-view-picture, .profile-avatar-pick #profile-view-picture-ph { width: 76px; height: 76px; }
+  #profile-view-picture-ph.avatar-initials { font-size: 1.7rem; }
+  .profile-hero-name { font-size: 1.55rem; }
+  .profile-edit-btn { position: absolute; top: 12px; right: 12px; padding: 0.4rem 0.6rem; }
+  .profile-edit-btn span { display: none; }
+  .profile-hero-id { flex-basis: calc(100% - 92px); }
+  .profile-edit { margin: 0 1rem 1rem; }
+  .profile-stats { gap: 8px; padding: 0 1rem 1rem; }
+  .profile-stat { flex-direction: column; align-items: flex-start; gap: 8px; padding: 0.7rem; }
+  .profile-stat-icon { width: 34px; height: 34px; border-radius: 10px; }
+  .profile-stat-icon .icon { width: 16px; height: 16px; }
+  .profile-stat-text b { font-size: 1.4rem; }
+  .profile-stat-text span { font-size: 0.58rem; letter-spacing: 0.05em; }
+  .profile-stat-arrow { position: absolute; display: none; }
+}
 /* Спілкування: Обговорення · Друзі · Особисті; в "Особистих" — підвкладки Чати / Запити. */
 .chat-tabs, .chat-subtabs { display: flex; width: fit-content; }
 .chat-tabs { margin-bottom: 1.2rem; }

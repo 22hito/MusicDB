@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -19,15 +19,16 @@ import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { useFavorites } from '@/state/FavoritesContext';
 import { usePlayer } from '@/player/PlayerContext';
-import { Avatar, Badge, Button, EmptyState, ErrorState, Field, Heading, StatCard } from '@/components/UI';
+import { Avatar, Badge, Button, EmptyState, ErrorState, Field, avatarColor } from '@/components/UI';
+import { QueueRow, timeAgo } from '@/components/QueueModal';
 import { SongRow } from '@/components/SongRow';
-import { BugIcon, ChevronRightIcon, EditIcon, GlobeIcon, LockIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
+import { BugIcon, ChevronRightIcon, DiscIcon, EditIcon, GlobeIcon, HeadphonesIcon, HeartIcon, LockIcon, PlusIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
 import { BugReportModal } from '@/components/BugReportModal';
-import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
-import type { Playlist, Profile, Song } from '@/api/types';
+import { FONT_SANS_SEMIBOLD, FONT_SERIF_BLACK, PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
+import type { HistoryItem, Playlist, Profile, Song } from '@/api/types';
 
 export default function ProfileScreen() {
-  const { theme, t } = useSettings();
+  const { theme, t, lang } = useSettings();
   const { currentUser, authChecked, openLogin, logout, refreshCurrentUser } = useApiBridge();
   const api = useMusicApi();
   const { favoriteIds, toggleFavorite, reload: reloadFavorites } = useFavorites();
@@ -45,6 +46,24 @@ export default function ProfileScreen() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
+  // Редагування (фото, нікнейм) — лише після "Редагувати"; "Прослухано" розгортає історію.
+  const [editing, setEditing] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const scrollRef = useRef<ScrollView>(null);
+  const [favY, setFavY] = useState(0);
+  const [playlistsY, setPlaylistsY] = useState(0);
+  const scrollToY = (y: number) => scrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: true });
+  const toggleHistory = () => {
+    const open = !historyOpen;
+    setHistoryOpen(open);
+    if (open) api.getHistory(50).then(setHistory).catch(() => setHistory([]));
+  };
+  const cancelEdit = () => {
+    setDisplayName(profile?.displayName || '');
+    setAvatarValue(profile?.avatarUrl || null);
+    setEditing(false);
+  };
 
   const authenticated = !!currentUser?.authenticated;
 
@@ -97,6 +116,7 @@ export default function ProfileScreen() {
     try {
       const updated = await api.updateProfile({ displayName: displayName.trim() || null, avatarUrl: avatarValue });
       setProfile(updated);
+      setEditing(false);
       await refreshCurrentUser();
     } finally {
       setSaving(false);
@@ -181,71 +201,141 @@ export default function ProfileScreen() {
   }
 
   const avatarSrc = avatarValue || currentUser?.picture || null;
+  const label = profile?.displayName || profile?.name || profile?.email || '';
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Heading pre={t('profile.heading.pre')} accent={t('profile.heading.accent')} />
-
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <View style={styles.avatarRow}>
-            {/* Натиснути аватар — обрати нове фото (олівець — підказка, як на сайті). */}
-            <TouchableOpacity onPress={pickAvatar} accessibilityLabel={t('profile.avatarHint')}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
+        {/* Шапка профілю — як на сайті: розмите фото/колір тлом, аватар, ім'я, жанри (натиснути —
+            бібліотека з цим жанром), "Редагувати" (форма — лише за кнопкою), лічильники-кнопки. */}
+        <View style={[styles.hero, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          {avatarSrc ? (
+            <Image source={{ uri: avatarSrc }} style={styles.heroBg} blurRadius={40} />
+          ) : (
+            <View style={[styles.heroBg, { backgroundColor: avatarColor(label) }]} />
+          )}
+          <View style={[styles.heroFade, { backgroundColor: theme.surface }]} />
+          <View style={styles.heroMain}>
+            <TouchableOpacity disabled={!editing} onPress={pickAvatar} accessibilityLabel={t('profile.avatarHint')} style={[styles.avatarRing, { borderColor: `${theme.accent}88` }]}>
               {avatarSrc ? (
-                <Image source={{ uri: avatarSrc }} style={[styles.avatar, { borderColor: theme.border }]} />
+                <Image source={{ uri: avatarSrc }} style={styles.avatar} />
               ) : (
-                <Avatar url={null} name={profile?.displayName || profile?.name || profile?.email} size={60} />
+                <Avatar url={null} name={label} size={80} />
               )}
-              <View style={[styles.avatarEdit, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
-                <EditIcon size={11} color={theme.accent} />
-              </View>
-            </TouchableOpacity>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
-                {profile?.displayName || profile?.name || profile?.email}
-              </Text>
-              <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 13, marginTop: 2 }}>{profile?.email}</Text>
-              {profile?.isAdmin ? (
-                <View style={[styles.adminBadge, { backgroundColor: theme.accent }]}>
-                  <Text style={{ color: theme.onAccent, fontSize: 10, fontWeight: '800' }}>ADMIN</Text>
+              {editing ? (
+                <View style={[styles.avatarEdit, { backgroundColor: theme.accent }]}>
+                  <EditIcon size={13} color={theme.onAccent} />
                 </View>
               ) : null}
-            </View>
-          </View>
-          {avatarValue ? (
-            <TouchableOpacity onPress={removeAvatar} hitSlop={6} style={styles.removeAvatarBtn}>
-              <Text style={{ color: theme.accent, fontSize: 13 }}>{t('profile.avatarReset')}</Text>
             </TouchableOpacity>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.heroLabel, { color: theme.muted }]}>{t('profile.heroLabel')}</Text>
+              <View style={styles.nameRow}>
+                <Text numberOfLines={1} style={[styles.heroName, { color: theme.text }]}>{label}</Text>
+                {profile?.isAdmin ? (
+                  <View style={[styles.adminBadge, { backgroundColor: theme.accent }]}>
+                    <Text style={{ color: theme.onAccent, fontSize: 10, fontWeight: '800' }}>ADMIN</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 13, marginTop: 2 }}>{profile?.email}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => (editing ? cancelEdit() : setEditing(true))}
+              hitSlop={8}
+              accessibilityLabel={t('profile.editBtn')}
+              style={[styles.editBtn, { borderColor: editing ? theme.accent : theme.border, backgroundColor: theme.surface2 }]}
+            >
+              <EditIcon size={15} color={editing ? theme.accent : theme.text} />
+            </TouchableOpacity>
+          </View>
+          {profile?.topGenres?.length ? (
+            <View style={styles.heroGenres}>
+              {profile.topGenres.map((g) => (
+                <TouchableOpacity key={g} onPress={() => router.push({ pathname: '/', params: { genre: g } })} hitSlop={4}>
+                  <Badge small label={g} />
+                </TouchableOpacity>
+              ))}
+            </View>
           ) : null}
 
-          <Field
-            label={t('profile.displayName')}
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder={t('profile.displayName.placeholder')}
-          />
-          <Button label={t('profile.saveBtn')} onPress={saveProfile} loading={saving} small />
+          {editing ? (
+            <View style={[styles.editPanel, { borderColor: theme.border, backgroundColor: theme.surface2 }]}>
+              <View style={styles.editAvatarRow}>
+                <Button label={t('profile.changePhoto')} variant="outline" small onPress={pickAvatar} />
+                {avatarValue ? (
+                  <TouchableOpacity onPress={removeAvatar} hitSlop={6}>
+                    <Text style={{ color: theme.accent, fontSize: 13 }}>{t('profile.avatarReset')}</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <Field
+                label={t('profile.displayName')}
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder={t('profile.displayName.placeholder')}
+              />
+              <View style={styles.editActions}>
+                <Button label={t('common.cancel')} variant="outline" small onPress={cancelEdit} />
+                <Button label={t('profile.saveBtn')} onPress={saveProfile} loading={saving} small />
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.statsRow}>
+            {[
+              { key: 'listened', icon: HeadphonesIcon, value: profile?.totalListened ?? 0, label: t('profile.totalListened'), onPress: toggleHistory, active: historyOpen },
+              { key: 'favorites', icon: HeartIcon, value: profile?.favoritesCount ?? 0, label: t('profile.favoritesCount'), onPress: () => scrollToY(favY), active: false },
+              { key: 'playlists', icon: DiscIcon, value: profile?.playlistsCount ?? 0, label: t('profile.playlistsCount'), onPress: () => scrollToY(playlistsY), active: false },
+            ].map(({ key, icon: Icon, value, label: statLabel, onPress, active }) => (
+              <TouchableOpacity
+                key={key}
+                onPress={onPress}
+                style={[styles.stat, { borderColor: active ? theme.accent : theme.border, backgroundColor: active ? `${theme.accent}1a` : theme.surface2 }]}
+              >
+                <View style={[styles.statIcon, { backgroundColor: `${theme.accent}1f`, borderColor: `${theme.accent}47` }]}>
+                  <Icon size={16} color={theme.accent} />
+                </View>
+                <Text style={[styles.statValue, { color: theme.accent }]}>{value}</Text>
+                <Text numberOfLines={1} style={[styles.statLabel, { color: theme.muted }]}>{statLabel}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        <View style={styles.statsRow}>
-          <StatCard label={t('profile.totalListened')} value={profile?.totalListened ?? 0} />
-          <StatCard label={t('profile.favoritesCount')} value={profile?.favoritesCount ?? 0} />
-          <StatCard label={t('profile.playlistsCount')} value={profile?.playlistsCount ?? 0} />
-        </View>
-
-        {profile?.topGenres?.length ? (
+        {historyOpen ? (
           <View style={{ marginBottom: SPACING.xl }}>
-            <Text style={{ color: theme.muted, fontSize: 11, textTransform: 'uppercase', marginBottom: 8 }}>
-              {t('profile.topGenres')}
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {profile.topGenres.map((g) => (
-                <Badge key={g} label={g} />
-              ))}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('queue.recent')}</Text>
+              {history.length ? (
+                <TouchableOpacity onPress={() => player.playFrom(history.map((h) => h.song), history[0].song.id)} hitSlop={8}>
+                  <Text style={{ color: theme.accent, fontSize: 14 }}>{t('artist.playAll')}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            <View style={[styles.historyCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+              {history.length ? (
+                history.map((h) => (
+                  <QueueRow
+                    key={h.song.id}
+                    song={h.song}
+                    meta={timeAgo(h.listenedAt, lang)}
+                    current={player.current?.id === h.song.id}
+                    onPress={() => player.playFrom(history.map((x) => x.song), h.song.id)}
+                  >
+                    <TouchableOpacity onPress={() => player.addToQueue(h.song)} hitSlop={8} style={{ padding: 6 }}>
+                      <PlusIcon size={16} color={theme.muted} />
+                    </TouchableOpacity>
+                  </QueueRow>
+                ))
+              ) : (
+                <Text style={{ color: theme.muted, fontSize: 13, padding: 8 }}>{t('queue.recentEmpty')}</Text>
+              )}
             </View>
           </View>
         ) : null}
 
+        <View onLayout={(e) => setFavY(e.nativeEvent.layout.y)} />
         <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 8 }}>
           {t('profile.favoritesTitle')}
         </Text>
@@ -269,7 +359,7 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionHeaderRow} onLayout={(e) => setPlaylistsY(e.nativeEvent.layout.y)}>
           <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('profile.playlistsTitle')}</Text>
           <TouchableOpacity onPress={() => setNewPlaylistOpen(true)} hitSlop={8} style={styles.newPlaylistBtn}>
             <Text style={{ color: theme.accent, fontSize: 14 }}>{t('profile.newPlaylistBtn')}</Text>
@@ -364,51 +454,43 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   // Запас під плаваючий міні-плеєр — щоб нижні кнопки не ховались під ним.
   content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: PLAYER_BAR_HEIGHT + 60 },
-  card: {
+  hero: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    overflow: 'hidden',
+    marginBottom: SPACING.xl,
+    paddingBottom: SPACING.md,
   },
-  avatarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 10,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 1,
-  },
-  avatarPh: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  adminBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 4,
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    marginTop: 5,
-  },
+  heroBg: { position: 'absolute', top: -30, left: -30, right: -30, height: 220, opacity: 0.3 },
+  heroFade: { position: 'absolute', top: 120, left: 0, right: 0, bottom: 0, opacity: 0.85 },
+  heroMain: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: SPACING.lg, paddingBottom: SPACING.sm },
+  avatarRing: { borderWidth: 3, borderRadius: 46, padding: 2 },
+  avatar: { width: 80, height: 80, borderRadius: 40 },
   avatarEdit: {
     position: 'absolute',
-    right: -3,
-    bottom: -3,
-    width: 23,
-    height: 23,
-    borderRadius: 12,
-    borderWidth: 1,
+    right: -2,
+    bottom: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeAvatarBtn: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
+  heroLabel: { fontSize: 10.5, letterSpacing: 1.6, textTransform: 'uppercase', fontFamily: FONT_SANS_SEMIBOLD },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  heroName: { fontSize: 24, lineHeight: 30, fontFamily: FONT_SERIF_BLACK, flexShrink: 1 },
+  adminBadge: { borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },
+  editBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
+  heroGenres: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: SPACING.lg, marginBottom: SPACING.md },
+  editPanel: { marginHorizontal: SPACING.lg, marginBottom: SPACING.md, borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md },
+  editAvatarRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: SPACING.md },
+  editActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: -6 },
+  statsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: SPACING.md },
+  stat: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: RADIUS.md, padding: 10, gap: 4 },
+  statIcon: { width: 32, height: 32, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  statValue: { fontSize: 22, lineHeight: 26, fontFamily: FONT_SERIF_BLACK },
+  statLabel: { fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase', fontFamily: FONT_SANS_SEMIBOLD },
+  historyCard: { borderWidth: 1, borderRadius: RADIUS.lg, padding: 6 },
   publicChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -431,11 +513,6 @@ const styles = StyleSheet.create({
   newPlaylistBtn: {
     paddingVertical: 6,
     paddingHorizontal: 2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: SPACING.lg,
   },
   listCard: {
     marginBottom: SPACING.xl,

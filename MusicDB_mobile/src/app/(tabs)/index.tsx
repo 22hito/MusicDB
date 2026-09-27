@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
@@ -72,6 +72,14 @@ export default function LibraryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [genreFilter, setGenreFilter] = useState('');
+  // Жанр із профілю (?genre=) — бібліотека одразу відфільтрована за ним.
+  const params = useLocalSearchParams<{ genre?: string }>();
+  useEffect(() => {
+    if (params.genre) {
+      setSource('catalog');
+      setGenreFilter(params.genre);
+    }
+  }, [params.genre]);
   const [albumFilter, setAlbumFilter] = useState('');
   const [shuffleActive, setShuffleActive] = useState(false);
   const [shuffleSeed, setShuffleSeed] = useState(0);
