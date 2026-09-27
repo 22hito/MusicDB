@@ -501,32 +501,37 @@
 @media (min-width: 769px) {
   #songs-table { table-layout: fixed; }
   #songs-table th.col-play { width: 52px; }
-  #songs-table th.col-num { width: 68px; }
+  #songs-table th.col-num { width: 56px; }
   #songs-table th.col-artist { width: 17%; }
   #songs-table th.col-title { width: 23%; }
-  #songs-table th.col-release { width: 150px; }
-  #songs-table th.col-duration { width: 150px; }
+  #songs-table th.col-release { width: 132px; }
+  #songs-table th.col-duration { width: 128px; }
   #songs-table th.col-genres { width: 19%; }
   #songs-table th.col-album { width: 17%; }
-  #songs-table th.col-plays { width: 104px; }
-  #songs-table th.col-rating { width: 104px; }
+  #songs-table th.col-plays { width: 100px; }
+  #songs-table th.col-rating { width: 100px; }
   #songs-table th.col-submitter { width: 12%; }
   #songs-table th.col-fav, #songs-table th.col-action { width: 104px; }
   #songs-table thead th { overflow: hidden; text-overflow: ellipsis; }
   #songs-table tbody td { overflow: hidden; }
-  #songs-table td.td-artist, #songs-table td.td-title, #songs-table td.td-genres, #songs-table td.td-submitter {
+  #songs-table td.td-artist, #songs-table td.td-title, #songs-table td.td-submitter {
     white-space: nowrap; text-overflow: ellipsis;
   }
-  #songs-table td.td-album { white-space: nowrap; }
-  #songs-table td.td-album .badge.album { max-width: calc(100% - 4px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
-  /* Жанри в один рядок: скільки влазить, решта ховається під м'яким згасанням до краю
-     (маска — на обгортці, а не на комірці, щоб не зрізати лінію-розділювач рядка) */
-  #songs-table td.td-genres .genre-line { display: block; overflow: hidden; white-space: nowrap;
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+  /* Жанри й альбом — завжди повністю: чипи жанрів переносяться на наступний рядок,
+     довга назва альбому — теж (у кілька рядків, без трикрапки); рядок таблиці просто вищає. */
+  #songs-table td.td-genres .genre-line { display: flex; flex-wrap: wrap; gap: 4px; }
+  #songs-table td.td-genres .badge { margin: 0; }
+  #songs-table td.td-album .badge.album { max-width: 100%; white-space: normal; overflow-wrap: anywhere; border-radius: 10px; text-align: left; vertical-align: middle; }
 }
 @media (max-width: 768px) { #songs-table td.td-genres .genre-line { display: contents; } } /* картки — як раніше */
+/* Широкі монітори: головна з таблицею займає більшу частину екрана, а не вузьку смугу посередині —
+   жанрам, альбому й назвам є де розгорнутись (решта сторінок — як були; адмінові не вужче, ніж було). */
+@media (min-width: 1441px) {
+  #page-home > .container { max-width: min(94vw, 2200px); }
+  body.admin-mode #page-home > .container { max-width: max(1600px, min(94vw, 2200px)); }
+}
 
-/* «Табло» в таблиці пісень (wheel.js _tqSet): обрізаний текст у рядку під курсором доїжджає до кінця й назад.
+/* «Табло» в таблиці пісень (wheel.js _tqSet): обрізані виконавець і назва в рядку під курсором доїжджають до кінця й назад.
    У спокої .tq — звичайний inline, тож трикрапка лишається; під час руху — inline-block з transform.
    Як і біжучий рядок плеєра (.mq), навмисно НЕ залежить від "вимкнених анімацій" (ОС і налаштування сайту):
    інакше довгу назву не прочитати — звідси !important і вища специфічність за глобальне правило. */
@@ -538,7 +543,6 @@
   animation-duration: var(--tq-dur, 4s) !important;
   animation-iteration-count: infinite !important;
 }
-#songs-table .tq-on.genre-line { -webkit-mask-image: none !important; mask-image: none !important; }
 @keyframes tq-slide { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--tq-shift, 0)); } }
 
 /* Маркер "домалювати ще" в кінці таблиці пісень (порції по 200 рядків) */

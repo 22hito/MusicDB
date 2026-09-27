@@ -46,8 +46,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.youtube.com/iframe_api"></script>
-<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+<!-- YouTube API — async: не тримає першу відмальовку (main.js доганяє, якщо API готове раніше за скрипти). -->
+<script async src="https://www.youtube.com/iframe_api"></script>
 <!-- Стилі — css/*.css, порядок важливий (каскад): база → компоненти → … → мобільний вигляд. -->
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/components.css">
@@ -1699,6 +1699,9 @@
 
 <!-- Логіка — js/*.js: звичайні скрипти зі спільними глобальними іменами (onclick="…" у розмітці),
      тож порядок має значення: i18n першим, main.js (запуск) — останнім. -->
+<!-- SignalR — тут, а не в <head>, де блокував показ сторінки. Але ДО наших скриптів: його збірка
+     оголошує глобальні var t, e і після i18n.js затерла б функцію перекладу t(). -->
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
 <script src="/js/i18n.js"></script>
 <script src="/js/navigation.js"></script>
 <script src="/js/helpers.js"></script>

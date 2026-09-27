@@ -7,21 +7,23 @@ using Microsoft.Net.Http.Headers;
 
 namespace MusicDB.Api.Services;
 
-// Великий список (весь каталог — десятки тисяч пісень), зібраний і стиснутий один раз на весь час кешу:
-// без null і нульових полів (клієнт доповнює їх сам), з ETag — повторне завантаження після
-// songsChanged, коли нічого не змінилось, дає 304 замість мегабайтів.
-public sealed record PackedJson(string ETag, byte[] Raw, byte[] Brotli, byte[] Gzip)
+// Велика відповідь, зібрана і стиснута один раз на весь час кешу, з ETag: весь каталог (десятки тисяч
+// пісень — без null і нульових полів, клієнт доповнює їх сам) чи index.html з версіями файлів.
+// Повторне завантаження, коли нічого не змінилось, дає 304 замість мегабайтів.
+public sealed record PackedJson(string ETag, string ContentType, byte[] Raw, byte[] Brotli, byte[] Gzip)
 {
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
     };
 
-    public static PackedJson Create<T>(T value)
+    public static PackedJson Create<T>(T value) =>
+        FromBytes(JsonSerializer.SerializeToUtf8Bytes(value, Options), "application/json; charset=utf-8");
+
+    public static PackedJson FromBytes(byte[] raw, string contentType)
     {
-        var raw = JsonSerializer.SerializeToUtf8Bytes(value, Options);
         var etag = $"\"{Convert.ToHexString(SHA256.HashData(raw))[..24]}\"";
-        return new PackedJson(etag, raw, Compress(raw, brotli: true), Compress(raw, brotli: false));
+        return new PackedJson(etag, contentType, raw, Compress(raw, brotli: true), Compress(raw, brotli: false));
     }
 
     private static byte[] Compress(byte[] data, bool brotli)
@@ -33,7 +35,15 @@ public sealed record PackedJson(string ETag, byte[] Raw, byte[] Brotli, byte[] G
     }
 
     // Уже стиснута відповідь: Content-Encoding виставлено, тож ResponseCompression її не чіпає.
-    public IActionResult ToResult(HttpContext http)
+    public IActionResult ToResult(HttpContext http) =>
+        Negotiate(http) is { } body ? new FileContentResult(body, ContentType) : new StatusCodeResult(StatusCodes.Status304NotModified);
+
+    // Те саме для minimal API / middleware.
+    public IResult ToHttpResult(HttpContext http) =>
+        Negotiate(http) is { } body ? Results.Bytes(body, ContentType) : Results.StatusCode(StatusCodes.Status304NotModified);
+
+    // Заголовки й вибір тіла під Accept-Encoding; null — у клієнта та сама версія (304).
+    private byte[]? Negotiate(HttpContext http)
     {
         var request = http.Request;
         var headers = http.Response.Headers;
@@ -41,12 +51,11 @@ public sealed record PackedJson(string ETag, byte[] Raw, byte[] Brotli, byte[] G
         headers[HeaderNames.CacheControl] = "no-cache"; // браузер кешує, але щоразу звіряє ETag
         headers.Append(HeaderNames.Vary, HeaderNames.AcceptEncoding);
         if (request.Headers[HeaderNames.IfNoneMatch].ToString().Contains(ETag, StringComparison.Ordinal))
-            return new StatusCodeResult(StatusCodes.Status304NotModified);
+            return null;
 
         var accept = request.Headers[HeaderNames.AcceptEncoding].ToString();
-        var body = Raw;
-        if (accept.Contains("br", StringComparison.OrdinalIgnoreCase)) { body = Brotli; headers[HeaderNames.ContentEncoding] = "br"; }
-        else if (accept.Contains("gzip", StringComparison.OrdinalIgnoreCase)) { body = Gzip; headers[HeaderNames.ContentEncoding] = "gzip"; }
-        return new FileContentResult(body, "application/json; charset=utf-8");
+        if (accept.Contains("br", StringComparison.OrdinalIgnoreCase)) { headers[HeaderNames.ContentEncoding] = "br"; return Brotli; }
+        if (accept.Contains("gzip", StringComparison.OrdinalIgnoreCase)) { headers[HeaderNames.ContentEncoding] = "gzip"; return Gzip; }
+        return Raw;
     }
 }

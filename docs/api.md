@@ -7,11 +7,13 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
 - **Конфігурація:** `appsettings.json` + локальний `appsettings.Local.json`; на Azure — змінні середовища
   (подвійне підкреслення замість `:`, напр. `Uploads__R2__Bucket`). Порт — зі змінної `PORT` або `Urls`.
 - **Сервіси:** Scoped — `MusicService`, `UserDirectoryService`, `TasteService`, `ArtistActivityService`, `AdminActivityService`;
-  Singleton — `CatalogCache`, `IAudioStorage` (`R2AudioStorage`, якщо заповнено `Uploads:R2`, інакше
+  Singleton — `CatalogCache`, `StaticAssetVersions`, `IAudioStorage` (`R2AudioStorage`, якщо заповнено `Uploads:R2`, інакше
   `LocalAudioStorage`); типізовані `HttpClient` — `TranslationService`, `ExternalMusicSearchService`,
   `GenreNormalizationService`, `RecommendationService`, `LastFmGenreService`.
-- **Конвеєр:** CORS → заголовки безпеки → (Dev: Swagger) → статичні файли (no-cache + ETag) → автентифікація →
-  авторизація → rate limiter → контролери → SignalR (`/hubs/music`) → SPA fallback на `index.html`.
+- **Конвеєр:** CORS → заголовки безпеки → (Dev: Swagger) → головна (`index.html` з `?v=<хеш вмісту>` у посиланнях
+  на css/js, стиснута раз, ETag) → статичні файли (з `?v=` — `immutable` на рік, решта — no-cache + ETag) →
+  автентифікація → авторизація → rate limiter → контролери → SignalR (`/hubs/music`) → SPA fallback на ту саму
+  головну.
 - **Мінімальні ендпоінти:** `GET /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /config`
   (ключі YouTube для ротації квоти).
 - Для `/api/*` замість редиректів на логін — статуси 401/403. Адмінські дії — `[Authorize, AdminOnly]`

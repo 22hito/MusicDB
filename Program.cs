@@ -35,6 +35,7 @@ builder.Services.AddScoped<ArtistActivityService>();
 builder.Services.AddScoped<AdminActivityService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<CatalogCache>();
+builder.Services.AddSingleton<StaticAssetVersions>();
 builder.Services.AddSingleton<UploadTokenService>();
 // Файли пісень ком'юніті: Cloudflare R2, якщо заповнено Uploads:R2 (прод —
 // через App Settings Azure, напр. Uploads__R2__SecretAccessKey), інакше диск.
@@ -230,14 +231,27 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Головна — з версіями css/js (StaticAssetVersions), стиснута раз і з ETag.
+app.Use(async (ctx, next) =>
+{
+    if (HttpMethods.IsGet(ctx.Request.Method) && ctx.Request.Path.Value is "/" or "/index.html")
+    {
+        await ctx.RequestServices.GetRequiredService<StaticAssetVersions>().Index().ToHttpResult(ctx).ExecuteAsync(ctx);
+        return;
+    }
+    await next();
+});
 app.UseDefaultFiles();
-// no-cache (не no-store): вимагає ревалідації, щоб не показувати стару версію
+// Файл із ?v=<хеш> (посилання з index.html) за цією адресою вже ніколи не зміниться — кешується назавжди.
+// Решта — no-cache (не no-store): вимагає ревалідації, щоб не показувати стару версію
 // після деплою, але ETag лишається — повторні візити швидкі (304).
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+        ctx.Context.Response.Headers["Cache-Control"] = ctx.Context.Request.Query.ContainsKey("v")
+            ? "public, max-age=31536000, immutable"
+            : "no-cache";
     }
 });
 app.UseAuthentication();
@@ -295,6 +309,6 @@ app.MapGet("/config", (IConfiguration config) =>
 app.MapControllers();
 // Реалтайм: контролери шлють події через IHubContext<MusicHub> після кожної мутації.
 app.MapHub<MusicHub>("/hubs/music");
-app.MapFallbackToFile("index.html");
+app.MapFallback("{*path:nonfile}", (HttpContext ctx, StaticAssetVersions assets) => assets.Index().ToHttpResult(ctx));
 
 app.Run();

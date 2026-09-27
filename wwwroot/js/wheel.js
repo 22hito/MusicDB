@@ -523,6 +523,8 @@ function renderSongs(){
     return;
   }
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
+  // Рядок (ПК) і картка (телефон) показують різні комірки — малюємо лише потрібні: удвічі менше DOM у кожному рядку.
+  const phone=_isPhoneLayout();
   const rowHtml=(s,i)=>{
     const isPlay=s.id===curId;
     const btnIcon=isPlay&&isPlaying()?ROW_PAUSE_ICON:ROW_PLAY_ICON;
@@ -533,28 +535,32 @@ function renderSongs(){
       <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
       <td class="td-artist" data-label="${t('table.artist')}"><strong class="tq">${artistLinksHtml(s)}</strong></td>
       <td class="td-title" data-label="${t('table.title')}" title="${esc(s.title)}"><span class="tq">${esc(s.title)}</span></td>
-      <td class="duration-col td-release" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
+      ${phone?'':`<td class="duration-col td-release" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
       <td class="duration-col td-duration" data-label="${t('table.duration')}">${s.duration}</td>
-      <td class="td-genres" data-label="${t('table.genres')}"${s.genres.length>2?` title="${esc(s.genres.join(', '))}"`:''}><span class="genre-line"><span class="tq">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</span></span></td>
-      <td class="td-album" data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(s.album)} — ${esc(t('filter.byAlbum'))}"><span class="tq">${esc(s.album)}</span></button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
-      <td class="duration-col td-plays" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
+      <td class="td-genres" data-label="${t('table.genres')}"><span class="genre-line">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</span></td>
+      <td class="td-album" data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(t('filter.byAlbum'))}">${esc(s.album)}</button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+      <td class="duration-col td-plays" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>`}
       <td class="duration-col td-rating" data-label="${t('table.rating')}">${ratingChipHtml(s)}</td>
-      <td class="td-mmeta m-only"><span class="mm-info">${fmtDate(s.release)} · ${esc(shortDur(s.duration))} · <svg class="icon"><use href="#icon-eye"/></svg>${s.playCount ?? 0}</span>${s.genres.length?`<span class="mm-genres">${s.genres.map((g,k)=>`<button type="button" class="badge badge-filter${g===gf?' active':''}${k>=3?' mm-extra':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)">${esc(abbrGenre(g))}</button>`).join('')}${s.genres.length>3?`<button type="button" class="mm-more-btn" data-more="+${s.genres.length-3}" onclick="toggleCardGenres(this)" title="${esc(t('table.genres'))}">+${s.genres.length-3}</button>`:''}</span>`:''}<span class="mm-album">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)">${esc(s.album)}</button>`:`<span class="mm-more">${t('table.single')}</span>`}</span></td>
+      ${phone?`<td class="td-mmeta m-only"><span class="mm-info">${fmtDate(s.release)} · ${esc(shortDur(s.duration))} · <svg class="icon"><use href="#icon-eye"/></svg>${s.playCount ?? 0}</span>${s.genres.length?`<span class="mm-genres">${s.genres.map((g,k)=>`<button type="button" class="badge badge-filter${g===gf?' active':''}${k>=3?' mm-extra':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)">${esc(abbrGenre(g))}</button>`).join('')}${s.genres.length>3?`<button type="button" class="mm-more-btn" data-more="+${s.genres.length-3}" onclick="toggleCardGenres(this)" title="${esc(t('table.genres'))}">+${s.genres.length-3}</button>`:''}</span>`:''}<span class="mm-album">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)">${esc(s.album)}</button>`:`<span class="mm-more">${t('table.single')}</span>`}</span></td>`:''}
       ${isCommunity?`<td class="td-submitter" data-label="${t('table.submittedBy')}">${submitterLinkHtml(s)}</td>`:''}
       ${currentUser?.authenticated?`<td class="td-icon-trail" data-label=""><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
       ${currentUser?.isAdmin?`<td class="td-actions" data-label="${t('table.action')}"><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
     </tr>`;
   };
-  _songRows = { list: ordered, rowHtml, shown: 0 };
+  _songRows = { list: ordered, rowHtml, shown: 0, chunk: phone ? SONG_CARDS_CHUNK : SONG_ROWS_CHUNK };
   tbody.innerHTML = '';
   _appendSongRows();
 }
 
 // Тисячі пісень не малюємо разом: порціями по SONG_ROWS_CHUNK — наступна з'являється,
 // коли низ таблиці наближається до екрана (черга відтворення — усе відфільтроване, displayedSongs).
-const SONG_ROWS_CHUNK = 200;
-// «Табло»: у рядку під курсором (чи з фокусом клавіатури) текст, що не влазить у комірку — виконавець,
-// назва, жанри, альбом, — плавно доїжджає до кінця й назад. Лише справді обрізаний, тож таблиця не рябить.
+// На телефоні картка важча за рядок, а на екрані їх 5–6 — тож порція менша: перший показ утричі швидший.
+const SONG_ROWS_CHUNK = 200, SONG_CARDS_CHUNK = 40;
+// Телефон ↔ ПК (поворот планшета, зміна вікна): у картки й рядка різні комірки — перемальовуємо.
+window.matchMedia('(max-width: 768px)').addEventListener('change', () => { if(_songRows) renderSongs(); });
+// «Табло»: у рядку під курсором (чи з фокусом клавіатури) виконавець і назва, що не влазять у комірку,
+// плавно доїжджають до кінця й назад. Лише справді обрізані, тож таблиця не рябить.
+// Жанри й альбом не їздять — вони переносяться на кілька рядків (features.css).
 let _tqRow = null;
 function _tqSet(row){
   if(row === _tqRow) return;
@@ -579,7 +585,7 @@ function _appendSongRows(){
   if(!_songRows) return;
   tbody.querySelector('.rows-sentinel')?.remove();
   const { list, rowHtml } = _songRows;
-  const next = Math.min(list.length, _songRows.shown + SONG_ROWS_CHUNK);
+  const next = Math.min(list.length, _songRows.shown + _songRows.chunk);
   let html = '';
   for(let i = _songRows.shown; i < next; i++) html += rowHtml(list[i], i);
   _songRows.shown = next;
