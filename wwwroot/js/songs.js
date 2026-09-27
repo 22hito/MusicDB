@@ -136,6 +136,8 @@ function toggleFavorite(musicId, btn){
 // ================================================================
 function showHome(source){
   source = ['community', 'background'].includes(source) ? source : 'catalog';
+  // "У фоні" — лише на телефоні (як у застосунку): на ПК фону й вимкненого екрана немає.
+  if(source === 'background' && !_isPhoneLayout()) source = 'catalog';
   if(source !== homeSource){
     homeSource = source;
     // Перемішування — порядок конкретної таблиці, в іншій воно не має сенсу.
