@@ -494,6 +494,9 @@
 .modal-btn-confirm.neutral { background: var(--accent); color: var(--on-accent); }
 .modal-btn-confirm.neutral:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }
 
+/* Маркер "домалювати ще" в кінці таблиці пісень (порції по 200 рядків) */
+tr.rows-sentinel, tr.rows-sentinel > td { height: 1px !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
+
 /* Повтор однієї пісні — "1" на кнопці повтору */
 #btn-repeat { position: relative; }
 #btn-repeat[data-mode="one"]::after { content: '1'; position: absolute; top: 1px; right: 0; min-width: 12px; height: 12px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font: 700 0.5rem/12px var(--font-ui); text-align: center; }

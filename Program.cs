@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MusicDB.Api.Data;
@@ -50,6 +51,16 @@ builder.Services.AddHttpClient<LastFmGenreService>();
 
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
+// Стиснення відповідей (Brotli, далі Gzip): список пісень — найбільша відповідь сайту
+// (сотні КБ JSON, з імпортом дискографій — мегабайти), а також JS/CSS.
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "MusicDB API", Version = "v1" }));
@@ -169,6 +180,7 @@ if (app.Configuration.GetValue("Database:AutoMigrate", true))
     scope.ServiceProvider.GetRequiredService<MusicDbContext>().Database.Migrate();
 }
 
+app.UseResponseCompression();
 app.UseCors();
 
 // Аудіо ком'юніті з R2 грає за редиректом на *.r2.cloudflarestorage.com (підписані

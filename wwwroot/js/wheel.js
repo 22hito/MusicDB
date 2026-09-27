@@ -516,11 +516,13 @@ function renderSongs(){
   displayedSongs = ordered;
   const tbody=document.getElementById('songs-body');
   if(!ordered.length){
+    _songRows = null;
+    _songRowsObserver?.disconnect();
     tbody.innerHTML=`<tr><td colspan="13"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t(isCommunity?'table.communityEmpty':homeSource==='background'?'table.backgroundEmpty':'table.empty')}</div></td></tr>`;
     return;
   }
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
-  tbody.innerHTML=ordered.map((s,i)=>{
+  const rowHtml=(s,i)=>{
     const isPlay=s.id===curId;
     const btnIcon=isPlay&&isPlaying()?ROW_PAUSE_ICON:ROW_PLAY_ICON;
     return `<tr data-id="${s.id}" class="${isPlay?'playing-row':''}">
@@ -541,7 +543,36 @@ function renderSongs(){
       ${currentUser?.authenticated?`<td class="td-icon-trail" data-label=""><div style="display:flex;gap:6px;"><button class="btn-icon-fav${favoriteIds.has(s.id)?' active':''}" aria-label="${t('profile.favToggle')}" title="${t('profile.favToggle')}" onclick="toggleFavorite(${s.id}, this)"><svg viewBox="0 0 24 24" fill="${favoriteIds.has(s.id)?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></button><button class="btn-icon-fav" aria-label="${t('profile.addToPlaylist')}" title="${t('profile.addToPlaylist')}" onclick="openAddToPlaylistModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></td>`:''}
       ${currentUser?.isAdmin?`<td class="td-actions" data-label="${t('table.action')}"><div style="display:flex;gap:6px;"><button class="btn-icon-edit" aria-label="${t('admin.editBtn')}" title="${t('admin.editBtn')}" onclick="openEditSongModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button><button class="btn-icon-danger" aria-label="${t('modal.confirmDelete')}" title="${t('modal.confirmDelete')}" onclick="confirmDeleteSong(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button></div></td>`:''}
     </tr>`;
-  }).join('');
+  };
+  _songRows = { list: ordered, rowHtml, shown: 0 };
+  tbody.innerHTML = '';
+  _appendSongRows();
+}
+
+// Тисячі пісень не малюємо разом: порціями по SONG_ROWS_CHUNK — наступна з'являється,
+// коли низ таблиці наближається до екрана (черга відтворення — усе відфільтроване, displayedSongs).
+const SONG_ROWS_CHUNK = 200;
+let _songRows = null, _songRowsObserver = null;
+function _appendSongRows(){
+  const tbody = document.getElementById('songs-body');
+  if(!_songRows) return;
+  tbody.querySelector('.rows-sentinel')?.remove();
+  const { list, rowHtml } = _songRows;
+  const next = Math.min(list.length, _songRows.shown + SONG_ROWS_CHUNK);
+  let html = '';
+  for(let i = _songRows.shown; i < next; i++) html += rowHtml(list[i], i);
+  _songRows.shown = next;
+  if(next < list.length) html += '<tr class="rows-sentinel" aria-hidden="true"><td colspan="13"></td></tr>';
+  tbody.insertAdjacentHTML('beforeend', html);
+  _songRowsObserver?.disconnect();
+  const sentinel = tbody.querySelector('.rows-sentinel');
+  if(!sentinel) return;
+  if(!('IntersectionObserver' in window)){ _appendSongRows(); return; }
+  // На ПК таблиця прокручується у власному блоці (.scroll-table) — стежимо в ньому, на телефоні — сторінка.
+  const box = tbody.closest('.scroll-table');
+  const root = box && /auto|scroll/.test(getComputedStyle(box).overflowY) ? box : null;
+  _songRowsObserver = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)) _appendSongRows(); }, { root, rootMargin: '1500px 0px' });
+  _songRowsObserver.observe(sentinel);
 }
 
 // "+N" у картці на телефоні — показати всі жанри пісні (ще раз — згорнути).
