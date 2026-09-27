@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
@@ -9,6 +9,7 @@ import { usePlayer } from '@/player/PlayerContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { EmptyState, ErrorState, Heading } from '@/components/UI';
 import { SongRow } from '@/components/SongRow';
+import { TopPodium } from '@/components/TopPodium';
 import { SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
@@ -54,30 +55,43 @@ export default function TopSongsScreen() {
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <View style={styles.headerWrap}>
-        <Heading pre={t('top.heading.pre')} accent={t('top.heading.accent')} />
-      </View>
-
       {loading ? (
         <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
       ) : loadError ? (
         <ErrorState label={t('error.loadFailed')} onRetry={load} />
       ) : (
         <FlatList
-          data={songs}
+          data={songs.slice(3)}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 110 }}
-          ListEmptyComponent={<EmptyState icon="🏆" label={t('top.empty')} />}
+          contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: 110 }}
+          ListHeaderComponent={
+            <View>
+              <Heading pre={t('top.heading.pre')} accent={t('top.heading.accent')} />
+              <Text style={{ color: theme.muted, fontSize: 13, marginTop: -8, marginBottom: SPACING.lg }}>{t('top.sub')}</Text>
+              {songs.length ? (
+                <TopPodium
+                  songs={songs.slice(0, 3)}
+                  currentId={player.current?.id}
+                  isPlaying={player.isPlaying}
+                  favoriteIds={favoriteIds}
+                  authenticated={authenticated}
+                  onPlay={(s) => (player.current?.id === s.id ? player.toggle() : player.playFrom(songs, s.id))}
+                  onToggleFavorite={(s) => requireAuth(() => toggleFavorite(s.id))}
+                />
+              ) : null}
+            </View>
+          }
+          ListEmptyComponent={songs.length ? null : <EmptyState icon="🏆" label={t('top.empty')} />}
           renderItem={({ item, index }) => (
             <SongRow
               song={item}
-              rank={index + 1}
+              rank={index + 4}
               isCurrent={player.current?.id === item.id}
               isPlaying={player.isPlaying}
               isFavorite={favoriteIds.has(item.id)}
               isAdmin={isAdmin}
               authenticated={authenticated}
-              onPlay={() => player.playFrom(songs, item.id)}
+              onPlay={() => (player.current?.id === item.id ? player.toggle() : player.playFrom(songs, item.id))}
               onToggleFavorite={() => requireAuth(() => toggleFavorite(item.id))}
             />
           )}

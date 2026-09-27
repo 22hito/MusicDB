@@ -245,18 +245,10 @@
 <div id="page-top" class="page">
   <div class="container">
     <h2><span data-i18n="top.heading.pre">Топ 100</span> <span class="hl" data-i18n="top.heading.accent">найпрослуханіших</span></h2>
-    <div class="table-wrap scroll-table mobile-cards">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:40px"></th>
-            <th data-i18n="table.number">№</th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th>
-            <th data-i18n="table.album">Альбом</th><th data-i18n="table.plays">Прослух.</th>
-          </tr>
-        </thead>
-        <tbody id="top-songs-body"></tbody>
-      </table>
-    </div>
+    <p class="top-sub" data-i18n="top.sub">За кількістю людей, які слухали пісню</p>
+    <!-- Перші три — подіум з обкладинками; далі — список зі смужкою прослуховувань відносно лідера. -->
+    <div class="top-podium" id="top-podium"></div>
+    <div class="top-list" id="top-list"></div>
   </div>
 </div>
 

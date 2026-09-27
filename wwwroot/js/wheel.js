@@ -431,7 +431,15 @@ const ROW_PLAY_ICON=`<svg width="11" height="11" viewBox="0 0 24 24" fill="curre
 function refreshPlayingState(){
   const curId = playerQueue.length && playerQueue[playerIndex] ? playerQueue[playerIndex].id : null;
   const playing = isPlaying();
-  document.querySelectorAll('#songs-body tr[data-id], #top-songs-body tr[data-id]').forEach(tr => {
+  // Топ 100 — картки подіуму й рядки списку: підсвітка й іконка на обкладинці.
+  document.querySelectorAll('.top-item[data-id]').forEach(el => {
+    const isCur = Number(el.dataset.id) === curId;
+    el.classList.toggle('playing', isCur);
+    const btn = el.querySelector('.top-play');
+    const icon = isCur && playing ? 'pause' : 'play';
+    if(btn && btn.dataset.icon !== icon){ btn.innerHTML = icon === 'pause' ? ROW_PAUSE_ICON : ROW_PLAY_ICON; btn.dataset.icon = icon; }
+  });
+  document.querySelectorAll('#songs-body tr[data-id]').forEach(tr => {
     const isCur = Number(tr.dataset.id) === curId;
     if(tr.classList.contains('playing-row') !== isCur) tr.classList.toggle('playing-row', isCur);
     const btn = tr.firstElementChild?.firstElementChild;

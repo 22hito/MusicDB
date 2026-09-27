@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { Badge } from './UI';
 import { MarqueeText } from './MarqueeText';
@@ -84,6 +84,9 @@ export function SongRow({
   const wantEdit = !top && (showEdit ?? isAdmin);
   const wantDelete = !top && (showDelete ?? isAdmin);
   const medal = rank != null && rank <= 3 ? MEDALS[rank - 1] : null;
+  const [genresOpen, setGenresOpen] = useState(false);
+  const shownGenres = genresOpen ? song.genres : song.genres.slice(0, 3);
+  const thumb = top && song.youtubeVideoId ? `https://img.youtube.com/vi/${song.youtubeVideoId}/mqdefault.jpg` : null;
 
   return (
     <View
@@ -98,17 +101,26 @@ export function SongRow({
             <Text style={[styles.rankText, { color: medal ?? theme.muted }]}>{rank}</Text>
           </View>
         ) : null}
-        <TouchableOpacity
-          onPress={onPlay}
-          style={[styles.playBtn, { backgroundColor: isCurrent ? theme.accent : theme.surface2, borderColor: isCurrent ? theme.accent : theme.border }]}
-          hitSlop={8}
-        >
-          {isCurrent && isPlaying ? (
-            <PauseIcon size={13} color={theme.onAccent} />
-          ) : (
-            <PlayIcon size={12} color={isCurrent ? theme.onAccent : theme.text} />
-          )}
-        </TouchableOpacity>
+        {top ? (
+          <TouchableOpacity onPress={onPlay} style={[styles.topCover, { backgroundColor: theme.surface2, borderColor: isCurrent ? theme.accent : theme.border }]} hitSlop={6}>
+            {thumb ? <Image source={{ uri: thumb }} style={StyleSheet.absoluteFill} /> : null}
+            <View style={[styles.topCoverPlay, { backgroundColor: thumb ? 'rgba(0,0,0,0.38)' : 'transparent' }]}>
+              {isCurrent && isPlaying ? <PauseIcon size={14} color={thumb ? '#fff' : theme.accent} /> : <PlayIcon size={13} color={thumb ? '#fff' : isCurrent ? theme.accent : theme.text} />}
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={onPlay}
+            style={[styles.playBtn, { backgroundColor: isCurrent ? theme.accent : theme.surface2, borderColor: isCurrent ? theme.accent : theme.border }]}
+            hitSlop={8}
+          >
+            {isCurrent && isPlaying ? (
+              <PauseIcon size={13} color={theme.onAccent} />
+            ) : (
+              <PlayIcon size={12} color={isCurrent ? theme.onAccent : theme.text} />
+            )}
+          </TouchableOpacity>
+        )}
 
         <View style={styles.titleWrap}>
           {/* Біжить лише рядок пісні, що зараз грає, — інакше список "рябить". */}
@@ -289,6 +301,37 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 5,
+  },
+  albumRow: {
+    flexDirection: 'row',
+  },
+  moreBtn: {
+    height: 22,
+    minWidth: 30,
+    paddingHorizontal: 8,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topCover: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topCoverPlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metaInfo: {
     flexDirection: 'row',
