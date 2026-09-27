@@ -995,7 +995,7 @@
         <div class="chat-main">
           <div id="chat-dm-empty" class="empty"><svg class="icon"><use href="#icon-chat"/></svg><span data-i18n="chat.pickConversation">Оберіть розмову ліворуч</span></div>
           <div id="chat-dm-panel" style="display:none;">
-            <div class="chat-header"><a href="#" id="chat-dm-partner" class="artist-link"></a><button type="button" class="btn btn-outline chat-clear-btn" onclick="deleteChatForMe()" data-i18n-title="chat.clearHint" title="Переписка зникне лише у вас — у співрозмовника вона лишиться"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="chat.clearBtn">Видалити чат</span></button></div>
+            <div class="chat-header"><button type="button" class="chat-back-btn" onclick="closeDmConversation()" data-i18n-title="chat.backToList" title="До розмов"><svg class="icon"><use href="#icon-arrow-left"/></svg></button><a href="#" id="chat-dm-partner" class="artist-link"></a><button type="button" class="btn btn-outline chat-clear-btn" onclick="deleteChatForMe()" data-i18n-title="chat.clearHint" title="Переписка зникне лише у вас — у співрозмовника вона лишиться"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="chat.clearBtn">Видалити чат</span></button></div>
             <div id="chat-dm-messages" class="chat-messages"></div>
             <div id="chat-dm-state-hint" class="chat-state-hint" style="display:none;"></div>
             <div class="chat-input-row" id="chat-dm-input-row">

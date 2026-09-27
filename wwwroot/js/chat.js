@@ -151,6 +151,7 @@ function loadDmThread(){
   if(id == null) return;
   document.getElementById('chat-dm-empty').style.display = 'none';
   document.getElementById('chat-dm-panel').style.display = '';
+  document.getElementById('chat-dm-layout').classList.add('has-conv');
   const partner = document.getElementById('chat-dm-partner');
   partner.onclick = (e)=>{ e.preventDefault(); openUserProfilePage(id); };
   if(_chatPartnerName) partner.textContent = _chatPartnerName;
@@ -175,17 +176,22 @@ function loadDmThread(){
   }).catch(()=>{});
 }
 // "Видалити чат у себе": переписка зникає лише в мене; нове повідомлення поверне розмову.
+// Телефон: розмова відкрита на весь екран — "назад" повертає до списку розмов.
+function closeDmConversation(){
+  currentChatUserId = null;
+  _chatPartnerName = '';
+  document.getElementById('chat-dm-panel').style.display = 'none';
+  document.getElementById('chat-dm-empty').style.display = '';
+  document.getElementById('chat-dm-layout').classList.remove('has-conv');
+  loadConversations();
+}
 async function deleteChatForMe(){
   const id = currentChatUserId;
   if(id == null || !await confirmModal({ title: t('chat.clearTitle'), text: t('chat.clearConfirm'), confirmLabel: t('chat.clearBtn') })) return;
   fetch(`/api/messages/${id}`, { method:'DELETE' })
     .then(r=>{
       if(!r.ok){ alert(t('msg.connectionError')); return; }
-      currentChatUserId = null;
-      _chatPartnerName = '';
-      document.getElementById('chat-dm-panel').style.display = 'none';
-      document.getElementById('chat-dm-empty').style.display = '';
-      loadConversations();
+      closeDmConversation();
       refreshDmBadge();
     })
     .catch(()=>{ alert(t('msg.connectionError')); });

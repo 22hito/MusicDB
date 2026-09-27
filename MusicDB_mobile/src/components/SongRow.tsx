@@ -175,7 +175,7 @@ export function SongRow({
 
       {!top ? (
         <View style={styles.metaLine}>
-          <View style={styles.metaWrap}>
+          <View style={styles.metaCol}>
             <View style={styles.metaInfo}>
               <Text style={[styles.metaText, { color: theme.muted }]}>
                 {fmtDate(song.release)} · {shortDur(song.duration)} ·
@@ -183,19 +183,29 @@ export function SongRow({
               <EyeIcon size={12} color={theme.muted} />
               <Text style={[styles.metaText, { color: theme.muted }]}>{song.playCount ?? 0}</Text>
             </View>
-            {song.genres.slice(0, 3).map((g) => (
-              <TouchableOpacity key={g} disabled={!onGenrePress} onPress={() => onGenrePress?.(g)} hitSlop={4}>
-                <Badge small label={abbrGenre(g)} kind="genre" active={g === activeGenre} />
-              </TouchableOpacity>
-            ))}
-            {song.genres.length > 3 ? <Text style={[styles.metaText, { color: theme.muted }]}>+{song.genres.length - 3}</Text> : null}
-            {song.album ? (
-              <TouchableOpacity disabled={!onAlbumPress} onPress={() => onAlbumPress?.(song.album!)} hitSlop={4}>
-                <Badge small label={song.album} kind="album" active={song.album === activeAlbum} />
-              </TouchableOpacity>
-            ) : (
-              <Text style={[styles.metaText, { color: theme.muted }]}>{t('table.single')}</Text>
-            )}
+            {song.genres.length ? (
+              <View style={styles.genresRow}>
+                {shownGenres.map((g) => (
+                  <TouchableOpacity key={g} disabled={!onGenrePress} onPress={() => onGenrePress?.(g)} hitSlop={4}>
+                    <Badge small label={abbrGenre(g)} kind="genre" active={g === activeGenre} />
+                  </TouchableOpacity>
+                ))}
+                {song.genres.length > 3 ? (
+                  <TouchableOpacity onPress={() => setGenresOpen((o) => !o)} hitSlop={6} style={[styles.moreBtn, { borderColor: `${theme.accent2}88` }]}>
+                    <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONT_SANS_SEMIBOLD }}>{genresOpen ? '−' : `+${song.genres.length - 3}`}</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
+            <View style={styles.albumRow}>
+              {song.album ? (
+                <TouchableOpacity disabled={!onAlbumPress} onPress={() => onAlbumPress?.(song.album!)} hitSlop={4} style={{ maxWidth: '100%' }}>
+                  <Badge small label={song.album} kind="album" active={song.album === activeAlbum} />
+                </TouchableOpacity>
+              ) : (
+                <Text style={[styles.metaText, { color: theme.muted }]}>{t('table.single')}</Text>
+              )}
+            </View>
           </View>
           {wantEdit ? (
             <TouchableOpacity onPress={onEdit} hitSlop={6} style={styles.actionIcon}>
@@ -217,10 +227,10 @@ const styles = StyleSheet.create({
   row: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,
-    paddingVertical: 10,
-    paddingLeft: 11,
+    paddingVertical: 12,
+    paddingLeft: 12,
     paddingRight: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   topLine: {
     flexDirection: 'row',
@@ -290,13 +300,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   metaLine: {
-    marginTop: 6,
+    marginTop: 8,
     marginLeft: 42,
     flexDirection: 'row',
     alignItems: 'flex-end',
   },
-  metaWrap: {
+  metaCol: {
     flex: 1,
+    minWidth: 0,
+    gap: 7,
+  },
+  genresRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',

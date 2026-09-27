@@ -21,6 +21,9 @@
   :root { --tabbar-h: 62px; }
 
   /* Колесо: спершу диск і параметри, легенда — під ними, з прокруткою всередині. */
+  /* Колесо по центру сторінки (раніше колонка з диском тулилась до лівого краю). */
+  .wheel-page-layout { justify-content: center; }
+  .wheel-page-layout > .wheel-col { flex: 1 1 100%; align-items: center; }
   .wheel-page-layout .wheel-col:not(.wheel-playlist-col) { order: 1; }
   .wheel-page-layout .wheel-playlist-col { order: 2; }
   .wheel-page-layout .wheel-legend-col { order: 3; flex: 1 1 100%; max-height: 280px; }
@@ -200,6 +203,15 @@
   #page-home .home-actions .btn { width: 100%; justify-content: center; }
   #home-add-btn { order: -1; }
 
+  /* Особисті: спершу список розмов; відкрита розмова — на весь екран із кнопкою "назад". */
+  .chat-layout:not(.has-conv) .chat-main { display: none; }
+  .chat-layout.has-conv .chat-sidebar { display: none; }
+  .chat-layout .chat-sidebar { max-height: none; }
+  .chat-header { display: flex; align-items: center; gap: 8px; }
+  .chat-back-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; }
+  .chat-back-btn .icon { width: 16px; height: 16px; }
+  .chat-header .chat-clear-btn { margin-left: auto; }
+
   /* Спілкування: вкладки завжди одним рядком (без іконок), підвкладки — на всю ширину. */
   .chat-tabs { display: flex; width: 100%; flex-wrap: nowrap; }
   .chat-tabs button { flex: 1 1 auto; min-width: 0; justify-content: center; gap: 0.35rem; padding: 0.5rem 0.45rem; white-space: nowrap; }
@@ -230,7 +242,7 @@
       "play title  rating trail"
       ".    sub    sub    sub"
       ".    mmeta  mmeta  acts";
-    column-gap: 8px; row-gap: 0; padding: 0.6rem 0.65rem 0.55rem 0.7rem;
+    column-gap: 10px; row-gap: 0; padding: 0.75rem 0.7rem 0.7rem 0.8rem;
   }
   #songs-body tr[data-id] > td.td-release, #songs-body tr[data-id] > td.td-duration, #songs-body tr[data-id] > td.td-plays,
   #songs-body tr[data-id] > td.td-genres, #songs-body tr[data-id] > td.td-album { display: none; }
@@ -241,7 +253,13 @@
   #songs-body tr[data-id] > td.td-rating { align-self: center; }
   #songs-body tr[data-id] > td.td-icon-trail { align-self: center; }
   #songs-body tr[data-id] .btn-icon-fav, #songs-body tr[data-id] .btn-icon-edit, #songs-body tr[data-id] .btn-icon-danger { width: 30px; height: 30px; }
-  #songs-body tr[data-id] > td.td-mmeta { grid-area: mmeta; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 6px; }
+  #songs-body tr[data-id] > td.td-mmeta { grid-area: mmeta; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; margin-top: 8px; min-width: 0; }
+  #songs-body tr[data-id] .mm-genres { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  #songs-body tr[data-id] .mm-genres .mm-extra { display: none; }
+  #songs-body tr[data-id] .mm-genres.expanded .mm-extra { display: inline-flex; }
+  #songs-body tr[data-id] .mm-more-btn { height: 22px; min-width: 30px; padding: 0 8px; border-radius: 11px; border: 1px dashed color-mix(in srgb, var(--accent2, var(--accent)) 55%, var(--border)); background: none; color: var(--muted); font: 600 0.68rem var(--font-ui); cursor: pointer; }
+  #songs-body tr[data-id] .mm-album { max-width: 100%; }
+  #songs-body tr[data-id] .mm-album .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
   #songs-body tr[data-id] .mm-info { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 0.72rem; font-variant-numeric: tabular-nums; white-space: nowrap; margin-right: 2px; }
   #songs-body tr[data-id] .mm-info .icon { width: 12px; height: 12px; }
   #songs-body tr[data-id] .mm-more { color: var(--muted); font-size: 0.7rem; }

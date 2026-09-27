@@ -233,6 +233,7 @@
 .chat-conv-top { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; font-size: 0.82rem; }
 .chat-conv-last { font-size: 0.72rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-header { padding: 0.2rem 0.3rem 0.7rem; border-bottom: 1px solid var(--border); font-weight: 600; }
+.chat-back-btn { display: none; }
 .chat-messages { flex: 1; overflow-y: auto; max-height: 55vh; min-height: 260px; padding: 0.8rem 0.2rem; display: flex; flex-direction: column; gap: 0.45rem; }
 .chat-msg { max-width: 75%; align-self: flex-start; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px 12px 12px 4px; padding: 0.45rem 0.7rem; }
 .chat-msg.mine { align-self: flex-end; background: color-mix(in srgb, var(--accent) 16%, var(--surface2)); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 12px 12px 4px 12px; }
