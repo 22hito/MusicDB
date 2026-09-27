@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { usePlayer } from './PlayerContext';
+import { usePlayer, usePlayerProgress } from './PlayerContext';
 import { useSettings } from '@/state/SettingsContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PLAYER_BAR_HEIGHT, FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, RADIUS } from '@/constants/theme';
@@ -28,6 +28,36 @@ function fmtSec(s: number) {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 
+// Прогрес і час — окремі дрібні компоненти: щотику перемальовуються лише вони, а не вся картка плеєра.
+function SeekBar() {
+  const p = usePlayer();
+  const { currentTime, duration } = usePlayerProgress();
+  const { theme } = useSettings();
+  const fraction = duration > 0 ? currentTime / duration : 0;
+  return (
+    <Slider
+      style={styles.seek}
+      minimumValue={0}
+      maximumValue={1}
+      value={Number.isFinite(fraction) ? fraction : 0}
+      minimumTrackTintColor={theme.accent}
+      maximumTrackTintColor={theme.borderStrong}
+      thumbTintColor={theme.accent}
+      onSlidingComplete={(v) => p.seekFraction(v)}
+    />
+  );
+}
+
+function TimeLabel() {
+  const { currentTime, duration } = usePlayerProgress();
+  const { theme } = useSettings();
+  return (
+    <Text style={[styles.time, { color: theme.muted }]}>
+      {fmtSec(currentTime)} — {fmtSec(duration)}
+    </Text>
+  );
+}
+
 export function MiniPlayerBar() {
   const p = usePlayer();
   const { theme, t } = useSettings();
@@ -37,7 +67,6 @@ export function MiniPlayerBar() {
 
   if (!p.isOpen || !p.current) return null;
   const song = p.current;
-  const fraction = p.duration > 0 ? p.currentTime / p.duration : 0;
   const loading = p.state === 'loading' || p.state === 'buffering';
 
   return (
@@ -50,16 +79,7 @@ export function MiniPlayerBar() {
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
-      <Slider
-        style={styles.seek}
-        minimumValue={0}
-        maximumValue={1}
-        value={Number.isFinite(fraction) ? fraction : 0}
-        minimumTrackTintColor={theme.accent}
-        maximumTrackTintColor={theme.borderStrong}
-        thumbTintColor={theme.accent}
-        onSlidingComplete={(v) => p.seekFraction(v)}
-      />
+      <SeekBar />
 
       {/* Три частини: боки однакової ширини — кнопка паузи точно по центру (як на сайті). */}
       <View style={styles.mainRow}>
@@ -130,9 +150,7 @@ export function MiniPlayerBar() {
           ) : null}
         </TouchableOpacity>
 
-        <Text style={[styles.time, { color: theme.muted }]}>
-          {fmtSec(p.currentTime)} — {fmtSec(p.duration)}
-        </Text>
+        <TimeLabel />
 
         <View style={{ flex: 1 }} />
 

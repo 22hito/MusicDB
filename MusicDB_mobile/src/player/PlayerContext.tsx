@@ -129,8 +129,6 @@ interface PlayerState {
   videoNotFound: boolean;
   state: PlayState;
   isPlaying: boolean;
-  currentTime: number;
-  duration: number;
   shuffle: boolean;
   repeatMode: RepeatMode;
   volume: number;
@@ -172,7 +170,15 @@ export interface VideoDock {
   height: number;
 }
 
+// Позиція відтворення змінюється кілька разів на секунду — окремим контекстом: інакше з кожним
+// тиком перемальовувались би всі, хто слухає плеєр (список пісень, екрани), а не лише смужка прогресу.
+export interface PlayerProgress {
+  currentTime: number;
+  duration: number;
+}
+
 const PlayerCtx = createContext<PlayerState | null>(null);
+const PlayerProgressCtx = createContext<PlayerProgress>({ currentTime: 0, duration: 0 });
 
 // Керування на екрані блокування для пісні, яку грає нативний плеєр.
 function showOnLockScreen(native: AudioPlayer, song: Song) {
@@ -213,6 +219,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PlayState>('idle');
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  // Для колбеків ("назад" з початку пісні, перемикання відео↔аудіо) — щоб вони не мінялись щотику.
+  const currentTimeRef = useRef(0);
+  currentTimeRef.current = currentTime;
   const [shuffle, setShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
   const [volume, setVolumeState] = useState(80);
@@ -418,13 +427,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const prev = useCallback(() => {
     if (!queue.length) return;
-    if (currentTime > 3) {
+    if (currentTimeRef.current > 3) {
       if (isNative()) nativeRef.current!.seekTo(0).catch(() => {});
       else postCommand({ cmd: 'seekTo', seconds: 0 });
       return;
     }
     setIndex((i) => (i - 1 + queue.length) % queue.length);
-  }, [queue.length, currentTime, postCommand]);
+  }, [queue.length, postCommand]);
 
   const close = useCallback(() => {
     postCommand({ cmd: 'stop' });
@@ -501,7 +510,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       modeRef.current = 'native';
       setVideoId(null);
       setVideoPopupOpen(false);
-      native.seekTo(currentTime).catch(() => {});
+      native.seekTo(currentTimeRef.current).catch(() => {});
       if (wasPlaying) native.play();
       showOnLockScreen(native, current);
       return;
@@ -522,7 +531,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setVideoPopupOpen((o) => !o);
-  }, [current, postCommand, videoPopupOpen, state, currentTime]);
+  }, [current, postCommand, videoPopupOpen, state]);
   const pause = useCallback(() => {
     if (isNative()) nativeRef.current!.pause();
     else postCommand({ cmd: 'pause' });
@@ -615,8 +624,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       videoNotFound,
       state,
       isPlaying,
-      currentTime,
-      duration,
       shuffle,
       repeatMode,
       volume,
@@ -656,8 +663,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       videoNotFound,
       state,
       isPlaying,
-      currentTime,
-      duration,
       shuffle,
       repeatMode,
       volume,
@@ -688,6 +693,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
+  const progress = useMemo<PlayerProgress>(() => ({ currentTime, duration }), [currentTime, duration]);
+
   // Хук, а не Dimensions.get: при повороті екрана ширина має перерахуватись.
   const { width: screenWidth } = useWindowDimensions();
   const popupWidth = Math.min(320, screenWidth - 24);
@@ -696,7 +703,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PlayerCtx.Provider value={value}>
-      {children}
+      <PlayerProgressCtx.Provider value={progress}>{children}</PlayerProgressCtx.Provider>
 
       {/* Прихований (або, коли відкрито попап, видимий) WebView з YouTube IFrame API.
           Це ЄДИНИЙ екземпляр — переключаємо лише стиль, тому звук не переривається. */}
@@ -751,6 +758,10 @@ export function usePlayer(): PlayerState {
   const ctx = useContext(PlayerCtx);
   if (!ctx) throw new Error('usePlayer must be used within PlayerProvider');
   return ctx;
+}
+
+export function usePlayerProgress(): PlayerProgress {
+  return useContext(PlayerProgressCtx);
 }
 
 const styles = StyleSheet.create({
