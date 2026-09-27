@@ -526,6 +526,21 @@
 }
 @media (max-width: 768px) { #songs-table td.td-genres .genre-line { display: contents; } } /* картки — як раніше */
 
+/* «Табло» в таблиці пісень (wheel.js _tqSet): обрізаний текст у рядку під курсором доїжджає до кінця й назад.
+   У спокої .tq — звичайний inline, тож трикрапка лишається; під час руху — inline-block з transform.
+   Як і біжучий рядок плеєра (.mq), навмисно НЕ залежить від "вимкнених анімацій" (ОС і налаштування сайту):
+   інакше довгу назву не прочитати — звідси !important і вища специфічність за глобальне правило. */
+#songs-table .tq { white-space: nowrap; }
+#songs-table .tq-on { text-overflow: clip !important; }
+#songs-table .tq-on > .tq {
+  display: inline-block; will-change: transform;
+  animation: tq-slide var(--tq-dur, 4s) ease-in-out 0.35s infinite alternate !important;
+  animation-duration: var(--tq-dur, 4s) !important;
+  animation-iteration-count: infinite !important;
+}
+#songs-table .tq-on.genre-line { -webkit-mask-image: none !important; mask-image: none !important; }
+@keyframes tq-slide { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--tq-shift, 0)); } }
+
 /* Маркер "домалювати ще" в кінці таблиці пісень (порції по 200 рядків) */
 tr.rows-sentinel, tr.rows-sentinel > td { height: 1px !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
 

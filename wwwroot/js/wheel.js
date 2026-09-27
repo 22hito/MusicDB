@@ -531,12 +531,12 @@ function renderSongs(){
         <button class="play-row-btn${isPlay?' is-playing':''}" data-icon="${btnIcon===ROW_PAUSE_ICON?'pause':'play'}" onclick="toggleOrPlay(${s.id}, playSong)">${btnIcon}</button>
       </td>
       <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
-      <td class="td-artist" data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
-      <td class="td-title" data-label="${t('table.title')}" title="${esc(s.title)}">${esc(s.title)}</td>
+      <td class="td-artist" data-label="${t('table.artist')}"><strong class="tq">${artistLinksHtml(s)}</strong></td>
+      <td class="td-title" data-label="${t('table.title')}" title="${esc(s.title)}"><span class="tq">${esc(s.title)}</span></td>
       <td class="duration-col td-release" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
       <td class="duration-col td-duration" data-label="${t('table.duration')}">${s.duration}</td>
-      <td class="td-genres" data-label="${t('table.genres')}"${s.genres.length>2?` title="${esc(s.genres.join(', '))}"`:''}><span class="genre-line">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</span></td>
-      <td class="td-album" data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(t('filter.byAlbum'))}">${esc(s.album)}</button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
+      <td class="td-genres" data-label="${t('table.genres')}"${s.genres.length>2?` title="${esc(s.genres.join(', '))}"`:''}><span class="genre-line"><span class="tq">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</span></span></td>
+      <td class="td-album" data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(s.album)} — ${esc(t('filter.byAlbum'))}"><span class="tq">${esc(s.album)}</span></button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
       <td class="duration-col td-plays" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
       <td class="duration-col td-rating" data-label="${t('table.rating')}">${ratingChipHtml(s)}</td>
       <td class="td-mmeta m-only"><span class="mm-info">${fmtDate(s.release)} · ${esc(shortDur(s.duration))} · <svg class="icon"><use href="#icon-eye"/></svg>${s.playCount ?? 0}</span>${s.genres.length?`<span class="mm-genres">${s.genres.map((g,k)=>`<button type="button" class="badge badge-filter${g===gf?' active':''}${k>=3?' mm-extra':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)">${esc(abbrGenre(g))}</button>`).join('')}${s.genres.length>3?`<button type="button" class="mm-more-btn" data-more="+${s.genres.length-3}" onclick="toggleCardGenres(this)" title="${esc(t('table.genres'))}">+${s.genres.length-3}</button>`:''}</span>`:''}<span class="mm-album">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)">${esc(s.album)}</button>`:`<span class="mm-more">${t('table.single')}</span>`}</span></td>
@@ -553,6 +553,26 @@ function renderSongs(){
 // Тисячі пісень не малюємо разом: порціями по SONG_ROWS_CHUNK — наступна з'являється,
 // коли низ таблиці наближається до екрана (черга відтворення — усе відфільтроване, displayedSongs).
 const SONG_ROWS_CHUNK = 200;
+// «Табло»: у рядку під курсором (чи з фокусом клавіатури) текст, що не влазить у комірку — виконавець,
+// назва, жанри, альбом, — плавно доїжджає до кінця й назад. Лише справді обрізаний, тож таблиця не рябить.
+let _tqRow = null;
+function _tqSet(row){
+  if(row === _tqRow) return;
+  if(_tqRow) _tqRow.querySelectorAll('.tq-on').forEach(box => box.classList.remove('tq-on'));
+  _tqRow = row;
+  if(!row || _isPhoneLayout()) return; // на телефоні — картки, текст там переноситься
+  row.querySelectorAll('.tq').forEach(el => {
+    const box = el.parentElement;
+    const over = box.scrollWidth - box.clientWidth;
+    if(over < 3) return;
+    box.style.setProperty('--tq-shift', `${-(over + 6)}px`);
+    box.style.setProperty('--tq-dur', `${Math.min(12, 1.6 + over / 40).toFixed(2)}s`); // ~40 px/с, як табло
+    box.classList.add('tq-on');
+  });
+}
+document.addEventListener('mouseover', e => _tqSet(e.target.closest?.('tr') || null));
+document.addEventListener('focusin', e => _tqSet(e.target.closest?.('tr') || null));
+
 let _songRows = null, _songRowsObserver = null;
 function _appendSongRows(){
   const tbody = document.getElementById('songs-body');
