@@ -86,15 +86,6 @@ docs/                Документація для розробників (Mar
 Щойно заповнено `Uploads:R2`, файли йдуть у бакет R2, а `/api/songs/{id}/audio` відповідає редиректом
 на підписане посилання (6 год) — аудіо тягнеться напряму з Cloudflare, бакет лишається приватним.
 
-1. Cloudflare → R2 → **Create bucket** (напр. `nowl-audio`).
-2. R2 → **Manage API tokens** → **Create API token**: права *Object Read & Write*, лише цей бакет.
-   Збережіть *Access Key ID* і *Secret Access Key* (секрет показується один раз). *Account ID* — на головній R2.
-3. Azure → App Service → **Environment variables** (подвійне підкреслення замість `:`):
-   `Uploads__R2__AccountId`, `Uploads__R2__AccessKeyId`, `Uploads__R2__SecretAccessKey`, `Uploads__R2__Bucket`.
-   Локально — ті самі ключі в `appsettings.Local.json`.
-4. Необов'язково: `Uploads__R2__PublicBaseUrl` — публічний домен бакета (власний домен у Cloudflare),
-   тоді віддаються прямі посилання з кешем CDN замість підписаних.
-
 ## Мобільний застосунок (Expo)
 
 ```bash
