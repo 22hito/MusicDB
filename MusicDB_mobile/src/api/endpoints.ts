@@ -144,8 +144,13 @@ export function useMusicApi() {
       // Requests (заявки на додавання)
       getRequests: () => request<SongRequest[]>('/api/requests'),
       // Пряме посилання на файл заявки — для нативного міні-плеєра (без куки сесії).
-      getRequestAudioLink: async (id: number) => {
-        const { url } = await request<{ url: string }>(`/api/requests/${id}/audio/link`);
+      // download — посилання "зберегти як" ("Виконавець - Назва.mp3"), відкривається в браузері телефону.
+      getRequestAudioLink: async (id: number, download = false) => {
+        const { url } = await request<{ url: string }>(`/api/requests/${id}/audio/link`, { query: download ? { download: 'true' } : undefined });
+        return url.startsWith('/') ? `${apiBase}${url}` : url;
+      },
+      getSongAudioLink: async (id: number, download = false) => {
+        const { url } = await request<{ url: string }>(`/api/songs/${id}/audio/link`, { query: download ? { download: 'true' } : undefined });
         return url.startsWith('/') ? `${apiBase}${url}` : url;
       },
       createRequest: (dto: CreateRequestInput) => request<SongRequest>('/api/requests', { method: 'POST', body: dto }),

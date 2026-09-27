@@ -217,6 +217,12 @@ export const I18N = {
     'adminNotif.song_added': 'додав', // NEW
     'notif.markAllRead': 'Позначити все прочитаним', // NEW
     'notif.empty': 'Поки немає сповіщень',
+    'player.repeatOff': 'Повтор вимкнено',
+    'player.repeatAll': 'Повтор усього списку',
+    'player.repeatOne': 'Повтор однієї пісні',
+    'player.download': 'Скачати файл',
+    'form.targetTable': 'Таблиця',
+    'form.targetTable.hint': 'Куди піде пісня: основна таблиця (каталог) чи пісні від ком\'юніті.',
     'home.source.background': 'У фоні',
     'home.backgroundHint': 'Пісні з файлом з обох таблиць — грають у фоні й з вимкненим екраном (на телефоні теж). Адмін може додати файл будь-якій пісні в редагуванні.',
     'home.heading.backgroundPre': 'Пісні',
@@ -717,6 +723,12 @@ export const I18N = {
     'adminNotif.song_added': 'added', // NEW
     'notif.markAllRead': 'Mark all as read', // NEW
     'notif.empty': 'No notifications yet',
+    'player.repeatOff': 'Repeat off',
+    'player.repeatAll': 'Repeat all',
+    'player.repeatOne': 'Repeat one',
+    'player.download': 'Download file',
+    'form.targetTable': 'Table',
+    'form.targetTable.hint': 'Where the song goes: the main table (catalog) or community songs.',
     'home.source.background': 'Background',
     'home.backgroundHint': 'Songs with an audio file from both tables — they keep playing in the background and with the screen off (on a phone too). Admins can add a file to any song when editing it.',
     'home.heading.backgroundPre': 'Songs',

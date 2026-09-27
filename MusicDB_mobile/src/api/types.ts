@@ -44,6 +44,7 @@ export interface CreateSongInput {
 // розбирає URL). Та сама семантика, що й на сайті/десктопі.
 export interface UpdateSongInput extends CreateSongInput {
   youtubeVideoId?: string | null;
+  source?: SongSource | null; // перенести в іншу таблицю
 }
 
 export interface Genre {
@@ -85,6 +86,7 @@ export interface CreateRequestInput {
 // Та сама семантика null/""/значення, що й в UpdateSongInput.
 export interface UpdateRequestInput extends CreateRequestInput {
   youtubeVideoId?: string | null;
+  kind?: SongSource | null; // у яку таблицю піде пісня
 }
 
 export interface Profile {

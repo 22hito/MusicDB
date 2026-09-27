@@ -19,14 +19,15 @@ public interface IAudioStorage
     // Те саме для картинок (скріншоти баг-репортів) — інші формати й ліміт розміру.
     Task<(string? FileName, string? Error)> SaveImageAsync(IFormFile file);
 
-    // null — файла нема або ім'я підозріле.
-    Task<AudioSource?> OpenAsync(string? fileName);
+    // null — файла нема або ім'я підозріле. downloadName — віддати на збереження
+    // (Content-Disposition: attachment) під цим ім'ям, а не для відтворення.
+    Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null);
 
     Task DeleteAsync(string? fileName);
 }
 
 // Або локальний шлях (віддаємо PhysicalFile з Range), або URL для редиректу.
-public record AudioSource(string? FilePath, string? RedirectUrl, string ContentType);
+public record AudioSource(string? FilePath, string? RedirectUrl, string ContentType, string? DownloadName = null);
 
 public static class AudioFiles
 {
@@ -131,8 +132,18 @@ public static class AudioFiles
     {
         null => controller.NotFound(),
         { RedirectUrl: { } url } => controller.Redirect(url),
+        { DownloadName: { } name } => controller.PhysicalFile(source.FilePath!, source.ContentType, name, enableRangeProcessing: true),
         _ => controller.PhysicalFile(source.FilePath!, source.ContentType, enableRangeProcessing: true)
     };
+
+    // "Виконавець - Назва.mp3": без символів, заборонених у назвах файлів; розширення — як у збереженого файлу.
+    public static string DownloadName(string artist, string title, string storedName)
+    {
+        var bad = Path.GetInvalidFileNameChars().Concat(['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet();
+        var baseName = new string($"{artist} - {title}".Select(c => bad.Contains(c) || char.IsControl(c) ? '_' : c).ToArray()).Trim();
+        if (baseName.Length > 120) baseName = baseName[..120].TrimEnd();
+        return (baseName.Length == 0 ? "song" : baseName) + Path.GetExtension(storedName);
+    }
 }
 
 public class LocalAudioStorage : IAudioStorage
@@ -167,11 +178,11 @@ public class LocalAudioStorage : IAudioStorage
         return (name, null);
     }
 
-    public Task<AudioSource?> OpenAsync(string? fileName)
+    public Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null)
     {
         if (!AudioFiles.IsSafeName(fileName)) return Task.FromResult<AudioSource?>(null);
         var path = Path.Combine(_root, fileName!);
-        return Task.FromResult(File.Exists(path) ? new AudioSource(path, null, AudioFiles.GetContentType(path)) : null);
+        return Task.FromResult(File.Exists(path) ? new AudioSource(path, null, AudioFiles.GetContentType(path), downloadName) : null);
     }
 
     public Task DeleteAsync(string? fileName)
@@ -251,22 +262,26 @@ public sealed class R2AudioStorage : IAudioStorage, IDisposable
         return (name, null);
     }
 
-    public async Task<AudioSource?> OpenAsync(string? fileName)
+    public async Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null)
     {
         if (!AudioFiles.IsSafeName(fileName)) return null;
         var contentType = AudioFiles.GetContentType(fileName!);
-        if (_publicBaseUrl is not null)
+        if (_publicBaseUrl is not null && downloadName is null)
             return new AudioSource(null, $"{_publicBaseUrl}/{Uri.EscapeDataString(fileName!)}", contentType);
 
         // Підпис рахується локально — без звернення до R2 на кожне прослуховування.
-        var url = await _s3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
+        var request = new GetPreSignedUrlRequest
         {
             BucketName = _bucket,
             Key = fileName,
             Verb = HttpVerb.GET,
             Protocol = Protocol.HTTPS,
             Expires = DateTime.UtcNow.Add(LinkLifetime),
-        });
+        };
+        // "Скачати": R2 віддасть файл із Content-Disposition: attachment (браузер збереже, а не заграє).
+        if (downloadName is not null)
+            request.ResponseHeaderOverrides.ContentDisposition = $"attachment; filename*=UTF-8''{Uri.EscapeDataString(downloadName)}";
+        var url = await _s3.GetPreSignedURLAsync(request);
         return new AudioSource(null, url, contentType);
     }
 

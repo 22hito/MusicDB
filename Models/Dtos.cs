@@ -44,7 +44,8 @@ public record UpdateSongDto(
     string   Duration,
     string[] Genres,
     string?  Album,
-    string?  YoutubeVideoId = null   // на відміну від PUT .../youtube-video, тут можна й очистити, й замінити
+    string?  YoutubeVideoId = null,  // на відміну від PUT .../youtube-video, тут можна й очистити, й замінити
+    string?  Source = null           // перенести в іншу таблицю ("catalog" | "community"); null — не змінювати
 );
 
 // Пісня для головної таблиці_2 (ком'юніті) — multipart/form-data, бо з файлом.
@@ -104,7 +105,8 @@ public record UpdateRequestDto(
     string   Duration,
     string[] Genres,
     string?  AlbumTitle,
-    string?  YoutubeVideoId = null
+    string?  YoutubeVideoId = null,
+    string?  Kind = null             // у яку таблицю піде пісня ("catalog" | "community"); null — не змінювати
 );
 
 // ─── Profile / Favorites / Playlists / History ─────────────────────────────────

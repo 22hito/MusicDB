@@ -116,23 +116,26 @@ public class RequestsController(
 
     // Прослуховування файлу заявки адміном перед підтвердженням.
     [Authorize, AdminOnly]
+    // ?download=true — віддати на збереження ("Виконавець - Назва.mp3").
     [HttpGet("{id}/audio")]
-    public async Task<IActionResult> GetAudio(int id)
+    public async Task<IActionResult> GetAudio(int id, [FromQuery] bool download = false)
     {
-        var fileName = await db.Requests.Where(r => r.Id == id).Select(r => r.AudioFile).FirstOrDefaultAsync();
-        return this.ToResult(await audioStorage.OpenAsync(fileName));
+        var r = await db.Requests.Where(x => x.Id == id).Select(x => new { x.AudioFile, x.Artist, x.Title }).FirstOrDefaultAsync();
+        if (r?.AudioFile is null) return NotFound();
+        return this.ToResult(await audioStorage.OpenAsync(r.AudioFile, download ? AudioFiles.DownloadName(r.Artist, r.Title, r.AudioFile) : null));
     }
 
     // Пряме (підписане R2) посилання на файл заявки: нативний плеєр застосунку тягне
     // його без куки сесії. Локальне сховище (розробка) — шлях до ендпоінта вище.
     [Authorize, AdminOnly]
     [HttpGet("{id}/audio/link")]
-    public async Task<IActionResult> GetAudioLink(int id)
+    public async Task<IActionResult> GetAudioLink(int id, [FromQuery] bool download = false)
     {
-        var fileName = await db.Requests.Where(r => r.Id == id).Select(r => r.AudioFile).FirstOrDefaultAsync();
-        var source = await audioStorage.OpenAsync(fileName);
+        var r = await db.Requests.Where(x => x.Id == id).Select(x => new { x.AudioFile, x.Artist, x.Title }).FirstOrDefaultAsync();
+        if (r?.AudioFile is null) return NotFound();
+        var source = await audioStorage.OpenAsync(r.AudioFile, download ? AudioFiles.DownloadName(r.Artist, r.Title, r.AudioFile) : null);
         if (source is null) return NotFound();
-        return Ok(new { url = source.RedirectUrl ?? $"/api/requests/{id}/audio" });
+        return Ok(new { url = source.RedirectUrl ?? $"/api/requests/{id}/audio{(download ? "?download=true" : "")}" });
     }
 
     // Дозволяє адміну відредагувати будь-яке поле заявки перед підтвердженням
@@ -146,8 +149,13 @@ public class RequestsController(
 
         var req = await db.Requests.FindAsync(id);
         if (req is null) return NotFound();
-        if (req.Kind == SongSources.Community && shouldUpdateVideo && youtubeVideoId is null && req.AudioFile is null)
+        // Напрям: у яку таблицю піде пісня після підтвердження (адмін може змінити).
+        var kind = dto.Kind is null ? req.Kind : SongSources.IsValid(dto.Kind) ? dto.Kind : null;
+        if (kind is null) return BadRequest("Unknown table.");
+        var videoAfter = shouldUpdateVideo ? youtubeVideoId : req.YoutubeVideoId;
+        if (kind == SongSources.Community && videoAfter is null && req.AudioFile is null)
             return BadRequest("A community song needs an audio file or a YouTube video.");
+        req.Kind = kind;
 
         req.Artist = dto.Artist.Trim();
         req.Title = dto.Title.Trim();

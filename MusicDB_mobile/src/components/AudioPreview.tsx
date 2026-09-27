@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 import { useSettings } from '@/state/SettingsContext';
 import { usePlayer } from '@/player/PlayerContext';
-import { PauseIcon, PlayIcon } from './Icons';
+import { DownloadIcon, PauseIcon, PlayIcon } from './Icons';
 import { FONT_MONO_REGULAR, RADIUS } from '@/constants/theme';
 
 // Міні-плеєр файлу (прослуховування заявки адміном) — як .mini-audio на сайті:
@@ -13,8 +13,12 @@ let active: { stop: () => void } | null = null;
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-export function AudioPreview({ getUrl }: { getUrl: () => Promise<string> }) {
-  const { theme } = useSettings();
+export function AudioPreview({ getUrl, getDownloadUrl }: { getUrl: () => Promise<string>; getDownloadUrl?: () => Promise<string> }) {
+  const { theme, t } = useSettings();
+  // "Скачати" — посилання з Content-Disposition: attachment; браузер телефону збереже файл.
+  const download = () => {
+    getDownloadUrl?.().then((u) => Linking.openURL(u)).catch(() => {});
+  };
   const main = usePlayer();
   const ref = useRef<AudioPlayer | null>(null);
   const barWidth = useRef(0);
@@ -91,6 +95,11 @@ export function AudioPreview({ getUrl }: { getUrl: () => Promise<string> }) {
       <Text style={[styles.time, { color: st.error ? theme.red : theme.muted }]}>
         {st.error ? '!' : st.dur ? `${fmt(st.time)} / ${fmt(st.dur)}` : fmt(st.time)}
       </Text>
+      {getDownloadUrl ? (
+        <TouchableOpacity onPress={download} hitSlop={8} accessibilityLabel={t('player.download')} style={styles.dl}>
+          <DownloadIcon size={15} color={theme.muted} />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -101,4 +110,5 @@ const styles = StyleSheet.create({
   barHit: { flex: 1, paddingVertical: 10, justifyContent: 'center' },
   bar: { height: 6, borderRadius: 3, overflow: 'hidden' },
   time: { fontFamily: FONT_MONO_REGULAR, fontSize: 11, minWidth: 44, textAlign: 'right' },
+  dl: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center', marginRight: -6 },
 });

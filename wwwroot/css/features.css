@@ -494,6 +494,15 @@
 .modal-btn-confirm.neutral { background: var(--accent); color: var(--on-accent); }
 .modal-btn-confirm.neutral:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }
 
+/* Повтор однієї пісні — "1" на кнопці повтору */
+#btn-repeat { position: relative; }
+#btn-repeat[data-mode="one"]::after { content: '1'; position: absolute; top: 1px; right: 0; min-width: 12px; height: 12px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font: 700 0.5rem/12px var(--font-ui); text-align: center; }
+
+/* Міні-плеєр файлу: кнопка "Скачати" */
+.mini-audio-dl { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); text-decoration: none; }
+.mini-audio-dl:hover { color: var(--accent); background: var(--surface2); }
+.mini-audio-dl .icon { width: 15px; height: 15px; }
+
 /* ── Черга плеєра (queue.js): панель праворуч над плеєром; на телефоні — аркуш ── */
 .queue-panel { position: fixed; right: var(--player-gap); top: 72px; bottom: calc(var(--player-h) + var(--player-gap) * 2); width: min(390px, calc(100vw - 24px));
   z-index: 190; display: flex; flex-direction: column; background: color-mix(in srgb, var(--elevated) 94%, transparent);

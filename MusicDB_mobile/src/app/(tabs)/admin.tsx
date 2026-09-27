@@ -37,6 +37,7 @@ function requestToForm(r: SongRequest): SongFormValues {
     album: r.albumTitle || '',
     genres: r.genres.join(', '),
     youtubeVideoId: r.youtubeVideoId || '',
+    kind: r.kind === 'community' ? 'community' : 'catalog',
   };
 }
 
@@ -165,6 +166,7 @@ function RequestsPanel() {
         genres: values.genres.split(',').map((g) => g.trim()).filter(Boolean),
         albumTitle: values.album.trim() || null,
         youtubeVideoId: values.youtubeVideoId.trim(),
+        kind: values.kind ?? null,
       });
       if (values.lyrics !== undefined) await api.setRequestLyrics(updated.id, values.lyrics).catch(() => {});
       setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
@@ -213,7 +215,7 @@ function RequestsPanel() {
                 </Text>
               ) : null}
             </View>
-            {r.audioUrl ? <AudioPreview getUrl={() => api.getRequestAudioLink(r.id)} /> : null}
+            {r.audioUrl ? <AudioPreview getUrl={() => api.getRequestAudioLink(r.id)} getDownloadUrl={() => api.getRequestAudioLink(r.id, true)} /> : null}
             <View style={styles.reqActions}>
               <Button label={t('admin.approveBtn')} variant="success" small loading={busyId === r.id} onPress={() => approve(r.id)} />
               <Button label={t('admin.rejectBtn')} variant="danger" small loading={busyId === r.id} onPress={() => reject(r.id)} />

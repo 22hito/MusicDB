@@ -115,8 +115,19 @@ export function MiniPlayerBar() {
         <TouchableOpacity onPress={p.toggleShuffle} style={styles.smallIconBtn} hitSlop={10}>
           <ShuffleIcon size={15} color={p.shuffle ? theme.accent : theme.muted} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={p.toggleRepeat} style={styles.smallIconBtn} hitSlop={10}>
-          <RepeatIcon size={15} color={p.repeat ? theme.accent : theme.muted} />
+        {/* Повтор: вимкнено → весь список → одна пісня ("1" на кнопці), як на сайті. */}
+        <TouchableOpacity
+          onPress={p.toggleRepeat}
+          style={styles.smallIconBtn}
+          hitSlop={10}
+          accessibilityLabel={t(p.repeatMode === 'one' ? 'player.repeatOne' : p.repeatMode === 'all' ? 'player.repeatAll' : 'player.repeatOff')}
+        >
+          <RepeatIcon size={15} color={p.repeatMode !== 'off' ? theme.accent : theme.muted} />
+          {p.repeatMode === 'one' ? (
+            <View style={[styles.repeatOne, { backgroundColor: theme.accent }]}>
+              <Text style={{ color: theme.onAccent, fontSize: 8, fontWeight: '800' }}>1</Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
 
         <Text style={[styles.time, { color: theme.muted }]}>
@@ -245,6 +256,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     height: 26,
     gap: 6,
+  },
+  repeatOne: {
+    position: 'absolute',
+    top: 0,
+    right: -1,
+    minWidth: 11,
+    height: 11,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   smallIconBtn: {
     width: 26,

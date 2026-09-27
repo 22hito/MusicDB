@@ -12,7 +12,9 @@ let listenLogged=false;
 // play/pause від технічних onStateChange під час синхронізації відео-попапу.
 let userIntendedPlaying=true;
 let ticker=null,pendingVid=null;
-let shuffle=false,repeat=false,seekDrag=false;
+let shuffle=false,seekDrag=false;
+// Повтор — три режими: 'off' (у кінці списку зупинитись), 'all' (список по колу), 'one' (одна пісня).
+let repeatMode = (() => { try { return ['all', 'one'].includes(localStorage.getItem('repeatMode')) ? localStorage.getItem('repeatMode') : 'off'; } catch(e){ return 'off'; } })();
 // Гучність зберігається в localStorage — інакше плеєр щоразу стартував на 80%.
 const _savedVol = localStorage.getItem('volume');
 let vol = _savedVol !== null ? parseInt(_savedVol) : 80;
@@ -44,8 +46,8 @@ fileAudio.addEventListener('pause', ()=>{
 fileAudio.addEventListener('ended', ()=>{
   if(playerMode!=='file') return;
   setPP(false);stopTick();setEQ(false);
-  if(repeat){ fileAudio.currentTime=0; fileAudio.play().catch(()=>{}); }
-  else playerNext();
+  if(repeatMode==='one'){ fileAudio.currentTime=0; fileAudio.play().catch(()=>{}); }
+  else playerNext(true);
 });
 fileAudio.addEventListener('waiting', ()=>{ if(playerMode==='file') setLoad(true); });
 fileAudio.addEventListener('error', ()=>{
@@ -87,8 +89,8 @@ function onState(e){
     setPP(false);stopTick();setEQ(false);refreshPlayingState();
   }else if(e.data===S.ENDED){
     setPP(false);stopTick();setEQ(false);
-    if(repeat){ytPlayer.seekTo(0);ytPlayer.playVideo();}
-    else playerNext();
+    if(repeatMode==='one'){ytPlayer.seekTo(0);ytPlayer.playVideo();}
+    else playerNext(true);
   }else if(e.data===S.BUFFERING){
     setLoad(true);
   }
@@ -301,7 +303,9 @@ function playerToggle(){
 }
 
 // Спершу "Моя черга" (queue.js); shuffle вже перемішав решту списку наперед.
-function playerNext(){
+// auto — пісня дограла сама: без повтору в кінці списку зупиняємось (кнопка "далі" — по колу).
+function playerNext(auto = false){
+  if(auto && repeatMode === 'off' && !userQueue.length && playerIndex >= playerQueue.length - 1) return;
   if(_takeFromUserQueue()){ _loadCurrent(); return; }
   if(!playerQueue.length)return;
   playerIndex=(playerIndex+1)%playerQueue.length;
@@ -364,7 +368,19 @@ function toggleShuffle(){
   if(shuffle) _shuffleUpcoming(); else _unshuffle();
   if(_queueOpen) renderQueuePanel();
 }
-function toggleRepeat(){repeat=!repeat;document.getElementById('btn-repeat').classList.toggle('lit',repeat);}
+function toggleRepeat(){
+  repeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
+  try { localStorage.setItem('repeatMode', repeatMode); } catch(e){}
+  _syncRepeatBtn();
+}
+function _syncRepeatBtn(){
+  const btn = document.getElementById('btn-repeat');
+  if(!btn) return;
+  btn.classList.toggle('lit', repeatMode !== 'off');
+  btn.dataset.mode = repeatMode;
+  btn.title = t(repeatMode === 'one' ? 'player.repeatOne' : repeatMode === 'all' ? 'player.repeatAll' : 'player.repeatOff');
+}
+_syncRepeatBtn();
 
 function setVolume(v){
   vol=parseInt(v);
@@ -547,6 +563,7 @@ function miniAudioHtml(src){
       <button type="button" class="mini-audio-mute" onclick="toggleMiniAudioMute()" aria-label="${esc(t('player.volume'))}">${off ? MINI_VOL_OFF : MINI_VOL_ON}</button>
       <span class="mini-audio-volpop"><span class="mini-audio-volbox"><input type="range" class="mini-audio-vol" min="0" max="100" value="${miniAudioMuted ? 0 : miniAudioVol}" oninput="setMiniAudioVolume(this.value)" aria-label="${esc(t('player.volume'))}"></span></span>
     </span>
+    <a class="mini-audio-dl" href="${esc(src)}${src.includes('?') ? '&' : '?'}download=true" download title="${esc(t('player.download'))}" aria-label="${esc(t('player.download'))}"><svg class="icon"><use href="#icon-download"/></svg></a>
   </div>`;
 }
 function _syncMiniAudioVolume(){

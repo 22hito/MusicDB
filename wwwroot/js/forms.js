@@ -315,6 +315,7 @@ function openEditRequestModal(id){
   document.getElementById('edit-req-album').value = r.albumTitle || '';
   document.getElementById('edit-req-genres').value = (r.genres||[]).join(', ');
   document.getElementById('edit-req-youtube').value = r.youtubeVideoId || '';
+  setEditTargetTable('edit-req', r.kind || 'catalog');
   document.getElementById('edit-req-ext-search-panel').style.display = 'none';
   _updateEditReqYoutubeLink();
   // Текст заявки — окремий, потенційно важкий ендпоінт (як і в піснях), підвантажуємо лише зараз.
@@ -354,7 +355,8 @@ function saveEditRequest(id){
     artist, title, release, duration,
     genres: genres.split(',').map(g=>g.trim()).filter(Boolean),
     albumTitle: album || null,
-    youtubeVideoId
+    youtubeVideoId,
+    kind: _editTargetTable['edit-req'] || null
   };
   const lyrics = document.getElementById('edit-req-lyrics').value;
   fetch(`/api/requests/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
@@ -404,6 +406,7 @@ function openEditSongModal(id){
   document.getElementById('edit-song-album').value = s.album || '';
   document.getElementById('edit-song-genres').value = (s.genres||[]).join(', ');
   document.getElementById('edit-song-youtube').value = s.youtubeVideoId || '';
+  setEditTargetTable('edit-song', s.source || 'catalog');
   _updateEditSongYoutubeLink();
   // Текст пісні не приходить разом з /api/songs (окремий, потенційно важкий
   // ендпоінт) — підвантажуємо лише зараз, при відкритті форми редагування.
@@ -419,6 +422,12 @@ function toggleEditSongAudioRemove(){
   _editSongRemoveAudio = !_editSongRemoveAudio;
   document.getElementById('edit-song-audio-preview').style.opacity = _editSongRemoveAudio ? '0.35' : '';
   document.getElementById('edit-song-audio-remove').textContent = t(_editSongRemoveAudio ? 'admin.audioRemoveUndo' : 'admin.audioRemove');
+}
+// Напрям у редагуванні заявки/пісні: у яку таблицю піде (або перейде) пісня.
+const _editTargetTable = {};
+function setEditTargetTable(prefix, kind){
+  _editTargetTable[prefix] = kind;
+  document.querySelectorAll(`#${prefix}-kind button`).forEach(b => b.classList.toggle('active', b.dataset.k === kind));
 }
 // Оновлює посилання "Переглянути на YouTube" наживо (приймає голий videoId або повний URL).
 function _updateEditSongYoutubeLink(){
@@ -449,7 +458,8 @@ function saveEditSong(id){
     artist, title, release, duration,
     genres: genres.split(',').map(g=>g.trim()).filter(Boolean),
     album: album || null,
-    youtubeVideoId
+    youtubeVideoId,
+    source: _editTargetTable['edit-song'] || null
   };
   const lyrics = document.getElementById('edit-song-lyrics').value;
   const newAudio = document.getElementById('edit-song-audio').files[0];

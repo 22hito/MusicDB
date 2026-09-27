@@ -108,6 +108,8 @@ async function fetchVideoId(
 }
 
 type PlayState = 'idle' | 'loading' | 'buffering' | 'playing' | 'paused' | 'ended';
+// Повтор — як на сайті: 'off' (у кінці списку зупинитись), 'all' (по колу), 'one' (одна пісня).
+export type RepeatMode = 'off' | 'all' | 'one';
 
 // Копія масиву у випадковому порядку (Fisher–Yates).
 function shuffled<T>(arr: T[]): T[] {
@@ -130,7 +132,7 @@ interface PlayerState {
   currentTime: number;
   duration: number;
   shuffle: boolean;
-  repeat: boolean;
+  repeatMode: RepeatMode;
   volume: number;
   videoPopupOpen: boolean;
   isOpen: boolean;
@@ -212,7 +214,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [shuffle, setShuffle] = useState(false);
-  const [repeat, setRepeat] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
   const [volume, setVolumeState] = useState(80);
   const [videoPopupOpen, setVideoPopupOpen] = useState(false);
   const [videoDock, setVideoDock] = useState<VideoDock | null>(null);
@@ -393,6 +395,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const toggle = useCallback(() => {
     if (isNative()) {
       if (state === 'playing') nativeRef.current!.pause();
+      // Дограла в кінці списку (повтор вимкнено) — "грати" починає пісню спочатку.
+      else if (state === 'ended') nativeRef.current!.seekTo(0).then(() => nativeRef.current?.play()).catch(() => {});
       else nativeRef.current!.play();
       return;
     }
@@ -481,7 +485,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     unshuffledRef.current = null;
     setShuffle(false);
   }, [shuffle, queue, index]);
-  const toggleRepeat = useCallback(() => setRepeat((r) => !r), []);
+  const toggleRepeat = useCallback(() => setRepeatMode((r) => (r === 'off' ? 'all' : r === 'all' ? 'one' : 'off')), []);
+  // Пісня дограла сама: без повтору в кінці списку (і без "Моєї черги") — зупинитись.
+  const atListEnd = !userQueue.length && index >= queue.length - 1;
   // Пісня ком'юніті з файлом і YouTube-відео водночас: грає файл (нативно, у фоні),
   // а кнопка відео перемикає її на YouTube з того самого моменту й відкриває відео.
   // Закрили відео — назад на файл з того самого моменту: YouTube не грає у фоні й
@@ -528,8 +534,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setCurrentTime(st.currentTime || 0);
     setDuration(st.duration || 0);
     if (st.didJustFinish) {
-      if (repeat) {
+      if (repeatMode === 'one') {
         nativeRef.current?.seekTo(0).then(() => nativeRef.current?.play()).catch(() => {});
+      } else if (repeatMode === 'off' && atListEnd) {
+        setState('ended');
       } else {
         next();
       }
@@ -569,9 +577,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       } else if (data.type === 'state') {
         if (data.state === 'ended') {
-          if (repeat) {
+          if (repeatMode === 'one') {
             postCommand({ cmd: 'seekTo', seconds: 0 });
             postCommand({ cmd: 'play' });
+          } else if (repeatMode === 'off' && atListEnd) {
+            setState('ended');
           } else {
             next();
           }
@@ -593,7 +603,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setState('idle');
       }
     },
-    [postCommand, volume, repeat, next, currentUser, current, api],
+    [postCommand, volume, repeatMode, atListEnd, next, currentUser, current, api],
   );
 
   const value = useMemo<PlayerState>(
@@ -608,7 +618,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       currentTime,
       duration,
       shuffle,
-      repeat,
+      repeatMode,
       volume,
       videoPopupOpen,
       isOpen,
@@ -649,7 +659,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       currentTime,
       duration,
       shuffle,
-      repeat,
+      repeatMode,
       volume,
       videoPopupOpen,
       isOpen,

@@ -151,11 +151,24 @@ public class SongsController(
     // Файл ком'юніті-пісні. Локально — сам файл із Range (перемотування без
     // повного завантаження); з R2 — редирект на підписане посилання, тож аудіо
     // йде напряму з Cloudflare. Публічний, як і сам список пісень.
+    // ?download=true — віддати на збереження ("Виконавець - Назва.mp3").
     [HttpGet("{id}/audio")]
-    public async Task<IActionResult> GetAudio(int id)
+    public async Task<IActionResult> GetAudio(int id, [FromQuery] bool download = false)
     {
-        var fileName = await db.Songs.Where(m => m.Id == id).Select(m => m.AudioFile).FirstOrDefaultAsync();
-        return this.ToResult(await audioStorage.OpenAsync(fileName));
+        var s = await db.Songs.Where(m => m.Id == id).Select(m => new { m.AudioFile, m.Artist, m.Title }).FirstOrDefaultAsync();
+        if (s?.AudioFile is null) return NotFound();
+        return this.ToResult(await audioStorage.OpenAsync(s.AudioFile, download ? AudioFiles.DownloadName(s.Artist, s.Title, s.AudioFile) : null));
+    }
+
+    // Пряме посилання на файл (застосунок: "Скачати" відкриває його в браузері телефону).
+    [HttpGet("{id}/audio/link")]
+    public async Task<IActionResult> GetAudioLink(int id, [FromQuery] bool download = false)
+    {
+        var s = await db.Songs.Where(m => m.Id == id).Select(m => new { m.AudioFile, m.Artist, m.Title }).FirstOrDefaultAsync();
+        if (s?.AudioFile is null) return NotFound();
+        var source = await audioStorage.OpenAsync(s.AudioFile, download ? AudioFiles.DownloadName(s.Artist, s.Title, s.AudioFile) : null);
+        if (source is null) return NotFound();
+        return Ok(new { url = source.RedirectUrl ?? $"/api/songs/{id}/audio{(download ? "?download=true" : "")}" });
     }
 
     // Файл пісні від адміна (модалка редагування) — будь-якої, і з каталогу: з файлом
@@ -268,9 +281,14 @@ public class SongsController(
             .FirstOrDefaultAsync(m => m.Id == id);
         if (song is null) return NotFound();
 
+        // Напрям: адмін може перенести пісню в іншу таблицю (каталог / ком'юніті).
+        var source = dto.Source is null ? song.Source : SongSources.IsValid(dto.Source) ? dto.Source : null;
+        if (source is null) return BadRequest("Unknown table.");
         // Ком'юніті-пісня без файлу тримається лише на відео — його не можна просто стерти.
-        if (song.Source == SongSources.Community && shouldUpdateVideo && youtubeVideoId is null && song.AudioFile is null)
+        var videoAfter = shouldUpdateVideo ? youtubeVideoId : song.YoutubeVideoId;
+        if (source == SongSources.Community && videoAfter is null && song.AudioFile is null)
             return BadRequest("A community song needs an audio file or a YouTube video.");
+        song.Source = source;
 
         song.Artist = dto.Artist.Trim();
         song.Title = dto.Title.Trim();

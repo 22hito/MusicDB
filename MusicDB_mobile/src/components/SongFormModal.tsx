@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useSettings } from '@/state/SettingsContext';
-import { Button, Field } from './UI';
+import { Button, Field, SegmentedPicker } from './UI';
 import { DateField } from './DateField';
-import { CloseIcon, UploadIcon } from './Icons';
+import { CloseIcon, DiscIcon, UploadIcon, UsersIcon } from './Icons';
 import { MAX_AUDIO_BYTES } from './CommunityFields';
 import { FONT_MONO_MEDIUM, RADIUS, SPACING } from '@/constants/theme';
 import type { PickedAudio } from '@/api/types';
@@ -20,6 +20,7 @@ export interface SongFormValues {
   lyrics?: string; // текст пісні; undefined — ще не завантажено
   audio?: PickedAudio | null; // новий файл пісні — додати або замінити
   removeAudio?: boolean; // прибрати наявний файл (після збереження)
+  kind?: 'catalog' | 'community'; // напрям: у яку таблицю піде (перейде) пісня; undefined — перемикача нема
 }
 
 export function SongFormModal({
@@ -79,6 +80,21 @@ export function SongFormModal({
         <View style={[styles.box, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600', marginBottom: 16 }}>{title}</Text>
           <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {values.kind ? (
+              <View style={{ marginBottom: SPACING.lg }}>
+                <Text style={[styles.fileLabel, { color: theme.text2 }]}>{t('form.targetTable')}</Text>
+                <SegmentedPicker<'catalog' | 'community'>
+                  fill
+                  value={values.kind}
+                  onChange={(k) => setValues((s) => ({ ...s, kind: k }))}
+                  options={[
+                    { value: 'catalog', label: t('home.source.catalog'), icon: (c) => <DiscIcon size={15} color={c} /> },
+                    { value: 'community', label: t('home.source.community'), icon: (c) => <UsersIcon size={15} color={c} /> },
+                  ]}
+                />
+                <Text style={{ color: theme.muted, fontSize: 12, marginTop: 5 }}>{t('form.targetTable.hint')}</Text>
+              </View>
+            ) : null}
             <Field label={t('form.artist')} value={values.artist} onChangeText={set('artist')} />
             <Field label={t('form.title')} value={values.title} onChangeText={set('title')} />
             <DateField label={t('form.release')} value={values.release} onChange={set('release')} />

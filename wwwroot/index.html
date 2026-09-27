@@ -1388,6 +1388,13 @@
     <div class="modal-title-row">
       <span data-i18n="admin.editTitle">Редагувати заявку</span>
     </div>
+    <div class="form-group"><label data-i18n="form.targetTable">Таблиця</label>
+      <div class="seg-switch" id="edit-req-kind" style="display:flex;width:100%;">
+        <button type="button" data-k="catalog" onclick="setEditTargetTable('edit-req', 'catalog')" style="flex:1;justify-content:center;"><svg class="icon"><use href="#icon-disc"/></svg> <span data-i18n="home.source.catalog">Каталог</span></button>
+        <button type="button" data-k="community" onclick="setEditTargetTable('edit-req', 'community')" style="flex:1;justify-content:center;"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="home.source.community">Ком'юніті</span></button>
+      </div>
+      <div class="hint" data-i18n="form.targetTable.hint">Куди піде пісня: основна таблиця (каталог) чи пісні від ком'юніті.</div>
+    </div>
     <div class="form-group"><label data-i18n="form.artist">Виконавець *</label><input type="text" id="edit-req-artist" oninput="onEditReqSearchInput()"></div>
     <div class="form-group"><label data-i18n="form.title">Назва пісні *</label><input type="text" id="edit-req-title" oninput="onEditReqSearchInput()"></div>
     <div class="form-group"><label data-i18n="form.release">Дата релізу *</label><input type="date" id="edit-req-release"></div>
@@ -1424,6 +1431,13 @@
   <div class="modal-box" style="width:400px;">
     <div class="modal-title-row">
       <span data-i18n="admin.editSongTitle">Редагувати пісню</span>
+    </div>
+    <div class="form-group"><label data-i18n="form.targetTable">Таблиця</label>
+      <div class="seg-switch" id="edit-song-kind" style="display:flex;width:100%;">
+        <button type="button" data-k="catalog" onclick="setEditTargetTable('edit-song', 'catalog')" style="flex:1;justify-content:center;"><svg class="icon"><use href="#icon-disc"/></svg> <span data-i18n="home.source.catalog">Каталог</span></button>
+        <button type="button" data-k="community" onclick="setEditTargetTable('edit-song', 'community')" style="flex:1;justify-content:center;"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="home.source.community">Ком'юніті</span></button>
+      </div>
+      <div class="hint" data-i18n="form.targetTable.hint">Куди піде пісня: основна таблиця (каталог) чи пісні від ком'юніті.</div>
     </div>
     <div class="form-group"><label data-i18n="form.artist">Виконавець *</label><input type="text" id="edit-song-artist"></div>
     <div class="form-group"><label data-i18n="form.title">Назва пісні *</label><input type="text" id="edit-song-title"></div>

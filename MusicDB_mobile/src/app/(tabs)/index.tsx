@@ -54,6 +54,7 @@ function songToForm(s: Song): SongFormValues {
     album: s.album || '',
     genres: s.genres.join(', '),
     youtubeVideoId: s.youtubeVideoId || '',
+    kind: s.source === 'community' ? 'community' : 'catalog',
   };
 }
 
@@ -240,6 +241,7 @@ export default function LibraryScreen() {
         album: values.album.trim() || null,
         genres: values.genres.split(',').map((g) => g.trim()).filter(Boolean),
         youtubeVideoId: values.youtubeVideoId.trim(),
+        source: values.kind ?? null,
       });
       // Текст — окремим запитом, як на сайті (undefined — ще не встиг завантажитись, не чіпаємо).
       if (values.lyrics !== undefined) await api.setLyrics(updated.id, values.lyrics).catch(() => {});
@@ -255,7 +257,9 @@ export default function LibraryScreen() {
           return;
         }
       }
-      setSongs((prev) => prev.map((s) => (s.id === fresh.id ? fresh : s)));
+      // Перенесено в іншу таблицю — з поточного списку прибираємо (крім "У фоні", де обидві).
+      const moved = source !== 'background' && fresh.source !== source;
+      setSongs((prev) => (moved ? prev.filter((s) => s.id !== fresh.id) : prev.map((s) => (s.id === fresh.id ? fresh : s))));
       setEditSong(null);
     } finally {
       setSavingEdit(false);

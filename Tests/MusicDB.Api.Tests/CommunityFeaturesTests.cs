@@ -86,6 +86,22 @@ public class CommunityFeaturesTests
         Assert.Empty(db.Requests);
     }
 
+    // Адмін змінює напрям заявки; у ком'юніті без файлу й відео — не можна.
+    [Fact]
+    public async Task UpdateRequest_ChangesKind_CommunityNeedsFileOrVideo()
+    {
+        using var db = TestDb.Create();
+        db.Requests.Add(new MusicRequest { Id = 7, Artist = "A", Title = "T", Release = new DateOnly(2024, 1, 1), Duration = "00:03:00", Kind = SongSources.Catalog });
+        await db.SaveChangesAsync();
+        var controller = CreateRequestsController(db, "admin@x.com", admin: true);
+
+        var rejected = await controller.Update(7, new UpdateRequestDto("A", "T", "2024-01-01", "00:03:00", ["rock"], null, null, SongSources.Community));
+        Assert.IsType<BadRequestObjectResult>(rejected.Result);
+
+        await controller.Update(7, new UpdateRequestDto("A", "T", "2024-01-01", "00:03:00", ["rock"], null, "dQw4w9WgXcQ", SongSources.Community));
+        Assert.Equal(SongSources.Community, db.Requests.Single().Kind);
+    }
+
     [Fact]
     public async Task CommunityRequest_WithYoutubeOnly_IsAccepted()
     {
