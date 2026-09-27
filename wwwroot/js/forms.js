@@ -379,10 +379,16 @@ function editCurrentSong(){
 function openEditSongModal(id){
   const s = _findSong(id);
   if(!s) return;
-  // Заміна файлу — лише для пісень таблиці_2.
+  // Файл — для будь-якої пісні: з ним вона грає у фоні й потрапляє у вкладку "У фоні".
   const audioGroup = document.getElementById('edit-song-audio-group');
   const audioPreview = document.getElementById('edit-song-audio-preview');
-  audioGroup.style.display = s.source === 'community' ? '' : 'none';
+  audioGroup.style.display = '';
+  _editSongRemoveAudio = false;
+  // Пісня ком'юніті без YouTube без файлу не грала б — прибрати файл можна лише з відео.
+  const canRemove = !!s.audioUrl && (s.source !== 'community' || !!s.youtubeVideoId);
+  const removeBtn = document.getElementById('edit-song-audio-remove');
+  removeBtn.style.display = canRemove ? '' : 'none';
+  removeBtn.textContent = t('admin.audioRemove');
   document.getElementById('edit-song-audio').value = '';
   if(miniAudioOwner && audioPreview.contains(miniAudioOwner)) stopMiniAudio();
   audioPreview.innerHTML = s.audioUrl ? miniAudioHtml(s.audioUrl) : '';
@@ -407,6 +413,12 @@ function openEditSongModal(id){
   }).catch(()=>{});
   document.getElementById('edit-song-save-btn').onclick = function(){ saveEditSong(id); };
   document.getElementById('edit-song-modal-overlay').classList.add('open');
+}
+let _editSongRemoveAudio = false;
+function toggleEditSongAudioRemove(){
+  _editSongRemoveAudio = !_editSongRemoveAudio;
+  document.getElementById('edit-song-audio-preview').style.opacity = _editSongRemoveAudio ? '0.35' : '';
+  document.getElementById('edit-song-audio-remove').textContent = t(_editSongRemoveAudio ? 'admin.audioRemoveUndo' : 'admin.audioRemove');
 }
 // Оновлює посилання "Переглянути на YouTube" наживо (приймає голий videoId або повний URL).
 function _updateEditSongYoutubeLink(){
@@ -449,6 +461,9 @@ function saveEditSong(id){
       if(newAudio){
         const fd = new FormData(); fd.append('audio', newAudio);
         const ar = await fetch(`/api/songs/${id}/audio`,{method:'PUT',body:fd});
+        if(!ar.ok) alert(t('msg.errorEditSong') + '\n' + await ar.text());
+      } else if(_editSongRemoveAudio){
+        const ar = await fetch(`/api/songs/${id}/audio`,{method:'DELETE'});
         if(!ar.ok) alert(t('msg.errorEditSong') + '\n' + await ar.text());
       }
       closeEditSongModal();

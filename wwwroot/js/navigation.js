@@ -19,7 +19,13 @@ let communitySongs = []; // головна таблиця_2 (пісні від �
 let homeSource = 'catalog';
 let requests = [];
 // Пісні таблиці, що зараз відкрита на "Головній".
-function activeSongs(){ return homeSource === 'community' ? communitySongs : songs; }
+// "У фоні" — не окрема таблиця, а пісні з файлом з обох (грають у фоні й з вимкненим екраном).
+function activeSongs(){
+  if(homeSource === 'community') return communitySongs;
+  if(homeSource === 'background') return [...songs, ...communitySongs].filter(s => s.audioUrl)
+    .sort((a, b) => a.artist.localeCompare(b.artist, undefined, { sensitivity: 'base' }) || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+  return songs;
+}
 // Пошук пісні в обох таблицях — для модалок редагування/видалення/оцінки.
 function _findSong(id){
   const lists = [songs, communitySongs, playerQueue, userQueue, currentTopSongs, currentArtistSongs,
@@ -120,7 +126,7 @@ const _PAGE_PATHS = {
   recommendations: '/recommendations', request: '/request', 'admin-hub': '/admin', explore: '/explore',
 };
 function _pathForPage(n){
-  if(n === 'home') return homeSource === 'community' ? '/community' : '/';
+  if(n === 'home') return homeSource === 'community' ? '/community' : homeSource === 'background' ? '/background' : '/';
   if(n === 'artist') return currentArtistId != null ? `/artist/${currentArtistId}` : '/artists';
   if(n === 'playlist') return currentPlaylistId != null ? `/playlist/${currentPlaylistId}` : '/profile';
   if(n === 'user-profile') return currentProfileUserId != null ? `/user/${currentProfileUserId}` : '/chat/friends';
@@ -132,6 +138,7 @@ function _parsePath(path){
   let m;
   if(p === '/') return { page: 'home', source: 'catalog' };
   if(p === '/community') return { page: 'home', source: 'community' };
+  if(p === '/background') return { page: 'home', source: 'background' };
   if(p === '/profile/settings') return { page: 'profile' }; // стара адреса: нікнейм і аватар тепер у картці профілю
   if((m = p.match(/^\/artist\/(\d+)$/))) return { page: 'artist', id: +m[1] };
   if((m = p.match(/^\/playlist\/(\d+)$/))) return { page: 'playlist', id: +m[1] };

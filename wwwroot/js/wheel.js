@@ -516,7 +516,7 @@ function renderSongs(){
   displayedSongs = ordered;
   const tbody=document.getElementById('songs-body');
   if(!ordered.length){
-    tbody.innerHTML=`<tr><td colspan="13"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t(isCommunity?'table.communityEmpty':'table.empty')}</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="13"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t(isCommunity?'table.communityEmpty':homeSource==='background'?'table.backgroundEmpty':'table.empty')}</div></td></tr>`;
     return;
   }
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;

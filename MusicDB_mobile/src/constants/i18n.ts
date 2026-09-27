@@ -217,6 +217,14 @@ export const I18N = {
     'adminNotif.song_added': 'додав', // NEW
     'notif.markAllRead': 'Позначити все прочитаним', // NEW
     'notif.empty': 'Поки немає сповіщень',
+    'home.source.background': 'У фоні',
+    'home.backgroundHint': 'Пісні з файлом з обох таблиць — грають у фоні й з вимкненим екраном (на телефоні теж). Адмін може додати файл будь-якій пісні в редагуванні.',
+    'home.heading.backgroundPre': 'Пісні',
+    'home.heading.backgroundAccent': 'у фоні',
+    'home.addFileSongBtn': '+ Додати пісню з файлом',
+    'table.backgroundEmpty': 'Поки немає пісень із файлом — адмін може додати файл будь-якій пісні в редагуванні',
+    'admin.audioRemove': 'Прибрати файл',
+    'admin.audioRemoveUndo': 'Файл буде прибрано — скасувати',
     'queue.title': 'Черга',
     'queue.nowPlaying': 'Зараз грає',
     'queue.mine': 'Моя черга',
@@ -709,6 +717,14 @@ export const I18N = {
     'adminNotif.song_added': 'added', // NEW
     'notif.markAllRead': 'Mark all as read', // NEW
     'notif.empty': 'No notifications yet',
+    'home.source.background': 'Background',
+    'home.backgroundHint': 'Songs with an audio file from both tables — they keep playing in the background and with the screen off (on a phone too). Admins can add a file to any song when editing it.',
+    'home.heading.backgroundPre': 'Songs',
+    'home.heading.backgroundAccent': 'in the background',
+    'home.addFileSongBtn': '+ Add a song with a file',
+    'table.backgroundEmpty': 'No songs with a file yet — admins can add a file to any song when editing it',
+    'admin.audioRemove': 'Remove file',
+    'admin.audioRemoveUndo': 'The file will be removed — undo',
     'queue.title': 'Queue',
     'queue.nowPlaying': 'Now playing',
     'queue.mine': 'My queue',

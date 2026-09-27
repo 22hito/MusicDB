@@ -106,7 +106,8 @@ export function useMusicApi() {
 
       return {
       // Songs — source: "catalog" (таблиця_1, за замовчуванням) | "community" (таблиця_2)
-      getSongs: (source: SongSource | 'all' = 'catalog') => request<Song[]>('/api/songs', { query: { source } }),
+      // 'background' — вкладка "У фоні": пісні з файлом з обох таблиць.
+      getSongs: (source: SongSource | 'all' | 'background' = 'catalog') => request<Song[]>('/api/songs', { query: { source } }),
       getSong: (id: number) => request<Song>(`/api/songs/${id}`),
       createSong: (dto: CreateSongInput) => request<Song>('/api/songs', { method: 'POST', body: dto }),
       updateSong: (id: number, dto: UpdateSongInput) =>
@@ -116,7 +117,8 @@ export function useMusicApi() {
       setYoutubeVideo: (id: number, videoId: string) =>
         request<void>(`/api/songs/${id}/youtube-video`, { method: 'PUT', body: { videoId } }),
       deleteSong: (id: number) => request<void>(`/api/songs/${id}`, { method: 'DELETE' }),
-      // Додати/замінити файл пісні ком'юніті (адмін) — multipart нативним fetch.
+      deleteSongAudio: (id: number) => request<void>(`/api/songs/${id}/audio`, { method: 'DELETE' }),
+      // Додати/замінити файл будь-якої пісні (адмін) — multipart нативним fetch.
       replaceSongAudio: (id: number, audio: PickedAudio) => {
         const fd = new FormData();
         fd.append('audio', filePart(audio));
@@ -134,7 +136,7 @@ export function useMusicApi() {
       createCommunitySong: (input: CommunitySongInput) => upload<Song>('/api/songs/community', toCommunityFormData(input)),
 
       // Stats / Genres
-      getStats: (source: SongSource = 'catalog') => request<Stats>('/api/stats', { query: { source } }),
+      getStats: (source: SongSource | 'background' = 'catalog') => request<Stats>('/api/stats', { query: { source } }),
       getTopSongs: (limit = 100) => request<Song[]>('/api/stats/top-songs', { query: { limit } }),
       getGenres: () => request<Genre[]>('/api/genres'),
       normalizeGenres: () => request<NormalizeGenresResult>('/api/genres/normalize', { method: 'POST' }),

@@ -17,6 +17,21 @@ public class StatsControllerTests
     }
 
     [Fact]
+    public async Task Get_BackgroundSource_CountsOnlySongsWithFileFromBothTables()
+    {
+        var (controller, db) = CreateController();
+        db.Songs.AddRange(
+            new Music { Id = 1, Artist = "A", Title = "Catalog, file", Duration = TimeSpan.FromMinutes(3), AudioFile = "a.mp3" },
+            new Music { Id = 2, Artist = "B", Title = "Catalog, no file", Duration = TimeSpan.FromMinutes(3) },
+            new Music { Id = 3, Artist = "C", Title = "Community, file", Duration = TimeSpan.FromMinutes(3), Source = SongSources.Community, AudioFile = "c.mp3" });
+        await db.SaveChangesAsync();
+
+        var stats = await controller.Get(SongSources.Background);
+
+        Assert.Equal(2, (int)stats.GetType().GetProperty("totalSongs")!.GetValue(stats)!);
+    }
+
+    [Fact]
     public async Task GetTopSongs_OrdersByUniqueListenerCountDescending()
     {
         var (controller, db) = CreateController();

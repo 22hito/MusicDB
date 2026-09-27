@@ -135,7 +135,7 @@ function toggleFavorite(musicId, btn){
 // перемикач лише змінює, яку з двох таблиць показувати.
 // ================================================================
 function showHome(source){
-  source = source === 'community' ? 'community' : 'catalog';
+  source = ['community', 'background'].includes(source) ? source : 'catalog';
   if(source !== homeSource){
     homeSource = source;
     // Перемішування — порядок конкретної таблиці, в іншій воно не має сенсу.
@@ -147,17 +147,20 @@ function showHome(source){
   showPage('home');
 }
 function _applyHomeSourceUi(){
-  const isCommunity = homeSource === 'community';
-  document.getElementById('home-source-catalog').classList.toggle('active', !isCommunity);
+  const isCommunity = homeSource === 'community', isBackground = homeSource === 'background';
+  document.getElementById('home-source-catalog').classList.toggle('active', homeSource === 'catalog');
   document.getElementById('home-source-community').classList.toggle('active', isCommunity);
+  document.getElementById('home-source-background').classList.toggle('active', isBackground);
   document.getElementById('th-submitter').style.display = isCommunity ? '' : 'none';
   document.getElementById('home-community-hint').style.display = isCommunity ? '' : 'none';
+  document.getElementById('home-background-hint').style.display = isBackground ? '' : 'none';
   const pre = document.getElementById('home-heading-pre');
   const accent = document.getElementById('home-heading-accent');
   const addBtn = document.getElementById('home-add-btn');
-  pre.setAttribute('data-i18n', isCommunity ? 'home.heading.communityPre' : 'home.heading.pre');
-  accent.setAttribute('data-i18n', isCommunity ? 'home.heading.communityAccent' : 'home.heading.accent');
-  addBtn.setAttribute('data-i18n', isCommunity ? 'home.addOwnSongBtn' : 'home.addRequestBtn');
+  pre.setAttribute('data-i18n', isCommunity ? 'home.heading.communityPre' : isBackground ? 'home.heading.backgroundPre' : 'home.heading.pre');
+  accent.setAttribute('data-i18n', isCommunity ? 'home.heading.communityAccent' : isBackground ? 'home.heading.backgroundAccent' : 'home.heading.accent');
+  // "У фоні" поповнюється піснями з файлом — тож і кнопка веде до пісні ком'юніті з файлом.
+  addBtn.setAttribute('data-i18n', isCommunity ? 'home.addOwnSongBtn' : isBackground ? 'home.addFileSongBtn' : 'home.addRequestBtn');
   pre.textContent = t(pre.getAttribute('data-i18n'));
   accent.textContent = t(accent.getAttribute('data-i18n'));
   addBtn.textContent = t(addBtn.getAttribute('data-i18n'));

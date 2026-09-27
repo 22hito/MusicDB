@@ -18,18 +18,20 @@ public class SongsController(
     CatalogCache catalogCache, IHubContext<MusicHub> hub) : ControllerBase
 {
     // source: "catalog" (головна таблиця_1, за замовчуванням — так старі клієнти,
-    // зокрема мобільний, і далі бачать лише каталог), "community" (таблиця_2) або "all".
+    // зокрема мобільний, і далі бачать лише каталог), "community" (таблиця_2), "all"
+    // або "background" — пісні з файлом з обох таблиць (вкладка "У фоні").
     [HttpGet]
     public async Task<ActionResult<IEnumerable<SongDto>>> GetAll([FromQuery] string source = SongSources.Catalog)
     {
-        if (source != "all" && !SongSources.IsValid(source)) return BadRequest("Unknown source.");
+        if (source != "all" && source != SongSources.Background && !SongSources.IsValid(source)) return BadRequest("Unknown source.");
 
         // Кеш: список — 6 послідовних запитів до БД, і після кожної зміни каталогу
         // його разом перезапитують усі відкриті вкладки (див. CatalogCache).
         return Ok(await catalogCache.GetOrCreateAsync($"songs:{source}", async () =>
         {
             var query = db.Songs.Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
-            if (source != "all") query = query.Where(m => m.Source == source);
+            if (source == SongSources.Background) query = query.Where(m => m.AudioFile != null);
+            else if (source != "all") query = query.Where(m => m.Source == source);
 
             // .ToLower() — інакше велика/мала літери сортуються окремими блоками (A-Z, a-z).
             var songs = await query
@@ -156,7 +158,8 @@ public class SongsController(
         return this.ToResult(await audioStorage.OpenAsync(fileName));
     }
 
-    // Заміна файлу ком'юніті-пісні адміном (з модалки редагування).
+    // Файл пісні від адміна (модалка редагування) — будь-якої, і з каталогу: з файлом
+    // пісня грає у фоні й потрапляє у вкладку "У фоні".
     [Authorize, AdminOnly]
     [HttpPut("{id}/audio")]
     [RequestSizeLimit(AudioFiles.MaxRequestBytes)]
@@ -165,7 +168,6 @@ public class SongsController(
     {
         var song = await db.Songs.FindAsync(id);
         if (song is null) return NotFound();
-        if (song.Source != SongSources.Community) return BadRequest("Audio files are only for community songs.");
 
         var (fileName, error) = await audioStorage.SaveAsync(audio);
         if (fileName is null) return BadRequest(error);
@@ -177,6 +179,26 @@ public class SongsController(
         catalogCache.Invalidate();
         await hub.Clients.All.SendAsync("songsChanged");
         return Ok();
+    }
+
+    // Прибрати файл пісні (адмін). Пісня ком'юніті без YouTube-відео без файлу не грала б узагалі.
+    [Authorize, AdminOnly]
+    [HttpDelete("{id}/audio")]
+    public async Task<IActionResult> DeleteAudio(int id)
+    {
+        var song = await db.Songs.FindAsync(id);
+        if (song is null) return NotFound();
+        if (song.AudioFile is null) return NoContent();
+        if (song.Source == SongSources.Community && string.IsNullOrWhiteSpace(song.YoutubeVideoId))
+            return BadRequest("A community song needs an audio file or a YouTube video.");
+
+        var old = song.AudioFile;
+        song.AudioFile = null;
+        await db.SaveChangesAsync();
+        await audioStorage.DeleteAsync(old);
+        catalogCache.Invalidate();
+        await hub.Clients.All.SendAsync("songsChanged");
+        return NoContent();
     }
 
     // Кешує підтверджений YouTube videoId для повторних відтворень без нового

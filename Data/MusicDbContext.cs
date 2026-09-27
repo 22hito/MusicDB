@@ -54,6 +54,9 @@ public static class SongSources
 {
     public const string Catalog = "catalog";
     public const string Community = "community";
+    // Не таблиця в БД, а вигляд "У фоні": пісні з файлом з обох таблиць (грають у фоні
+    // й з вимкненим екраном). Лише для читання — пісню не можна "додати" в Background.
+    public const string Background = "background";
     public static bool IsValid(string? s) => s is Catalog or Community;
 }
 

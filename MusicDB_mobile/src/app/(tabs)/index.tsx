@@ -17,9 +17,12 @@ import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { SongGraphModal } from '@/components/SongGraphModal';
 import { AddToPlaylistModal } from '@/components/AddToPlaylistModal';
 import { SelectField } from '@/components/SelectField';
-import { DiscIcon, ShuffleIcon, SortIcon, UsersIcon } from '@/components/Icons';
+import { DiscIcon, HeadphonesIcon, ShuffleIcon, SortIcon, UsersIcon } from '@/components/Icons';
 import { CONTROL_HEIGHT, FONT_SANS_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Song, SongSource, Stats } from '@/api/types';
+
+// Вкладка "У фоні" — не окрема таблиця, а пісні з файлом з обох (грають у фоні й з вимкненим екраном).
+type LibrarySource = SongSource | 'background';
 
 type SortKey = 'default' | 'artist' | 'title' | 'release' | 'duration' | 'plays' | 'rating';
 type SortDir = 'asc' | 'desc';
@@ -63,7 +66,7 @@ export default function LibraryScreen() {
   const requireAuth = useRequireAuth();
 
   // Головна таблиця_1 (каталог) чи таблиця_2 (пісні від ком'юніті) — як перемикач на сайті.
-  const [source, setSource] = useState<SongSource>('catalog');
+  const [source, setSource] = useState<LibrarySource>('catalog');
   const [ratingSong, setRatingSong] = useState<Song | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -240,11 +243,12 @@ export default function LibraryScreen() {
       });
       // Текст — окремим запитом, як на сайті (undefined — ще не встиг завантажитись, не чіпаємо).
       if (values.lyrics !== undefined) await api.setLyrics(updated.id, values.lyrics).catch(() => {});
-      // Новий файл пісні ком'юніті — після цього пісня гратиме файлом (фон, екран блокування).
+      // Новий файл — після цього пісня гратиме файлом (фон, екран блокування) і з'явиться "У фоні".
       let fresh = updated;
-      if (values.audio) {
+      if (values.audio || values.removeAudio) {
         try {
-          await api.replaceSongAudio(updated.id, values.audio);
+          if (values.audio) await api.replaceSongAudio(updated.id, values.audio);
+          else await api.deleteSongAudio(updated.id);
           fresh = await api.getSong(updated.id).catch(() => updated);
         } catch (e) {
           Alert.alert(t('common.error'), (e as { body?: string }).body || t('msg.connectionError'));
@@ -295,22 +299,25 @@ export default function LibraryScreen() {
               </View>
             ) : null}
             <View style={{ marginBottom: SPACING.lg }}>
-              <SegmentedPicker<SongSource>
+              <SegmentedPicker<LibrarySource>
                 fill
                 options={[
                   { value: 'catalog', label: t('home.source.catalog'), icon: (c) => <DiscIcon size={16} color={c} /> },
                   { value: 'community', label: t('home.source.community'), icon: (c) => <UsersIcon size={16} color={c} /> },
+                  { value: 'background', label: t('home.source.background'), icon: (c) => <HeadphonesIcon size={16} color={c} /> },
                 ]}
                 value={source}
                 onChange={setSource}
               />
             </View>
             <Heading
-              pre={t(source === 'community' ? 'home.heading.communityPre' : 'home.heading.pre')}
-              accent={t(source === 'community' ? 'home.heading.communityAccent' : 'home.heading.accent')}
+              pre={t(source === 'community' ? 'home.heading.communityPre' : source === 'background' ? 'home.heading.backgroundPre' : 'home.heading.pre')}
+              accent={t(source === 'community' ? 'home.heading.communityAccent' : source === 'background' ? 'home.heading.backgroundAccent' : 'home.heading.accent')}
             />
-            {source === 'community' ? (
-              <Text style={{ color: theme.muted, fontSize: 12, marginTop: -8, marginBottom: SPACING.md }}>{t('home.communityHint')}</Text>
+            {source !== 'catalog' ? (
+              <Text style={{ color: theme.muted, fontSize: 12, marginTop: -8, marginBottom: SPACING.md }}>
+                {t(source === 'community' ? 'home.communityHint' : 'home.backgroundHint')}
+              </Text>
             ) : null}
 
 
@@ -373,9 +380,9 @@ export default function LibraryScreen() {
             {/* Дії над таблицею: заявка (у таблицю, що відкрита) + "Об'єднати жанри" лише для адміна. */}
             <View style={{ gap: 10, marginBottom: SPACING.lg }}>
               <Button
-                label={t(source === 'community' ? 'home.addOwnSongBtn' : 'home.addRequestBtn')}
+                label={t(source === 'community' ? 'home.addOwnSongBtn' : source === 'background' ? 'home.addFileSongBtn' : 'home.addRequestBtn')}
                 variant="outline"
-                onPress={() => requireAuth(() => router.push({ pathname: '/request', params: { kind: source } }), t('msg.needLoginForRequest'))}
+                onPress={() => requireAuth(() => router.push({ pathname: '/request', params: { kind: source === 'catalog' ? 'catalog' : 'community' } }), t('msg.needLoginForRequest'))}
               />
               {isAdmin ? (
                 <Button label={t('admin.normalizeGenresBtn')} variant="outline" loading={normalizing} onPress={normalizeGenres} />
@@ -414,7 +421,7 @@ export default function LibraryScreen() {
           ) : loadError ? (
             <ErrorState label={t('error.loadFailed')} onRetry={load} />
           ) : (
-            <EmptyState icon="🎵" label={t(source === 'community' ? 'table.communityEmpty' : 'table.empty')} />
+            <EmptyState icon="🎵" label={t(source === 'community' ? 'table.communityEmpty' : source === 'background' ? 'table.backgroundEmpty' : 'table.empty')} />
           )
         }
       />
@@ -471,7 +478,7 @@ export default function LibraryScreen() {
           onSave={handleSaveEdit}
           saving={savingEdit}
           loadLyrics={() => api.getLyrics(editSong.id).then((d) => d.lyrics)}
-          audioFile={editSong.source === 'community' ? { has: !!editSong.audioUrl } : undefined}
+          audioFile={{ has: !!editSong.audioUrl, canRemove: editSong.source !== 'community' || !!editSong.youtubeVideoId }}
         />
       ) : null}
 

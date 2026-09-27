@@ -207,11 +207,13 @@
     <div class="seg-switch" id="home-source-switch" style="margin-bottom:1rem;">
       <button type="button" id="home-source-catalog" class="active" onclick="showHome('catalog')"><svg class="icon"><use href="#icon-disc"/></svg> <span data-i18n="home.source.catalog">Каталог</span></button>
       <button type="button" id="home-source-community" onclick="showHome('community')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="home.source.community">Пісні ком'юніті</span></button>
+      <button type="button" id="home-source-background" onclick="showHome('background')"><svg class="icon"><use href="#icon-headphones"/></svg> <span data-i18n="home.source.background">У фоні</span></button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;gap:10px;flex-wrap:wrap;">
       <h2 style="margin-bottom:0;"><span id="home-heading-pre" data-i18n="home.heading.pre">Опубліковані</span> <span class="hl" id="home-heading-accent" data-i18n="home.heading.accent">пісні</span></h2>
     </div>
     <div class="hint" id="home-community-hint" style="display:none;margin:-0.6rem 0 1.2rem;" data-i18n="home.communityHint">Власні пісні учасників спільноти — завантажені файлом або з посиланням на YouTube.</div>
+    <div class="hint" id="home-background-hint" style="display:none;margin:-0.6rem 0 1.2rem;" data-i18n="home.backgroundHint">Пісні з файлом з обох таблиць — грають у фоні й з вимкненим екраном.</div>
     <div class="filter-bar">
       <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="debouncedRenderSongs()">
       <select id="filter-genre" onchange="renderSongs()" aria-label="Жанр" data-i18n-title="filter.allGenres"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
@@ -221,7 +223,7 @@
            "Об'єднати жанри" — лише для адмінів (показує renderAuthArea, ендпоінт теж [AdminOnly]). -->
       <div class="home-actions">
         <button class="btn btn-outline" onclick="normalizeGenres()" id="normalize-genres-btn" style="display:none;"><svg class="icon"><use href="#icon-sparkle"/></svg> <span data-i18n="admin.normalizeGenresBtn">Об'єднати дублікати жанрів</span></button>
-        <button class="btn btn-outline" onclick="openRequestPage(homeSource)" id="home-add-btn" data-i18n="home.addRequestBtn">+ Надіслати запит</button>
+        <button class="btn btn-outline" onclick="openRequestPage(homeSource === 'catalog' ? 'catalog' : 'community')" id="home-add-btn" data-i18n="home.addRequestBtn">+ Надіслати запит</button>
       </div>
     </div>
     <!-- Активні фільтри чипами: клік по жанру/альбому в таблиці додає, ✕ — знімає. -->
@@ -1441,6 +1443,7 @@
       <label data-i18n="form.audioFile">Файл пісні</label>
       <div id="edit-song-audio-preview" style="margin-bottom:0.5rem;"></div>
       <input type="file" id="edit-song-audio" accept="audio/*,.mp3,.m4a,.ogg,.opus,.wav,.flac,.aac,.webm">
+      <button type="button" class="profile-avatar-remove" id="edit-song-audio-remove" onclick="toggleEditSongAudioRemove()" style="display:none;" data-i18n="admin.audioRemove">Прибрати файл</button>
       <div class="hint" id="edit-song-audio-hint" data-i18n="admin.audioReplaceHint">Оберіть файл, щоб замінити поточний</div>
       <div class="hint audio-bg-hint" data-i18n="form.audioFile.bgHint">Порада: з файлом пісня гратиме й у фоні, і з вимкненим екраном. Пісня лише з YouTube-посиланням грає тільки на відкритому екрані.</div>
     </div>

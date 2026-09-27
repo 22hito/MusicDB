@@ -9,16 +9,19 @@ namespace MusicDB.Api.Controllers;
 [Route("api/[controller]")]
 public class StatsController(MusicDbContext db, MusicService musicService, CatalogCache catalogCache) : ControllerBase
 {
-    // source — яка головна таблиця: "catalog" (за замовчуванням) або "community".
+    // source — яка головна таблиця: "catalog" (за замовчуванням), "community" або
+    // "background" (пісні з файлом з обох таблиць — вкладка "У фоні").
     [HttpGet]
     public async Task<object> Get([FromQuery] string source = SongSources.Catalog)
     {
         // Чотири COUNT-запити до БД — кешуємо разом зі списком пісень (CatalogCache).
         return await catalogCache.GetOrCreateAsync<object>($"stats:{source}", async () =>
         {
-            var songs = db.Songs.Where(m => m.Source == source);
+            var background = source == SongSources.Background;
+            var songs = db.Songs.Where(m => background ? m.AudioFile != null : m.Source == source);
             var totalSongs = await songs.CountAsync();
-            var totalGenres = await db.MusicGenres.Where(mg => mg.Music.Source == source).Select(mg => mg.GenreId).Distinct().CountAsync();
+            var totalGenres = await db.MusicGenres.Where(mg => background ? mg.Music.AudioFile != null : mg.Music.Source == source)
+                .Select(mg => mg.GenreId).Distinct().CountAsync();
             var totalAlbums = await songs
                 .Where(m => m.AlbumIds != null && m.AlbumIds.Length > 0)
                 .Select(m => m.AlbumIds![0])

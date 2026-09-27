@@ -18,7 +18,8 @@ export interface SongFormValues {
   genres: string; // comma-separated
   youtubeVideoId: string; // ID або повне посилання — бекенд сам розбирає; порожньо = скинути кеш
   lyrics?: string; // текст пісні; undefined — ще не завантажено
-  audio?: PickedAudio | null; // новий файл пісні (лише ком'юніті) — додати або замінити
+  audio?: PickedAudio | null; // новий файл пісні — додати або замінити
+  removeAudio?: boolean; // прибрати наявний файл (після збереження)
 }
 
 export function SongFormModal({
@@ -39,8 +40,9 @@ export function SongFormModal({
   saving?: boolean;
   // Текст пісні тягнеться окремим запитом (як і на сайті) — підставляємо, коли прийде.
   loadLyrics?: () => Promise<string | null>;
-  // Файл пісні (лише пісні ком'юніті): has — чи вже є файл.
-  audioFile?: { has: boolean };
+  // Файл пісні (будь-якої): has — чи вже є файл; canRemove — чи можна прибрати
+  // (пісня ком'юніті без YouTube без файлу не грала б).
+  audioFile?: { has: boolean; canRemove?: boolean };
 }) {
   const { theme, t } = useSettings();
   const [values, setValues] = useState<SongFormValues>(initial);
@@ -120,6 +122,13 @@ export function SongFormModal({
                   ) : null}
                 </View>
                 <Text style={{ color: theme.muted, fontSize: 12, marginTop: 5 }}>{t(audioFile.has ? 'admin.audioHasFile' : 'admin.audioNoFile')}</Text>
+                {audioFile.has && audioFile.canRemove && !values.audio ? (
+                  <TouchableOpacity onPress={() => setValues((s) => ({ ...s, removeAudio: !s.removeAudio }))} hitSlop={6} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                    <Text style={{ color: values.removeAudio ? theme.red : theme.accent, fontSize: 13 }}>
+                      {t(values.removeAudio ? 'admin.audioRemoveUndo' : 'admin.audioRemove')}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
                 <Text style={{ color: theme.accent, fontSize: 12, marginTop: 3 }}>{t('form.audioFile.bgHint')}</Text>
               </View>
             ) : null}
