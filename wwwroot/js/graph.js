@@ -361,11 +361,19 @@ function _jaccard(setA, setB){
 }
 function _genreSet(song){ return new Set(song.genres.map(g=>g.toLowerCase())); }
 
+// Розкладка й матриця схожості — O(n²): на весь каталог (тисячі пісень) це гігабайти й зависання,
+// тож у граф ідуть лише найпопулярніші вузли (за прослуховуваннями, порядок каталогу — при рівних).
+const GRAPH_MAX_ITEMS = 400;
+function _graphTop(list, weight){
+  if(list.length <= GRAPH_MAX_ITEMS) return list;
+  return list.map((it, i) => ({ it, w: weight(it), i }))
+    .sort((a, b) => b.w - a.w || a.i - b.i).slice(0, GRAPH_MAX_ITEMS).map(x => x.it);
+}
 function openSimilarityGraph(kind){
   let items, simFn, labelFn, colorFn, onClickFn, titleKey;
 
   if(kind === 'songs'){
-    items = songs;
+    items = _graphTop(songs, s => s.playCount || 0);
     const sets = items.map(_genreSet);
     simFn = (i,j) => _jaccard(sets[i], sets[j]);
     labelFn = s => `${s.artist} — ${s.title}`;
@@ -396,7 +404,7 @@ function openSimilarityGraph(kind){
     } else {
       groups = songs.filter(s=>!s.album).map(s => ({ name: `${s.artist} — ${s.title}`, songs: [s], artists: new Set([s.artist]) }));
     }
-    items = groups;
+    items = groups = _graphTop(groups, g => g.songs.reduce((sum, s) => sum + (s.playCount || 0), 0));
     const genreSets = groups.map(g => {
       const set = new Set();
       g.songs.forEach(s => s.genres.forEach(gn => set.add(gn.toLowerCase())));
