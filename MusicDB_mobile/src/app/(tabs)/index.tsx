@@ -15,6 +15,7 @@ import { openUserProfile } from '@/components/FriendsPanel';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
 import { SongGraphModal } from '@/components/SongGraphModal';
+import { albumTrackOrder } from '@/components/AlbumModal';
 import { AddToPlaylistModal } from '@/components/AddToPlaylistModal';
 import { SelectField } from '@/components/SelectField';
 import { DiscIcon, HeadphonesIcon, ShuffleIcon, SortIcon, UsersIcon } from '@/components/Icons';
@@ -183,6 +184,8 @@ export default function LibraryScreen() {
       });
     } else if (shuffleOrder) {
       list = [...list].sort((a, b) => (shuffleOrder.get(a.id) ?? Infinity) - (shuffleOrder.get(b.id) ?? Infinity));
+    } else if (albumFilter) {
+      list = [...list].sort(albumTrackOrder); // фільтр за альбомом — як в оригіналі
     }
     return list;
   }, [songs, search, genreFilter, albumFilter, shuffleOrder, sortKey, sortDir]);

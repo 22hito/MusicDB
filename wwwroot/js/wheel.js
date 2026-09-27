@@ -511,6 +511,7 @@ function renderSongs(){
           if(va>vb) return 1*sortDir;
           return 0;
         })
+      : albumFilter ? [...filtered].sort(_albumTrackOrder) // фільтр за альбомом — як в оригіналі
       : filtered;
   // Черга відтворення слідує за тим, що зараз реально показано в таблиці (сортування/пошук).
   displayedSongs = ordered;

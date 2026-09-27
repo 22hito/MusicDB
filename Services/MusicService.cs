@@ -91,8 +91,8 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
             .ToList();
 
         var albums = albumIds.Count > 0
-            ? await db.Albums.Where(a => albumIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name)
-            : new Dictionary<int, string>();
+            ? await db.Albums.AsNoTracking().Where(a => albumIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id)
+            : new Dictionary<int, Album>();
 
         var playCounts = await GetPlayCountsAsync(idList);
         var artistsBySong = await GetSongArtistsAsync(idList);
@@ -103,17 +103,18 @@ public class MusicService(MusicDbContext db, GenreNormalizationService genreNorm
         return songs.Select(m =>
         {
             var genres = m.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()).ToArray();
-            var albumName = m.AlbumIds is { Length: > 0 } && albums.TryGetValue(m.AlbumIds[0], out var n) ? n : null;
+            var album = m.AlbumIds is { Length: > 0 } ? albums.GetValueOrDefault(m.AlbumIds[0]) : null;
             var rating = ratings.GetValueOrDefault(m.Id);
             var submitter = m.SubmittedByUserId is int uid && submitters.TryGetValue(uid, out var card) ? card.ToRef() : null;
             return new SongDto(m.Id, m.Artist, m.Title,
                 m.Release.ToString("yyyy-MM-dd"),
                 m.Duration.ToString(@"hh\:mm\:ss"),
-                genres, albumName, playCounts.GetValueOrDefault(m.Id, 0), m.YoutubeVideoId,
+                genres, album?.Name, playCounts.GetValueOrDefault(m.Id, 0), m.YoutubeVideoId,
                 artistsBySong.GetValueOrDefault(m.Id),
                 m.Source, submitter,
                 m.AudioFile is null ? null : $"/api/songs/{m.Id}/audio",
-                rating.Avg, rating.Count);
+                rating.Avg, rating.Count,
+                m.TrackNumber, album?.Release?.ToString("yyyy-MM-dd"), album?.CoverUrl);
         }).ToList();
     }
 

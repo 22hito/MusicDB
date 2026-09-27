@@ -212,8 +212,8 @@ app.Use(async (ctx, next) =>
         "script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com https://cdn.jsdelivr.net; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "font-src 'self' https://fonts.gstatic.com; " +
-        // blob: — прев'ю скріншотів у формі баг-репорту; R2 — самі скріншоти в адмінці.
-        $"img-src 'self' data: blob: https://img.youtube.com https://*.ytimg.com https://*.googleusercontent.com{r2MediaSources}; " +
+        // blob: — прев'ю скріншотів у формі баг-репорту; R2 — самі скріншоти в адмінці; dzcdn — обкладинки альбомів.
+        $"img-src 'self' data: blob: https://img.youtube.com https://*.ytimg.com https://*.googleusercontent.com https://cdn-images.dzcdn.net{r2MediaSources}; " +
         "connect-src 'self' https://www.googleapis.com https://www.youtube.com; " +
         "frame-src https://www.youtube.com; " +
         // data: — беззвучний data:audio/wav-якір (#ms-anchor), що утримує media

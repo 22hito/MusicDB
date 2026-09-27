@@ -17,7 +17,10 @@ public record SongDto(
     UserRefDto? SubmittedBy = null,   // хто додав — лише для ком'юніті-пісень
     string?  AudioUrl = null,         // завантажений файл пісні (ком'юніті), грає замість YouTube
     double?  AvgRating = null,        // середня оцінка 0–100
-    int      RatingCount = 0
+    int      RatingCount = 0,
+    int?     TrackNumber = null,      // номер у альбомі — порядок треків
+    string?  AlbumRelease = null,     // "yyyy-MM-dd" — рік альбому, а не найранішого синглу з нього
+    string?  AlbumCover = null        // обкладинка альбому (URL)
 );
 
 public record UserRefDto(int UserId, string DisplayName);

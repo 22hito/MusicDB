@@ -16,6 +16,9 @@ export interface Song {
   audioUrl?: string | null; // завантажений файл пісні — грає замість YouTube
   avgRating?: number | null; // середня оцінка 0–100
   ratingCount?: number;
+  trackNumber?: number | null; // номер у альбомі — порядок треків
+  albumRelease?: string | null; // "yyyy-MM-dd" — рік альбому, а не найранішого синглу
+  albumCover?: string | null; // обкладинка альбому (URL)
 }
 
 export type SongSource = 'catalog' | 'community';

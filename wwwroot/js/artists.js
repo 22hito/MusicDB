@@ -124,9 +124,18 @@ function _artistAlbums(){
     map.get(s.album).push(s);
   }
   return [...map.entries()].map(([name, songs]) => {
-    songs.sort((x,y) => (x.release||'').localeCompare(y.release||'') || x.title.localeCompare(y.title));
-    return { name, songs, year: (songs[0].release || '').slice(0, 4), cover: _songThumb(songs.find(s => s.youtubeVideoId)) };
+    songs.sort(_albumTrackOrder);
+    return { name, songs, year: _albumYear(songs), cover: songs.find(s => s.albumCover)?.albumCover || _songThumb(songs.find(s => s.youtubeVideoId)) };
   }).sort((x,y) => y.year.localeCompare(x.year));
+}
+// Порядок як в оригіналі (номер треку); без номера — за датою, потім за назвою.
+function _albumTrackOrder(x, y){
+  return (x.trackNumber ?? 1e4) - (y.trackNumber ?? 1e4) || (x.release||'').localeCompare(y.release||'') || x.title.localeCompare(y.title);
+}
+// Рік альбому — його власна дата; інакше найраніша пісня (сингл міг вийти раніше за альбом).
+function _albumYear(songs){
+  const d = songs.find(s => s.albumRelease)?.albumRelease || songs.map(s => s.release || '').filter(Boolean).sort()[0] || '';
+  return d.slice(0, 4);
 }
 function _renderArtistAlbums(){
   const albums = _artistAlbums();

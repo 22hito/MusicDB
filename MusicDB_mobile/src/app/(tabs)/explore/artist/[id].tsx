@@ -22,14 +22,13 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { usePlayer } from '@/player/PlayerContext';
 import { Badge, Button, EmptyState, ErrorState, SectionTitle } from '@/components/UI';
 import { SongListBlock } from '@/components/SongListBlock';
-import { AlbumModal, type AlbumView } from '@/components/AlbumModal';
+import { AlbumModal, albumTrackOrder, albumYear, type AlbumView } from '@/components/AlbumModal';
 import { ArtistAvatar, useAbsoluteUrl } from '@/components/ArtistAvatar';
 import { DiscIcon, NoteIcon, PlayIcon } from '@/components/Icons';
 import { FONT_MONO_MEDIUM, FONT_MONO_REGULAR, FONT_SANS_SEMIBOLD, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
 import type { ArtistDetail, PickedAudio, SimilarArtist, Song } from '@/api/types';
 
-const thumb = (s?: Song) => (s?.youtubeVideoId ? `https://img.youtube.com/vi/${s.youtubeVideoId}/mqdefault.jpg` : null);
-const shortDuration = (d: string) => {
+const thumb = (s?: Song) => (s?.youtubeVideoId ? `https://img.youtube.com/vi/${s.youtubeVideoId}/mqdefault.jpg` : null);const shortDuration = (d: string) => {
   const m = /^(\d+):(\d+):(\d+)/.exec(d || '');
   if (!m) return d || '';
   return +m[1] ? `${+m[1]}:${m[2]}:${m[3]}` : `${+m[2]}:${m[3]}`;
@@ -107,8 +106,8 @@ export default function ArtistScreen() {
     for (const s of songs) if (s.album) map.set(s.album, [...(map.get(s.album) || []), s]);
     return [...map.entries()]
       .map(([name, list]) => {
-        const sorted = list.slice().sort((x, y) => (x.release || '').localeCompare(y.release || '') || x.title.localeCompare(y.title));
-        return { name, songs: sorted, year: (sorted[0].release || '').slice(0, 4), cover: thumb(sorted.find((s) => s.youtubeVideoId)) };
+        const sorted = list.slice().sort(albumTrackOrder);
+        return { name, songs: sorted, year: albumYear(sorted), cover: sorted.find((s) => s.albumCover)?.albumCover || thumb(sorted.find((s) => s.youtubeVideoId)) };
       })
       .sort((x, y) => y.year.localeCompare(x.year));
   }, [songs]);

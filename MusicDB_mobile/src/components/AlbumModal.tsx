@@ -15,6 +15,13 @@ export interface AlbumView {
   cover: string | null;
 }
 
+// Порядок як в оригіналі (номер треку); без номера — за датою, потім за назвою.
+export const albumTrackOrder = (x: Song, y: Song) =>
+  (x.trackNumber ?? 1e4) - (y.trackNumber ?? 1e4) || (x.release || '').localeCompare(y.release || '') || x.title.localeCompare(y.title);
+// Рік альбому — його власна дата; інакше найраніша пісня (сингл міг вийти раніше за альбом).
+export const albumYear = (list: Song[]) =>
+  (list.find((s) => s.albumRelease)?.albumRelease || list.map((s) => s.release || '').filter(Boolean).sort()[0] || '').slice(0, 4);
+
 const durSeconds = (d: string) => {
   const p = (d || '').split(':').map(Number);
   return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : 0;
