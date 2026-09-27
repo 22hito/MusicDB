@@ -21,8 +21,8 @@ app/
     request.tsx           Форма заявки (з файлом для ком'юніті)
 api/        ApiBridge.tsx (запити й SignalR через прихований WebView), endpoints.ts, types.ts
 components/ UI-кіт, BrandHeader (пошук, дзвіночок, аватар), SongRow, SongListBlock, MarqueeText, SelectField,
-            DateField, GenrePickerModal, ForceGraph (граф на SVG), SongGraphModal, ArtistAvatar,
-            модалки (сповіщення, оцінки, текст, баг-репорт…)
+            DateField, GenrePickerModal, ForceGraph (граф на SVG), SongGraphModal, ArtistAvatar, TopPodium,
+            модалки (черга, альбом, сповіщення, оцінки, текст, баг-репорт…)
 player/     PlayerContext.tsx, MiniPlayerBar.tsx
 state/      SettingsContext (тема, акцент, мова), FavoritesContext
 constants/  theme.ts, i18n.ts

@@ -41,7 +41,7 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
 | Favorites | `/api/favorites` | Улюблені пісні |
 | Friends | `/api/friends` | Друзі, запити (надіслати/прийняти/відхилити/скасувати), розірвання дружби |
 | Genres | `/api/genres` | Жанри; ШІ-об'єднання дублікатів (адмін) |
-| History | `/api/history` | Логування прослуховування (унікальність + rate limit) |
+| History | `/api/history` | Логування прослуховування (унікальність + rate limit; повторне — лише оновлює час), `GET` — нещодавно прослухані |
 | Messages | `/api/messages` | Розмови, непрочитані, запити на листування, діалог, надсилання, «видалити чат у себе» |
 | Notifications | `/api/notifications` | Події підписок на виконавців |
 | Playlists | `/api/playlists` | Плейлисти, публічні плейлисти, пісні в плейлисті |
