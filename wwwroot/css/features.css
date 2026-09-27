@@ -494,6 +494,38 @@
 .modal-btn-confirm.neutral { background: var(--accent); color: var(--on-accent); }
 .modal-btn-confirm.neutral:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }
 
+/* Головна таблиця на ПК — фіксована розкладка: ширини колонок не залежать від вмісту, тож не стрибають,
+   коли домальовуються нові порції рядків (у тисяч нових пісень ще нема жанрів), і таблиця не вилазить
+   за контейнер. Текст — частки ширини, числа — сталі; довге обрізається трикрапкою (повністю — у підказці
+   й у розгорнутому рядку). На телефоні таблиця — картки, це правило їх не чіпає. */
+@media (min-width: 769px) {
+  #songs-table { table-layout: fixed; }
+  #songs-table th.col-play { width: 52px; }
+  #songs-table th.col-num { width: 68px; }
+  #songs-table th.col-artist { width: 17%; }
+  #songs-table th.col-title { width: 23%; }
+  #songs-table th.col-release { width: 150px; }
+  #songs-table th.col-duration { width: 150px; }
+  #songs-table th.col-genres { width: 19%; }
+  #songs-table th.col-album { width: 17%; }
+  #songs-table th.col-plays { width: 104px; }
+  #songs-table th.col-rating { width: 104px; }
+  #songs-table th.col-submitter { width: 12%; }
+  #songs-table th.col-fav, #songs-table th.col-action { width: 104px; }
+  #songs-table thead th { overflow: hidden; text-overflow: ellipsis; }
+  #songs-table tbody td { overflow: hidden; }
+  #songs-table td.td-artist, #songs-table td.td-title, #songs-table td.td-genres, #songs-table td.td-submitter {
+    white-space: nowrap; text-overflow: ellipsis;
+  }
+  #songs-table td.td-album { white-space: nowrap; }
+  #songs-table td.td-album .badge.album { max-width: calc(100% - 4px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+  /* Жанри в один рядок: скільки влазить, решта ховається під м'яким згасанням до краю
+     (маска — на обгортці, а не на комірці, щоб не зрізати лінію-розділювач рядка) */
+  #songs-table td.td-genres .genre-line { display: block; overflow: hidden; white-space: nowrap;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+}
+@media (max-width: 768px) { #songs-table td.td-genres .genre-line { display: contents; } } /* картки — як раніше */
+
 /* Маркер "домалювати ще" в кінці таблиці пісень (порції по 200 рядків) */
 tr.rows-sentinel, tr.rows-sentinel > td { height: 1px !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
 

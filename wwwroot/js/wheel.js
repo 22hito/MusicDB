@@ -532,10 +532,10 @@ function renderSongs(){
       </td>
       <td class="num-col" data-label="${t('table.number')}">${i+1}</td>
       <td class="td-artist" data-label="${t('table.artist')}"><strong>${artistLinksHtml(s)}</strong></td>
-      <td class="td-title" data-label="${t('table.title')}">${esc(s.title)}</td>
+      <td class="td-title" data-label="${t('table.title')}" title="${esc(s.title)}">${esc(s.title)}</td>
       <td class="duration-col td-release" data-label="${t('table.release')}">${fmtDate(s.release)}</td>
       <td class="duration-col td-duration" data-label="${t('table.duration')}">${s.duration}</td>
-      <td class="td-genres" data-label="${t('table.genres')}">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</td>
+      <td class="td-genres" data-label="${t('table.genres')}"${s.genres.length>2?` title="${esc(s.genres.join(', '))}"`:''}><span class="genre-line">${s.genres.map(g=>`<button type="button" class="badge badge-filter${g===gf?' active':''}" data-v="${esc(g)}" onclick="filterByGenre(this.dataset.v)" title="${esc(t('filter.byGenre'))}">${esc(abbrGenre(g))}</button>`).join('')}</span></td>
       <td class="td-album" data-label="${t('table.album')}">${s.album?`<button type="button" class="badge album badge-filter${s.album===albumFilter?' active':''}" data-v="${esc(s.album)}" onclick="filterByAlbum(this.dataset.v)" title="${esc(t('filter.byAlbum'))}">${esc(s.album)}</button>`:`<span style="color:var(--muted)">${t('table.single')}</span>`}</td>
       <td class="duration-col td-plays" data-label="${t('table.plays')}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount ?? 0}</td>
       <td class="duration-col td-rating" data-label="${t('table.rating')}">${ratingChipHtml(s)}</td>

@@ -229,12 +229,12 @@
     <!-- Активні фільтри чипами: клік по жанру/альбому в таблиці додає, ✕ — знімає. -->
     <div class="active-filters" id="active-filters" hidden></div>
     <div class="table-wrap scroll-table mobile-cards">
-      <table>
+      <table id="songs-table">
         <thead>
           <tr>
-            <th style="width:40px"></th>
-            <th data-i18n="table.number">№</th><th class="sortable" data-sort-key="artist" onclick="sortSongs('artist')" data-i18n="table.artist">Виконавець</th><th class="sortable" data-sort-key="title" onclick="sortSongs('title')" data-i18n="table.title">Назва</th>
-            <th class="sortable" data-sort-key="release" onclick="sortSongs('release')" data-i18n="table.release">Дата релізу</th><th class="sortable" data-sort-key="duration" onclick="sortSongs('duration')" data-i18n="table.duration">Тривалість</th><th class="sortable" data-sort-key="genres" onclick="sortSongs('genres')" data-i18n="table.genres">Жанри</th><th class="sortable" style="width:280px" data-sort-key="album" onclick="sortSongs('album')" data-i18n="table.album">Альбом</th><th class="sortable duration-col" style="width:110px" data-sort-key="plays" onclick="sortSongs('plays')" data-i18n="table.plays">Прослух.</th><th class="sortable duration-col" style="width:100px" data-sort-key="rating" onclick="sortSongs('rating')" data-i18n="table.rating">Оцінка</th><th id="th-submitter" class="sortable" style="display:none" data-sort-key="submitter" onclick="sortSongs('submitter')" data-i18n="table.submittedBy">Додав</th><th id="th-fav" style="display:none;width:110px"></th><th id="th-action" data-i18n="table.action">Дія</th>
+            <th class="col-play"></th>
+            <th class="col-num" data-i18n="table.number">№</th><th class="sortable col-artist" data-sort-key="artist" onclick="sortSongs('artist')" data-i18n="table.artist">Виконавець</th><th class="sortable col-title" data-sort-key="title" onclick="sortSongs('title')" data-i18n="table.title">Назва</th>
+            <th class="sortable col-release" data-sort-key="release" onclick="sortSongs('release')" data-i18n="table.release">Дата релізу</th><th class="sortable col-duration" data-sort-key="duration" onclick="sortSongs('duration')" data-i18n="table.duration">Тривалість</th><th class="sortable col-genres" data-sort-key="genres" onclick="sortSongs('genres')" data-i18n="table.genres">Жанри</th><th class="sortable col-album" data-sort-key="album" onclick="sortSongs('album')" data-i18n="table.album">Альбом</th><th class="sortable duration-col col-plays" data-sort-key="plays" onclick="sortSongs('plays')" data-i18n="table.plays">Прослух.</th><th class="sortable duration-col col-rating" data-sort-key="rating" onclick="sortSongs('rating')" data-i18n="table.rating">Оцінка</th><th id="th-submitter" class="sortable col-submitter" style="display:none" data-sort-key="submitter" onclick="sortSongs('submitter')" data-i18n="table.submittedBy">Додав</th><th id="th-fav" class="col-fav" style="display:none"></th><th id="th-action" class="col-action" data-i18n="table.action">Дія</th>
           </tr>
         </thead>
         <tbody id="songs-body"></tbody>
