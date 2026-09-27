@@ -131,12 +131,13 @@ function _artistAlbums(){
 function _renderArtistAlbums(){
   const albums = _artistAlbums();
   document.getElementById('artist-albums-section').style.display = albums.length ? '' : 'none';
+  // Картка відкриває альбом (список пісень), кнопка ▶ на обкладинці — одразу грає.
   document.getElementById('artist-albums').innerHTML = albums.map((al, i) => `
-    <button type="button" class="artist-album" onclick="playArtistAlbum(${i})">
-      <span class="artist-album-cover">${al.cover ? `<img src="${al.cover}" alt="" loading="lazy">` : '<svg class="icon"><use href="#icon-disc"/></svg>'}<span class="artist-album-play"><svg class="icon icon-filled"><use href="#icon-play"/></svg></span></span>
+    <div class="artist-album" role="button" tabindex="0" onclick="openArtistAlbum(${i})" onkeydown="if(event.key==='Enter')openArtistAlbum(${i})" title="${esc(t('album.open'))}">
+      <span class="artist-album-cover">${al.cover ? `<img src="${al.cover}" alt="" loading="lazy">` : '<svg class="icon"><use href="#icon-disc"/></svg>'}<button type="button" class="artist-album-play" onclick="event.stopPropagation();playArtistAlbum(${i})" title="${esc(t('artist.playAll'))}" aria-label="${esc(t('artist.playAll'))}"><svg class="icon icon-filled"><use href="#icon-play"/></svg></button></span>
       <strong title="${esc(al.name)}">${esc(al.name)}</strong>
       <span>${al.year && al.year !== '0001' ? al.year + ' · ' : ''}${al.songs.length} ${esc(t('artists.songsWord'))}</span>
-    </button>`).join('');
+    </div>`).join('');
 }
 function _renderArtistDiscography(){
   document.getElementById('artist-songs-body').innerHTML = currentArtistSongs.map(s=>`
@@ -178,6 +179,52 @@ function _playArtistQueue(queue, id){
 function playFromArtist(id){ _playArtistQueue(currentArtistSongs, id); }
 function playArtistSong(id, from){ _playArtistQueue(from === 'popular' ? _artistPopularSongs() : currentArtistSongs, id); }
 function playArtistAlbum(i){ const al = _artistAlbums()[i]; if(al) _playArtistQueue(al.songs, al.songs[0].id); }
+// ─── Альбом: обкладинка, рік, пісні — подивитись, а не лише ввімкнути ─────
+let _openAlbumIdx = null;
+function _durSeconds(d){
+  const p = String(d || '').split(':').map(Number);
+  return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p.length === 2 ? p[0]*60 + p[1] : 0;
+}
+function openArtistAlbum(i){
+  const al = _artistAlbums()[i];
+  if(!al) return;
+  _openAlbumIdx = i;
+  const total = al.songs.reduce((sum, s) => sum + _durSeconds(s.duration), 0);
+  const plays = al.songs.reduce((sum, s) => sum + (s.playCount || 0), 0);
+  const cover = document.getElementById('album-cover');
+  cover.innerHTML = al.cover ? `<img src="${al.cover}" alt="">` : '<svg class="icon"><use href="#icon-disc"/></svg>';
+  document.getElementById('album-bg').style.backgroundImage = al.cover ? `url("${al.cover}")` : '';
+  document.getElementById('album-title').textContent = al.name;
+  document.getElementById('album-artist').textContent = currentArtist?.name || '';
+  document.getElementById('album-meta').textContent = [
+    al.year && al.year !== '0001' ? al.year : null,
+    `${al.songs.length} ${t('artists.songsWord')}`,
+    total ? t('album.minutes').replace('{n}', Math.max(1, Math.round(total / 60))) : null,
+    plays ? `${plays} ${t('artist.listenersWord')}` : null,
+  ].filter(Boolean).join(' · ');
+  const curId = playerQueue[playerIndex]?.id;
+  document.getElementById('album-tracks').innerHTML = al.songs.map((s, k) => `
+    <div class="album-track${s.id === curId ? ' playing' : ''}" onclick="playAlbumTrack(${k})">
+      <span class="album-track-n"><span>${k + 1}</span><svg class="icon icon-filled"><use href="#icon-play"/></svg></span>
+      <span class="album-track-main"><strong>${esc(s.title)}</strong><span>${esc(s.artist)}</span></span>
+      <span class="album-track-plays" title="${esc(t('table.plays'))}"><svg class="icon"><use href="#icon-eye"/></svg> ${s.playCount || 0}</span>
+      <span class="album-track-dur">${esc(_shortDuration(s.duration))}</span>
+      <button type="button" class="q-btn" onclick="event.stopPropagation();addToQueue(${s.id})" title="${esc(t('queue.add'))}"><svg class="icon"><use href="#icon-plus"/></svg></button>
+    </div>`).join('');
+  document.getElementById('album-modal-overlay').classList.add('open');
+}
+function closeAlbumModal(){ _closeModalAnimated('album-modal-overlay'); }
+function _openAlbum(){ return _openAlbumIdx == null ? null : _artistAlbums()[_openAlbumIdx]; }
+function playAlbumTrack(k){ const al = _openAlbum(); if(al){ _playArtistQueue(al.songs, al.songs[k].id); openArtistAlbum(_openAlbumIdx); } }
+function playOpenAlbum(shuffleIt){
+  const al = _openAlbum();
+  if(!al) return;
+  const list = shuffleIt ? _shuffledCopy(al.songs) : al.songs;
+  _playArtistQueue(list, list[0].id);
+  openArtistAlbum(_openAlbumIdx);
+}
+function queueOpenAlbum(){ const al = _openAlbum(); if(al) addManyToQueue(al.songs.map(s => s.id)); }
+
 function playArtistAll(shuffle){
   const list = shuffle ? _shuffledCopy(currentArtistSongs) : currentArtistSongs;
   if(list.length) _playArtistQueue(list, list[0].id);

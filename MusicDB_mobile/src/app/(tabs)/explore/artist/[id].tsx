@@ -22,6 +22,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { usePlayer } from '@/player/PlayerContext';
 import { Badge, Button, EmptyState, ErrorState, SectionTitle } from '@/components/UI';
 import { SongListBlock } from '@/components/SongListBlock';
+import { AlbumModal, type AlbumView } from '@/components/AlbumModal';
 import { ArtistAvatar, useAbsoluteUrl } from '@/components/ArtistAvatar';
 import { DiscIcon, NoteIcon, PlayIcon } from '@/components/Icons';
 import { FONT_MONO_MEDIUM, FONT_MONO_REGULAR, FONT_SANS_SEMIBOLD, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
@@ -121,6 +122,7 @@ export default function ArtistScreen() {
   const cover = absUrl(artist?.imageUrl) || thumb(songs.find((s) => s.youtubeVideoId));
 
   const play = (list: Song[], id?: number) => list.length && player.playFrom(list, id ?? list[0].id);
+  const [openAlbum, setOpenAlbum] = useState<AlbumView | null>(null);
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
@@ -204,12 +206,13 @@ export default function ArtistScreen() {
               <SectionTitle label={t('artist.albums')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 4 }}>
                 {albums.map((al) => (
-                  <TouchableOpacity key={al.name} onPress={() => play(al.songs)} style={{ width: 128 }}>
+                  // Картка відкриває альбом (список пісень), ▶ на обкладинці — одразу грає (як на сайті).
+                  <TouchableOpacity key={al.name} onPress={() => setOpenAlbum(al)} style={{ width: 128 }}>
                     <View style={[styles.albumCover, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
                       {al.cover ? <Image source={{ uri: al.cover }} style={StyleSheet.absoluteFill} /> : <DiscIcon size={30} color={theme.muted} />}
-                      <View style={[styles.albumPlay, { backgroundColor: theme.accent }]}>
+                      <TouchableOpacity onPress={() => play(al.songs)} hitSlop={8} style={[styles.albumPlay, { backgroundColor: theme.accent }]}>
                         <PlayIcon size={12} color={theme.onAccent} />
-                      </View>
+                      </TouchableOpacity>
                     </View>
                     <Text numberOfLines={1} style={{ color: theme.text, fontFamily: FONT_SANS_SEMIBOLD, fontSize: 13, marginTop: 6 }}>{al.name}</Text>
                     <Text style={{ color: theme.muted, fontSize: 11 }}>
@@ -252,6 +255,7 @@ export default function ArtistScreen() {
           {songs.length ? <SongListBlock songs={songs} /> : <EmptyState icon="🎵" label={t('table.empty')} />}
         </ScrollView>
       )}
+      <AlbumModal album={openAlbum} artistName={artist?.name ?? ''} onClose={() => setOpenAlbum(null)} />
       {artist ? (
         <ArtistEditModal
           visible={editOpen}
