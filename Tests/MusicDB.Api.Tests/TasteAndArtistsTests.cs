@@ -92,10 +92,34 @@ public class TasteAndArtistsTests
     }
 
     [Fact]
+    public async Task Recommendations_WithoutAi_ByGenresAndArtists_NotListened()
+    {
+        using var db = Seed();
+        // Нова пісня AC/DC без жанрів — має потрапити в підбір завдяки виконавцю.
+        db.Songs.Add(new Music { Id = 7, Artist = "AC/DC", Title = "New", Duration = TimeSpan.FromMinutes(3) });
+        db.MusicArtists.Add(new MusicArtist { MusicId = 7, ArtistId = 1 });
+        db.ListeningHistory.Add(new ListeningHistory { UserEmail = "me@x.com", MusicId = 1, ListenedAt = DateTime.UtcNow });
+        db.SaveChanges();
+        var service = new RecommendationService(db, new MusicService(db, null!), new HttpClient(),
+            new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+
+        var recs = await service.GetRecommendationsAsync("me@x.com");
+        var ids = recs.Select(r => r.Song.Id).ToList();
+
+        Assert.DoesNotContain(1, ids);             // уже слухав
+        Assert.Contains(2, ids);                   // той самий виконавець і жанри
+        Assert.Contains(7, ids);                   // той самий виконавець, жанрів ще нема
+        Assert.Contains(3, ids);                   // Muse — спільний жанр rock
+        Assert.DoesNotContain(5, ids);             // реп — нічого спільного
+        Assert.Equal(2, ids[0]);                   // найсильніший збіг — першим
+    }
+
+    [Fact]
     public async Task SimilarArtists_ByGenreOverlap()
     {
         using var db = Seed();
-        var controller = new ArtistsController(db, null!, null!, null!);
+        var controller = new ArtistsController(db, null!, null!, null!,
+            new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())));
 
         var result = Assert.IsType<OkObjectResult>((await controller.GetSimilar(1)).Result);
         var similar = Assert.IsAssignableFrom<List<SimilarArtistDto>>(result.Value);

@@ -11,7 +11,8 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ArtistsController(MusicDbContext db, MusicService musicService, UserDirectoryService userDirectory, IAudioStorage storage) : ControllerBase
+public class ArtistsController(MusicDbContext db, MusicService musicService, UserDirectoryService userDirectory, IAudioStorage storage,
+    CatalogCache catalogCache) : ControllerBase
 {
     private string CurrentEmail => User.FindFirstValue(ClaimTypes.Email) ?? "";
     private bool IsAuthenticated => User.Identity?.IsAuthenticated ?? false;
@@ -123,14 +124,19 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
     [HttpGet("{id:int}/similar")]
     public async Task<ActionResult<List<SimilarArtistDto>>> GetSimilar(int id)
     {
-        var rows = await (
-            from ma in db.MusicArtists
-            join mg in db.MusicGenres on ma.MusicId equals mg.MusicId
-            select new { ma.ArtistId, Genre = mg.Genre.GenreName }
-        ).ToListAsync();
-        var genresByArtist = rows
-            .GroupBy(r => r.ArtistId)
-            .ToDictionary(g => g.Key, g => g.Select(r => GenreNames.Key(r.Genre)).ToHashSet());
+        // Жанри всіх виконавців — десятки тисяч зв'язків на великому каталозі; збираємо раз на 10 хв
+        // (зміни каталогу скидають кеш), а не на кожне відкриття сторінки виконавця.
+        var genresByArtist = await catalogCache.GetOrCreateAsync("artist-genres", async () =>
+        {
+            var rows = await (
+                from ma in db.MusicArtists
+                join mg in db.MusicGenres on ma.MusicId equals mg.MusicId
+                select new { ma.ArtistId, Genre = mg.Genre.GenreName }
+            ).ToListAsync();
+            return rows
+                .GroupBy(r => r.ArtistId)
+                .ToDictionary(g => g.Key, g => g.Select(r => GenreNames.Key(r.Genre)).ToHashSet());
+        }, TimeSpan.FromMinutes(10));
         if (!genresByArtist.TryGetValue(id, out var mine) || mine.Count == 0) return Ok(new List<SimilarArtistDto>());
 
         var scored = genresByArtist

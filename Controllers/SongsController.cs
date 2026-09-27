@@ -21,15 +21,17 @@ public class SongsController(
     // зокрема мобільний, і далі бачать лише каталог), "community" (таблиця_2), "all"
     // або "background" — пісні з файлом з обох таблиць (вкладка "У фоні").
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<SongDto>>> GetAll([FromQuery] string source = SongSources.Catalog)
+    public async Task<IActionResult> GetAll([FromQuery] string source = SongSources.Catalog)
     {
         if (source != "all" && source != SongSources.Background && !SongSources.IsValid(source)) return BadRequest("Unknown source.");
 
         // Кеш: список — 6 послідовних запитів до БД, і після кожної зміни каталогу
-        // його разом перезапитують усі відкриті вкладки (див. CatalogCache).
-        return Ok(await catalogCache.GetOrCreateAsync($"songs:{source}", async () =>
+        // його разом перезапитують усі відкриті вкладки (див. CatalogCache). Каталог — десятки
+        // тисяч пісень, тож кешуємо вже стиснуту компактну відповідь з ETag (PackedJson).
+        // Лічильники прослуховувань без мутації каталогу оновлюються раз на 2 хв.
+        var packed = await catalogCache.GetOrCreateAsync($"songs:{source}", async () =>
         {
-            var query = db.Songs.Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
+            var query = db.Songs.AsNoTracking().Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
             if (source == SongSources.Background) query = query.Where(m => m.AudioFile != null);
             else if (source != "all") query = query.Where(m => m.Source == source);
 
@@ -38,8 +40,27 @@ public class SongsController(
                 .OrderBy(m => m.Artist.ToLower()).ThenBy(m => m.Title.ToLower())
                 .ToListAsync();
 
-            return await musicService.BuildSongDtosAsync(songs);
-        }));
+            var dtos = await musicService.BuildSongDtosAsync(songs);
+            return PackedJson.Create(dtos.Select(CompactForList).ToList());
+        }, TimeSpan.FromMinutes(2));
+        return packed.ToResult(HttpContext);
+    }
+
+    // У великому списку: без даних альбому (їх бере сторінка виконавця/альбому окремим запитом)
+    // і без імен виконавців, коли вони й так є в полі Artist у тому самому порядку.
+    private static SongDto CompactForList(SongDto s)
+    {
+        var names = s.Artist.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var sameNames = s.Artists is { Length: > 0 } a && a.Length == names.Length &&
+                        a.Select(x => x.Name).SequenceEqual(names, StringComparer.Ordinal);
+        return s with
+        {
+            Source = s.Source == SongSources.Catalog ? null! : s.Source, // за замовчуванням — клієнт доповнить
+            AlbumRelease = null,
+            AlbumCover = null,
+            Artists = sameNames ? null : s.Artists,
+            ArtistIds = sameNames ? s.Artists!.Select(x => x.Id).ToArray() : null,
+        };
     }
 
     [HttpGet("{id}")]

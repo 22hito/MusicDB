@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -76,6 +76,8 @@ export default function LibraryScreen() {
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  // Фільтр іде по всьому каталогу (тисячі пісень) — не на кожну літеру синхронно з набором.
+  const deferredSearch = useDeferredValue(search);
   const [genreFilter, setGenreFilter] = useState('');
   // Жанр із профілю (?genre=) — бібліотека одразу відфільтрована за ним.
   const params = useLocalSearchParams<{ genre?: string }>();
@@ -102,7 +104,7 @@ export default function LibraryScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [songsRes, statsRes] = await Promise.all([api.getSongs(source), api.getStats(source).catch(() => null)]);
+      const [songsRes, statsRes] = await Promise.all([api.getSongs(source, true), api.getStats(source).catch(() => null)]);
       setSongs(songsRes);
       if (statsRes) setStats(statsRes);
       setLoadError(false);
@@ -158,7 +160,7 @@ export default function LibraryScreen() {
   }, [shuffleActive, shuffleSeed]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
+    const q = deferredSearch.toLowerCase();
     let list = songs.filter((s) => {
       const mt =
         !q ||
@@ -188,7 +190,7 @@ export default function LibraryScreen() {
       list = [...list].sort(albumTrackOrder); // фільтр за альбомом — як в оригіналі
     }
     return list;
-  }, [songs, search, genreFilter, albumFilter, shuffleOrder, sortKey, sortDir]);
+  }, [songs, deferredSearch, genreFilter, albumFilter, shuffleOrder, sortKey, sortDir]);
 
   const toggleShuffle = () => {
     setSortKey('default');
@@ -292,6 +294,11 @@ export default function LibraryScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => String(item.id)}
+        // Каталог — тисячі рядків: менше вікно рендеру й відсікання невидимих — менше пам'яті й ривків.
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={9}
+        removeClippedSubviews
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
         contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 110 }}
         ListHeaderComponent={

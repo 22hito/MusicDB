@@ -27,32 +27,86 @@ public class RecommendationService(MusicDbContext db, MusicService musicService,
 
         var listenedIdSet = historyMusicIds.Distinct().ToHashSet();
 
-        var allSongs = await db.Songs
-            .Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
-            .ToListAsync();
+        // Каталог — десятки тисяч пісень: у ШІ-запит і в підбір ідуть лише кандидати зі спільними
+        // жанрами чи виконавцями з історії (а не весь каталог текстом у кожному запиті).
+        var candidates = await GetCandidatesAsync(historyMusicIds, listenedIdSet);
+        if (candidates.Count == 0) return [];
 
         var apiKey = config["Gemini:ApiKey"];
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
-            var aiResult = await TryGetAiRecommendationsAsync(apiKey, historyMusicIds, allSongs, listenedIdSet, lang);
+            var aiResult = await TryGetAiRecommendationsAsync(apiKey, historyMusicIds, candidates, listenedIdSet, lang);
             if (aiResult is { Count: > 0 }) return aiResult;
         }
 
-        return await GetFallbackRecommendationsAsync(historyMusicIds, allSongs, listenedIdSet);
+        return await ToDtosAsync(candidates.Take(MaxRecommendations).Select(c => (c.Id, (string?)null)));
+    }
+
+    private const int CandidatePool = 120;
+
+    private sealed record Candidate(int Id, string Artist, string Title, string[] Genres, double Score);
+
+    // Бали: жанри з історії (скільки разів слухав) + виконавці з історії (сильніший сигнал —
+    // працює й для пісень, яким жанри ще не проставлені).
+    private async Task<List<Candidate>> GetCandidatesAsync(List<int> historyMusicIds, HashSet<int> listenedIdSet)
+    {
+        var historyGenres = await db.MusicGenres.AsNoTracking()
+            .Where(mg => listenedIdSet.Contains(mg.MusicId))
+            .Select(mg => new { mg.MusicId, mg.GenreId })
+            .ToListAsync();
+        var historyArtists = await db.MusicArtists.AsNoTracking()
+            .Where(ma => listenedIdSet.Contains(ma.MusicId))
+            .Select(ma => new { ma.MusicId, ma.ArtistId })
+            .ToListAsync();
+        var plays = historyMusicIds.GroupBy(id => id).ToDictionary(g => g.Key, g => g.Count());
+        var genreWeight = historyGenres.GroupBy(x => x.GenreId)
+            .ToDictionary(g => g.Key, g => (double)g.Sum(x => plays.GetValueOrDefault(x.MusicId, 1)));
+        var artistWeight = historyArtists.GroupBy(x => x.ArtistId)
+            .ToDictionary(g => g.Key, g => 2.0 * g.Sum(x => plays.GetValueOrDefault(x.MusicId, 1)));
+
+        var genreIds = genreWeight.Keys.ToList();
+        var artistIds = artistWeight.Keys.ToList();
+        var score = new Dictionary<int, double>();
+        foreach (var row in await db.MusicGenres.AsNoTracking().Where(mg => genreIds.Contains(mg.GenreId))
+                     .Select(mg => new { mg.MusicId, mg.GenreId }).ToListAsync())
+            if (!listenedIdSet.Contains(row.MusicId))
+                score[row.MusicId] = score.GetValueOrDefault(row.MusicId) + genreWeight[row.GenreId];
+        foreach (var row in await db.MusicArtists.AsNoTracking().Where(ma => artistIds.Contains(ma.ArtistId))
+                     .Select(ma => new { ma.MusicId, ma.ArtistId }).ToListAsync())
+            if (!listenedIdSet.Contains(row.MusicId))
+                score[row.MusicId] = score.GetValueOrDefault(row.MusicId) + artistWeight[row.ArtistId];
+
+        var top = score.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key).Take(CandidatePool).ToList();
+        var ids = top.Select(kv => kv.Key).ToList();
+        var info = await db.Songs.AsNoTracking().Where(m => ids.Contains(m.Id))
+            .Select(m => new { m.Id, m.Artist, m.Title, Genres = m.MusicGenres.Select(mg => mg.Genre.GenreName).ToArray() })
+            .ToDictionaryAsync(m => m.Id);
+        return top.Where(kv => info.ContainsKey(kv.Key))
+            .Select(kv => { var m = info[kv.Key]; return new Candidate(m.Id, m.Artist, m.Title, m.Genres, kv.Value); })
+            .ToList();
+    }
+
+    private async Task<List<RecommendationDto>> ToDtosAsync(IEnumerable<(int Id, string? Reason)> items)
+    {
+        var list = items.ToList();
+        var dtoById = (await musicService.GetSongDtosByIdsAsync(list.Select(i => i.Id))).ToDictionary(s => s.Id);
+        return list.Where(i => dtoById.ContainsKey(i.Id)).Select(i => new RecommendationDto(dtoById[i.Id], i.Reason)).ToList();
     }
 
     private async Task<List<RecommendationDto>?> TryGetAiRecommendationsAsync(
-        string apiKey, List<int> historyMusicIds, List<Music> allSongs, HashSet<int> listenedIdSet, string lang)
+        string apiKey, List<int> historyMusicIds, List<Candidate> candidates, HashSet<int> listenedIdSet, string lang)
     {
         var modelName = config["Gemini:Model"] ?? "gemini-3.6-flash";
         try
         {
-            var historySongs = allSongs.Where(s => historyMusicIds.Contains(s.Id)).ToList();
+            var historySongs = await db.Songs.AsNoTracking().Where(s => listenedIdSet.Contains(s.Id))
+                .Select(s => new { s.Artist, s.Title, Genres = s.MusicGenres.Select(mg => mg.Genre.GenreName).ToArray() })
+                .ToListAsync();
             var historyText = string.Join("; ", historySongs.Select(s =>
-                $"{s.Artist} - {s.Title} [{string.Join(", ", s.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()))}]"));
+                $"{s.Artist} - {s.Title} [{string.Join(", ", s.Genres.Select(g => g.Trim()))}]"));
 
-            var catalogText = string.Join("; ", allSongs.Select(s =>
-                $"id={s.Id}: {s.Artist} - {s.Title} [{string.Join(", ", s.MusicGenres.Select(mg => mg.Genre.GenreName.Trim()))}]"));
+            var catalogText = string.Join("; ", candidates.Select(s =>
+                $"id={s.Id}: {s.Artist} - {s.Title} [{string.Join(", ", s.Genres.Select(g => g.Trim()))}]"));
 
             // Пояснення мовою поточного інтерфейсу (укр/англ), а не завжди українською.
             var languageName = lang == "en" ? "англійською (English)" : "українською";
@@ -61,7 +115,7 @@ public class RecommendationService(MusicDbContext db, MusicService musicService,
                 Ти — асистент музичних рекомендацій.
                 Історія прослуховувань користувача: {{historyText}}
 
-                Повний каталог доступних пісень (формат id=число: виконавець - назва [жанри]):
+                Кандидати з каталогу (формат id=число: виконавець - назва [жанри]):
                 {{catalogText}}
 
                 Обери до {{MaxRecommendations}} пісень З КАТАЛОГУ (тільки ті id, що дійсно
@@ -95,63 +149,19 @@ public class RecommendationService(MusicDbContext db, MusicService musicService,
             var parsed = JsonSerializer.Deserialize<RecommendationsResult>(text);
             if (parsed?.Recommendations is null) return null;
 
+            var candidateIds = candidates.Select(c => c.Id).ToHashSet();
             var validItems = parsed.Recommendations
-                .Where(item => item.MusicId is not null && !listenedIdSet.Contains(item.MusicId.Value)
-                               && allSongs.Any(s => s.Id == item.MusicId.Value))
+                .Where(item => item.MusicId is int id && !listenedIdSet.Contains(id) && candidateIds.Contains(id))
+                .DistinctBy(item => item.MusicId)
                 .Take(MaxRecommendations)
-                .ToList();
-
-            var songDtos = await musicService.GetSongDtosByIdsAsync(validItems.Select(i => i.MusicId!.Value));
-            var dtoById = songDtos.ToDictionary(s => s.Id);
-
-            var recs = new List<RecommendationDto>();
-            foreach (var item in validItems)
-            {
-                if (dtoById.TryGetValue(item.MusicId!.Value, out var songDto))
-                    recs.Add(new RecommendationDto(songDto, item.Reason));
-            }
-            return recs;
+                .Select(item => (item.MusicId!.Value, item.Reason));
+            return await ToDtosAsync(validItems);
         }
         catch
         {
             // ШІ недоступний / ліміт — повертаємо null, щоб спрацював фолбек.
             return null;
         }
-    }
-
-    // Простий алгоритм без ШІ: рекомендує пісні з жанрами, які користувач
-    // слухає найчастіше, серед тих, що він ще не слухав.
-    private async Task<List<RecommendationDto>> GetFallbackRecommendationsAsync(
-        List<int> historyMusicIds, List<Music> allSongs, HashSet<int> listenedIdSet)
-    {
-        var favoriteGenreCounts = allSongs
-            .Where(s => historyMusicIds.Contains(s.Id))
-            .SelectMany(s => s.MusicGenres.Select(mg => mg.Genre.GenreName.Trim().ToLowerInvariant()))
-            .GroupBy(g => g)
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        var candidates = allSongs
-            .Where(s => !listenedIdSet.Contains(s.Id))
-            .Select(s => new
-            {
-                Song = s,
-                Score = s.MusicGenres.Sum(mg => favoriteGenreCounts.GetValueOrDefault(mg.Genre.GenreName.Trim().ToLowerInvariant(), 0))
-            })
-            .Where(x => x.Score > 0)
-            .OrderByDescending(x => x.Score)
-            .Take(MaxRecommendations)
-            .ToList();
-
-        var songDtos = await musicService.GetSongDtosByIdsAsync(candidates.Select(x => x.Song.Id));
-        var dtoById = songDtos.ToDictionary(s => s.Id);
-
-        var result = new List<RecommendationDto>();
-        foreach (var c in candidates)
-        {
-            if (dtoById.TryGetValue(c.Song.Id, out var songDto))
-                result.Add(new RecommendationDto(songDto, null));
-        }
-        return result;
     }
 
     private class GeminiResponse

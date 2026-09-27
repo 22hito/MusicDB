@@ -44,6 +44,33 @@ import type {
   TasteGraph,
 } from './types';
 
+// Каталог — десятки тисяч пісень. Сервер віддає компактний список: без null/0/"catalog" і з
+// artistIds замість artists, коли імена збігаються з полем artist, — доповнюємо до звичної пісні.
+type CompactSong = Song & { artistIds?: number[] };
+function expandSong(s: CompactSong): Song {
+  if (!s.artists && s.artistIds) {
+    const names = s.artist.split(',').map((n) => n.trim()).filter(Boolean);
+    s.artists = s.artistIds.map((id, i) => ({ id, name: names[i] ?? '' }));
+  }
+  s.artists ??= [];
+  s.genres ??= [];
+  s.album ??= null;
+  s.source ??= 'catalog';
+  s.playCount ??= 0;
+  s.ratingCount ??= 0;
+  s.avgRating ??= null;
+  s.youtubeVideoId ??= null;
+  s.audioUrl ??= null;
+  s.submittedBy ??= null;
+  s.trackNumber ??= null;
+  return s;
+}
+
+// Один каталог на весь застосунок: головна, батл, колесо, черга й пошук раніше тягнули кожен свою
+// копію (мегабайти кожна). Головна завжди бере свіже (сервер відповідає 304, якщо нічого не змінилось),
+// решта — те, що вже завантажено.
+const songsCache = new Map<'catalog' | 'community', Promise<Song[]>>();
+
 // Тонкі типізовані обгортки над ApiBridge.request(), що дзеркалять
 // ендпоінти MusicDB.Api.Controllers.* один в один.
 // multipart/form-data для ком'юніті-пісні (файл до 25 МБ). Іде нативним
@@ -107,7 +134,26 @@ export function useMusicApi() {
       return {
       // Songs — source: "catalog" (таблиця_1, за замовчуванням) | "community" (таблиця_2)
       // 'background' — вкладка "У фоні": пісні з файлом з обох таблиць.
-      getSongs: (source: SongSource | 'all' | 'background' = 'catalog') => request<Song[]>('/api/songs', { query: { source } }),
+      // fresh — перезавантажити (головна, pull-to-refresh, songsChanged); інакше — спільний кеш.
+      getSongs: (source: SongSource | 'all' | 'background' = 'catalog', fresh = false): Promise<Song[]> => {
+        const load = (src: 'catalog' | 'community') => {
+          let p = fresh ? undefined : songsCache.get(src);
+          if (!p) {
+            p = request<CompactSong[]>('/api/songs', { query: { source: src } }).then((list) => list.map(expandSong));
+            p.catch(() => songsCache.delete(src));
+            songsCache.set(src, p);
+          }
+          return p;
+        };
+        if (source === 'catalog' || source === 'community') return load(source);
+        return Promise.all([load('catalog'), load('community')]).then(([a, b]) => {
+          const all = [...a, ...b];
+          if (source === 'all') return all;
+          return all
+            .filter((s) => s.audioUrl)
+            .sort((x, y) => x.artist.localeCompare(y.artist, undefined, { sensitivity: 'base' }) || x.title.localeCompare(y.title, undefined, { sensitivity: 'base' }));
+        });
+      },
       getSong: (id: number) => request<Song>(`/api/songs/${id}`),
       createSong: (dto: CreateSongInput) => request<Song>('/api/songs', { method: 'POST', body: dto }),
       updateSong: (id: number, dto: UpdateSongInput) =>

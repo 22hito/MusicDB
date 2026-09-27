@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace MusicDB.Api.Models;
 
 // ─── Songs ────────────────────────────────────────────────────────────────────
@@ -20,7 +22,10 @@ public record SongDto(
     int      RatingCount = 0,
     int?     TrackNumber = null,      // номер у альбомі — порядок треків
     string?  AlbumRelease = null,     // "yyyy-MM-dd" — рік альбому, а не найранішого синглу з нього
-    string?  AlbumCover = null        // обкладинка альбому (URL)
+    string?  AlbumCover = null,       // обкладинка альбому (URL)
+    // Лише у великому списку каталогу: id виконавців замість Artists, коли імена й так
+    // збігаються з полем Artist ("A, B") — клієнт відновлює Artists сам.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int[]? ArtistIds = null
 );
 
 public record UserRefDto(int UserId, string DisplayName);

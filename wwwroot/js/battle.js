@@ -90,8 +90,8 @@ function _loadBattleGenres(){
     select.disabled = none;
     document.getElementById('battle-genre-start').disabled = none;
   };
-  if(battleAllSongs) fill(battleAllSongs);
-  fetch('/api/songs?source=all').then(r=>r.ok?r.json():null).then(list=>{ if(list) fill(list); }).catch(()=>{});
+  // Обидві таблиці вже завантажені (loadSongs) — окремий запит усього каталогу був би ще кілька МБ.
+  fill([...songs, ...communitySongs]);
 }
 function startGenreBattle(){
   const genre = document.getElementById('battle-genre-select').value;

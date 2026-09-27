@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
 
@@ -13,16 +14,26 @@ public class CatalogCache(IMemoryCache cache)
     private static readonly TimeSpan Ttl = TimeSpan.FromSeconds(30);
     private CancellationTokenSource _reset = new();
     private readonly object _lock = new();
+    // Один збір на ключ: після songsChanged усі вкладки питають одночасно — збирає перший, решта чекають його.
+    private readonly ConcurrentDictionary<string, Task<object?>> _building = new();
 
-    public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory)
+    public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, TimeSpan? ttl = null)
     {
         if (cache.TryGetValue(key, out T? cached) && cached is not null) return cached;
 
-        var value = await factory();
+        var build = _building.GetOrAdd(key, _ => BuildAsync(key, factory, ttl));
+        try { return (T)(await build)!; }
+        finally { _building.TryRemove(new KeyValuePair<string, Task<object?>>(key, build)); }
+    }
+
+    private async Task<object?> BuildAsync<T>(string key, Func<Task<T>> factory, TimeSpan? ttl)
+    {
+        // Токен — ДО збору: якщо каталог змінився під час збору, застарілий результат не проживе й секунди.
         CancellationToken token;
         lock (_lock) token = _reset.Token;
+        var value = await factory();
         cache.Set(key, value, new MemoryCacheEntryOptions()
-            .SetAbsoluteExpiration(Ttl)
+            .SetAbsoluteExpiration(ttl ?? Ttl)
             .AddExpirationToken(new CancellationChangeToken(token)));
         return value;
     }

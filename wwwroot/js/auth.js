@@ -258,8 +258,28 @@ function login() { window.location.href = '/auth/login'; }
 async function loadSongs() {
   const [res, communityRes] = await Promise.all([fetch('/api/songs'), fetch('/api/songs?source=community')]);
   if (!res.ok) throw new Error('songs fetch failed');
-  songs = await res.json();
-  if (communityRes.ok) communitySongs = await communityRes.json();
+  songs = (await res.json()).map(_expandListSong);
+  if (communityRes.ok) communitySongs = (await communityRes.json()).map(_expandListSong);
+}
+// Список каталогу приходить компактним (сервер не шле null/0/"catalog" і дає artistIds замість
+// artists, коли імена збігаються з полем artist) — доповнюємо, щоб решта коду бачила звичну пісню.
+function _expandListSong(s){
+  if(!s.artists && s.artistIds){
+    const names = s.artist.split(',').map(n => n.trim()).filter(Boolean);
+    s.artists = s.artistIds.map((id, i) => ({ id, name: names[i] }));
+  }
+  s.artists ??= [];
+  s.genres ??= [];
+  s.album ??= null;
+  s.source ??= 'catalog';
+  s.playCount ??= 0;
+  s.ratingCount ??= 0;
+  s.avgRating ??= null;
+  s.youtubeVideoId ??= null;
+  s.audioUrl ??= null;
+  s.submittedBy ??= null;
+  s.trackNumber ??= null;
+  return s;
 }
 
 async function logout() {
