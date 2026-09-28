@@ -4,15 +4,18 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Pressable,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
@@ -24,7 +27,7 @@ import { EditIcon, TrashIcon } from '@/components/Icons';
 import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import { DateField } from '@/components/DateField';
 import { AudioPreview } from '@/components/AudioPreview';
-import type { BugReport, BugStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
+import type { BugReport, BugStatus, Correction, CorrectionStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
 
@@ -41,9 +44,9 @@ function requestToForm(r: SongRequest): SongFormValues {
   };
 }
 
-// Адмін-панель — як на сайті: заголовок і вкладки-кнопки Запити · Додати пісню · Баг-репорти
+// Адмін-панель — як на сайті: заголовок і вкладки-кнопки Запити · Додати пісню · Баг-репорти · Правки
 // (сповіщення адміна — у дзвіночку шапки, разом з іншими сповіщеннями).
-type AdminMode = 'requests' | 'add' | 'bugs';
+type AdminMode = 'requests' | 'add' | 'bugs' | 'corrections';
 export default function AdminScreen() {
   const { theme, t } = useSettings();
   const api = useMusicApi();
@@ -53,21 +56,28 @@ export default function AdminScreen() {
   const refreshBugs = useCallback(() => {
     api.getOpenBugCount().then(setOpenBugs).catch(() => {});
   }, [api]);
+  const [openCorrections, setOpenCorrections] = useState(0);
+  const refreshCorrections = useCallback(() => {
+    api.getOpenCorrectionsCount().then(setOpenCorrections).catch(() => {});
+  }, [api]);
   useEffect(() => {
     refreshBugs();
-  }, [refreshBugs]);
+    refreshCorrections();
+  }, [refreshBugs, refreshCorrections]);
   useEffect(
     () =>
       subscribeRealtime((event) => {
         if (event === 'bugReportsChanged') refreshBugs();
+        if (event === 'correctionsChanged') refreshCorrections();
       }),
-    [subscribeRealtime, refreshBugs],
+    [subscribeRealtime, refreshBugs, refreshCorrections],
   );
 
   const tabs: { key: AdminMode; label: string; badge?: number }[] = [
     { key: 'requests', label: t('adminHub.requestsTab') },
     { key: 'add', label: t('adminHub.addTab') },
     { key: 'bugs', label: t('adminHub.bugsTab'), badge: openBugs },
+    { key: 'corrections', label: t('adminHub.correctionsTab'), badge: openCorrections },
   ];
 
   return (
@@ -98,7 +108,15 @@ export default function AdminScreen() {
         </View>
       </View>
 
-      {mode === 'requests' ? <RequestsPanel /> : mode === 'add' ? <AddSongPanel /> : <BugsPanel onChanged={refreshBugs} />}
+      {mode === 'requests' ? (
+        <RequestsPanel />
+      ) : mode === 'add' ? (
+        <AddSongPanel />
+      ) : mode === 'bugs' ? (
+        <BugsPanel onChanged={refreshBugs} />
+      ) : (
+        <CorrectionsPanel onChanged={refreshCorrections} />
+      )}
     </SafeAreaView>
   );
 }
@@ -548,8 +566,172 @@ function BugsPanel({ onChanged }: { onChanged?: () => void }) {
   );
 }
 
+// Запити на правку від користувачів: перевірити (джерело, наданий файл), виправити дані, відповісти автору.
+function CorrectionsPanel({ onChanged }: { onChanged?: () => void }) {
+  const { theme, t } = useSettings();
+  const { subscribeRealtime } = useApiBridge();
+  const api = useMusicApi();
+  const [filter, setFilter] = useState<CorrectionStatus | 'all'>('open');
+  const [items, setItems] = useState<Correction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [notes, setNotes] = useState<Record<number, string>>({});
+
+  const load = useCallback(() => {
+    api
+      .getCorrections(filter)
+      .then((r) => {
+        setItems(r);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
+  }, [api, filter]);
+  useEffect(() => {
+    setLoading(true);
+    load();
+  }, [load]);
+  useEffect(() => subscribeRealtime((event) => event === 'correctionsChanged' && load()), [subscribeRealtime, load]);
+
+  const act = async (id: number, fn: () => Promise<void>) => {
+    setBusyId(id);
+    try {
+      await fn();
+      load();
+      onChanged?.();
+    } catch {
+      Alert.alert(t('error.loadFailed'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+  const resolve = (id: number, status: CorrectionStatus) => act(id, () => api.resolveCorrection(id, status, notes[id]?.trim() || null));
+  const applyAudio = (id: number) =>
+    Alert.alert(t('corr.applyAudio'), t('corr.applyAudioConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('corr.applyAudio'), onPress: () => act(id, () => api.applyCorrectionAudio(id)) },
+    ]);
+  const remove = (id: number) =>
+    Alert.alert(t('corr.deleteTitle'), t('corr.deleteConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('bugs.deleteBtn'), style: 'destructive', onPress: () => act(id, () => api.deleteCorrection(id)) },
+    ]);
+  const statusColor = (s: CorrectionStatus) => (s === 'done' ? theme.green : s === 'rejected' ? theme.muted : theme.accent);
+
+  return (
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <View style={{ marginBottom: SPACING.md }}>
+        <SegmentedPicker<CorrectionStatus | 'all'>
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: 'open', label: t('corr.filter.open') },
+            { value: 'done', label: t('corr.filter.done') },
+            { value: 'rejected', label: t('corr.filter.rejected') },
+            { value: 'all', label: t('corr.filter.all') },
+          ]}
+        />
+      </View>
+      {loading ? (
+        <ActivityIndicator color={theme.accent} style={{ marginTop: 30 }} />
+      ) : loadError ? (
+        <ErrorState label={t('error.loadFailed')} onRetry={load} />
+      ) : items.length === 0 ? (
+        <EmptyState icon="✅" label={t('corr.emptyAdmin')} />
+      ) : (
+        items.map((c) => (
+          <View key={c.id} style={[styles.reqCard, { backgroundColor: theme.surface, borderColor: c.status === 'open' ? theme.accent : theme.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <Text style={{ color: theme.text, fontWeight: '700' }}>{c.requester?.displayName ?? t('adminNotif.someone')}</Text>
+              <Text style={{ color: theme.muted, fontSize: 11 }}>{c.createdAt}</Text>
+              <Text style={{ color: statusColor(c.status), fontSize: 11, marginLeft: 'auto' }}>{t(`corr.status.${c.status}` as never)}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <Badge label={t(`corr.field.${c.field}` as never)} />
+              {c.artistId ? (
+                <Text
+                  style={{ color: theme.accent, fontWeight: '700', flexShrink: 1 }}
+                  onPress={() => router.push({ pathname: '/explore/artist/[id]', params: { id: String(c.artistId), name: c.targetLabel } })}
+                >
+                  {c.targetLabel}
+                </Text>
+              ) : (
+                <Text style={{ color: theme.text, fontWeight: '700', flexShrink: 1 }}>{c.targetLabel}</Text>
+              )}
+            </View>
+            {c.message ? <Text style={{ color: theme.text, fontSize: 14, lineHeight: 20, marginTop: 8 }}>{c.message}</Text> : null}
+            {c.sourceUrl ? (
+              <Text style={{ color: theme.accent, fontSize: 12, marginTop: 6 }} onPress={() => Linking.openURL(c.sourceUrl!)}>
+                {t('artist.source')}: {c.sourceUrl}
+              </Text>
+            ) : null}
+            {c.hasAudio ? (
+              <View style={{ marginTop: 10 }}>
+                <AudioPreview getUrl={() => api.getCorrectionAudioLink(c.id)} />
+                {c.musicId && c.status === 'open' ? (
+                  <Button small label={t('corr.applyAudio')} loading={busyId === c.id} onPress={() => applyAudio(c.id)} style={{ marginTop: 8 }} />
+                ) : null}
+              </View>
+            ) : null}
+            {c.adminNote ? (
+              <Text style={{ color: theme.text2, fontSize: 12.5, marginTop: 8 }}>
+                <Text style={{ fontWeight: '700' }}>{t('corr.adminReply')}: </Text>
+                {c.adminNote}
+              </Text>
+            ) : null}
+            {c.status === 'open' ? (
+              <>
+                <TextInput
+                  value={notes[c.id] ?? ''}
+                  onChangeText={(v) => setNotes((prev) => ({ ...prev, [c.id]: v }))}
+                  maxLength={1000}
+                  placeholder={t('corr.notePlaceholder')}
+                  placeholderTextColor={theme.muted}
+                  style={[styles.noteInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface2 }]}
+                />
+                <View style={styles.reqActions}>
+                  <Button small variant="success" label={t('corr.doneBtn')} loading={busyId === c.id} onPress={() => resolve(c.id, 'done')} />
+                  <Button small variant="outline" label={t('corr.rejectBtn')} disabled={busyId === c.id} onPress={() => resolve(c.id, 'rejected')} />
+                  <TouchableOpacity
+                    onPress={() => remove(c.id)}
+                    disabled={busyId === c.id}
+                    accessibilityLabel={t('bugs.deleteBtn')}
+                    style={[styles.bugDelete, { borderColor: theme.border }]}
+                  >
+                    <TrashIcon size={16} color={theme.red} />
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <View style={styles.reqActions}>
+                {c.resolvedBy ? (
+                  <Text style={{ color: theme.muted, fontSize: 11, flex: 1 }}>
+                    {t('bugs.resolvedBy')}: {c.resolvedBy.displayName}
+                  </Text>
+                ) : null}
+                <Button small variant="outline" label={t('bugs.reopenBtn')} loading={busyId === c.id} onPress={() => resolve(c.id, 'open')} />
+                <TouchableOpacity
+                  onPress={() => remove(c.id)}
+                  disabled={busyId === c.id}
+                  accessibilityLabel={t('bugs.deleteBtn')}
+                  style={[styles.bugDelete, { borderColor: theme.border }]}
+                >
+                  <TrashIcon size={16} color={theme.red} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ))
+      )}
+    </ScrollView>
+  );
+}
+
+
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  noteInput: { borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13.5, marginTop: 10 },
   hubHead: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg },
   hubTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   hubTab: {

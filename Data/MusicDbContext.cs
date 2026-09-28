@@ -301,6 +301,31 @@ public class BugReport
     [Column("screenshots")] public string[] Screenshots { get; set; } = [];
 }
 
+// Запит на правку від користувача: щось у пісні чи сторінці виконавця неправильне, неточне чи неповне
+// (жанр, альбом, дата, відео, опис…) або користувач надає файл пісні. Адміни розглядають в адмін-панелі;
+// автор бачить стан і відповідь адміна у своїх запитах.
+[Table("correction_requests", Schema = "lab")]
+public class CorrectionRequest
+{
+    [Key, Column("id")] public int Id { get; set; }
+    [Column("user_id")] public int? UserId { get; set; }
+    [Column("music_id")] public int? MusicId { get; set; }
+    [Column("artist_id")] public int? ArtistId { get; set; }
+    // Що саме не так — див. CorrectionFields.
+    [Required, Column("field")] public string Field { get; set; } = "";
+    [Required, Column("message")] public string Message { get; set; } = "";
+    // Звідки користувач це знає — адміну легше перевірити й лишити в каталозі лише достовірне.
+    [Column("source_url")] public string? SourceUrl { get; set; }
+    // Знімок «Виконавець — Назва» на момент запиту: пісню можуть перейменувати чи видалити.
+    [Required, Column("target_label")] public string TargetLabel { get; set; } = "";
+    [Column("audio_file")] public string? AudioFile { get; set; }
+    [Required, Column("status")] public string Status { get; set; } = "open"; // open | done | rejected
+    [Column("admin_note")] public string? AdminNote { get; set; }
+    [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [Column("resolved_at")] public DateTime? ResolvedAt { get; set; }
+    [Column("resolved_by")] public int? ResolvedBy { get; set; }
+}
+
 [Table("discussion_threads", Schema = "lab")]
 public class DiscussionThread
 {
@@ -355,6 +380,7 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
     public DbSet<MusicArtist> MusicArtists { get; set; }
     public DbSet<ArtistFollow> ArtistFollows { get; set; }
     public DbSet<ArtistEvent> ArtistEvents { get; set; }
+    public DbSet<CorrectionRequest> CorrectionRequests { get; set; }
     public DbSet<FriendRequest> FriendRequests { get; set; }
     public DbSet<AdminEvent> AdminEvents { get; set; }
     public DbSet<AdminNotificationRead> AdminNotificationReads { get; set; }

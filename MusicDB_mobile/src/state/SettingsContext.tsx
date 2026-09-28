@@ -26,6 +26,8 @@ interface SettingsState {
   lang: Lang;
   setLang: (lang: Lang) => void;
   t: (key: keyof typeof I18N['uk'], vars?: Record<string, string | number>) => string;
+  // Число з правильною формою слова: «1 пісня», «23 пісні», «25 пісень» (ключі count.*: «одна|кілька|багато»).
+  count: (key: keyof typeof I18N['uk'], n: number) => string;
 }
 
 const SettingsContext = createContext<SettingsState | null>(null);
@@ -87,6 +89,23 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     [lang],
   );
 
+  const count = useCallback(
+    (key: keyof typeof I18N['uk'], n: number) => {
+      const forms = t(key).split('|');
+      const a = Math.abs(n);
+      let i: number;
+      if (lang === 'uk') {
+        const d = a % 10;
+        const h = a % 100;
+        i = d === 1 && h !== 11 ? 0 : d >= 2 && d <= 4 && (h < 12 || h > 14) ? 1 : 2;
+      } else {
+        i = a === 1 ? 0 : 1;
+      }
+      return `${n} ${forms[Math.min(i, forms.length - 1)]}`;
+    },
+    [t, lang],
+  );
+
   const value = useMemo<SettingsState>(
     () => ({
       ready,
@@ -99,6 +118,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       lang,
       setLang,
       t,
+      count,
     }),
     [
       ready,
@@ -111,6 +131,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       lang,
       setLang,
       t,
+      count,
     ],
   );
 

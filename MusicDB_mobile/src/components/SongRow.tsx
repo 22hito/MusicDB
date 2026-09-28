@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSettings } from '@/state/SettingsContext';
 import { Badge } from './UI';
 import { MarqueeText } from './MarqueeText';
-import { EditIcon, EyeIcon, HeartIcon, PauseIcon, PersonIcon, PlayIcon, PlusIcon, StarIcon, TrashIcon } from './Icons';
+import { EditIcon, EyeIcon, FlagIcon, HeartIcon, PauseIcon, PersonIcon, PlayIcon, PlusIcon, StarIcon, TrashIcon } from './Icons';
 import { FONT_SANS_BOLD, FONT_SANS_MEDIUM, FONT_SANS_REGULAR, FONT_SANS_SEMIBOLD, RADIUS } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
@@ -47,6 +47,7 @@ export function SongRow({
   onEdit,
   onDelete,
   onRate,
+  onSuggest,
   onGenrePress,
   onAlbumPress,
   onSubmitterPress,
@@ -70,6 +71,7 @@ export function SongRow({
   onEdit?: () => void;
   onDelete?: () => void;
   onRate?: () => void; // відкрити оцінку/рецензії
+  onSuggest?: () => void; // «Запропонувати правку» (прапорець; адміни редагують самі)
   // Швидка фільтрація, як на сайті: натиснув жанр/альбом — список лише з ним.
   onGenrePress?: (genre: string) => void;
   onAlbumPress?: (album: string) => void;
@@ -207,6 +209,11 @@ export function SongRow({
               )}
             </View>
           </View>
+          {onSuggest && authenticated && !isAdmin && !top ? (
+            <TouchableOpacity onPress={onSuggest} hitSlop={6} style={styles.actionIcon} accessibilityLabel={t('corr.suggest')}>
+              <FlagIcon size={15} color={theme.muted} />
+            </TouchableOpacity>
+          ) : null}
           {wantEdit ? (
             <TouchableOpacity onPress={onEdit} hitSlop={6} style={styles.actionIcon}>
               <EditIcon size={16} color={theme.accent} />

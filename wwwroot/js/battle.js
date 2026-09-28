@@ -114,7 +114,7 @@ function openBattlePage(){
       ownList.innerHTML = list.map(p=>`
         <div class="battle-pl-card" onclick="startBattleFromPlaylist(${p.id})">
           <div class="battle-pl-icon"><svg class="icon"><use href="#icon-headphones"/></svg></div>
-          <div class="battle-pl-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+          <div class="battle-pl-main"><strong>${esc(p.name)}</strong><span>${countLabel('count.songs', p.songCount)}</span></div>
           ${p.isPublic?`<span class="badge">${t('battle.publicBadge')}</span>`:''}
           <svg class="icon battle-pl-arrow"><use href="#icon-arrow-right"/></svg>
         </div>`).join('');
@@ -129,7 +129,7 @@ function openBattlePage(){
     document.getElementById('battle-page-public-list').innerHTML = list.map(p=>`
       <div class="battle-pl-card battle-pl-card-community" onclick="startBattleFromPlaylist(${p.id})">
         <div class="battle-pl-icon"><svg class="icon"><use href="#icon-globe"/></svg></div>
-        <div class="battle-pl-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')} — ${esc(p.ownerLabel)}</span></div>
+        <div class="battle-pl-main"><strong>${esc(p.name)}</strong><span>${countLabel('count.songs', p.songCount)} — ${esc(p.ownerLabel)}</span></div>
         <svg class="icon battle-pl-arrow"><use href="#icon-arrow-right"/></svg>
       </div>`).join('');
   }).catch(()=>{});

@@ -40,7 +40,7 @@ async function runNavSearch(q){
   const artistsHtml = artists.slice(0, 5).map(a=>`
     <button type="button" class="nav-search-item" onclick="_hideNavSearch();openArtistPage(${a.id})">
       <svg class="icon"><use href="#icon-mic"/></svg>
-      <span class="nsi-main"><strong>${esc(a.name)}</strong><span>${a.songCount} ${t('profile.songsWord')}</span></span>
+      <span class="nsi-main"><strong>${esc(a.name)}</strong><span>${countLabel('count.songs', a.songCount)}</span></span>
     </button>`).join('');
   const usersHtml = users.map(u=>`
     <button type="button" class="nav-search-item" onclick="_hideNavSearch();openUserProfilePage(${u.userId})">

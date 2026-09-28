@@ -6,8 +6,12 @@ import type {
   NotificationsSummary,
   HistoryItem,
   ArtistDetail,
+  ArtistSort,
   ArtistSummary,
   BugReport,
+  Correction,
+  CorrectionStatus,
+  CorrectionTarget,
   BugStatus,
   FriendRequest,
   PublicPlaylist,
@@ -298,7 +302,8 @@ export function useMusicApi() {
       searchUsers: (q: string, limit = 8) => request<UserSearchResult[]>('/api/users/search', { query: { q, limit } }),
 
       // Виконавці: каталог, сторінка, підписка
-      getArtists: (q?: string) => request<ArtistSummary[]>('/api/artists', { query: { q: q || undefined } }),
+      getArtists: (q?: string, sort: ArtistSort = 'songs') =>
+        request<ArtistSummary[]>('/api/artists', { query: { q: q || undefined, sort } }),
       getArtist: (id: number) => request<ArtistDetail>(`/api/artists/${id}`),
       getSimilarArtists: (id: number) => request<SimilarArtist[]>(`/api/artists/${id}/similar`),
       // Адмін: опис і фото виконавця (фото — multipart нативним fetch, як файли пісень).
@@ -349,6 +354,29 @@ export function useMusicApi() {
       deleteBugReport: (id: number) => request<void>(`/api/bug-reports/${id}`, { method: 'DELETE' }),
       setBugStatus: (id: number, status: BugStatus) =>
         request<void>(`/api/bug-reports/${id}`, { method: 'PATCH', body: { status } }),
+
+      // Запити на правку: надіслати (multipart нативним fetch — може нести файл пісні), мої, адмінка
+      sendCorrection: (target: CorrectionTarget, field: string, message: string, sourceUrl: string, audio: PickedAudio | null) => {
+        const fd = new FormData();
+        if ('musicId' in target) fd.append('musicId', String(target.musicId));
+        else fd.append('artistId', String(target.artistId));
+        fd.append('field', field);
+        fd.append('message', message);
+        if (sourceUrl) fd.append('sourceUrl', sourceUrl);
+        if (audio) fd.append('audio', filePart(audio));
+        return upload<{ id: number }>('/api/corrections', fd);
+      },
+      getMyCorrections: () => request<Correction[]>('/api/corrections/mine'),
+      getCorrections: (status: CorrectionStatus | 'all' = 'open') => request<Correction[]>('/api/corrections', { query: { status } }),
+      getOpenCorrectionsCount: () => request<number>('/api/corrections/open-count'),
+      resolveCorrection: (id: number, status: CorrectionStatus, note: string | null) =>
+        request<void>(`/api/corrections/${id}`, { method: 'PATCH', body: { status, note } }),
+      applyCorrectionAudio: (id: number) => request<void>(`/api/corrections/${id}/apply-audio`, { method: 'POST' }),
+      deleteCorrection: (id: number) => request<void>(`/api/corrections/${id}`, { method: 'DELETE' }),
+      getCorrectionAudioLink: async (id: number) => {
+        const { url } = await request<{ url: string }>(`/api/corrections/${id}/audio/link`);
+        return url.startsWith('/') ? `${apiBase}${url}` : url;
+      },
     };
     },
     [request, apiBase],

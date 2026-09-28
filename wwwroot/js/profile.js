@@ -180,7 +180,7 @@ function loadProfilePlaylists(){
     document.getElementById('profile-playlists-empty').style.display = list.length ? 'none' : '';
     document.getElementById('profile-playlists-list').innerHTML = list.map(p=>`
       <div class="ext-search-item" onclick="openPlaylist(${p.id})">
-        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+        <div class="es-main"><strong>${esc(p.name)}</strong><span>${countLabel('count.songs', p.songCount)}</span></div>
         <div style="display:flex;align-items:center;gap:8px;" onclick="event.stopPropagation()">
           <button type="button" class="btn btn-outline${p.isPublic?' active':''}" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="togglePlaylistPublic(${p.id}, ${p.isPublic ? 'false' : 'true'})" title="${t('battle.togglePublicHint')}">${p.isPublic ? `<svg class="icon"><use href="#icon-globe"/></svg> ${esc(t('battle.publicBadge'))}` : `<svg class="icon"><use href="#icon-lock"/></svg> ${esc(t('battle.privateBadge'))}`}</button>
           <button class="btn-icon-danger" onclick="deletePlaylist(${p.id})" title="${t('modal.confirmDelete')}">
@@ -257,7 +257,7 @@ function openAddToPlaylistModal(musicId){
     document.getElementById('add-to-playlist-empty').style.display = list.length ? 'none' : '';
     wrap.innerHTML = list.map(p=>`
       <div class="ext-search-item" onclick="addSongToExistingPlaylist(${p.id})">
-        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+        <div class="es-main"><strong>${esc(p.name)}</strong><span>${countLabel('count.songs', p.songCount)}</span></div>
       </div>`).join('');
     document.getElementById('add-to-playlist-modal-overlay').classList.add('open');
   }).catch(()=>{ alert(t('msg.connectionError')); });

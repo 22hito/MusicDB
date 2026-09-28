@@ -36,7 +36,7 @@ function shuffled<T>(arr: T[]): T[] {
 // YouTube-плеєри; на телефоні пісні слухаються по черзі через основний плеєр,
 // а відео тієї, що грає, показується в рамці над картками (док плеєра).
 export default function BattleScreen() {
-  const { theme, t } = useSettings();
+  const { theme, t, count } = useSettings();
   const { currentUser } = useApiBridge();
   const api = useMusicApi();
   const player = usePlayer();
@@ -373,7 +373,7 @@ export default function BattleScreen() {
               `o${p.id}`,
               p.id,
               p.name,
-              `${p.songCount} ${t('profile.songsWord')}`,
+              count('count.songs', p.songCount),
               <NoteIcon size={16} color={theme.accent} />,
               p.isPublic ? t('battle.publicBadge') : undefined,
             ),
@@ -385,7 +385,7 @@ export default function BattleScreen() {
           <EmptyState icon="🌐" label={t('battle.pagePublicEmpty')} />
         ) : (
           community.map((p) =>
-            playlistCard(`c${p.id}`, p.id, p.name, `${p.songCount} ${t('profile.songsWord')} — ${p.ownerLabel}`, <GlobeIcon size={16} color={theme.accent2} />),
+            playlistCard(`c${p.id}`, p.id, p.name, `${count('count.songs', p.songCount)} — ${p.ownerLabel}`, <GlobeIcon size={16} color={theme.accent2} />),
           )
         )}
       </ScrollView>

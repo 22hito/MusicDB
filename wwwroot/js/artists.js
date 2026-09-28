@@ -8,15 +8,48 @@ function onArtistsSearchInput(){
   clearTimeout(artistsSearchTimer);
   artistsSearchTimer = setTimeout(loadArtistsPage, 350);
 }
+// Каталог приходить увесь і вже відсортований сервером; малюємо порціями — виконавців тисячі.
+const ARTISTS_CHUNK = 60;
+const ARTIST_SORTS = ['songs', 'plays', 'followers', 'name', 'name_desc', 'new'];
+let _artistsAll = [], _artistsShown = 0, _artistsReq = 0;
+function _artistsSortValue(){
+  const sel = document.getElementById('artists-sort');
+  if(!sel.dataset.ready){ // вибір сортування пам'ятається між візитами (лише зручність — без нього типове)
+    try { const saved = localStorage.getItem('artistsSort'); if(ARTIST_SORTS.includes(saved)) sel.value = saved; } catch(e) {}
+    sel.dataset.ready = '1';
+  }
+  return sel.value;
+}
+function onArtistsSortChange(v){
+  try { localStorage.setItem('artistsSort', v); } catch(e) {}
+  loadArtistsPage();
+}
 function loadArtistsPage(){
   const q = document.getElementById('artists-search').value.trim();
-  fetch(`/api/artists${q ? '?q=' + encodeURIComponent(q) : ''}`).then(r=>r.ok?r.json():[]).then(list=>{
+  const sort = _artistsSortValue();
+  const req = ++_artistsReq;
+  fetch(`/api/artists?sort=${sort}${q ? '&q=' + encodeURIComponent(q) : ''}`).then(r=>r.ok?r.json():[]).then(list=>{
+    if(req !== _artistsReq) return; // уже прийшла новіша відповідь (інший пошук чи сортування)
+    _artistsAll = list; _artistsShown = 0;
+    document.getElementById('artists-list').innerHTML = '';
     document.getElementById('artists-empty').style.display = list.length ? 'none' : '';
-    document.getElementById('artists-list').innerHTML = list.map(a=>`
-      <div class="ext-search-item" onclick="openArtistPage(${a.id})">
-        ${_artistAvatarHtml(a.name, a.imageUrl, 'xs')}<div class="es-main"><strong>${esc(a.name)}</strong><span>${a.songCount} ${t('artists.songsWord')}</span></div>
-      </div>`).join('');
+    document.getElementById('artists-count').textContent = list.length ? t('artists.total').replace('{n}', list.length) : '';
+    showMoreArtists();
   }).catch(()=>{});
+}
+function _artistCardLine(a){
+  return [countLabel('count.songs', a.songCount),
+    a.playCount ? countLabel('count.plays', a.playCount) : null,
+    a.followerCount ? countLabel('count.followers', a.followerCount) : null].filter(Boolean).join(' · ');
+}
+function showMoreArtists(){
+  const next = _artistsAll.slice(_artistsShown, _artistsShown + ARTISTS_CHUNK);
+  _artistsShown += next.length;
+  document.getElementById('artists-list').insertAdjacentHTML('beforeend', next.map(a=>`
+    <div class="artist-tile" role="button" tabindex="0" onclick="openArtistPage(${a.id})" onkeydown="if(event.key==='Enter')openArtistPage(${a.id})">
+      ${_artistAvatarHtml(a.name, a.imageUrl, 'sm')}<div class="artist-tile-main"><strong title="${esc(a.name)}">${esc(a.name)}</strong><span>${esc(_artistCardLine(a))}</span></div>
+    </div>`).join(''));
+  document.getElementById('artists-more').style.display = _artistsShown < _artistsAll.length ? '' : 'none';
 }
 let currentArtistId = null;
 let currentArtistSongs = [];
@@ -72,10 +105,10 @@ function _renderArtistHero(){
   const plays = list.reduce((sum, s) => sum + (s.playCount || 0), 0);
   const years = list.map(s => (s.release || '').slice(0, 4)).filter(y => /^\d{4}$/.test(y) && y !== '0001').sort();
   const stats = [
-    `<b>${a.songCount}</b> ${esc(t('artists.songsWord'))}`,
-    albums ? `<b>${albums}</b> ${esc(t('artist.albumsWord'))}` : null,
-    `<b>${a.followerCount}</b> ${esc(t('artist.followers'))}`,
-    plays ? `<b>${plays}</b> ${esc(t('artist.listenersWord'))}` : null,
+    `<b>${a.songCount}</b> ${esc(plural('count.songs', a.songCount))}`,
+    albums ? `<b>${albums}</b> ${esc(plural('count.albums', albums))}` : null,
+    `<b>${a.followerCount}</b> ${esc(plural('count.followers', a.followerCount))}`,
+    plays ? `<b>${plays}</b> ${esc(plural('count.plays', plays))}` : null,
     years.length ? `${years[0]}${years.at(-1) !== years[0] ? '–' + years.at(-1) : ''}` : null,
   ].filter(Boolean);
   document.getElementById('artist-stats').innerHTML = stats.map(s => `<span>${s}</span>`).join('');
@@ -88,6 +121,7 @@ function _renderArtistHero(){
   btn.classList.toggle('active', !!a.isFollowing);
   btn.style.display = currentUser?.authenticated ? '' : 'none';
   document.getElementById('artist-edit-btn').style.display = currentUser?.isAdmin ? '' : 'none';
+  document.getElementById('artist-suggest-btn').style.display = currentUser?.authenticated && !currentUser?.isAdmin ? '' : 'none';
 }
 
 // Найпрослуханіші 5 (за унікальними слухачами, далі — за оцінкою).
@@ -145,7 +179,7 @@ function _renderArtistAlbums(){
     <div class="artist-album" role="button" tabindex="0" onclick="openArtistAlbum(${i})" onkeydown="if(event.key==='Enter')openArtistAlbum(${i})" title="${esc(t('album.open'))}">
       <span class="artist-album-cover">${al.cover ? `<img src="${al.cover}" alt="" loading="lazy">` : '<svg class="icon"><use href="#icon-disc"/></svg>'}<button type="button" class="artist-album-play" onclick="event.stopPropagation();playArtistAlbum(${i})" title="${esc(t('artist.playAll'))}" aria-label="${esc(t('artist.playAll'))}"><svg class="icon icon-filled"><use href="#icon-play"/></svg></button></span>
       <strong title="${esc(al.name)}">${esc(al.name)}</strong>
-      <span>${al.year && al.year !== '0001' ? al.year + ' · ' : ''}${al.songs.length} ${esc(t('artists.songsWord'))}</span>
+      <span>${al.year && al.year !== '0001' ? al.year + ' · ' : ''}${esc(countLabel('count.songs', al.songs.length))}</span>
     </div>`).join('');
 }
 function _renderArtistDiscography(){
@@ -163,7 +197,17 @@ function _renderArtistBio(){
   const bio = currentArtist.bio;
   const el = document.getElementById('artist-bio');
   el.classList.toggle('empty-bio', !bio);
-  el.textContent = bio || t(currentUser?.isAdmin ? 'artist.noBioAdmin' : 'artist.noBio');
+  if(bio) el.innerHTML = _bioHtml(bio);
+  else el.textContent = t(currentUser?.isAdmin ? 'artist.noBioAdmin' : 'artist.noBio');
+}
+// Опис з Вікіпедії: без службових позначок («[коли?]», «[1]»), рядок «Джерело: Вікіпедія — URL» — посиланням.
+function _bioHtml(bio){
+  const text = bio.replace(/\[(?:\d+|[^\]\n]{1,25}\?|citation needed|уточнити|джерело не вказано[^\]\n]*)\]/gi, '')
+    .replace(/[ \t]{2,}/g, ' ').trim();
+  const m = /\n?\s*(?:Джерело|Source):\s*(.+?)\s+[—–-]\s+(https?:\/\/\S+)\s*$/.exec(text);
+  if(!m) return esc(text);
+  return `${esc(text.slice(0, m.index).trim())}<span class="artist-bio-source">${esc(t('artist.source'))}: `
+    + `<a href="${esc(m[2])}" target="_blank" rel="noopener noreferrer">${esc(m[1])}</a></span>`;
 }
 function _loadSimilarArtists(id){
   const wrap = document.getElementById('artist-similar');
@@ -174,7 +218,7 @@ function _loadSimilarArtists(id){
     wrap.innerHTML = list.map(a => `
       <div class="artist-similar-item" onclick="openArtistPage(${a.id})">
         ${_artistAvatarHtml(a.name, a.imageUrl, 'xs')}
-        <span class="artist-similar-main"><strong>${esc(a.name)}</strong><span>${a.songCount} ${esc(t('artists.songsWord'))} · ${a.score}%</span></span>
+        <span class="artist-similar-main"><strong>${esc(a.name)}</strong><span>${esc(countLabel('count.songs', a.songCount))} · ${a.score}%</span></span>
       </div>`).join('');
   }).catch(()=>{ document.getElementById('artist-similar-section').style.display = 'none'; });
 }
@@ -203,13 +247,19 @@ function openArtistAlbum(i){
   const cover = document.getElementById('album-cover');
   cover.innerHTML = al.cover ? `<img src="${al.cover}" alt="">` : '<svg class="icon"><use href="#icon-disc"/></svg>';
   document.getElementById('album-bg').style.backgroundImage = al.cover ? `url("${al.cover}")` : '';
-  document.getElementById('album-title').textContent = al.name;
+  const title = document.getElementById('album-title');
+  title.textContent = al.name;
+  title.title = al.name;
+  // Довгі назви (бувають на сотні символів) — дрібніше, дуже довгі — у 3 рядки з розгортанням по кліку.
+  title.classList.toggle('long', al.name.length > 40 && al.name.length <= 90);
+  title.classList.toggle('xlong', al.name.length > 90);
+  title.classList.remove('expanded');
   document.getElementById('album-artist').textContent = currentArtist?.name || '';
   document.getElementById('album-meta').textContent = [
     al.year && al.year !== '0001' ? al.year : null,
-    `${al.songs.length} ${t('artists.songsWord')}`,
+    countLabel('count.songs', al.songs.length),
     total ? t('album.minutes').replace('{n}', Math.max(1, Math.round(total / 60))) : null,
-    plays ? `${plays} ${t('artist.listenersWord')}` : null,
+    plays ? countLabel('count.plays', plays) : null,
   ].filter(Boolean).join(' · ');
   const curId = playerQueue[playerIndex]?.id;
   document.getElementById('album-tracks').innerHTML = al.songs.map((s, k) => `

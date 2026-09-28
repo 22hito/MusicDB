@@ -39,7 +39,7 @@ function shuffled<T>(arr: T[]): T[] {
 // Альбом — як вікно альбому на сайті: обкладинка, рік, кількість пісень і тривалість,
 // "Слухати" / "Перемішати" / "У чергу", список пісень (натиснути — грати з цієї пісні).
 export function AlbumModal({ album, artistName, onClose }: { album: AlbumView | null; artistName: string; onClose: () => void }) {
-  const { theme, t } = useSettings();
+  const { theme, t, count } = useSettings();
   const player = usePlayer();
   const insets = useSafeAreaInsets();
   if (!album) return null;
@@ -47,9 +47,9 @@ export function AlbumModal({ album, artistName, onClose }: { album: AlbumView | 
   const plays = album.songs.reduce((sum, s) => sum + (s.playCount || 0), 0);
   const meta = [
     album.year && album.year !== '0001' ? album.year : null,
-    `${album.songs.length} ${t('profile.songsWord')}`,
+    count('count.songs', album.songs.length),
     total ? t('album.minutes').replace('{n}', String(Math.max(1, Math.round(total / 60)))) : null,
-    plays ? `${plays} ${t('artist.listenersWord')}` : null,
+    plays ? count('count.plays', plays) : null,
   ]
     .filter(Boolean)
     .join(' · ');

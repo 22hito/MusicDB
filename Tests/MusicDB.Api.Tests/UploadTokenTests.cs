@@ -55,6 +55,8 @@ public class UploadTokenTests
     [InlineData("POST", "/api/songs/community", true)]
     [InlineData("PUT", "/api/songs/42/audio", true)]
     [InlineData("POST", "/api/bug-reports/with-screenshots", true)]
+    [InlineData("POST", "/api/corrections", true)]
+    [InlineData("PATCH", "/api/corrections/3", false)]
     [InlineData("GET", "/api/requests/community", false)]
     [InlineData("POST", "/api/requests", false)]
     [InlineData("DELETE", "/api/songs/42", false)]

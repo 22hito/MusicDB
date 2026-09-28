@@ -18,9 +18,10 @@ import { SongGraphModal } from '@/components/SongGraphModal';
 import { albumTrackOrder } from '@/components/AlbumModal';
 import { AddToPlaylistModal } from '@/components/AddToPlaylistModal';
 import { SelectField } from '@/components/SelectField';
+import { CorrectionModal } from '@/components/CorrectionModal';
 import { DiscIcon, HeadphonesIcon, ShuffleIcon, SortIcon, UsersIcon } from '@/components/Icons';
 import { CONTROL_HEIGHT, FONT_SANS_REGULAR, RADIUS, SPACING } from '@/constants/theme';
-import type { Song, SongSource, Stats } from '@/api/types';
+import type { CorrectionTarget, Song, SongSource, Stats } from '@/api/types';
 
 // Вкладка "У фоні" — не окрема таблиця, а пісні з файлом з обох (грають у фоні й з вимкненим екраном).
 type LibrarySource = SongSource | 'background';
@@ -70,6 +71,7 @@ export default function LibraryScreen() {
   // Головна таблиця_1 (каталог) чи таблиця_2 (пісні від ком'юніті) — як перемикач на сайті.
   const [source, setSource] = useState<LibrarySource>('catalog');
   const [ratingSong, setRatingSong] = useState<Song | null>(null);
+  const [corrTarget, setCorrTarget] = useState<CorrectionTarget | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -422,6 +424,7 @@ export default function LibraryScreen() {
             onEdit={() => setEditSong(item)}
             onDelete={() => setDeleteTarget(item)}
             onRate={() => setRatingSong(item)}
+            onSuggest={() => setCorrTarget({ musicId: item.id, label: `${item.artist} — ${item.title}` })}
             onGenrePress={(g) => setGenreFilter((cur) => (cur === g ? '' : g))}
             onAlbumPress={(a) => setAlbumFilter((cur) => (cur === a ? '' : a))}
             onSubmitterPress={(id, name) => requireAuth(() => openUserProfile(id, name))}
@@ -468,6 +471,7 @@ export default function LibraryScreen() {
       </Modal>
 
       <RatingModal song={ratingSong} onClose={() => setRatingSong(null)} />
+      <CorrectionModal target={corrTarget} visible={!!corrTarget} onClose={() => setCorrTarget(null)} />
       <SongGraphModal
         visible={graphOpen}
         songs={songs}

@@ -294,6 +294,16 @@ export function MicIcon({ size = 18, color = '#000' }: IconProps) {
   );
 }
 
+// Прапорець — «Запропонувати правку» (як #icon-flag на сайті).
+export function FlagIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M5 21V4" />
+      <Path d="M5 4h11l-1.5 4L16 12H5" />
+    </Svg>
+  );
+}
+
 export function BugIcon({ size = 18, color = '#000' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

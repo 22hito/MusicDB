@@ -22,13 +22,14 @@ import { usePlayer } from '@/player/PlayerContext';
 import { Avatar, Badge, Button, EmptyState, ErrorState, Field, avatarColor } from '@/components/UI';
 import { QueueRow, timeAgo } from '@/components/QueueModal';
 import { SongRow } from '@/components/SongRow';
-import { BugIcon, ChevronRightIcon, DiscIcon, EditIcon, GlobeIcon, HeadphonesIcon, HeartIcon, LockIcon, PlusIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
+import { BugIcon, FlagIcon, ChevronRightIcon, DiscIcon, EditIcon, GlobeIcon, HeadphonesIcon, HeartIcon, LockIcon, PlusIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
 import { BugReportModal } from '@/components/BugReportModal';
+import { CorrectionModal } from '@/components/CorrectionModal';
 import { FONT_SANS_SEMIBOLD, FONT_SERIF_BLACK, PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { HistoryItem, Playlist, Profile, Song } from '@/api/types';
 
 export default function ProfileScreen() {
-  const { theme, t, lang } = useSettings();
+  const { theme, t, count, lang } = useSettings();
   const { currentUser, authChecked, openLogin, logout, refreshCurrentUser } = useApiBridge();
   const api = useMusicApi();
   const { favoriteIds, toggleFavorite, reload: reloadFavorites } = useFavorites();
@@ -46,6 +47,7 @@ export default function ProfileScreen() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
+  const [myCorrOpen, setMyCorrOpen] = useState(false);
   // Редагування (фото, нікнейм) — лише після "Редагувати"; "Прослухано" розгортає історію.
   const [editing, setEditing] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -377,7 +379,7 @@ export default function ProfileScreen() {
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>{pl.name}</Text>
                 <Text style={{ color: theme.muted, fontSize: 13, marginTop: 2 }}>
-                  {pl.songCount} {t('profile.songsWord')}
+                  {count('count.songs', pl.songCount)}
                 </Text>
               </View>
               <TouchableOpacity
@@ -413,6 +415,11 @@ export default function ProfileScreen() {
             <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('bugs.menu')}</Text>
             <ChevronRightIcon size={14} color={theme.muted} />
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => setMyCorrOpen(true)} style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+            <FlagIcon size={17} color={theme.accent} />
+            <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('corr.mine')}</Text>
+            <ChevronRightIcon size={14} color={theme.muted} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/settings')} style={[styles.linkRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
             <SlidersIcon size={17} color={theme.accent} />
             <Text style={{ color: theme.text, fontSize: 14, flex: 1 }}>{t('settings.change')}</Text>
@@ -425,6 +432,7 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <BugReportModal visible={bugOpen} onClose={() => setBugOpen(false)} />
+      <CorrectionModal target={null} visible={myCorrOpen} onClose={() => setMyCorrOpen(false)} />
 
       <Modal visible={newPlaylistOpen} transparent animationType="fade" onRequestClose={() => setNewPlaylistOpen(false)}>
         <View style={styles.overlay}>

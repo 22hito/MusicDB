@@ -143,7 +143,7 @@ function loadUserProfilePage(){
     plEmpty.style.display = playlists.length ? 'none' : '';
     plList.innerHTML = playlists.map(p=>`
       <div class="ext-search-item" onclick="openPlaylist(${p.id})">
-        <div class="es-main"><strong>${esc(p.name)}</strong><span>${p.songCount} ${t('profile.songsWord')}</span></div>
+        <div class="es-main"><strong>${esc(p.name)}</strong><span>${countLabel('count.songs', p.songCount)}</span></div>
       </div>`).join('');
 
     document.getElementById('user-profile-message-btn').style.display = u.relationshipStatus === 'self' ? 'none' : '';

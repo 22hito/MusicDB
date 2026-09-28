@@ -100,6 +100,7 @@ function renderAuthArea() {
           <button onclick="openChatPage('friends')" data-i18n="nav.friends">${t('nav.friends')}</button>
           <button onclick="openChatPage('dm')" data-i18n="nav.messages">${t('nav.messages')}</button>
           <button onclick="openBugReportModal()"><svg class="icon"><use href="#icon-bug"/></svg> ${t('bugs.menu')}</button>
+          <button onclick="openMyCorrections()"><svg class="icon"><use href="#icon-flag"/></svg> ${t('corr.mine')}</button>
           ${isAdmin?`<button onclick="showPage('admin-hub')" id="tab-admin-hub" class="nav-menu-item"><svg class="icon"><use href="#icon-settings"/></svg> ${t('nav.adminHub')}<span id="admin-requests-badge" class="badge" style="display:none;margin-left:auto;"></span></button>`:''}
         </div>
       </div>
@@ -108,7 +109,7 @@ function renderAuthArea() {
     `;
     refreshNotifBadge();
     refreshDmBadge();
-    if(isAdmin){ refreshAdminRequestsBadge(); refreshBugsBadge(); }
+    if(isAdmin){ refreshAdminRequestsBadge(); refreshBugsBadge(); refreshCorrectionsBadge(); }
   } else {
     area.innerHTML = `
       <button onclick="login()" class="nav-login-btn">

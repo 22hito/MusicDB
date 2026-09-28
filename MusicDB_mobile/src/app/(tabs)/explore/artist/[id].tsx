@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,6 +23,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { usePlayer } from '@/player/PlayerContext';
 import { Badge, Button, EmptyState, ErrorState, SectionTitle } from '@/components/UI';
 import { SongListBlock } from '@/components/SongListBlock';
+import { CorrectionModal } from '@/components/CorrectionModal';
 import { AlbumModal, albumTrackOrder, albumYear, type AlbumView } from '@/components/AlbumModal';
 import { ArtistAvatar, useAbsoluteUrl } from '@/components/ArtistAvatar';
 import { DiscIcon, NoteIcon, PlayIcon } from '@/components/Icons';
@@ -42,12 +44,23 @@ function shuffled<T>(arr: T[]): T[] {
   return a;
 }
 
+// Опис з Вікіпедії: без службових позначок («[коли?]», «[1]»), рядок «Джерело: Вікіпедія — URL» — окремим посиланням.
+function parseBio(raw?: string | null) {
+  if (!raw) return null;
+  const text = raw
+    .replace(/\[(?:\d+|[^\]\n]{1,25}\?|citation needed|уточнити|джерело не вказано[^\]\n]*)\]/gi, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  const m = /\n?\s*(?:Джерело|Source):\s*(.+?)\s+[—–-]\s+(https?:\/\/\S+)\s*$/.exec(text);
+  return m ? { text: text.slice(0, m.index).trim(), source: { label: m[1], url: m[2] } } : { text, source: null };
+}
+
 // Сторінка виконавця — як на сайті: шапка (фото/ініціали, статистика, жанри, дії),
 // "Популярне", альбоми, "Про виконавця", схожі виконавці, дискографія. Опис і фото — адмін.
 export default function ArtistScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string }>();
   const artistId = Number(params.id);
-  const { theme, t } = useSettings();
+  const { theme, t, count } = useSettings();
   const { currentUser } = useApiBridge();
   const api = useMusicApi();
   const player = usePlayer();
@@ -62,6 +75,7 @@ export default function ArtistScreen() {
   const [notFound, setNotFound] = useState(false);
   const [following, setFollowing] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,6 +132,7 @@ export default function ArtistScreen() {
   }, [songs]);
   const plays = songs.reduce((sum, s) => sum + (s.playCount || 0), 0);
   const years = songs.map((s) => (s.release || '').slice(0, 4)).filter((y) => /^\d{4}$/.test(y) && y !== '0001').sort();
+  const bio = useMemo(() => parseBio(artist?.bio), [artist?.bio]);
   const cover = absUrl(artist?.imageUrl) || thumb(songs.find((s) => s.youtubeVideoId));
 
   const play = (list: Song[], id?: number) => list.length && player.playFrom(list, id ?? list[0].id);
@@ -143,10 +158,10 @@ export default function ArtistScreen() {
             <Text style={[styles.name, { color: theme.text }]}>{artist.name}</Text>
             <Text style={[styles.stats, { color: theme.muted }]}>
               {[
-                `${artist.songCount} ${t('profile.songsWord')}`,
-                albums.length ? `${albums.length} ${t('artist.albumsWord')}` : null,
-                `${artist.followerCount} ${t('artist.followers')}`,
-                plays ? `${plays} ${t('artist.listenersWord')}` : null,
+                count('count.songs', artist.songCount),
+                albums.length ? count('count.albums', albums.length) : null,
+                count('count.followers', artist.followerCount),
+                plays ? count('count.plays', plays) : null,
                 years.length ? (years[0] === years[years.length - 1] ? years[0] : `${years[0]}–${years[years.length - 1]}`) : null,
               ]
                 .filter(Boolean)
@@ -173,6 +188,9 @@ export default function ArtistScreen() {
                 style={{ flex: 1 }}
               />
               {currentUser?.isAdmin ? <Button small variant="outline" label={t('artist.editBtn')} onPress={() => setEditOpen(true)} style={{ flex: 1 }} /> : null}
+              {currentUser?.authenticated && !currentUser.isAdmin ? (
+                <Button small variant="outline" label={t('corr.suggest')} onPress={() => setSuggestOpen(true)} style={{ flex: 1 }} />
+              ) : null}
             </View>
           </View>
 
@@ -216,7 +234,7 @@ export default function ArtistScreen() {
                     <Text numberOfLines={1} style={{ color: theme.text, fontFamily: FONT_SANS_SEMIBOLD, fontSize: 13, marginTop: 6 }}>{al.name}</Text>
                     <Text style={{ color: theme.muted, fontSize: 11 }}>
                       {al.year && al.year !== '0001' ? `${al.year} · ` : ''}
-                      {al.songs.length} {t('profile.songsWord')}
+                      {count('count.songs', al.songs.length)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -226,9 +244,17 @@ export default function ArtistScreen() {
 
           <SectionTitle label={t('artist.about')} />
           <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={{ color: artist.bio ? theme.text : theme.muted, fontSize: 14, lineHeight: 21, fontStyle: artist.bio ? 'normal' : 'italic' }}>
-              {artist.bio || t(currentUser?.isAdmin ? 'artist.noBioAdmin' : 'artist.noBio')}
+            <Text style={{ color: bio ? theme.text : theme.muted, fontSize: 14, lineHeight: 21, fontStyle: bio ? 'normal' : 'italic' }}>
+              {bio?.text || t(currentUser?.isAdmin ? 'artist.noBioAdmin' : 'artist.noBio')}
             </Text>
+            {bio?.source ? (
+              <Text style={{ color: theme.muted, fontSize: 12, marginTop: 10 }}>
+                {t('artist.source')}:{' '}
+                <Text style={{ color: theme.accent }} onPress={() => Linking.openURL(bio.source!.url)}>
+                  {bio.source.label}
+                </Text>
+              </Text>
+            ) : null}
           </View>
 
           {similar.length ? (
@@ -255,6 +281,11 @@ export default function ArtistScreen() {
         </ScrollView>
       )}
       <AlbumModal album={openAlbum} artistName={artist?.name ?? ''} onClose={() => setOpenAlbum(null)} />
+      <CorrectionModal
+        target={artist ? { artistId: artist.id, label: artist.name } : null}
+        visible={suggestOpen && !!artist}
+        onClose={() => setSuggestOpen(false)}
+      />
       {artist ? (
         <ArtistEditModal
           visible={editOpen}

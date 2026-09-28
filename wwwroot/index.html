@@ -110,6 +110,7 @@
   <symbol id="icon-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
   <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></symbol>
   <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="icon-flag" viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h11l-1.5 4L16 12H5"/></symbol>
   <symbol id="icon-bug" viewBox="0 0 24 24"><rect x="7" y="8" width="10" height="12" rx="5"/><path d="M9 8a3 3 0 0 1 6 0M12 12v8M3 13h4M17 13h4M4 7l3 2M20 7l-3 2M4 19l3-2M20 19l-3-2"/></symbol>
   <symbol id="icon-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
   <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></symbol>
@@ -310,6 +311,7 @@
       <button type="button" class="btn btn-outline active" id="admin-hub-tab-requests" onclick="switchAdminHubTab('requests')" data-i18n="adminHub.requestsTab">Запити</button>
       <button type="button" class="btn btn-outline" id="admin-hub-tab-add" onclick="switchAdminHubTab('add')" data-i18n="adminHub.addTab">Додати пісню</button>
       <button type="button" class="btn btn-outline" id="admin-hub-tab-bugs" onclick="switchAdminHubTab('bugs')"><span data-i18n="adminHub.bugsTab">Баг-репорти</span> <span class="count-badge" id="admin-bugs-badge" style="display:none;"></span></button>
+      <button type="button" class="btn btn-outline" id="admin-hub-tab-corrections" onclick="switchAdminHubTab('corrections')"><span data-i18n="adminHub.correctionsTab">Правки</span> <span class="count-badge" id="admin-corrections-badge" style="display:none;"></span></button>
     </div>
 
     <div id="admin-hub-requests-section">
@@ -372,6 +374,18 @@
       </div>
       <div id="bugs-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-check"/></svg><span data-i18n="bugs.empty">Немає баг-репортів</span></div>
       <div id="bugs-list" class="bug-list"></div>
+    </div>
+
+    <!-- Запити на правку від користувачів (прапорець у рядку пісні, «Запропонувати правку» у виконавця). -->
+    <div id="admin-hub-corrections-section" style="display:none;">
+      <div class="seg-switch" style="margin-bottom:1rem;">
+        <button type="button" id="corr-filter-open" class="active" onclick="setCorrectionFilter('open')" data-i18n="corr.filter.open">Нові</button>
+        <button type="button" id="corr-filter-done" onclick="setCorrectionFilter('done')" data-i18n="corr.filter.done">Виконані</button>
+        <button type="button" id="corr-filter-rejected" onclick="setCorrectionFilter('rejected')" data-i18n="corr.filter.rejected">Відхилені</button>
+        <button type="button" id="corr-filter-all" onclick="setCorrectionFilter('all')" data-i18n="corr.filter.all">Усі</button>
+      </div>
+      <div id="corrections-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-check"/></svg><span data-i18n="corr.emptyAdmin">Немає запитів на правку</span></div>
+      <div id="corrections-list" class="bug-list"></div>
     </div>
   </div>
 </div>
@@ -464,6 +478,7 @@
     <div class="profile-links m-only">
       <button type="button" class="profile-link" onclick="openChatPage('friends')"><svg class="icon"><use href="#icon-users"/></svg><span data-i18n="nav.friends">Друзі</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="profile-link" onclick="openBugReportModal()"><svg class="icon"><use href="#icon-bug"/></svg><span data-i18n="bugs.menu">Повідомити про баг</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
+      <button type="button" class="profile-link" onclick="openMyCorrections()"><svg class="icon"><use href="#icon-flag"/></svg><span data-i18n="corr.mine">Мої запити на правку</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
       <button type="button" class="profile-link" onclick="showPage('settings')"><svg class="icon"><use href="#icon-sliders"/></svg><span data-i18n="nav.settings">Налаштування</span><svg class="icon chev"><use href="#icon-arrow-right"/></svg></button>
     </div>
     <button type="button" class="btn btn-outline profile-logout m-only" onclick="logout()" data-i18n="auth.logout">Вийти</button>
@@ -620,11 +635,21 @@
 <div id="page-artists" class="page">
   <div class="container">
     <h2><span data-i18n="artists.heading.pre">Всі</span> <span class="hl" data-i18n="artists.heading.accent">виконавці</span></h2>
-    <div class="filter-bar">
+    <div class="filter-bar artists-bar">
       <input type="text" id="artists-search" data-i18n-placeholder="artists.searchPlaceholder" placeholder="Пошук виконавця…" oninput="onArtistsSearchInput()">
+      <select id="artists-sort" onchange="onArtistsSortChange(this.value)" data-i18n-title="artists.sortLabel" title="Сортування" aria-label="Сортування">
+        <option value="songs" data-i18n="artists.sort.songs">Найбільше пісень</option>
+        <option value="plays" data-i18n="artists.sort.plays">Найпопулярніші</option>
+        <option value="followers" data-i18n="artists.sort.followers">Найбільше підписників</option>
+        <option value="name" data-i18n="artists.sort.name">За алфавітом (А–Я)</option>
+        <option value="name_desc" data-i18n="artists.sort.name_desc">За алфавітом (Я–А)</option>
+        <option value="new" data-i18n="artists.sort.new">Нові в каталозі</option>
+      </select>
     </div>
+    <div class="artists-count" id="artists-count"></div>
     <div id="artists-empty" class="empty" style="display:none;"><svg class="icon"><use href="#icon-mic"/></svg><span data-i18n="artists.empty">Нічого не знайдено</span></div>
-    <div id="artists-list" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+    <div id="artists-list" class="artists-grid"></div>
+    <button type="button" id="artists-more" class="btn btn-outline artists-more" style="display:none;" onclick="showMoreArtists()" data-i18n="artists.more">Показати ще</button>
   </div>
 </div>
 
@@ -647,6 +672,7 @@
             <button type="button" class="btn btn-outline" onclick="playArtistAll(true)"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="artist.shuffle">Перемішати</span></button>
             <button type="button" class="btn btn-outline" id="artist-follow-btn" onclick="toggleArtistFollow()"></button>
             <button type="button" class="btn btn-outline" id="artist-edit-btn" style="display:none;" onclick="openArtistEditModal()"><svg class="icon"><use href="#icon-pencil"/></svg> <span data-i18n="artist.editBtn">Редагувати</span></button>
+            <button type="button" class="btn btn-outline" id="artist-suggest-btn" style="display:none;" onclick="suggestArtistCorrection()"><svg class="icon"><use href="#icon-flag"/></svg> <span data-i18n="corr.suggest">Запропонувати правку</span></button>
           </div>
         </div>
       </section>
@@ -1172,7 +1198,7 @@
       <div class="album-cover" id="album-cover"></div>
       <div class="album-info">
         <span class="album-label" data-i18n="album.label">Альбом</span>
-        <h3 id="album-title"></h3>
+        <h3 id="album-title" onclick="if(this.classList.contains('xlong'))this.classList.toggle('expanded')"></h3>
         <a href="#" class="album-artist" id="album-artist" onclick="closeAlbumModal();return false;"></a>
         <span class="album-meta" id="album-meta"></span>
         <div class="album-actions">
@@ -1301,6 +1327,48 @@
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeBugReportModal()" data-i18n="modal.cancel">Скасувати</button>
       <button class="modal-btn-confirm" id="bug-report-send" style="background:var(--accent);" onclick="submitBugReport()" data-i18n="bugs.send">Надіслати</button>
+    </div>
+  </div>
+</div>
+
+<!-- ЗАПИТ НА ПРАВКУ (corrections.js): що не так у пісні чи виконавця, як правильно, джерело, файл пісні; «Мої запити» — стан і відповіді -->
+<div class="modal-overlay" id="correction-modal-overlay" onclick="if(event.target===this)closeCorrectionModal()">
+  <div class="modal-box corr-box">
+    <div class="modal-title-row"><svg class="icon"><use href="#icon-flag"/></svg> <span id="corr-title" data-i18n="corr.title">Запропонувати правку</span></div>
+    <div id="corr-form">
+      <div class="corr-target" id="corr-target"></div>
+      <div class="form-group">
+        <label for="corr-field" data-i18n="corr.fieldLabel">Що не так</label>
+        <select id="corr-field" onchange="_syncCorrectionField()"></select>
+      </div>
+      <div class="form-group">
+        <label for="corr-message" id="corr-message-label" data-i18n="corr.messageLabel">Що виправити і як правильно *</label>
+        <textarea id="corr-message" rows="4" maxlength="2000" style="resize:vertical;"></textarea>
+      </div>
+      <div class="form-group" id="corr-audio-group" style="display:none;">
+        <label class="btn btn-outline corr-file-btn">
+          <svg class="icon"><use href="#icon-upload"/></svg> <span id="corr-audio-name" data-i18n="corr.audioPick">Вибрати файл пісні</span>
+          <input type="file" id="corr-audio" accept="audio/*,.mp3,.m4a,.aac,.ogg,.oga,.opus,.wav,.flac,.webm" hidden onchange="_syncCorrectionAudio()">
+        </label>
+        <div class="bug-context-help" data-i18n="corr.audioHint">MP3, M4A, OGG, FLAC, WAV — до 25 МБ. Надсилайте лише файли, які маєте право поширювати.</div>
+      </div>
+      <div class="form-group">
+        <label for="corr-source" data-i18n="corr.sourceLabel">Джерело (необов'язково)</label>
+        <input type="url" id="corr-source" maxlength="500" placeholder="https://…">
+        <div class="bug-context-help" data-i18n="corr.sourceHint">Посилання на Вікіпедію, сторінку релізу чи офіційний сайт — так адмін швидше перевірить.</div>
+      </div>
+      <div class="hint" id="corr-status" style="min-height:1.2em;"></div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" onclick="closeCorrectionModal()" data-i18n="modal.cancel">Скасувати</button>
+        <button class="modal-btn-confirm" id="corr-send" style="background:var(--accent);" onclick="submitCorrection()" data-i18n="bugs.send">Надіслати</button>
+      </div>
+      <button type="button" class="q-link corr-mine-link" onclick="showMyCorrections()" data-i18n="corr.mine">Мої запити на правку</button>
+    </div>
+    <div id="corr-mine" style="display:none;">
+      <div id="corr-mine-list" class="corr-mine-list"></div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" onclick="closeCorrectionModal()" data-i18n="player.close">Закрити</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1722,6 +1790,7 @@
 <script src="/js/taste.js"></script>
 <script src="/js/top.js"></script>
 <script src="/js/bug-reports.js"></script>
+<script src="/js/corrections.js"></script>
 <script src="/js/chat.js"></script>
 <script src="/js/ratings.js"></script>
 <script src="/js/nav-search.js"></script>

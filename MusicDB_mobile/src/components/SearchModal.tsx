@@ -13,7 +13,7 @@ import type { ArtistSummary, Song, UserSearchResult } from '@/api/types';
 
 // Глобальний пошук, як у навбарі сайту: пісні (обидві таблиці), виконавці, люди.
 export function SearchModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { theme, t } = useSettings();
+  const { theme, t, count } = useSettings();
   const { currentUser } = useApiBridge();
   const api = useMusicApi();
   const player = usePlayer();
@@ -115,7 +115,7 @@ export function SearchModal({ visible, onClose }: { visible: boolean; onClose: (
           {artists.length ? section(t('navSearch.artists')) : null}
           {artists.map((a) => (
             <View key={`a${a.id}`}>
-              {row(a.id, <PersonIcon size={15} color={theme.muted} />, a.name, `${a.songCount} ${t('profile.songsWord')}`, () => openArtist(a.id, a.name))}
+              {row(a.id, <PersonIcon size={15} color={theme.muted} />, a.name, count('count.songs', a.songCount), () => openArtist(a.id, a.name))}
               {artistSongs?.id === a.id
                 ? artistSongs.songs.map((s) =>
                     row(`as${s.id}`, <View style={{ width: 14 }} />, s.title, s.album, () => {

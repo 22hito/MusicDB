@@ -16,7 +16,7 @@ import type { FriendRequest, PublicProfile, Song } from '@/api/types';
 export default function UserProfileScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string }>();
   const userId = Number(params.id);
-  const { theme, t } = useSettings();
+  const { theme, t, count } = useSettings();
   const { currentUser, subscribeRealtime, openLogin } = useApiBridge();
   const api = useMusicApi();
   const authed = !!currentUser?.authenticated;
@@ -189,7 +189,7 @@ export default function UserProfileScreen() {
                   <GlobeIcon size={16} color={theme.accent2} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text numberOfLines={1} style={{ color: theme.text, fontWeight: '600' }}>{p.name}</Text>
-                    <Text style={{ color: theme.muted, fontSize: 12 }}>{p.songCount} {t('profile.songsWord')}</Text>
+                    <Text style={{ color: theme.muted, fontSize: 12 }}>{count('count.songs', p.songCount)}</Text>
                   </View>
                   <View style={{ transform: [{ rotate: openPlaylist?.id === p.id ? '90deg' : '0deg' }] }}>
                     <ChevronRightIcon size={14} color={theme.muted} />

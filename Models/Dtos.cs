@@ -157,7 +157,7 @@ public record RecommendationDto(SongDto Song, string? Reason);
 
 public record ArtistRefDto(int Id, string Name);
 
-public record ArtistSummaryDto(int Id, string Name, int SongCount, string? ImageUrl = null);
+public record ArtistSummaryDto(int Id, string Name, int SongCount, string? ImageUrl = null, int FollowerCount = 0, int PlayCount = 0);
 
 public record ArtistDetailDto(int Id, string Name, string? Bio, string? ImageUrl, int SongCount, int FollowerCount, bool IsFollowing);
 
@@ -260,3 +260,15 @@ public record RatingDto(UserRefDto User, int Score, string? Review, string Updat
 public record SongRatingsDto(int MusicId, double? AvgRating, int RatingCount, RatingDto? Mine, List<RatingDto> Reviews);
 
 public record SaveRatingDto(int Score, string? Review);
+
+// ─── Запити на правку ─────────────────────────────────────────────────────────
+public static class CorrectionFields
+{
+    // song: жанри, альбом, дата, тривалість, назва/виконавець, відео, текст, файл пісні, інше
+    public static readonly string[] Song = ["genres", "album", "release", "duration", "title", "video", "lyrics", "audio", "other"];
+    // artist: опис, фото, ім'я, інше
+    public static readonly string[] Artist = ["bio", "photo", "name", "other"];
+}
+public record CorrectionDto(int Id, string Field, string Message, string? SourceUrl, string TargetLabel, int? MusicId, int? ArtistId,
+    bool HasAudio, string Status, string? AdminNote, string CreatedAt, UserRefDto? Requester, UserRefDto? ResolvedBy);
+public record ResolveCorrectionDto(string Status, string? Note);

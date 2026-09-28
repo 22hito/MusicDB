@@ -22,23 +22,40 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
         User.FindFirstValue(ClaimTypes.Name),
         User.FindFirstValue("picture") ?? User.FindFirstValue("urn:google:picture"));
 
-    // Каталог виконавців — публічний, як і сам список пісень.
+    // Імена різними абетками (латиниця, кирилиця) — в одному природному порядку, без огляду на регістр.
+    private static readonly StringComparer NameOrder = StringComparer.Create(new System.Globalization.CultureInfo("uk-UA"), ignoreCase: true);
+
+    // Каталог виконавців — публічний, як і сам список пісень. Увесь (їх тисячі, а не сотні — інакше сортування
+    // за алфавітом показувало б лише перших за кількістю пісень); клієнт малює порціями.
+    // sort: songs (типово) | name | name_desc | plays (унікальні слухачі пісень) | followers | new (нові в каталозі).
     [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<List<ArtistSummaryDto>>> GetAll([FromQuery] string? q)
+    public async Task<ActionResult<List<ArtistSummaryDto>>> GetAll([FromQuery] string? q, [FromQuery] string? sort)
     {
-        var query = db.Artists.AsQueryable();
+        var query = db.Artists.AsNoTracking().Where(a => a.MusicArtists.Any());
         if (!string.IsNullOrWhiteSpace(q))
             query = query.Where(a => EF.Functions.ILike(a.Name, $"%{q.Trim()}%"));
 
         var artists = await query
-            .Select(a => new { a.Id, a.Name, a.ImageUrl, SongCount = a.MusicArtists.Count })
-            .OrderByDescending(a => a.SongCount)
-            .ThenBy(a => a.Name)
-            .Take(200)
+            .Select(a => new
+            {
+                a.Id, a.Name, a.ImageUrl, a.CreatedAt,
+                SongCount = a.MusicArtists.Count,
+                Followers = db.ArtistFollows.Count(f => f.ArtistId == a.Id),
+                Plays = db.ListeningHistory.Count(h => a.MusicArtists.Any(ma => ma.MusicId == h.MusicId)),
+            })
             .ToListAsync();
 
-        return Ok(artists.Select(a => new ArtistSummaryDto(a.Id, a.Name, a.SongCount, ImageLink(a.Id, a.ImageUrl))).ToList());
+        var ordered = (sort ?? "").ToLowerInvariant() switch
+        {
+            "name" => artists.OrderBy(a => a.Name, NameOrder),
+            "name_desc" => artists.OrderByDescending(a => a.Name, NameOrder),
+            "plays" => artists.OrderByDescending(a => a.Plays).ThenByDescending(a => a.SongCount).ThenBy(a => a.Name, NameOrder),
+            "followers" => artists.OrderByDescending(a => a.Followers).ThenByDescending(a => a.Plays).ThenBy(a => a.Name, NameOrder),
+            "new" => artists.OrderByDescending(a => a.CreatedAt).ThenBy(a => a.Name, NameOrder),
+            _ => artists.OrderByDescending(a => a.SongCount).ThenBy(a => a.Name, NameOrder),
+        };
+        return Ok(ordered.Select(a => new ArtistSummaryDto(a.Id, a.Name, a.SongCount, ImageLink(a.Id, a.ImageUrl), a.Followers, a.Plays)).ToList());
     }
 
     [AllowAnonymous]

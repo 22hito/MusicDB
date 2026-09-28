@@ -302,7 +302,12 @@ export interface ArtistSummary {
   name: string;
   songCount: number;
   imageUrl?: string | null;
+  followerCount?: number;
+  playCount?: number; // унікальні слухачі пісень виконавця
 }
+
+// Сортування каталогу виконавців (сервер): як на сайті.
+export type ArtistSort = 'songs' | 'plays' | 'followers' | 'name' | 'name_desc' | 'new';
 
 export interface SimilarArtist {
   id: number;
@@ -418,4 +423,27 @@ export interface BugReport {
   createdAt: string;
   resolvedBy: UserRef | null;
   screenshotCount?: number; // файли: GET /api/bug-reports/{id}/screenshots/{index}
+}
+
+// ─── Запити на правку: користувач → адміни (див. CorrectionsController) ───
+export type CorrectionStatus = 'open' | 'done' | 'rejected';
+export const CORR_SONG_FIELDS = ['genres', 'album', 'release', 'duration', 'title', 'video', 'lyrics', 'audio', 'other'] as const;
+export const CORR_ARTIST_FIELDS = ['bio', 'photo', 'name', 'other'] as const;
+export type CorrectionField = (typeof CORR_SONG_FIELDS)[number] | (typeof CORR_ARTIST_FIELDS)[number];
+export type CorrectionTarget = { musicId: number; label: string } | { artistId: number; label: string };
+
+export interface Correction {
+  id: number;
+  field: CorrectionField;
+  message: string;
+  sourceUrl: string | null;
+  targetLabel: string;
+  musicId: number | null;
+  artistId: number | null;
+  hasAudio: boolean;
+  status: CorrectionStatus;
+  adminNote: string | null;
+  createdAt: string;
+  requester: UserRef | null;
+  resolvedBy: UserRef | null;
 }

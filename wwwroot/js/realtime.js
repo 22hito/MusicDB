@@ -55,6 +55,10 @@ if (window.signalR) {
     else if(currentThreadId == null) loadThreads();
   });
   rtConn.on('ratingChanged', (musicId, avg, count) => _applyRatingSummary(musicId, avg, count));
+  rtConn.on('correctionsChanged', () => {
+    refreshCorrectionsBadge();
+    if(document.getElementById('admin-hub-corrections-section')?.style.display === '') loadCorrections();
+  });
   rtConn.on('bugReportsChanged', () => {
     refreshBugsBadge();
     if(document.getElementById('admin-hub-bugs-section')?.style.display === '') loadBugReports();
@@ -75,7 +79,7 @@ function _resyncRealtime(withSongs){
   if(currentUser?.authenticated){
     refreshNotifBadge();
     refreshDmBadge();
-    if(currentUser.isAdmin){ refreshAdminRequestsBadge(); refreshBugsBadge(); renderRequests(); }
+    if(currentUser.isAdmin){ refreshAdminRequestsBadge(); refreshBugsBadge(); refreshCorrectionsBadge(); renderRequests(); }
     if(document.getElementById('page-chat')?.classList.contains('active')) loadChatPage();
   }
   if(withSongs) loadSongs().then(() => { renderSongs(); updateStats(); }).catch(() => {});

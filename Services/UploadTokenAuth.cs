@@ -44,8 +44,9 @@ public static partial class UploadTokenAuth
     public const string Scheme = "UploadToken";
     public const string Header = "X-Upload-Token";
 
-    // Лише завантаження файлів: заявка й пісня ком'юніті, заміна файлу пісні, баг-репорт зі скріншотами, фото виконавця.
-    [GeneratedRegex(@"^/api/(requests/community|songs/community|songs/\d+/audio|bug-reports/with-screenshots|artists/\d+/image)/?$", RegexOptions.IgnoreCase)]
+    // Лише завантаження файлів: заявка й пісня ком'юніті, заміна файлу пісні, баг-репорт зі скріншотами, фото виконавця,
+    // запит на правку (може нести файл пісні).
+    [GeneratedRegex(@"^/api/(requests/community|songs/community|songs/\d+/audio|bug-reports/with-screenshots|artists/\d+/image|corrections)/?$", RegexOptions.IgnoreCase)]
     private static partial Regex UploadPath();
 
     public static bool IsUploadEndpoint(HttpRequest request) =>

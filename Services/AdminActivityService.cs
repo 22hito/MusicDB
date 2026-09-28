@@ -14,6 +14,7 @@ public class AdminActivityService(MusicDbContext db, IHubContext<MusicHub> hub)
     public const string RequestRejected = "request_rejected";
     public const string SongAdded = "song_added";
     public const string BugReported = "bug_reported";
+    public const string CorrectionRequested = "correction_requested";
 
     public async Task RecordAsync(int? actorUserId, string eventType, string label, string source)
     {

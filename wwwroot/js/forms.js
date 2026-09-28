@@ -204,16 +204,17 @@ function submitRequest(){
 
 // Підтаби всередині "Адмін-панелі" — перемикають ті самі блоки, що раніше були окремими вкладками навбару.
 function switchAdminHubTab(tab){
-  ['requests','add','bugs'].forEach(k=>{
+  ['requests','add','bugs','corrections'].forEach(k=>{
     document.getElementById(`admin-hub-${k}-section`).style.display = tab===k ? '' : 'none';
     document.getElementById(`admin-hub-tab-${k}`).classList.toggle('active', tab===k);
   });
   if(tab==='bugs') loadBugReports();
+  if(tab==='corrections') loadCorrections();
 }
 // Зі сповіщення про баг-репорт — одразу на вкладку "Баг-репорти", решта — на заявки.
 let _pendingAdminHubTab = null;
 function openAdminHub(eventType){
-  _pendingAdminHubTab = eventType === 'bug_reported' ? 'bugs' : null;
+  _pendingAdminHubTab = eventType === 'bug_reported' ? 'bugs' : eventType === 'correction_requested' ? 'corrections' : null;
   showPage('admin-hub');
 }
 function renderRequests(){
