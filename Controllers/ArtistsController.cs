@@ -75,7 +75,7 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
             isFollowing = await db.ArtistFollows.AnyAsync(f => f.ArtistId == id && f.UserId == userId);
         }
 
-        return Ok(new ArtistDetailDto(artist.Id, artist.Name, artist.Bio, ImageLink(artist), songCount, followerCount, isFollowing));
+        return Ok(new ArtistDetailDto(artist.Id, artist.Name, artist.Bio, ImageLink(artist), songCount, followerCount, isFollowing, artist.BioEn));
     }
 
     // Фото виконавця лежить у сховищі файлів (R2), у БД — лише ім'я файлу.
@@ -100,8 +100,10 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
         var artist = await db.Artists.FindAsync(id);
         if (artist is null) return NotFound();
         var bio = dto.Bio?.Trim();
-        if (bio is { Length: > 5000 }) return BadRequest("Bio is too long.");
+        var bioEn = dto.BioEn?.Trim();
+        if (bio is { Length: > 5000 } || bioEn is { Length: > 5000 }) return BadRequest("Bio is too long.");
         artist.Bio = string.IsNullOrEmpty(bio) ? null : bio;
+        if (bioEn is not null) artist.BioEn = bioEn.Length == 0 ? null : bioEn;
         await db.SaveChangesAsync();
         return await GetById(id);
     }

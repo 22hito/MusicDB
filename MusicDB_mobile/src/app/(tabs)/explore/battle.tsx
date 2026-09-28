@@ -382,7 +382,7 @@ export default function BattleScreen() {
           <EmptyState icon="🌐" label={t('battle.pagePublicEmpty')} />
         ) : (
           community.map((p) =>
-            playlistCard(`c${p.id}`, p.id, p.name, `${count('count.songs', p.songCount)} — ${p.ownerLabel}`, <GlobeIcon size={16} color={theme.accent2} />),
+            playlistCard(`c${p.id}`, p.id, p.name, `${count('count.songs', p.songCount)} — ${p.ownerLabel || t('battle.ownerFallback')}`, <GlobeIcon size={16} color={theme.accent2} />),
           )
         )}
       </ScrollView>

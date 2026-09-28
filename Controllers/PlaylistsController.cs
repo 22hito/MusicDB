@@ -44,10 +44,16 @@ public class PlaylistsController(MusicDbContext db, MusicService musicService) :
         var names = await db.UserProfiles
             .Where(u => emails.Contains(u.UserEmail))
             .ToDictionaryAsync(u => u.UserEmail, u => u.DisplayName);
+        var googleNames = await db.Users
+            .Where(u => emails.Contains(u.Email))
+            .ToDictionaryAsync(u => u.Email, u => u.GoogleName);
 
-        return Ok(playlists.Select(p => new PublicPlaylistDto(
-            p.Id, p.Name, p.PlaylistSongs.Count,
-            (names.TryGetValue(p.UserEmail, out var dn) && !string.IsNullOrWhiteSpace(dn)) ? dn! : "учасника спільноти")));
+        // Той самий пріоритет, що й деінде: нік > ім'я з Google; без обох — null (підпис робить клієнт).
+        string? Owner(string email) =>
+            names.TryGetValue(email, out var dn) && !string.IsNullOrWhiteSpace(dn) ? dn
+            : googleNames.TryGetValue(email, out var gn) && !string.IsNullOrWhiteSpace(gn) ? gn : null;
+
+        return Ok(playlists.Select(p => new PublicPlaylistDto(p.Id, p.Name, p.PlaylistSongs.Count, Owner(p.UserEmail))));
     }
 
     // Без [Authorize]: публічний плейлист теж має відкриватись анонімно (Батл рояль).

@@ -193,8 +193,12 @@ function _renderArtistDiscography(){
       <td data-label="${t('table.genres')}">${s.genres.map(g=>`<span class="badge">${esc(abbrGenre(g))}</span>`).join('')}</td>
     </tr>`).join('');
 }
+// Опис мовою інтерфейсу; якщо його немає — іншою мовою, аби не лишати сторінку порожньою.
+function _artistBio(a){
+  return currentLang === 'en' ? (a.bioEn || a.bio) : (a.bio || a.bioEn);
+}
 function _renderArtistBio(){
-  const bio = currentArtist.bio;
+  const bio = _artistBio(currentArtist);
   const el = document.getElementById('artist-bio');
   el.classList.toggle('empty-bio', !bio);
   if(bio) el.innerHTML = _bioHtml(bio);
@@ -206,8 +210,9 @@ function _bioHtml(bio){
     .replace(/[ \t]{2,}/g, ' ').trim();
   const m = /\n?\s*(?:Джерело|Source):\s*(.+?)\s+[—–-]\s+(https?:\/\/\S+)\s*$/.exec(text);
   if(!m) return esc(text);
+  const name = /^(вікіпедія|wikipedia)$/i.test(m[1]) ? t('artist.wikipedia') : m[1];
   return `${esc(text.slice(0, m.index).trim())}<span class="artist-bio-source">${esc(t('artist.source'))}: `
-    + `<a href="${esc(m[2])}" target="_blank" rel="noopener noreferrer">${esc(m[1])}</a></span>`;
+    + `<a href="${esc(m[2])}" target="_blank" rel="noopener noreferrer">${esc(name)}</a></span>`;
 }
 function _loadSimilarArtists(id){
   const wrap = document.getElementById('artist-similar');
@@ -296,6 +301,7 @@ function openArtistEditModal(){
   _artistEditFile = null; _artistEditRemove = false;
   document.getElementById('artist-edit-file').value = '';
   document.getElementById('artist-edit-bio').value = currentArtist.bio || '';
+  document.getElementById('artist-edit-bio-en').value = currentArtist.bioEn || '';
   document.getElementById('artist-edit-status').textContent = '';
   _renderArtistEditPreview(currentArtist.imageUrl);
   document.getElementById('artist-edit-modal-overlay').classList.add('open');
@@ -326,7 +332,8 @@ async function saveArtistEdit(){
   btn.disabled = true; status.textContent = t('msg.uploading');
   try {
     const bio = document.getElementById('artist-edit-bio').value;
-    let r = await fetch(`/api/artists/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bio }) });
+    const bioEn = document.getElementById('artist-edit-bio-en').value;
+    let r = await fetch(`/api/artists/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bio, bioEn }) });
     if(r.ok && _artistEditFile){
       const fd = new FormData(); fd.append('image', _artistEditFile);
       r = await fetch(`/api/artists/${id}/image`, { method: 'PUT', body: fd });

@@ -45,14 +45,16 @@ function shuffled<T>(arr: T[]): T[] {
 }
 
 // Опис з Вікіпедії: без службових позначок («[коли?]», «[1]»), рядок «Джерело: Вікіпедія — URL» — окремим посиланням.
-function parseBio(raw?: string | null) {
+function parseBio(raw: string | null | undefined, wikipedia: string) {
   if (!raw) return null;
   const text = raw
     .replace(/\[(?:\d+|[^\]\n]{1,25}\?|citation needed|уточнити|джерело не вказано[^\]\n]*)\]/gi, '')
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
   const m = /\n?\s*(?:Джерело|Source):\s*(.+?)\s+[—–-]\s+(https?:\/\/\S+)\s*$/.exec(text);
-  return m ? { text: text.slice(0, m.index).trim(), source: { label: m[1], url: m[2] } } : { text, source: null };
+  if (!m) return { text, source: null };
+  const label = /^(вікіпедія|wikipedia)$/i.test(m[1]) ? wikipedia : m[1];
+  return { text: text.slice(0, m.index).trim(), source: { label, url: m[2] } };
 }
 
 // Сторінка виконавця — як на сайті: шапка (фото/ініціали, статистика, жанри, дії),
@@ -60,7 +62,7 @@ function parseBio(raw?: string | null) {
 export default function ArtistScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string }>();
   const artistId = Number(params.id);
-  const { theme, t, count } = useSettings();
+  const { theme, t, count, lang } = useSettings();
   const { currentUser } = useApiBridge();
   const api = useMusicApi();
   const player = usePlayer();
@@ -132,7 +134,9 @@ export default function ArtistScreen() {
   }, [songs]);
   const plays = songs.reduce((sum, s) => sum + (s.playCount || 0), 0);
   const years = songs.map((s) => (s.release || '').slice(0, 4)).filter((y) => /^\d{4}$/.test(y) && y !== '0001').sort();
-  const bio = useMemo(() => parseBio(artist?.bio), [artist?.bio]);
+  // опис мовою інтерфейсу; якщо його немає — іншою мовою
+  const rawBio = lang === 'en' ? artist?.bioEn || artist?.bio : artist?.bio || artist?.bioEn;
+  const bio = useMemo(() => parseBio(rawBio, t('artist.wikipedia')), [rawBio, t]);
   const cover = absUrl(artist?.imageUrl) || thumb(songs.find((s) => s.youtubeVideoId));
 
   const play = (list: Song[], id?: number) => list.length && player.playFrom(list, id ?? list[0].id);
@@ -306,6 +310,7 @@ function ArtistEditModal({ visible, artist, onClose, onSaved }: { visible: boole
   const { theme, t } = useSettings();
   const api = useMusicApi();
   const [bio, setBio] = useState(artist.bio || '');
+  const [bioEn, setBioEn] = useState(artist.bioEn || '');
   const [photo, setPhoto] = useState<PickedAudio | null>(null);
   const [remove, setRemove] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -314,6 +319,7 @@ function ArtistEditModal({ visible, artist, onClose, onSaved }: { visible: boole
   useEffect(() => {
     if (!visible) return;
     setBio(artist.bio || '');
+    setBioEn(artist.bioEn || '');
     setPhoto(null);
     setRemove(false);
     setError(null);
@@ -333,7 +339,7 @@ function ArtistEditModal({ visible, artist, onClose, onSaved }: { visible: boole
     setSaving(true);
     setError(null);
     try {
-      let a = await api.updateArtistBio(artist.id, bio);
+      let a = await api.updateArtistBio(artist.id, bio, bioEn);
       if (photo) a = await api.setArtistImage(artist.id, photo);
       else if (remove) a = await api.deleteArtistImage(artist.id);
       onSaved(a);
@@ -367,10 +373,19 @@ function ArtistEditModal({ visible, artist, onClose, onSaved }: { visible: boole
               ) : null}
             </View>
           </View>
-          <Text style={{ color: theme.muted, fontSize: 12, marginBottom: 6, fontFamily: FONT_MONO_MEDIUM }}>{t('artist.about')}</Text>
+          <Text style={{ color: theme.muted, fontSize: 12, marginBottom: 6, fontFamily: FONT_MONO_MEDIUM }}>{t('artist.aboutUk')}</Text>
           <TextInput
             value={bio}
             onChangeText={setBio}
+            multiline
+            maxLength={5000}
+            textAlignVertical="top"
+            style={[styles.bioInput, { backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }]}
+          />
+          <Text style={{ color: theme.muted, fontSize: 12, marginTop: SPACING.sm, marginBottom: 6, fontFamily: FONT_MONO_MEDIUM }}>{t('artist.aboutEn')}</Text>
+          <TextInput
+            value={bioEn}
+            onChangeText={setBioEn}
             multiline
             maxLength={5000}
             textAlignVertical="top"
@@ -405,5 +420,5 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: SPACING.lg },
   editBox: { width: '100%', maxWidth: 440, borderWidth: 1, borderRadius: RADIUS.xl, padding: SPACING.lg },
-  bioInput: { minHeight: 140, maxHeight: 260, borderWidth: 1, borderRadius: RADIUS.md, padding: 12, fontSize: 14 },
+  bioInput: { minHeight: 100, maxHeight: 180, borderWidth: 1, borderRadius: RADIUS.md, padding: 12, fontSize: 14 },
 });

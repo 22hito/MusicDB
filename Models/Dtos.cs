@@ -143,7 +143,8 @@ public record CreatePlaylistDto(string Name, bool IsPublic = false);
 public record UpdatePlaylistPublicDto(bool IsPublic);
 
 // Публічний плейлист іншого користувача — з іменем власника, без email.
-public record PublicPlaylistDto(int Id, string Name, int SongCount, string OwnerLabel);
+// OwnerLabel == null — ні ніка, ні імені з Google: клієнт підписує «учасника спільноти» мовою інтерфейсу.
+public record PublicPlaylistDto(int Id, string Name, int SongCount, string? OwnerLabel);
 
 public record LogListenDto(int MusicId);
 
@@ -159,9 +160,10 @@ public record ArtistRefDto(int Id, string Name);
 
 public record ArtistSummaryDto(int Id, string Name, int SongCount, string? ImageUrl = null, int FollowerCount = 0, int PlayCount = 0);
 
-public record ArtistDetailDto(int Id, string Name, string? Bio, string? ImageUrl, int SongCount, int FollowerCount, bool IsFollowing);
+public record ArtistDetailDto(int Id, string Name, string? Bio, string? ImageUrl, int SongCount, int FollowerCount, bool IsFollowing, string? BioEn = null);
 
-public record UpdateArtistDto(string? Bio);
+// BioEn == null — не змінювати (старі версії застосунку його не надсилають); "" — прибрати.
+public record UpdateArtistDto(string? Bio, string? BioEn = null);
 
 // Score — 0..100, наскільки збігаються жанри пісень.
 public record SimilarArtistDto(int Id, string Name, string? ImageUrl, int SongCount, int Score);

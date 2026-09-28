@@ -176,7 +176,9 @@ public class Artist
     [Key, Column("id")] public int Id { get; set; }
     [Required, Column("name")] public string Name { get; set; } = "";
     [Required, Column("normalized_name")] public string NormalizedName { get; set; } = "";
+    // Опис українською (bio) і англійською (bio_en) — сторінка показує той, що мовою інтерфейсу, інакше інший.
     [Column("bio")] public string? Bio { get; set; }
+    [Column("bio_en")] public string? BioEn { get; set; }
     [Column("image_url")] public string? ImageUrl { get; set; }
     [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<MusicArtist> MusicArtists { get; set; } = [];

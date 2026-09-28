@@ -307,7 +307,8 @@ export function useMusicApi() {
       getArtist: (id: number) => request<ArtistDetail>(`/api/artists/${id}`),
       getSimilarArtists: (id: number) => request<SimilarArtist[]>(`/api/artists/${id}/similar`),
       // Адмін: опис і фото виконавця (фото — multipart нативним fetch, як файли пісень).
-      updateArtistBio: (id: number, bio: string) => request<ArtistDetail>(`/api/artists/${id}`, { method: 'PUT', body: { bio } }),
+      updateArtistBio: (id: number, bio: string, bioEn: string) =>
+        request<ArtistDetail>(`/api/artists/${id}`, { method: 'PUT', body: { bio, bioEn } }),
       setArtistImage: (id: number, image: PickedAudio) => {
         const fd = new FormData();
         fd.append('image', filePart(image));

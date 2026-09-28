@@ -137,7 +137,7 @@
        Адмін-панель переїхала в меню профілю (див. renderAuthArea). -->
   <button id="tab-home" class="nav-home-btn active" onclick="showHome('catalog')"><svg class="icon"><use href="#icon-home"/></svg><span data-i18n="nav.home">Головна</span></button>
   <div class="dropdown" id="nav-menu-dropdown">
-    <button class="dropdown-toggle nav-menu-toggle" onclick="toggleDropdown(event,'nav-menu-dropdown')" aria-label="Меню" data-i18n-title="nav.menu" title="Меню"><svg class="icon"><use href="#icon-menu"/></svg><span class="nav-menu-label" data-i18n="nav.menu">Меню</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
+    <button class="dropdown-toggle nav-menu-toggle" onclick="toggleDropdown(event,'nav-menu-dropdown')" aria-label="Меню" data-i18n-aria="nav.menu" data-i18n-title="nav.menu" title="Меню"><svg class="icon"><use href="#icon-menu"/></svg><span class="nav-menu-label" data-i18n="nav.menu">Меню</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
     <div class="dropdown-menu nav-menu">
       <button id="tab-community" class="nav-menu-item" onclick="showHome('community')"><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="nav.community">Пісні ком'юніті</span></button>
       <button id="tab-top" class="nav-menu-item" onclick="showPage('top')"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="nav.top">Топ 100</span></button>
@@ -166,7 +166,7 @@
     <div class="nav-search-results" id="nav-search-results"></div>
   </div>
   <div class="nav-right">
-  <button type="button" class="nav-icon-btn nav-search-toggle" id="nav-search-toggle" onclick="toggleMobileSearch()" aria-label="Пошук" data-i18n-title="navSearch.placeholder" title="Пошук"><svg class="icon"><use href="#icon-search"/></svg></button>
+  <button type="button" class="nav-icon-btn nav-search-toggle" id="nav-search-toggle" onclick="toggleMobileSearch()" aria-label="Пошук" data-i18n-aria="settings.key.search" data-i18n-title="navSearch.placeholder" title="Пошук"><svg class="icon"><use href="#icon-search"/></svg></button>
   <div class="dropdown" id="lang-dropdown">
     <button class="dropdown-toggle" onclick="toggleDropdown(event,'lang-dropdown')"><span id="lang-toggle-label">UA</span><span class="caret"><svg class="icon"><use href="#icon-chevron-down"/></svg></span></button>
     <div class="dropdown-menu">
@@ -183,7 +183,7 @@
       <button data-theme-option="system" onclick="selectTheme('system')"><svg class="icon"><use href="#icon-monitor"/></svg> <span data-i18n="theme.system">Системна</span></button>
     </div>
   </div>
-  <button class="nav-icon-btn" id="nav-settings-btn" onclick="showPage('settings')" aria-label="Налаштування" title="Налаштування" data-i18n-title="nav.settings"><svg class="icon"><use href="#icon-sliders"/></svg></button>
+  <button class="nav-icon-btn" id="nav-settings-btn" onclick="showPage('settings')" aria-label="Налаштування" data-i18n-aria="nav.settings" title="Налаштування" data-i18n-title="nav.settings"><svg class="icon"><use href="#icon-sliders"/></svg></button>
   <div id="auth-area" style="margin-right:1rem;display:flex;align-items:center;gap:0.7rem;">
     <!-- filled by initAuth() -->
   </div>
@@ -217,8 +217,8 @@
     <div class="hint" id="home-background-hint" style="display:none;margin:-0.6rem 0 1.2rem;" data-i18n="home.backgroundHint">Пісні з файлом з обох таблиць — грають у фоні й з вимкненим екраном.</div>
     <div class="filter-bar">
       <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за назвою, виконавцем або альбомом…" oninput="debouncedRenderSongs()">
-      <select id="filter-genre" onchange="renderSongs()" aria-label="Жанр" data-i18n-title="filter.allGenres"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
-      <label class="m-sort m-only" id="m-sort" data-i18n-title="sort.button" title="Сортувати"><svg class="icon"><use href="#icon-sort"/></svg><select id="m-sort-select" onchange="onMobileSortChange(this.value)" aria-label="Сортувати"></select></label>
+      <select id="filter-genre" onchange="renderSongs()" aria-label="Жанр" data-i18n-aria="filter.genre" data-i18n-title="filter.allGenres"><option value="" data-i18n="filter.allGenres">Усі жанри</option></select>
+      <label class="m-sort m-only" id="m-sort" data-i18n-title="sort.button" title="Сортувати"><svg class="icon"><use href="#icon-sort"/></svg><select id="m-sort-select" onchange="onMobileSortChange(this.value)" aria-label="Сортувати" data-i18n-aria="sort.button"></select></label>
       <button type="button" class="btn btn-outline" onclick="toggleShuffleTable()" id="shuffle-table-btn"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="table.shuffle">Перемішати</span></button>
       <!-- Дії над таблицею — в одному рядку з фільтрами, притиснуті праворуч.
            "Об'єднати жанри" — лише для адмінів (показує renderAuthArea, ендпоінт теж [AdminOnly]). -->
@@ -547,7 +547,7 @@
           <div id="wheel-disc" class="wheel-disc"></div>
           <div class="wheel-hub" id="wheel-hub"><img src="/images/logo.png" alt="N'Owl"></div>
           <div id="wheel-result" class="wheel-result">
-            <button class="wheel-result-close" onclick="closeWheelResult()" title="Закрити" data-i18n-title="wheel.closeResult" aria-label="Закрити">×</button>
+            <button class="wheel-result-close" onclick="closeWheelResult()" title="Закрити" data-i18n-title="wheel.closeResult" aria-label="Закрити" data-i18n-aria="player.close">×</button>
             <div class="wheel-result-label" data-i18n="wheel.resultLabel">Випав жанр:</div>
             <div id="wheel-result-genre" class="wheel-result-genre"></div>
           </div>
@@ -637,7 +637,7 @@
     <h2><span data-i18n="artists.heading.pre">Всі</span> <span class="hl" data-i18n="artists.heading.accent">виконавці</span></h2>
     <div class="filter-bar artists-bar">
       <input type="text" id="artists-search" data-i18n-placeholder="artists.searchPlaceholder" placeholder="Пошук виконавця…" oninput="onArtistsSearchInput()">
-      <select id="artists-sort" onchange="onArtistsSortChange(this.value)" data-i18n-title="artists.sortLabel" title="Сортування" aria-label="Сортування">
+      <select id="artists-sort" onchange="onArtistsSortChange(this.value)" data-i18n-title="artists.sortLabel" title="Сортування" aria-label="Сортування" data-i18n-aria="artists.sortLabel">
         <option value="songs" data-i18n="artists.sort.songs">Найбільше пісень</option>
         <option value="plays" data-i18n="artists.sort.plays">Найпопулярніші</option>
         <option value="followers" data-i18n="artists.sort.followers">Найбільше підписників</option>
@@ -1073,7 +1073,7 @@
 <!-- PLAYER BAR -->
 <!-- Нижній таббар (лише на телефоні) — та сама навігація, що й у мобільному застосунку.
      Активна вкладка підсвічується CSS-ом за html[data-page] (ставить showPage). -->
-<div class="mobile-tabbar" id="mobile-tabbar" role="navigation" aria-label="Навігація">
+<div class="mobile-tabbar" id="mobile-tabbar" role="navigation" aria-label="Навігація" data-i18n-aria="nav.navigation">
   <button type="button" class="mtab" data-tab="home" onclick="showHome('catalog')"><svg class="icon"><use href="#icon-music"/></svg><span data-i18n="nav.library">Бібліотека</span></button>
   <button type="button" class="mtab" data-tab="top" onclick="showPage('top')"><svg class="icon"><use href="#icon-trophy"/></svg><span data-i18n="nav.topShort">Топ</span></button>
   <button type="button" class="mtab" data-tab="chat" onclick="openChatPage('threads')"><svg class="icon"><use href="#icon-chat"/></svg><span data-i18n="nav.social">Спілкування</span><span class="mtab-badge" id="mtab-chat-badge"></span></button>
@@ -1214,7 +1214,7 @@
 </div>
 
 <!-- ЧЕРГА (queue.js): Моя черга · Далі · Нещодавно прослухані, пошук — щоб зібрати свою -->
-<aside id="queue-panel" class="queue-panel" aria-label="Черга">
+<aside id="queue-panel" class="queue-panel" aria-label="Черга" data-i18n-aria="queue.title">
   <div class="queue-head">
     <strong data-i18n="queue.title">Черга</strong>
     <button type="button" class="q-link" onclick="startNewQueue()" data-i18n="queue.new">Нова черга</button>
@@ -1409,7 +1409,8 @@
         <div class="hint" data-i18n="artist.photoHint">PNG, JPG, WebP або GIF, до 5 МБ</div>
       </div>
     </div>
-    <div class="form-group"><label for="artist-edit-bio" data-i18n="artist.about">Про виконавця</label><textarea id="artist-edit-bio" rows="7" maxlength="5000" style="resize:vertical;"></textarea></div>
+    <div class="form-group"><label for="artist-edit-bio" data-i18n="artist.aboutUk">Про виконавця — українською</label><textarea id="artist-edit-bio" rows="6" maxlength="5000" style="resize:vertical;"></textarea></div>
+    <div class="form-group"><label for="artist-edit-bio-en" data-i18n="artist.aboutEn">Про виконавця — англійською</label><textarea id="artist-edit-bio-en" rows="6" maxlength="5000" style="resize:vertical;" lang="en"></textarea></div>
     <div class="hint" id="artist-edit-status" style="min-height:1.2em;"></div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeArtistEditModal()" data-i18n="modal.cancel">Скасувати</button>
@@ -1580,7 +1581,7 @@
         <h3 id="create-playlist-title" data-i18n="playlistModal.title">Новий плейлист</h3>
         <p data-i18n="playlistModal.subtitle">Пісні додаються кнопкою «+» у будь-якій таблиці.</p>
       </div>
-      <button type="button" class="modal-close" onclick="closeCreatePlaylistModal()" aria-label="Закрити" data-i18n-title="modal.cancel"><svg class="icon"><use href="#icon-x"/></svg></button>
+      <button type="button" class="modal-close" onclick="closeCreatePlaylistModal()" aria-label="Закрити" data-i18n-aria="player.close" data-i18n-title="modal.cancel"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
 
     <div class="form-group">

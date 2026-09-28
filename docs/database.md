@@ -43,7 +43,7 @@ EF-операції — бо реальна схема має `serial`-іден�
 | Група | Таблиці |
 |---|---|
 | Каталог | `music` (зокрема `source`, `submitted_by_user_id`, `audio_file`, `lyrics`), `genre`, `album`, `music_genre`, `music_requests` (`kind`, `requester_user_id`, `audio_file`, `lyrics`) |
-| Виконавці | `artists`, `music_artists`, `artist_follows`, `artist_events` |
+| Виконавці | `artists` (`bio` — опис українською, `bio_en` — англійською), `music_artists`, `artist_follows`, `artist_events` |
 | Користувачі | `users` (непрозорий id), `user_profiles` (ім'я, аватар), `friend_requests` |
 | Персоналізація | `favorites`, `playlists` (`is_public`), `playlist_songs`, `listening_history` |
 | Ком'юніті | `direct_messages`, `dm_requests`, `dm_cleared`, `discussion_threads`, `discussion_posts`, `song_ratings` |

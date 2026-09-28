@@ -128,4 +128,23 @@ public class TasteAndArtistsTests
         Assert.Equal("Muse", muse.Name);
         Assert.Equal(50, muse.Score); // {rock} проти {rock, hard rock}
     }
+
+    // Опис двома мовами: без bioEn (старий застосунок) англійський лишається, "" — прибирає.
+    [Fact]
+    public async Task UpdateBio_KeepsEnglishWhenOmitted_ClearsWhenEmpty()
+    {
+        using var db = Seed();
+        var controller = new ArtistsController(db, null!, null!, null!,
+            new CatalogCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())))
+        { ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() } };
+
+        var both = Assert.IsType<ArtistDetailDto>(Assert.IsType<OkObjectResult>((await controller.Update(1, new UpdateArtistDto("Австралійський гурт", " Australian band "))).Result).Value);
+        Assert.Equal(("Австралійський гурт", "Australian band"), (both.Bio, both.BioEn));
+
+        await controller.Update(1, new UpdateArtistDto("Гурт"));
+        Assert.Equal(("Гурт", "Australian band"), (db.Artists.Find(1)!.Bio, db.Artists.Find(1)!.BioEn));
+
+        await controller.Update(1, new UpdateArtistDto("Гурт", ""));
+        Assert.Null(db.Artists.Find(1)!.BioEn);
+    }
 }

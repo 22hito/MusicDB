@@ -387,7 +387,8 @@ export interface PublicPlaylist {
   id: number;
   name: string;
   songCount: number;
-  ownerLabel: string;
+  /** null — ні ніка, ні імені з Google: підпис «учасника спільноти» робить застосунок */
+  ownerLabel: string | null;
 }
 
 export interface PublicProfile {
@@ -406,6 +407,8 @@ export interface ArtistDetail {
   id: number;
   name: string;
   bio: string | null;
+  /** опис англійською; показується в англійському інтерфейсі, інакше — bio */
+  bioEn?: string | null;
   imageUrl: string | null;
   songCount: number;
   followerCount: number;

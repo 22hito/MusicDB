@@ -190,6 +190,11 @@ const I18N = {
     'artists.more': 'Показати ще',
     'artists.total': 'Виконавців: {n}',
     'artist.source': 'Джерело',
+    'artist.wikipedia': 'Вікіпедія',
+    'artist.aboutUk': 'Про виконавця — українською',
+    'artist.aboutEn': 'Про виконавця — англійською',
+    'nav.navigation': 'Навігація',
+    'battle.ownerFallback': 'учасника спільноти',
     // Форми для чисел: одна | кілька (2–4) | багато — див. plural() нижче
     'count.songs': 'пісня|пісні|пісень',
     'count.albums': 'альбом|альбоми|альбомів',
@@ -858,6 +863,11 @@ const I18N = {
     'artists.more': 'Show more',
     'artists.total': 'Artists: {n}',
     'artist.source': 'Source',
+    'artist.wikipedia': 'Wikipedia',
+    'artist.aboutUk': 'About — in Ukrainian',
+    'artist.aboutEn': 'About — in English',
+    'nav.navigation': 'Navigation',
+    'battle.ownerFallback': 'a community member',
     'count.songs': 'song|songs',
     'count.albums': 'album|albums',
     'count.followers': 'follower|followers',
@@ -1367,6 +1377,7 @@ function applyLang(lang){
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.getAttribute('data-i18n')); });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title = t(el.getAttribute('data-i18n-title')); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
   const label = document.getElementById('lang-toggle-label');
   if(label) label.textContent = lang === 'uk' ? 'UA' : 'EN';
   document.querySelectorAll('#lang-dropdown [data-lang-option]').forEach(b=>{
