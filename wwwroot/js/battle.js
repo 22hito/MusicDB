@@ -182,6 +182,8 @@ function startBattleRoyale(size){
   document.getElementById('battle-champion').style.display = 'none';
   document.getElementById('battle-split').style.display = 'flex';
   document.getElementById('battle-modal-overlay').classList.add('open');
+  // Турнір — як окрема сторінка: «Назад» у браузері виходить із нього, а не з розділу під ним.
+  if(!history.state?.battle) history.pushState({ ...(history.state || {}), battle: true }, '', location.pathname + location.search);
   _ensureBattlePlayers(()=>{ loadBattleMatch(); });
 }
 
@@ -260,6 +262,12 @@ function _renderBattleProgress(finished){
   const played = finished ? total : battleInitialSize - battleRound.length + battleMatchIndex;
   fill.style.width = `${played / total * 100}%`;
   el.classList.toggle('winner', !!finished);
+  document.getElementById('battle-played').textContent = t('battle.played').replace('{x}', played).replace('{n}', total);
+}
+// Тло сцени — розмиті обкладинки YouTube обох пісень (у пісні ком'юніті без відео — порожньо).
+function _setBattleBg(side, song){
+  const vid = song?.youtubeVideoId;
+  document.getElementById(`battle-bg-${side}`).style.backgroundImage = vid ? `url("https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg")` : '';
 }
 // «Раунд 3 з 10 — 5/128» (n/m — матч у раунді); останні раунди — за назвою.
 function _battleRoundTitle(size, match){
@@ -283,6 +291,7 @@ async function loadBattleMatch(){
   _setMarqueeText(document.getElementById('battle-a-title'), a.title);
   _setMarqueeText(document.getElementById('battle-b-artist'), b.artist);
   _setMarqueeText(document.getElementById('battle-b-title'), b.title);
+  _setBattleBg('a', a); _setBattleBg('b', b);
   document.getElementById('battle-a-notfound').style.display = 'none';
   document.getElementById('battle-b-notfound').style.display = 'none';
 
@@ -415,8 +424,12 @@ function showBattleChampion(song){
   battleChampionSong = song;
   document.getElementById('battle-champion-artist').textContent = song.artist;
   document.getElementById('battle-champion-title').textContent = song.title;
+  const cover = document.getElementById('battle-champion-cover');
+  cover.style.display = song.youtubeVideoId ? '' : 'none';
+  if(song.youtubeVideoId) cover.src = `https://i.ytimg.com/vi/${encodeURIComponent(song.youtubeVideoId)}/hqdefault.jpg`;
+  _setBattleBg('a', song); _setBattleBg('b', song);
   document.getElementById('battle-split').style.display = 'none';
-  document.getElementById('battle-champion').style.display = 'block';
+  document.getElementById('battle-champion').style.display = 'flex';
   _battleConfetti();
   // loadBattleMatch після фіналу більше не викликається — довершуємо смужку й підпис тут.
   _renderBattleProgress(true);
@@ -455,7 +468,10 @@ function playBattleChampion(){
 }
 
 function closeBattle(){
+  const wasOpen = document.getElementById('battle-modal-overlay').classList.contains('open');
   _closeModalAnimated('battle-modal-overlay');
+  // Закрили кнопкою — прибираємо запис турніру з історії (якщо закрив сам «Назад», його там уже нема).
+  if(wasOpen && history.state?.battle) history.back();
   try{ battleLeftPlayer && battleLeftPlayer.stopVideo(); }catch(e){}
   try{ battleRightPlayer && battleRightPlayer.stopVideo(); }catch(e){}
   _stopBattleMinis();

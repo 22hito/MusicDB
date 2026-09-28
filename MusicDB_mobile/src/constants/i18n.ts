@@ -398,6 +398,7 @@ export const I18N = {
     'battle.chooseSize': 'Оберіть розмір турніру:', // NEW
     'battle.notEnough': 'Замало пісень у плейлисті — потрібно щонайменше 4.', // NEW
     'battle.round': 'Раунд {x} з {n}',
+    'battle.played': 'Зіграно {x} з {n}',
     'battle.quarterfinal': 'Чвертьфінал',
     'battle.semifinal': 'Півфінал',
     'battle.final': 'Фінал',
@@ -986,6 +987,7 @@ export const I18N = {
     'battle.chooseSize': 'Choose tournament size:', // NEW
     'battle.notEnough': 'Not enough songs in this playlist — need at least 4.', // NEW
     'battle.round': 'Round {x} of {n}',
+    'battle.played': 'Played {x} of {n}',
     'battle.quarterfinal': 'Quarterfinal',
     'battle.semifinal': 'Semifinal',
     'battle.final': 'Final',

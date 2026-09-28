@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
@@ -14,6 +14,8 @@ import { FONT_MONO_MEDIUM, FONT_MONO_REGULAR, FONT_SANS_BOLD, FONT_SANS_REGULAR,
 import type { Playlist, PublicPlaylist, Song } from '@/api/types';
 
 const BATTLE_SIZES = [4, 8, 16, 32, 64, 128, 256, 512, 1024];
+const ytThumb = (s: Song | null | undefined, size = 'mqdefault') =>
+  s?.youtubeVideoId ? `https://img.youtube.com/vi/${s.youtubeVideoId}/${size}.jpg` : null;
 
 interface BattleState {
   round: Song[]; // пісні поточного кола (i та i+1 — пара)
@@ -218,11 +220,29 @@ export default function BattleScreen() {
           {roundTitle(bt.round.length, bt.matchIndex + 1, bt.initialSize)}
         </Text>
       ) : null}
-      <View style={[styles.progress, { backgroundColor: theme.surface2 }]}>
-        <View style={[styles.progressFill, { width: `${(played / Math.max(1, bt.initialSize - 1)) * 100}%`, backgroundColor: theme.accent }]} />
+      <View style={styles.progressRow}>
+        <View style={[styles.progress, { backgroundColor: theme.surface2 }]}>
+          <View style={[styles.progressFill, { width: `${(played / Math.max(1, bt.initialSize - 1)) * 100}%`, backgroundColor: theme.accent }]} />
+        </View>
+        <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONT_MONO_REGULAR }}>
+          {t('battle.played').replace('{x}', String(played)).replace('{n}', String(bt.initialSize - 1))}
+        </Text>
       </View>
     </View>
   ) : null;
+  // Тло, як на сайті: розмиті обкладинки обох пісень матчу (у переможця — його).
+  const bgSongs = bt ? (bt.champion ? [bt.champion, bt.champion] : [a, b]) : [];
+  const stageBg = (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {bgSongs.map((s, i) => {
+        const uri = ytThumb(s);
+        return uri ? (
+          <Image key={i} source={{ uri }} blurRadius={40} style={[styles.bgHalf, i === 0 ? { left: 0 } : { right: 0 }]} />
+        ) : null;
+      })}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.bg, opacity: 0.7 }]} />
+    </View>
+  );
 
   const contender = (song: Song, side: 0 | 1) => {
     const isCur = player.current?.id === song.id;
@@ -277,12 +297,16 @@ export default function BattleScreen() {
   if (bt) {
     return (
       <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
+        {stageBg}
         <View style={[styles.matchArea, { padding: pad, paddingBottom: pad + (player.isOpen ? PLAYER_BAR_HEIGHT + 8 : 0) }]} onLayout={(e) => setAreaH(e.nativeEvent.layout.height)}>
           {ribbon}
           {bt.champion ? (
             <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
               <View style={[styles.champion, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
-                <TrophyIcon size={42} color={theme.accent} />
+                {ytThumb(bt.champion, 'hqdefault') ? (
+                  <Image source={{ uri: ytThumb(bt.champion, 'hqdefault')! }} style={[styles.championCover, { borderColor: theme.accent }]} />
+                ) : null}
+                <TrophyIcon size={ytThumb(bt.champion) ? 26 : 42} color={theme.accent} />
                 <Text style={{ color: theme.muted, fontSize: 12, textTransform: 'uppercase', marginTop: 10, fontFamily: FONT_MONO_MEDIUM }}>
                   {t('battle.championLabel')}
                 </Text>
@@ -414,7 +438,10 @@ const styles = StyleSheet.create({
   plIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   genreCard: { borderWidth: 1, borderLeftWidth: 3, borderRadius: RADIUS.lg, padding: SPACING.md, gap: SPACING.md, marginBottom: SPACING.sm },
   ribbon: { gap: 8, marginBottom: SPACING.md },
-  progress: { height: 4, borderRadius: RADIUS.pill, overflow: 'hidden' },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  progress: { flex: 1, height: 4, borderRadius: RADIUS.pill, overflow: 'hidden' },
+  bgHalf: { position: 'absolute', top: '-10%', bottom: '-10%', width: '60%', opacity: 0.55 },
+  championCover: { width: '100%', aspectRatio: 16 / 9, borderRadius: RADIUS.lg, borderWidth: 1, marginBottom: 14 },
   progressFill: { height: '100%', borderRadius: RADIUS.pill },
   matchArea: { flex: 1 },
   pair: { flexDirection: 'row', gap: 10, flex: 1, minHeight: 190, maxHeight: 260, marginTop: 12 },

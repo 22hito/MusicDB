@@ -1659,16 +1659,22 @@
   </div>
 </div>
 
-<!-- Батл рояль: сам турнір (два відео пліч-о-пліч, оберіть переможця раунду) -->
+<!-- Батл рояль: сам турнір (два відео пліч-о-пліч, оберіть переможця раунду). На ПК — окрема сцена на весь екран. -->
 <div class="modal-overlay" id="battle-modal-overlay">
   <div class="battle-box">
+    <!-- Тло сцени (ПК): розмиті обкладинки обох пісень матчу. -->
+    <div class="battle-stage-bg" aria-hidden="true"><div id="battle-bg-a"></div><div id="battle-bg-b"></div></div>
     <div class="battle-header">
+      <span class="battle-brand"><svg class="icon"><use href="#icon-trophy"/></svg><span data-i18n="nav.battle">Батл рояль</span></span>
       <span id="battle-round-label" class="battle-round-label"></span>
       <button type="button" class="btn btn-outline battle-hover-toggle" id="battle-hover-toggle-btn" onclick="toggleBattleHoverMode()" title="Наведіть курсор на відео, щоб грало — заберіть курсор, щоб пауза" data-i18n-title="battle.hoverModeHint"><svg class="icon"><use href="#icon-cursor"/></svg> <span data-i18n="battle.hoverModeBtn">Режим наведення</span></button>
       <button type="button" class="btn btn-outline battle-undo-btn" id="battle-undo-btn" onclick="undoBattle()" disabled title="Ctrl+Z" data-i18n="battle.undo">↶ Крок назад</button>
-      <button class="battle-close-btn" onclick="closeBattle()"><svg class="icon"><use href="#icon-x"/></svg></button>
+      <button class="battle-close-btn" onclick="exitBattle()" data-i18n-title="battle.exit" title="Вийти" aria-label="Вийти" data-i18n-aria="battle.exit"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
-    <div id="battle-progress-ribbon" class="battle-progress-ribbon"></div>
+    <div class="battle-progress-row">
+      <div id="battle-progress-ribbon" class="battle-progress-ribbon"></div>
+      <span id="battle-played" class="battle-played"></span>
+    </div>
     <div id="battle-split" class="battle-split">
       <div class="battle-media-row">
         <!-- Телефон: одна рамка з відео пісні, яку слухають (як у мобільному застосунку); до першого "Послухати" — підказка. -->
@@ -1706,7 +1712,7 @@
             <div class="battle-side-notfound" id="battle-a-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
           </div>
           <button type="button" class="battle-listen-btn" onclick="listenBattleSide(0)"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="battle.listenBtn">Послухати</span></button>
-          <button class="battle-choose-btn" onclick="chooseBattleWinner(0)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
+          <button class="battle-choose-btn" onclick="chooseBattleWinner(0)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span><kbd class="battle-kbd">←</kbd></button>
         </div>
         <div class="battle-vs-spacer"></div>
         <div class="battle-side">
@@ -1716,11 +1722,12 @@
             <div class="battle-side-notfound" id="battle-b-notfound" data-i18n="battle.videoNotFound">Відео не знайдено</div>
           </div>
           <button type="button" class="battle-listen-btn" onclick="listenBattleSide(1)"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="battle.listenBtn">Послухати</span></button>
-          <button class="battle-choose-btn" onclick="chooseBattleWinner(1)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span></button>
+          <button class="battle-choose-btn" onclick="chooseBattleWinner(1)"><svg class="icon"><use href="#icon-check"/></svg> <span data-i18n="battle.chooseBtn">Обрати цю</span><kbd class="battle-kbd">→</kbd></button>
         </div>
       </div>
     </div>
     <div id="battle-champion" class="battle-champion" style="display:none;">
+      <img id="battle-champion-cover" class="battle-champion-cover" alt="" style="display:none;">
       <div class="battle-champion-label"><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="battle.championLabel">Переможець</span></div>
       <div class="battle-champion-artist" id="battle-champion-artist"></div>
       <div class="battle-champion-title" id="battle-champion-title"></div>

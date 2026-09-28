@@ -397,6 +397,88 @@ tbody tr:last-child td { border-bottom: none; }
 .battle-pl-main strong { color: var(--text); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .battle-pl-main span { color: var(--muted); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .battle-pl-arrow { color: var(--muted); flex-shrink: 0; width: 16px; height: 16px; }
+/* Прогрес: смужка + «Зіграно N з M» (лічильник — лише на ПК). */
+.battle-progress-row { display: flex; align-items: center; gap: 14px; }
+.battle-progress-row .battle-progress-ribbon { flex: 1; }
+.battle-played, .battle-brand, .battle-kbd, .battle-stage-bg { display: none; }
+.battle-champion { flex-direction: column; align-items: center; }
+
+/* ПК: батл — окрема сцена на весь екран, а не вікно посередині. Відео займають усю доступну висоту
+   (ширина — від розміру .battle-split через cq-одиниці, 16:9 зберігається), картки під ними — тієї ж ширини. */
+@media (min-width: 769px) {
+  #battle-modal-overlay { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  #battle-modal-overlay .battle-box {
+    position: relative; width: 100vw; height: 100vh; max-height: none; border: none; border-radius: 0; box-shadow: none;
+    background: transparent; display: flex; flex-direction: column; overflow: hidden;
+    animation: battleStageIn 0.35s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes battleStageIn { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: none; } }
+  .battle-stage-bg { display: block; position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .battle-stage-bg > div {
+    position: absolute; top: -15%; bottom: -15%; width: 62%; background-size: cover; background-position: center;
+    filter: blur(80px) saturate(1.6); opacity: 0.6; transition: background-image 0.6s ease;
+  }
+  #battle-bg-a { left: -12%; }
+  #battle-bg-b { right: -12%; }
+  .battle-stage-bg::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 85% 75% at 50% 50%, transparent 20%, color-mix(in srgb, var(--bg) 60%, transparent) 70%, var(--bg));
+  }
+  .battle-box > :not(.battle-stage-bg) { position: relative; z-index: 1; }
+
+  .battle-header { padding: 18px 32px 14px; border-bottom: none; gap: 14px; justify-content: flex-start; }
+  .battle-header .battle-brand { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-family: var(--font-serif); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.01em; }
+  .battle-header .battle-brand span { color: inherit; font: inherit; letter-spacing: inherit; }
+  .battle-brand .icon { width: 20px; height: 20px; }
+  .battle-header .battle-round-label { font-size: 0.95rem; padding-left: 14px; border-left: 1px solid var(--border-strong); }
+  .battle-close-btn { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 70%, transparent); }
+  .battle-close-btn:hover { border-color: var(--border-strong); }
+
+  .battle-progress-row { padding: 0 32px; }
+  .battle-progress-row .battle-progress-ribbon { margin: 0; height: 6px; }
+  .battle-played { display: inline; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .battle-split {
+    flex: 1; min-height: 0; padding: 26px 32px 30px; container-type: size;
+    --battle-w: min(calc((100cqw - 128px) / 2), calc((100cqh - 170px) * 16 / 9), 900px);
+    justify-content: center;
+  }
+  .battle-media-row { padding: 0; margin: 0 0 20px; justify-content: center; align-items: center; }
+  .battle-media-row .battle-video-wrap {
+    flex: none; width: var(--battle-w); border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
+  }
+  .battle-vs, .battle-vs-spacer { width: 128px; }
+  .battle-vs { position: relative; align-self: stretch; }
+  .battle-vs::before {
+    content: ''; position: absolute; left: 50%; top: 8%; bottom: 8%; width: 1px; transform: translateX(-50%);
+    background: linear-gradient(transparent, color-mix(in srgb, var(--accent) 55%, transparent), transparent);
+  }
+  .battle-vs span { position: relative; width: 88px; height: 88px; font-size: 1.55rem; box-shadow: 0 0 0 5px var(--bg), 0 0 0 9px color-mix(in srgb, var(--accent) 35%, transparent), 0 10px 40px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .battle-details-row { padding: 0; justify-content: center; }
+  .battle-details-row .battle-side { flex: none; width: var(--battle-w); padding-top: 0; }
+  .battle-side-info { margin-bottom: 16px; }
+  .battle-side-artist { font-size: 1.55rem; line-height: 1.25; }
+  .battle-side-title { font-size: 1rem; margin-top: 4px; }
+  .battle-choose-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 1rem 1.2rem; font-size: 1rem; border-radius: 12px; }
+  .battle-kbd {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 24px; padding: 0 6px; margin-left: 6px;
+    border-radius: 6px; font-family: var(--font-ui); font-size: 0.8rem; font-weight: 700;
+    background: color-mix(in srgb, var(--on-accent) 14%, transparent); border: 1px solid color-mix(in srgb, var(--on-accent) 25%, transparent);
+  }
+
+  .battle-champion { flex: 1; min-height: 0; justify-content: center; padding: 20px 32px 40px; }
+  .battle-champion-cover {
+    width: min(520px, 46vw, calc((100vh - 360px) * 16 / 9)); aspect-ratio: 16/9; object-fit: cover; border-radius: 18px; margin-bottom: 26px;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 24px 80px color-mix(in srgb, var(--accent) 30%, transparent);
+    animation: battleChampionIn 0.6s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes battleChampionIn { from { opacity: 0; transform: scale(0.85) translateY(12px); } to { opacity: 1; transform: none; } }
+  .battle-champion-label { font-size: 1.2rem; }
+  .battle-champion-artist { font-size: 2.6rem; }
+  .battle-champion-title { font-size: 1.2rem; }
+}
+
 @media (max-width: 720px) {
   .battle-media-row, .battle-details-row { flex-direction: column; padding-left: 16px; padding-right: 16px; }
   .battle-vs { width: 100%; padding: 10px 0; }
