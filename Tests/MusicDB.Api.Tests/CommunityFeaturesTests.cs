@@ -218,10 +218,10 @@ public class CommunityFeaturesTests
         var aliceId = await dir.GetOrCreateUserIdAsync("alice@x.com", "alice", null);
         var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
         await MakeFriendsAsync(db, aliceId, bobId);
-        var alice = WithUser(new MessagesController(db, dir, Hub), "alice@x.com");
+        var alice = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "alice@x.com");
         await alice.Send(bobId, new SendMessageDto("  привіт  "));
 
-        var bob = WithUser(new MessagesController(db, dir, Hub), "bob@x.com");
+        var bob = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "bob@x.com");
         var conv = Assert.Single(Ok(await bob.GetConversations()));
         Assert.Equal("alice", conv.DisplayName);
         Assert.Equal("привіт", conv.LastMessage);
@@ -235,6 +235,59 @@ public class CommunityFeaturesTests
         Assert.Equal(0, Ok(await bob.GetUnreadCount()).Unread);
     }
 
+    // Пісня й файл у повідомленні: у треді — картка пісні та вкладення, у списку розмов — «🎵 …» / «📎 …»;
+    // файл бачать лише відправник і отримувач.
+    [Fact]
+    public async Task Messages_Rich_SongAndFile_OnlyParticipantsGetFile()
+    {
+        using var db = TestDb.Create();
+        db.Songs.Add(new Music { Id = 1, Artist = "Muse", Title = "Uprising", Duration = TimeSpan.FromMinutes(5) });
+        await db.SaveChangesAsync();
+        var dir = new UserDirectoryService(db);
+        var aliceId = await dir.GetOrCreateUserIdAsync("alice@x.com", "alice", null);
+        var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
+        await dir.GetOrCreateUserIdAsync("carol@x.com", "carol", null);
+        await MakeFriendsAsync(db, aliceId, bobId);
+        var storage = CreateAudioStorage();
+        var alice = WithUser(new MessagesController(db, dir, Hub, storage, CreateMusicService(db)), "alice@x.com");
+
+        var songMsg = Ok(await alice.SendRich(bobId, null, 1, null));
+        Assert.Equal("Uprising", songMsg.Song!.Title);
+        var bob = WithUser(new MessagesController(db, dir, Hub, storage, CreateMusicService(db)), "bob@x.com");
+        Assert.Equal("🎵 Muse — Uprising", Assert.Single(Ok(await bob.GetConversations())).LastMessage);
+
+        var fileMsg = Ok(await alice.SendRich(bobId, "  послухай  ", null, new FormFile(new MemoryStream([0x49, 0x44, 0x33, 4]), 0, 4, "file", "../voice note.mp3")));
+        Assert.Equal("послухай", fileMsg.Body);
+        Assert.Equal(("voice note.mp3", "audio"), (fileMsg.Attachment!.Name, fileMsg.Attachment.Kind));
+
+        var thread = Ok(await bob.GetThread(aliceId));
+        Assert.Equal("Muse", thread.Messages[0].Song!.Artist);
+        Assert.NotNull(thread.Messages[1].Attachment);
+        Assert.IsNotType<NotFoundResult>(await bob.GetAttachment(fileMsg.Id));
+        var carol = WithUser(new MessagesController(db, dir, Hub, storage, CreateMusicService(db)), "carol@x.com");
+        Assert.IsType<NotFoundResult>(await carol.GetAttachment(fileMsg.Id));
+    }
+
+    [Theory]
+    [InlineData(null, null, false, false)]      // нічого
+    [InlineData(null, 999, false, false)]       // невідома пісня
+    [InlineData(null, null, true, false)]       // HTML-файл — не з білого списку
+    public async Task Messages_Rich_RejectsEmptyUnknownSongAndBadFile(string? body, int? musicId, bool html, bool _)
+    {
+        using var db = TestDb.Create();
+        var dir = new UserDirectoryService(db);
+        var aliceId = await dir.GetOrCreateUserIdAsync("alice@x.com", "alice", null);
+        var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
+        await MakeFriendsAsync(db, aliceId, bobId);
+        var alice = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "alice@x.com");
+        IFormFile? file = html ? new FormFile(new MemoryStream("<html>"u8.ToArray()), 0, 6, "file", "page.html") : null;
+
+        var result = await alice.SendRich(bobId, body, musicId, file);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(db.DirectMessages);
+    }
+
     [Fact]
     public async Task Messages_ClearForMe_HidesOnlyForMe_UntilNewMessage()
     {
@@ -243,8 +296,8 @@ public class CommunityFeaturesTests
         var aliceId = await dir.GetOrCreateUserIdAsync("alice@x.com", "alice", null);
         var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
         await MakeFriendsAsync(db, aliceId, bobId);
-        var alice = WithUser(new MessagesController(db, dir, Hub), "alice@x.com");
-        var bob = WithUser(new MessagesController(db, dir, Hub), "bob@x.com");
+        var alice = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "alice@x.com");
+        var bob = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "bob@x.com");
         await alice.Send(bobId, new SendMessageDto("старе 1"));
         await bob.Send(aliceId, new SendMessageDto("старе 2"));
         await alice.Send(bobId, new SendMessageDto("непрочитане"));
@@ -269,8 +322,8 @@ public class CommunityFeaturesTests
         var dir = new UserDirectoryService(db);
         var aliceId = await dir.GetOrCreateUserIdAsync("alice@x.com", "alice", null);
         var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
-        var alice = WithUser(new MessagesController(db, dir, Hub), "alice@x.com");
-        var bob = WithUser(new MessagesController(db, dir, Hub), "bob@x.com");
+        var alice = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "alice@x.com");
+        var bob = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "bob@x.com");
 
         Assert.IsType<OkObjectResult>((await alice.Send(bobId, new SendMessageDto("можна написати?"))).Result);
         // Поки bob не схвалив — друге повідомлення не проходить.
@@ -298,8 +351,8 @@ public class CommunityFeaturesTests
         var dir = new UserDirectoryService(db);
         var aliceId = await dir.GetOrCreateUserIdAsync("alice@x.com", "alice", null);
         var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
-        var alice = WithUser(new MessagesController(db, dir, Hub), "alice@x.com");
-        var bob = WithUser(new MessagesController(db, dir, Hub), "bob@x.com");
+        var alice = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "alice@x.com");
+        var bob = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "bob@x.com");
 
         await alice.Send(bobId, new SendMessageDto("привіт"));
         await bob.DeclineRequest(aliceId);
@@ -320,7 +373,7 @@ public class CommunityFeaturesTests
         using var db = TestDb.Create();
         var dir = new UserDirectoryService(db);
         var bobId = await dir.GetOrCreateUserIdAsync("bob@x.com", "bob", null);
-        var alice = WithUser(new MessagesController(db, dir, Hub), "alice@x.com");
+        var alice = WithUser(new MessagesController(db, dir, Hub, CreateAudioStorage(), CreateMusicService(db)), "alice@x.com");
 
         Assert.IsType<BadRequestObjectResult>((await alice.Send(bobId, new SendMessageDto("   "))).Result);
     }

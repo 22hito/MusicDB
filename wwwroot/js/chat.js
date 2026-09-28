@@ -168,8 +168,13 @@ function loadDmThread(){
     hint.style.display = hintKey ? '' : 'none';
     document.getElementById('chat-dm-input-row').style.display = thread.canSend ? '' : 'none';
     const box = document.getElementById('chat-dm-messages');
+    list.forEach(m => { if(m.song && !_chatSharedSongs.some(s => s.id === m.song.id)) _chatSharedSongs.push(_normalizeSharedSong(m.song)); });
     box.innerHTML = list.length
-      ? list.map(m=>`<div class="chat-msg${m.isMine?' mine':''}"><div class="chat-msg-body">${esc(m.body)}</div><div class="chat-msg-time">${esc(m.createdAt)}</div></div>`).join('')
+      ? list.map(m=>`<div class="chat-msg${m.isMine?' mine':''}${m.attachment?.kind === 'image' && !m.body ? ' media' : ''}">`
+          + (m.song ? _chatSongHtml(m.song) : '')
+          + (m.attachment ? _chatAttachmentHtml(m.attachment) : '')
+          + (m.body ? `<div class="chat-msg-body">${esc(m.body)}</div>` : '')
+          + `<div class="chat-msg-time">${esc(m.createdAt)}</div></div>`).join('')
       : `<div class="empty" style="padding:2rem 1rem;">${t('chat.startConversation')}</div>`;
     box.scrollTop = box.scrollHeight;
     refreshDmBadge();
@@ -202,16 +207,199 @@ function onChatInputKeydown(e){
 function sendDirectMessage(){
   const input = document.getElementById('chat-dm-input');
   const body = input.value.trim();
-  if(!body || currentChatUserId == null) return;
-  fetch(`/api/messages/${currentChatUserId}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body }) })
-    .then(r=>{
+  const { file, song } = _chatPending;
+  if((!body && !file && !song) || currentChatUserId == null) return;
+  // З файлом чи піснею — multipart на /rich; просто текст — як раніше.
+  let req;
+  if(file || song){
+    const fd = new FormData();
+    if(body) fd.append('body', body);
+    if(song) fd.append('musicId', song.id);
+    if(file) fd.append('file', file, file.name);
+    req = fetch(`/api/messages/${currentChatUserId}/rich`, { method:'POST', body: fd });
+  } else {
+    req = fetch(`/api/messages/${currentChatUserId}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body }) });
+  }
+  const btn = document.getElementById('chat-dm-send');
+  btn.disabled = true;
+  if(file) btn.textContent = t('chat.sending');
+  req.then(async r=>{
       if(r.status === 409 || r.status === 403){ loadDmThread(); return; } // запит ще не схвалено / відхилено — підказка вже пояснить
+      if(r.status === 400 && file){ alert(t('chat.fileRejected')); return; }
       if(!r.ok){ alert(t('msg.connectionError')); return; }
       input.value = '';
+      _chatPending = { file: null, song: null };
+      _renderChatPending();
       loadDmThread();
       loadConversations();
     })
-    .catch(()=>{ alert(t('msg.connectionError')); });
+    .catch(()=>{ alert(t('msg.connectionError')); })
+    .finally(()=>{ btn.disabled = false; btn.textContent = t('chat.sendBtn'); });
+}
+
+// ─── Вкладення й пісні в особистих повідомленнях ─────────────────────────
+const CHAT_MAX_FILE = 20 * 1024 * 1024;
+let _chatPending = { file: null, song: null };
+let _chatSharedSongs = []; // пісні з повідомлень — щоб _findSong знаходив їх для черги й плеєра
+function _normalizeSharedSong(s){
+  return { ...s, genres: s.genres || [], artists: s.artists || [], source: s.source || 'catalog', playCount: s.playCount || 0 };
+}
+function _fmtBytes(n){
+  return n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
+}
+function _songThumbUrl(s){ return s?.youtubeVideoId ? `https://i.ytimg.com/vi/${encodeURIComponent(s.youtubeVideoId)}/mqdefault.jpg` : null; }
+function _chatSongHtml(s){
+  const thumb = _songThumbUrl(s);
+  return `<div class="chat-song">
+    ${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy">` : `<span class="chat-song-ph"><svg class="icon"><use href="#icon-music"/></svg></span>`}
+    <span class="chat-song-main"><strong>${esc(s.artist)}</strong><span>${esc(s.title)}</span></span>
+    <button type="button" class="chat-song-btn" onclick="playSharedSong(${s.id})" title="${esc(t('profile.playBtn'))}" aria-label="${esc(t('profile.playBtn'))}"><svg class="icon icon-filled"><use href="#icon-play"/></svg></button>
+    <button type="button" class="chat-song-btn" onclick="addToQueue(${s.id})" title="${esc(t('queue.add'))}" aria-label="${esc(t('queue.add'))}"><svg class="icon"><use href="#icon-queue"/></svg></button>
+  </div>`;
+}
+function _chatAttachmentHtml(a){
+  const url = esc(a.url), name = esc(a.name);
+  if(a.kind === 'image') return `<a class="chat-att-img" href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="${name}" loading="lazy"></a>`;
+  if(a.kind === 'audio') return `<div class="chat-att-media"><audio controls preload="none" src="${url}"></audio><div class="chat-att-caption">${name}</div></div>`;
+  if(a.kind === 'video') return `<div class="chat-att-media"><video controls preload="metadata" src="${url}"></video></div>`;
+  return `<a class="chat-att-file" href="${url}" download="${name}"><svg class="icon"><use href="#icon-download"/></svg><span><strong>${name}</strong><small>${esc(_fmtBytes(a.size))}</small></span></a>`;
+}
+// Прикріплене до повідомлення, що пишеться: чипи над полем вводу.
+function _renderChatPending(){
+  const box = document.getElementById('chat-dm-pending');
+  const { file, song } = _chatPending;
+  const chip = (icon, text, clear) => `<span class="chat-pending-chip"><svg class="icon"><use href="#icon-${icon}"/></svg><span>${esc(text)}</span><button type="button" onclick="${clear}" aria-label="×">×</button></span>`;
+  box.innerHTML = (song ? chip('music', `${song.artist} — ${song.title}`, "_chatPending.song=null;_renderChatPending()") : '')
+    + (file ? chip('paperclip', `${file.name} · ${_fmtBytes(file.size)}`, "_chatPending.file=null;_renderChatPending()") : '');
+  box.style.display = song || file ? '' : 'none';
+}
+function onChatFilePicked(file){
+  if(!file) return;
+  if(file.size > CHAT_MAX_FILE){ alert(t('chat.fileTooBig')); return; }
+  _chatPending.file = file;
+  _renderChatPending();
+  document.getElementById('chat-dm-input').focus();
+}
+// Картинка з буфера (Ctrl+V) і перетягування файлу на розмову — теж вкладення.
+(() => {
+  const input = document.getElementById('chat-dm-input');
+  const panel = document.getElementById('chat-dm-panel');
+  if(!input || !panel) return;
+  input.addEventListener('paste', e => {
+    const file = [...(e.clipboardData?.files || [])][0];
+    if(file){ e.preventDefault(); onChatFilePicked(file); }
+  });
+  panel.addEventListener('dragover', e => { if(e.dataTransfer?.types?.includes('Files')){ e.preventDefault(); panel.classList.add('drop'); } });
+  panel.addEventListener('dragleave', e => { if(e.target === panel) panel.classList.remove('drop'); });
+  panel.addEventListener('drop', e => {
+    panel.classList.remove('drop');
+    const file = e.dataTransfer?.files?.[0];
+    if(file){ e.preventDefault(); onChatFilePicked(file); }
+  });
+})();
+// Пісня в повідомлення: пошук по обох таблицях.
+function openChatSongPicker(){
+  const input = document.getElementById('chat-song-search');
+  input.value = '';
+  _renderChatSongResults();
+  document.getElementById('chat-song-modal-overlay').classList.add('open');
+  setTimeout(() => input.focus(), 30);
+}
+function _searchSongs(q, limit = 30){
+  const all = [...(songs || []), ...(communitySongs || [])];
+  const norm = s => (s || '').toLowerCase();
+  const words = norm(q).split(/\s+/).filter(Boolean);
+  const hits = words.length ? all.filter(s => { const hay = norm(`${s.artist} ${s.title} ${s.album || ''}`); return words.every(w => hay.includes(w)); }) : all.slice().sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+  return hits.slice(0, limit);
+}
+function _renderChatSongResults(){
+  const q = document.getElementById('chat-song-search').value;
+  const list = _searchSongs(q);
+  document.getElementById('chat-song-results').innerHTML = list.length
+    ? list.map(s => `<button type="button" class="chat-pick" onclick="pickChatSong(${s.id})">${_pickSongInner(s)}</button>`).join('')
+    : `<div class="hint" style="padding:0.6rem;">${esc(t('chat.songNotFound'))}</div>`;
+}
+function _pickSongInner(s){
+  const thumb = _songThumbUrl(s);
+  return `${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy">` : `<span class="chat-song-ph"><svg class="icon"><use href="#icon-music"/></svg></span>`}<span class="chat-song-main"><strong>${esc(s.artist)}</strong><span>${esc(s.title)}</span></span>`;
+}
+function pickChatSong(id){
+  const s = _findSong(id);
+  if(!s) return;
+  _chatPending.song = s;
+  _renderChatPending();
+  _closeModalAnimated('chat-song-modal-overlay');
+  document.getElementById('chat-dm-input').focus();
+}
+// ▶ на пісні з повідомлення. У окремому вікні чату — грає основне вікно сайту (якщо воно відкрите).
+function playSharedSong(id){
+  const s = _findSong(id);
+  if(!s) return;
+  try {
+    if(document.documentElement.hasAttribute('data-popout') && window.opener && !window.opener.closed && window.opener.playSongObject){
+      window.opener.playSongObject(s);
+      window.opener.focus();
+      return;
+    }
+  } catch(e){ /* інший origin — граємо тут */ }
+  playSongObject(s);
+}
+function playSongObject(s){
+  playerQueue = [s];
+  playerIndex = 0;
+  _loadCurrent();
+}
+// Чат в окремому вікні: компактне вікно лише з розмовами (html[data-popout] ховає решту сайту).
+function popoutChat(){
+  const url = `/chat/dm?popout=1${currentChatUserId != null ? `&with=${currentChatUserId}` : ''}`;
+  const w = window.open(url, 'nowl-chat', 'popup=yes,width=480,height=760');
+  if(w) w.focus();
+}
+
+// ─── «Надіслати в чат» з вікна «Додати в плейлист» ───────────────────────
+let _shareSongId = null, _shareTargets = [];
+async function openShareSongModal(songId){
+  const s = _findSong(songId);
+  if(!s) return;
+  _shareSongId = songId;
+  document.getElementById('share-song-preview').innerHTML = _pickSongInner(s);
+  document.getElementById('share-song-note').value = '';
+  document.getElementById('share-song-search').value = '';
+  document.getElementById('share-song-targets').innerHTML = `<div class="hint" style="padding:0.6rem;">…</div>`;
+  document.getElementById('share-song-modal-overlay').classList.add('open');
+  const [convs, friends] = await Promise.all([
+    fetch('/api/messages/conversations').then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('/api/friends').then(r => r.ok ? r.json() : []).catch(() => []),
+  ]);
+  const byId = new Map();
+  convs.filter(c => c.state !== 'pending_outgoing' && c.state !== 'declined')
+    .forEach(c => byId.set(c.userId, { userId: c.userId, name: c.displayName, avatarUrl: c.avatarUrl }));
+  friends.forEach(f => { if(!byId.has(f.userId)) byId.set(f.userId, { userId: f.userId, name: f.displayName, avatarUrl: f.avatarUrl }); });
+  _shareTargets = [...byId.values()];
+  _renderShareTargets();
+}
+function _renderShareTargets(){
+  const q = document.getElementById('share-song-search').value.trim().toLowerCase();
+  const list = _shareTargets.filter(p => !q || p.name.toLowerCase().includes(q));
+  document.getElementById('share-song-targets').innerHTML = list.length
+    ? list.map(p => `<button type="button" class="chat-pick" onclick="shareSongTo(${p.userId}, this)">${p.avatarUrl ? `<img class="round" src="${esc(p.avatarUrl)}" alt="">` : avatarHtml(null, p.name, 'chat-conv-ph')}<span class="chat-song-main"><strong>${esc(p.name)}</strong></span><svg class="icon chat-pick-go"><use href="#icon-arrow-right"/></svg></button>`).join('')
+    : `<div class="hint" style="padding:0.6rem;">${esc(t('chat.shareNoTargets'))}</div>`;
+}
+function shareSongTo(userId, btn){
+  const target = _shareTargets.find(p => p.userId === userId);
+  const fd = new FormData();
+  fd.append('musicId', _shareSongId);
+  const note = document.getElementById('share-song-note').value.trim();
+  if(note) fd.append('body', note);
+  btn.disabled = true;
+  fetch(`/api/messages/${userId}/rich`, { method:'POST', body: fd })
+    .then(r => {
+      if(!r.ok){ alert(r.status === 409 || r.status === 403 ? t('chat.state.pendingOutgoing') : t('msg.connectionError')); return; }
+      _closeModalAnimated('share-song-modal-overlay');
+      showToast(t('chat.shareSent').replace('{name}', target?.name || ''), () => openDirectChat(userId));
+    })
+    .catch(() => alert(t('msg.connectionError')))
+    .finally(() => { btn.disabled = false; });
 }
 
 // ─── Гілки обговорень ────────────────────────────────────────────────────

@@ -5,7 +5,8 @@ import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { Button } from './UI';
 import { SelectField } from './SelectField';
-import { PlayIcon, QueueIcon } from './Icons';
+import { ShareSongModal } from './ShareSongModal';
+import { ChatIcon, PlayIcon, QueueIcon } from './Icons';
 import { usePlayer } from '@/player/PlayerContext';
 import { RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, Song } from '@/api/types';
@@ -32,6 +33,7 @@ export function AddToPlaylistModal({
   const [busy, setBusy] = useState(false);
   // Плейлист — випадаючим списком, як на сайті; 'new' — створити новий (тоді з'являється поле назви).
   const [selected, setSelected] = useState<string>('new');
+  const [sharing, setSharing] = useState<Song | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -82,7 +84,15 @@ export function AddToPlaylistModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <>
+    <ShareSongModal
+      song={sharing}
+      onClose={() => {
+        setSharing(null);
+        onClose();
+      }}
+    />
+    <Modal visible={visible && !sharing} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={[styles.box, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600', marginBottom: 16 }}>
@@ -112,6 +122,12 @@ export function AddToPlaylistModal({
                 <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13 }}>{t('queue.add')}</Text>
               </TouchableOpacity>
             </View>
+          ) : null}
+          {song ? (
+            <TouchableOpacity onPress={() => setSharing(song)} style={[styles.queueBtn, styles.shareBtn, { borderColor: theme.border }]}>
+              <ChatIcon size={15} color={theme.accent} />
+              <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13 }}>{t('chat.sendToChat')}</Text>
+            </TouchableOpacity>
           ) : null}
 
           <Text style={[styles.label, { color: theme.muted }]}>{t('profile.playlistLabel')}</Text>
@@ -153,6 +169,7 @@ export function AddToPlaylistModal({
         </View>
       </View>
     </Modal>
+    </>
   );
 }
 
@@ -170,7 +187,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: SPACING.xl,
   },
-  queueRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  queueRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  shareBtn: { flex: 0, marginBottom: 14 },
   queueBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 8 },
   label: { fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '600', marginBottom: 6 },
   input: {

@@ -19,6 +19,9 @@ public interface IAudioStorage
     // Те саме для картинок (скріншоти баг-репортів) — інші формати й ліміт розміру.
     Task<(string? FileName, string? Error)> SaveImageAsync(IFormFile file);
 
+    // Вкладення особистих повідомлень: картинки, аудіо, відео, документи з білого списку (див. AttachmentTypes).
+    Task<(string? FileName, string? Error)> SaveAttachmentAsync(IFormFile file);
+
     // null — файла нема або ім'я підозріле. downloadName — віддати на збереження
     // (Content-Disposition: attachment) під цим ім'ям, а не для відтворення.
     Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null);
@@ -48,6 +51,58 @@ public static class AudioFiles
     };
 
     public const long MaxImageBytes = 5L * 1024 * 1024;
+
+    // Вкладення в особистих повідомленнях. Лише білий список: HTML/SVG/скрипти не приймаються — файл віддається
+    // з нашого сховища, і браузер не повинен виконати його як сторінку. Картинки, аудіо й відео — у вікні чату,
+    // решта — лише на завантаження (Content-Disposition: attachment).
+    public const long MaxAttachmentBytes = 20L * 1024 * 1024;
+
+    private static readonly Dictionary<string, string> DocumentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".mp4"] = "video/mp4",
+        [".mov"] = "video/quicktime",
+        [".pdf"] = "application/pdf",
+        [".txt"] = "text/plain",
+        [".zip"] = "application/zip",
+        [".docx"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        [".xlsx"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        [".pptx"] = "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    };
+    // Ліниво: статичні поля ініціалізуються в порядку оголошення, а ImageTypes оголошено нижче.
+    private static Dictionary<string, string>? _attachmentTypes;
+    private static Dictionary<string, string> AttachmentTypes => _attachmentTypes ??=
+        ImageTypes.Concat(ContentTypes).Concat(DocumentTypes)
+            .GroupBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Value, StringComparer.OrdinalIgnoreCase);
+
+    public static (string? NewName, string? Error) ValidateAttachment(IFormFile file)
+    {
+        if (file.Length == 0) return (null, "Empty file.");
+        if (file.Length > MaxAttachmentBytes) return (null, $"File is larger than {MaxAttachmentBytes / 1024 / 1024} MB.");
+        var ext = ResolveExtension(file, AttachmentTypes, b => SniffImage(b) ?? SniffAudio(b) ?? SniffDocument(b));
+        if (ext is null) return (null, "Unsupported file type.");
+        return ($"att-{Guid.NewGuid():N}{ext}", null);
+    }
+
+    private static string? SniffDocument(byte[] b)
+    {
+        if (StartsWith(b, 0, "%PDF")) return ".pdf";
+        if (b.Length >= 4 && b[0] == 0x50 && b[1] == 0x4B && b[2] == 0x03 && b[3] == 0x04) return ".zip";
+        return null;
+    }
+
+    // Показувати у вікні (картинка, аудіо, відео) чи лише давати завантажити.
+    public static bool IsInlineType(string contentType) =>
+        contentType.StartsWith("image/") || contentType.StartsWith("audio/") || contentType.StartsWith("video/");
+
+    // Назва файлу від відправника — лише для показу й «Зберегти як»: без шляху й керувальних символів.
+    public static string CleanDisplayName(string? name, string storedName)
+    {
+        var bad = Path.GetInvalidFileNameChars().Concat(['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet();
+        var clean = new string(Path.GetFileName(name ?? "").Select(c => bad.Contains(c) || char.IsControl(c) ? '_' : c).ToArray()).Trim();
+        if (clean.Length > 120) clean = clean[..120];
+        return clean.Length == 0 ? "file" + Path.GetExtension(storedName) : clean;
+    }
 
     private static readonly Dictionary<string, string> ImageTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -124,7 +179,7 @@ public static class AudioFiles
     public static string GetContentType(string fileName)
     {
         var ext = Path.GetExtension(fileName);
-        return ContentTypes.GetValueOrDefault(ext) ?? ImageTypes.GetValueOrDefault(ext, "application/octet-stream");
+        return ContentTypes.GetValueOrDefault(ext) ?? ImageTypes.GetValueOrDefault(ext) ?? DocumentTypes.GetValueOrDefault(ext, "application/octet-stream");
     }
 
     // Спільна відповідь для /api/songs/{id}/audio і /api/requests/{id}/audio.
@@ -168,6 +223,8 @@ public class LocalAudioStorage : IAudioStorage
     public Task<(string? FileName, string? Error)> SaveAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.Validate(file));
 
     public Task<(string? FileName, string? Error)> SaveImageAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.ValidateImage(file));
+
+    public Task<(string? FileName, string? Error)> SaveAttachmentAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.ValidateAttachment(file));
 
     private async Task<(string? FileName, string? Error)> SaveCoreAsync(IFormFile file, (string? Name, string? Error) validated)
     {
@@ -242,6 +299,8 @@ public sealed class R2AudioStorage : IAudioStorage, IDisposable
     public Task<(string? FileName, string? Error)> SaveAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.Validate(file));
 
     public Task<(string? FileName, string? Error)> SaveImageAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.ValidateImage(file));
+
+    public Task<(string? FileName, string? Error)> SaveAttachmentAsync(IFormFile file) => SaveCoreAsync(file, AudioFiles.ValidateAttachment(file));
 
     private async Task<(string? FileName, string? Error)> SaveCoreAsync(IFormFile file, (string? Name, string? Error) validated)
     {

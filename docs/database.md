@@ -46,7 +46,7 @@ EF-операції — бо реальна схема має `serial`-іден�
 | Виконавці | `artists` (`bio` — опис українською, `bio_en` — англійською), `music_artists`, `artist_follows`, `artist_events` |
 | Користувачі | `users` (непрозорий id), `user_profiles` (ім'я, аватар), `friend_requests` |
 | Персоналізація | `favorites`, `playlists` (`is_public`), `playlist_songs`, `listening_history` |
-| Ком'юніті | `direct_messages`, `dm_requests`, `dm_cleared`, `discussion_threads`, `discussion_posts`, `song_ratings` |
+| Ком'юніті | `direct_messages` (текст; вкладення `attachment_file/name/size`, пісня `music_id`), `dm_requests`, `dm_cleared`, `discussion_threads`, `discussion_posts`, `song_ratings` |
 | Адміністрування | `admins`, `admin_events`, `admin_notification_reads`, `bug_reports` (`screenshots text[]`), `correction_requests` (запити на правку: пісня або виконавець, поле, текст, джерело, файл, статус і відповідь адміна) |
 
 Особливості: складені первинні ключі для зв'язків M:N; `integer[]` для полів на кшталт `album_ids`; унікальні

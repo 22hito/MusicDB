@@ -208,13 +208,24 @@ export interface Conversation {
   state: DmState;
 }
 
+// Вкладення в особистому повідомленні; kind — як показати (картинка, аудіо, відео чи файл на завантаження).
+export interface DmAttachment {
+  name: string;
+  contentType: string;
+  size: number;
+  kind: 'image' | 'audio' | 'video' | 'file';
+  url: string;
+}
+
 export interface DirectMessage {
   id: number;
   senderId: number;
   recipientId: number;
-  body: string;
+  body: string; // може бути порожнім, коли є вкладення чи пісня
   createdAt: string;
   isMine: boolean;
+  attachment?: DmAttachment | null;
+  song?: Song | null;
 }
 
 export interface DmThread {

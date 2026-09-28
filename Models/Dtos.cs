@@ -223,7 +223,10 @@ public record AdminNotificationsSummaryDto(int UnreadCount, List<AdminNotificati
 // "declined_by_me" | "none" (ще нічого — перше повідомлення стане запитом).
 public record ConversationDto(int UserId, string DisplayName, string? AvatarUrl, string LastMessage, bool LastFromMe, string LastAt, int UnreadCount, string State = "friends");
 
-public record DirectMessageDto(int Id, int SenderId, int RecipientId, string Body, string CreatedAt, bool IsMine);
+// Kind: image | audio | video | file. Url — наш ендпоінт (редирект на сховище); у застосунку — /link.
+public record DmAttachmentDto(string Name, string ContentType, long Size, string Kind, string Url);
+public record DirectMessageDto(int Id, int SenderId, int RecipientId, string Body, string CreatedAt, bool IsMine,
+    DmAttachmentDto? Attachment = null, SongDto? Song = null);
 
 public record DmThreadDto(string State, bool CanSend, List<DirectMessageDto> Messages);
 

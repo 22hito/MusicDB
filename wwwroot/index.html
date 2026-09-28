@@ -37,7 +37,10 @@
       if (p.autoScale === false) root.setAttribute('data-auto-scale', 'off');
       if (p.accent && hues[p.accent] != null) root.style.setProperty('--ah', hues[p.accent]);
       if (p.glow != null) root.style.setProperty('--glow-k', p.glow / 100);
+      if (p.hiddenCols && p.hiddenCols.length) root.setAttribute('data-hide-cols', p.hiddenCols.join(' '));
     } catch (e) {}
+    // Чат в окремому вікні (/chat/dm?popout=1): без шапки сайту й вкладок — одразу, щоб не блимали.
+    if (/[?&]popout=1(&|$)/.test(location.search)) root.setAttribute('data-popout', '');
     // Колір рядка стану браузера — одразу під фон теми (hex, бо meta не розуміє oklch у всіх браузерах).
     var tc = { dark: '#090c14', gray: '#474c56', light: '#f8f4ec' }[saved];
     if (tc) document.querySelector('meta[name="theme-color"]').setAttribute('content', tc);
@@ -97,6 +100,8 @@
   <symbol id="icon-pencil" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></symbol>
   <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
   <symbol id="icon-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-paperclip" viewBox="0 0 24 24"><path d="M21 11.5l-8.6 8.6a5.4 5.4 0 0 1-7.7-7.7l8.9-8.9a3.6 3.6 0 0 1 5.1 5.1l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"/></symbol>
+  <symbol id="icon-external" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
   <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 19h16"/></symbol>
   <symbol id="icon-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
   <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
@@ -1081,12 +1086,18 @@
         <div class="chat-main">
           <div id="chat-dm-empty" class="empty"><svg class="icon"><use href="#icon-chat"/></svg><span data-i18n="chat.pickConversation">Оберіть розмову ліворуч</span></div>
           <div id="chat-dm-panel" style="display:none;">
-            <div class="chat-header"><button type="button" class="chat-back-btn" onclick="closeDmConversation()" data-i18n-title="chat.backToList" title="До розмов"><svg class="icon"><use href="#icon-arrow-left"/></svg></button><a href="#" id="chat-dm-partner" class="artist-link"></a><button type="button" class="btn btn-outline chat-clear-btn" onclick="deleteChatForMe()" data-i18n-title="chat.clearHint" title="Переписка зникне лише у вас — у співрозмовника вона лишиться"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="chat.clearBtn">Видалити чат</span></button></div>
+            <div class="chat-header"><button type="button" class="chat-back-btn" onclick="closeDmConversation()" data-i18n-title="chat.backToList" title="До розмов"><svg class="icon"><use href="#icon-arrow-left"/></svg></button><a href="#" id="chat-dm-partner" class="artist-link"></a><button type="button" class="btn btn-outline chat-popout-btn" onclick="popoutChat()" data-i18n-title="chat.popout" title="Відкрити в окремому вікні" aria-label="Відкрити в окремому вікні" data-i18n-aria="chat.popout"><svg class="icon"><use href="#icon-external"/></svg></button><button type="button" class="btn btn-outline chat-clear-btn" onclick="deleteChatForMe()" data-i18n-title="chat.clearHint" title="Переписка зникне лише у вас — у співрозмовника вона лишиться"><svg class="icon"><use href="#icon-x"/></svg> <span data-i18n="chat.clearBtn">Видалити чат</span></button></div>
             <div id="chat-dm-messages" class="chat-messages"></div>
             <div id="chat-dm-state-hint" class="chat-state-hint" style="display:none;"></div>
+            <div class="chat-pending" id="chat-dm-pending" style="display:none;"></div>
             <div class="chat-input-row" id="chat-dm-input-row">
+              <div class="chat-tools">
+                <button type="button" class="chat-tool-btn" onclick="document.getElementById('chat-dm-file').click()" data-i18n-title="chat.attachFile" title="Прикріпити файл" aria-label="Прикріпити файл" data-i18n-aria="chat.attachFile"><svg class="icon"><use href="#icon-paperclip"/></svg></button>
+                <button type="button" class="chat-tool-btn" onclick="openChatSongPicker()" data-i18n-title="chat.shareSong" title="Надіслати пісню" aria-label="Надіслати пісню" data-i18n-aria="chat.shareSong"><svg class="icon"><use href="#icon-music"/></svg></button>
+                <input type="file" id="chat-dm-file" hidden onchange="onChatFilePicked(this.files[0]); this.value=''">
+              </div>
               <textarea id="chat-dm-input" rows="2" maxlength="4000" data-i18n-placeholder="chat.inputPlaceholder" placeholder="Напишіть повідомлення… (Enter — надіслати, Shift+Enter — новий рядок)" onkeydown="onChatInputKeydown(event)"></textarea>
-              <button class="btn btn-primary" onclick="sendDirectMessage()" data-i18n="chat.sendBtn">Надіслати</button>
+              <button class="btn btn-primary" id="chat-dm-send" onclick="sendDirectMessage()" data-i18n="chat.sendBtn">Надіслати</button>
             </div>
           </div>
         </div>
@@ -1691,6 +1702,7 @@
     <div class="atp-queue">
       <button type="button" class="btn btn-outline" onclick="addToQueue(addToPlaylistMusicId, true); closeAddToPlaylistModal()"><svg class="icon"><use href="#icon-play"/></svg> <span data-i18n="queue.playNext">Грати наступною</span></button>
       <button type="button" class="btn btn-outline" onclick="addToQueue(addToPlaylistMusicId); closeAddToPlaylistModal()"><svg class="icon"><use href="#icon-queue"/></svg> <span data-i18n="queue.add">Додати в чергу</span></button>
+      <button type="button" class="btn btn-outline atp-share" onclick="const id = addToPlaylistMusicId; closeAddToPlaylistModal(); openShareSongModal(id)"><svg class="icon"><use href="#icon-chat"/></svg> <span data-i18n="chat.sendToChat">Надіслати в чат</span></button>
     </div>
     <!-- Плейлист — випадаючим списком; останній пункт — новий плейлист (тоді з'являється поле назви). -->
     <div class="form-group atp-field">
@@ -1705,6 +1717,28 @@
       <button class="modal-btn-cancel" onclick="closeAddToPlaylistModal()" data-i18n="modal.cancel">Скасувати</button>
       <button class="modal-btn-primary" id="add-to-playlist-submit" onclick="submitAddToPlaylist()" data-i18n="profile.addBtn">Додати</button>
     </div>
+  </div>
+</div>
+
+<!-- Чат: пісня в повідомлення (пошук по каталогу) -->
+<div class="modal-overlay" id="chat-song-modal-overlay">
+  <div class="modal-box" style="width:460px;">
+    <div class="modal-title-row"><span data-i18n="chat.songPickTitle">Пісня в повідомлення</span></div>
+    <div class="form-group" style="margin-bottom:0.6rem;"><input type="text" id="chat-song-search" autocomplete="off" data-i18n-placeholder="chat.songSearch" placeholder="Пошук пісні…" oninput="_renderChatSongResults()"></div>
+    <div id="chat-song-results" class="chat-pick-list"></div>
+    <div class="modal-actions"><button class="modal-btn-cancel" onclick="_closeModalAnimated('chat-song-modal-overlay')" data-i18n="modal.cancel">Скасувати</button></div>
+  </div>
+</div>
+
+<!-- Надіслати пісню другу (з вікна «Додати в плейлист») -->
+<div class="modal-overlay" id="share-song-modal-overlay">
+  <div class="modal-box" style="width:440px;">
+    <div class="modal-title-row"><span data-i18n="chat.shareTitle">Надіслати пісню</span></div>
+    <div id="share-song-preview" class="chat-song chat-song-preview"></div>
+    <div class="form-group" style="margin:0.8rem 0 0.6rem;"><input type="text" id="share-song-note" maxlength="4000" data-i18n-placeholder="chat.shareNote" placeholder="Повідомлення (необов'язково)"></div>
+    <div class="form-group" style="margin-bottom:0.6rem;"><input type="text" id="share-song-search" autocomplete="off" data-i18n-placeholder="chat.shareTo" placeholder="Кому…" oninput="_renderShareTargets()"></div>
+    <div id="share-song-targets" class="chat-pick-list"></div>
+    <div class="modal-actions"><button class="modal-btn-cancel" onclick="_closeModalAnimated('share-song-modal-overlay')" data-i18n="modal.cancel">Скасувати</button></div>
   </div>
 </div>
 
@@ -1855,33 +1889,33 @@
      тож порядок має значення: i18n першим, main.js (запуск) — останнім. -->
 <!-- SignalR — тут, а не в <head>, де блокував показ сторінки. Але ДО наших скриптів: його збірка
      оголошує глобальні var t, e і після i18n.js затерла б функцію перекладу t(). -->
-<script src="/js/vendor/signalr.min.js"></script>
-<script src="/js/i18n.js"></script>
-<script src="/js/navigation.js"></script>
-<script src="/js/helpers.js"></script>
-<script src="/js/songs.js"></script>
-<script src="/js/profile.js"></script>
-<script src="/js/recommendations.js"></script>
-<script src="/js/wheel.js"></script>
-<script src="/js/stats.js"></script>
-<script src="/js/forms.js"></script>
-<script src="/js/appearance.js"></script>
-<script src="/js/auth.js"></script>
-<script src="/js/player.js"></script>
-<script src="/js/queue.js"></script>
-<script src="/js/battle.js"></script>
-<script src="/js/artists.js"></script>
-<script src="/js/friends.js"></script>
-<script src="/js/graph.js"></script>
-<script src="/js/taste.js"></script>
-<script src="/js/top.js"></script>
-<script src="/js/bug-reports.js"></script>
-<script src="/js/corrections.js"></script>
-<script src="/js/chat.js"></script>
-<script src="/js/ratings.js"></script>
-<script src="/js/nav-search.js"></script>
-<script src="/js/realtime.js"></script>
-<script src="/js/main.js"></script>
+<script defer src="/js/vendor/signalr.min.js"></script>
+<script defer src="/js/i18n.js"></script>
+<script defer src="/js/navigation.js"></script>
+<script defer src="/js/helpers.js"></script>
+<script defer src="/js/songs.js"></script>
+<script defer src="/js/profile.js"></script>
+<script defer src="/js/recommendations.js"></script>
+<script defer src="/js/wheel.js"></script>
+<script defer src="/js/stats.js"></script>
+<script defer src="/js/forms.js"></script>
+<script defer src="/js/appearance.js"></script>
+<script defer src="/js/auth.js"></script>
+<script defer src="/js/player.js"></script>
+<script defer src="/js/queue.js"></script>
+<script defer src="/js/battle.js"></script>
+<script defer src="/js/artists.js"></script>
+<script defer src="/js/friends.js"></script>
+<script defer src="/js/graph.js"></script>
+<script defer src="/js/taste.js"></script>
+<script defer src="/js/top.js"></script>
+<script defer src="/js/bug-reports.js"></script>
+<script defer src="/js/corrections.js"></script>
+<script defer src="/js/chat.js"></script>
+<script defer src="/js/ratings.js"></script>
+<script defer src="/js/nav-search.js"></script>
+<script defer src="/js/realtime.js"></script>
+<script defer src="/js/main.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

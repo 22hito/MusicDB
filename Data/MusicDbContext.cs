@@ -258,9 +258,14 @@ public class DirectMessage
     [Key, Column("id")] public int Id { get; set; }
     [Column("sender_id")] public int SenderId { get; set; }
     [Column("recipient_id")] public int RecipientId { get; set; }
-    [Required, Column("body")] public string Body { get; set; } = "";
+    [Required, Column("body")] public string Body { get; set; } = "";  // може бути порожнім, коли є вкладення чи пісня
     [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     [Column("read_at")] public DateTime? ReadAt { get; set; }
+    // Вкладення: файл у сховищі (ім'я-GUID), назва від відправника й розмір. Або пісня з каталогу.
+    [Column("attachment_file")] public string? AttachmentFile { get; set; }
+    [Column("attachment_name")] public string? AttachmentName { get; set; }
+    [Column("attachment_size")] public long? AttachmentSize { get; set; }
+    [Column("music_id")] public int? MusicId { get; set; }
 }
 
 // Дозвіл на листування між не-друзями. pair_low/pair_high — генеровані

@@ -16,7 +16,8 @@ namespace MusicDB.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class MessagesController(MusicDbContext db, UserDirectoryService userDirectory, IHubContext<MusicHub> hub) : ControllerBase
+public class MessagesController(MusicDbContext db, UserDirectoryService userDirectory, IHubContext<MusicHub> hub,
+    IAudioStorage storage, MusicService musicService) : ControllerBase
 {
     public const int MaxBodyLength = 4000;
 
@@ -84,6 +85,9 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
 
         var lastIds = groups.Select(g => g.LastId).ToList();
         var lastMessages = await db.DirectMessages.Where(m => lastIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
+        var lastSongIds = lastMessages.Values.Where(m => m.MusicId is not null).Select(m => m.MusicId!.Value).ToList();
+        var lastSongs = await db.Songs.Where(m => lastSongIds.Contains(m.Id))
+            .ToDictionaryAsync(m => m.Id, m => $"{m.Artist} — {m.Title}");
         var cards = await userDirectory.GetUserCardsAsync(groups.Select(g => g.OtherId));
 
         return Ok(groups
@@ -96,7 +100,7 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
                     g.OtherId,
                     card?.DisplayName ?? $"Учасник спільноти #{g.OtherId}",
                     card?.AvatarUrl,
-                    Preview(last.Body),
+                    Preview(last, lastSongs),
                     last.SenderId == myId,
                     last.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
                     g.Unread,
@@ -201,7 +205,8 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
         }
 
         messages.Reverse();
-        return Ok(new DmThreadDto(state, CanSend(state), messages.Select(m => ToDto(m, myId)).ToList()));
+        var songs = await SongsForAsync(messages);
+        return Ok(new DmThreadDto(state, CanSend(state), messages.Select(m => ToDto(m, myId, songs)).ToList()));
     }
 
     // "Видалити чат у себе": ховає всю поточну переписку лише для мене. Співрозмовник
@@ -239,33 +244,70 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
         if (body.Length == 0 || body.Length > MaxBodyLength) return BadRequest("Message must be 1–4000 characters.");
 
         var myId = await userDirectory.GetCurrentUserIdAsync(User);
-        if (userId == myId) return BadRequest();
-        if (!await db.Users.AnyAsync(u => u.Id == userId)) return NotFound();
+        var (error, requestCreated) = await PrepareSendAsync(myId, userId);
+        if (error is not null) return error;
+        return await CommitAsync(myId, userId, new DirectMessage { SenderId = myId, RecipientId = userId, Body = body }, requestCreated);
+    }
 
-        var requestCreated = false;
-        if (!await AreFriendsAsync(myId, userId))
+    // Повідомлення з файлом і/або піснею (multipart: body?, musicId?, file?). Хоч щось одне має бути.
+    // Файл зберігається лише після перевірки, що писати можна, — без осиротілих файлів у сховищі.
+    [HttpPost("{userId:int}/rich")]
+    [RequestSizeLimit(AudioFiles.MaxAttachmentBytes + 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = AudioFiles.MaxAttachmentBytes + 1024 * 1024)]
+    public async Task<ActionResult<DirectMessageDto>> SendRich(int userId, [FromForm] string? body, [FromForm] int? musicId, IFormFile? file)
+    {
+        body = body?.Trim() ?? "";
+        if (body.Length > MaxBodyLength) return BadRequest("Message must be at most 4000 characters.");
+        if (body.Length == 0 && musicId is null && file is null) return BadRequest("Empty message.");
+        if (musicId is not null && !await db.Songs.AnyAsync(m => m.Id == musicId)) return BadRequest("Unknown song.");
+
+        var myId = await userDirectory.GetCurrentUserIdAsync(User);
+        var (error, requestCreated) = await PrepareSendAsync(myId, userId);
+        if (error is not null) return error;
+
+        var message = new DirectMessage { SenderId = myId, RecipientId = userId, Body = body, MusicId = musicId };
+        if (file is not null)
         {
-            var req = await FindRequestAsync(myId, userId);
-            switch (StateOf(req, myId))
-            {
-                case "pending_outgoing":
-                    return Conflict("Waiting for the recipient to accept your message request.");
-                case "declined":
-                    return StatusCode(StatusCodes.Status403Forbidden, "The recipient declined your message request.");
-                case "pending_incoming":
-                case "declined_by_me":
-                    // Відповідь на запит (або на раніше відхилений) = схвалення.
-                    req!.Status = "accepted";
-                    req.RespondedAt = DateTime.UtcNow;
-                    break;
-                case "none":
-                    db.DmRequests.Add(new DmRequest { RequesterId = myId, AddresseeId = userId });
-                    requestCreated = true;
-                    break;
-            }
+            var (stored, saveError) = await storage.SaveAttachmentAsync(file);
+            if (stored is null) return BadRequest(saveError);
+            message.AttachmentFile = stored;
+            message.AttachmentName = AudioFiles.CleanDisplayName(file.FileName, stored);
+            message.AttachmentSize = file.Length;
         }
+        return await CommitAsync(myId, userId, message, requestCreated);
+    }
 
-        var message = new DirectMessage { SenderId = myId, RecipientId = userId, Body = body };
+    // Чи можна писати зараз: друзям — завжди; не-другу перше повідомлення стає запитом, відповідь на
+    // вхідний запит — схваленням. Зміни (новий/схвалений запит) лишаються в контексті до CommitAsync.
+    private async Task<(ActionResult? Error, bool RequestCreated)> PrepareSendAsync(int myId, int userId)
+    {
+        if (userId == myId) return (BadRequest(), false);
+        if (!await db.Users.AnyAsync(u => u.Id == userId)) return (NotFound(), false);
+        if (await AreFriendsAsync(myId, userId)) return (null, false);
+
+        var req = await FindRequestAsync(myId, userId);
+        switch (StateOf(req, myId))
+        {
+            case "pending_outgoing":
+                return (Conflict("Waiting for the recipient to accept your message request."), false);
+            case "declined":
+                return (StatusCode(StatusCodes.Status403Forbidden, "The recipient declined your message request."), false);
+            case "pending_incoming":
+            case "declined_by_me":
+                // Відповідь на запит (або на раніше відхилений) = схвалення.
+                req!.Status = "accepted";
+                req.RespondedAt = DateTime.UtcNow;
+                return (null, false);
+            case "none":
+                db.DmRequests.Add(new DmRequest { RequesterId = myId, AddresseeId = userId });
+                return (null, true);
+            default:
+                return (null, false);
+        }
+    }
+
+    private async Task<ActionResult<DirectMessageDto>> CommitAsync(int myId, int userId, DirectMessage message, bool requestCreated)
+    {
         db.DirectMessages.Add(message);
         try
         {
@@ -274,6 +316,7 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
         catch (DbUpdateException) when (requestCreated)
         {
             // Гонка: співрозмовник саме створив зустрічний запит — нехай спробує ще раз.
+            await storage.DeleteAsync(message.AttachmentFile);
             return Conflict("Please retry.");
         }
 
@@ -282,7 +325,43 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
         var senderName = (await userDirectory.GetUserCardsAsync([myId])).GetValueOrDefault(myId)?.DisplayName;
         await NotifyAsync(userId, requestCreated ? "dmRequestsChanged" : "dmReceived", myId, senderName);
         await NotifySelfAsync("dmSent", userId);
-        return Ok(ToDto(message, myId));
+        return Ok(ToDto(message, myId, await SongsForAsync([message])));
+    }
+
+    // Файл із повідомлення — лише відправнику й отримувачу. Картинки, аудіо й відео — для показу в чаті,
+    // решта — завантаженням під назвою від відправника.
+    [HttpGet("attachment/{messageId:int}")]
+    public async Task<IActionResult> GetAttachment(int messageId)
+    {
+        var source = await OpenAttachmentAsync(messageId);
+        return source is null ? NotFound() : this.ToResult(source);
+    }
+
+    // Пряме посилання (застосунку: картинка чи плеєр не несуть куку сесії).
+    [HttpGet("attachment/{messageId:int}/link")]
+    public async Task<IActionResult> GetAttachmentLink(int messageId)
+    {
+        var source = await OpenAttachmentAsync(messageId);
+        if (source is null) return NotFound();
+        return Ok(new { url = source.RedirectUrl ?? $"/api/messages/attachment/{messageId}" });
+    }
+
+    private async Task<AudioSource?> OpenAttachmentAsync(int messageId)
+    {
+        var myId = await userDirectory.GetCurrentUserIdAsync(User);
+        var m = await db.DirectMessages.FindAsync(messageId);
+        if (m?.AttachmentFile is null || (m.SenderId != myId && m.RecipientId != myId)) return null;
+        var inline = AudioFiles.IsInlineType(AudioFiles.GetContentType(m.AttachmentFile));
+        return await storage.OpenAsync(m.AttachmentFile, inline ? null : m.AttachmentName);
+    }
+
+    private async Task<Dictionary<int, SongDto>> SongsForAsync(IEnumerable<DirectMessage> messages)
+    {
+        var ids = messages.Where(m => m.MusicId is not null).Select(m => m.MusicId!.Value).Distinct().ToList();
+        if (ids.Count == 0) return [];
+        var songs = await db.Songs.AsNoTracking().Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre)
+            .Where(m => ids.Contains(m.Id)).ToListAsync();
+        return (await musicService.BuildSongDtosAsync(songs)).ToDictionary(s => s.Id);
     }
 
     private async Task NotifyAsync(int userId, string evt, int arg, string? name = null)
@@ -297,6 +376,23 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
 
     private static string Preview(string body) => body.Length > 120 ? body[..120] + "…" : body;
 
-    private static DirectMessageDto ToDto(DirectMessage m, int myId) =>
-        new(m.Id, m.SenderId, m.RecipientId, m.Body, m.CreatedAt.ToString("yyyy-MM-dd HH:mm"), m.SenderId == myId);
+    // У списку розмов: текст; без тексту — «📎 назва файлу» чи «🎵 Виконавець — Назва» (без слів — не залежить від мови).
+    private static string Preview(DirectMessage m, Dictionary<int, string> songs) =>
+        m.Body.Length > 0 ? Preview(m.Body)
+        : m.AttachmentName is not null ? $"📎 {m.AttachmentName}"
+        : m.MusicId is int id && songs.TryGetValue(id, out var song) ? Preview($"🎵 {song}")
+        : "";
+
+    private static DirectMessageDto ToDto(DirectMessage m, int myId, Dictionary<int, SongDto>? songs = null)
+    {
+        DmAttachmentDto? attachment = null;
+        if (m.AttachmentFile is not null)
+        {
+            var type = AudioFiles.GetContentType(m.AttachmentFile);
+            var kind = type.StartsWith("image/") ? "image" : type.StartsWith("audio/") ? "audio" : type.StartsWith("video/") ? "video" : "file";
+            attachment = new DmAttachmentDto(m.AttachmentName ?? "file", type, m.AttachmentSize ?? 0, kind, $"/api/messages/attachment/{m.Id}");
+        }
+        var song = m.MusicId is int id && songs is not null ? songs.GetValueOrDefault(id) : null;
+        return new(m.Id, m.SenderId, m.RecipientId, m.Body, m.CreatedAt.ToString("yyyy-MM-dd HH:mm"), m.SenderId == myId, attachment, song);
+    }
 }

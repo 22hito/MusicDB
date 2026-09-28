@@ -21,6 +21,7 @@ import type {
   PickedAudio,
   Conversation,
   DmRequest,
+  DirectMessage,
   DmThread,
   DmUnread,
   SongRatings,
@@ -312,6 +313,17 @@ export function useMusicApi() {
       clearChatForMe: (userId: number) => request<void>(`/api/messages/${userId}`, { method: 'DELETE' }),
       sendMessage: (userId: number, body: string) =>
         request<unknown>(`/api/messages/${userId}`, { method: 'POST', body: { body } }),
+      // Повідомлення з файлом (до 20 МБ) і/або піснею — multipart на /rich.
+      sendRichMessage: (userId: number, body: string, musicId: number | null, file: PickedAudio | null) => {
+        const fd = new FormData();
+        if (body) fd.append('body', body);
+        if (musicId != null) fd.append('musicId', String(musicId));
+        if (file) fd.append('file', filePart(file));
+        return upload<DirectMessage>(`/api/messages/${userId}/rich`, fd);
+      },
+      // Пряме посилання на файл із повідомлення (картинка й плеєр не несуть куку сесії).
+      getAttachmentLink: (messageId: number) =>
+        request<{ url: string }>(`/api/messages/attachment/${messageId}/link`).then((r) => r.url),
 
       // Гілки обговорень
       getThreads: (q?: string) => request<ThreadSummary[]>('/api/threads', { query: { q: q || undefined } }),

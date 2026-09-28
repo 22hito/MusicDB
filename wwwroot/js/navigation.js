@@ -29,7 +29,7 @@ function activeSongs(){
 // Пошук пісні в обох таблицях — для модалок редагування/видалення/оцінки.
 function _findSong(id){
   const lists = [songs, communitySongs, playerQueue, userQueue, currentTopSongs, currentArtistSongs,
-    currentPlaylistSongs, _profileFavorites, _recentServer.map(r => r.song)];
+    currentPlaylistSongs, _profileFavorites, _recentServer.map(r => r.song), _chatSharedSongs];
   for(const list of lists){ const s = list.find(x=>x.id===id); if(s) return s; }
   return null;
 }
@@ -227,6 +227,8 @@ function _initRouter(){
     return;
   }
   _openRoute(r);
+  const withId = +new URLSearchParams(location.search).get('with');
+  if(document.documentElement.hasAttribute('data-popout') && withId) openDirectChat(withId);
 }
 // Electron: бокові кнопки миші не прив'язані до історії автоматично (у браузерах —
 // так, тому там не дублюємо, інакше один клік = два кроки назад).

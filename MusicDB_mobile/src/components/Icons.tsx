@@ -121,6 +121,14 @@ export function TrashIcon({ size = 16, color = '#000' }: IconProps) {
   );
 }
 
+export function PaperclipIcon({ size = 18, color = '#000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M21 11.5l-8.6 8.6a5.4 5.4 0 0 1-7.7-7.7l8.9-8.9a3.6 3.6 0 0 1 5.1 5.1l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2" />
+    </Svg>
+  );
+}
+
 export function NoteIcon({ size = 18, color = '#000' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
