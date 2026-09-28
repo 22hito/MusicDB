@@ -36,7 +36,7 @@ h2 { font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.35rem); font-weight: 800; letter
 h3 { font-family: var(--font-sans); font-weight: 650; letter-spacing: -0.01em; }
 /* Цифри, час, тривалість — табличні цифри Inter (однакова ширина), щоб стовпці
    не "танцювали"; окремий моноширинний шрифт тут виглядав "кодово". */
-.duration-col, .num-col, .time-row, #p-cur, #p-dur, .wheel-num-input, .battle-progress-seg, .stat-card .value {
+.duration-col, .num-col, .time-row, #p-cur, #p-dur, .wheel-num-input, .stat-card .value {
   font-variant-numeric: tabular-nums; letter-spacing: 0;
 }
 .num-col { font-size: 0.74rem; }

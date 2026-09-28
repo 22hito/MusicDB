@@ -301,26 +301,13 @@ tbody tr:last-child td { border-bottom: none; }
 .battle-hover-toggle:active { transform: translate(-50%, -50%) scale(0.97); }
 .battle-close-btn { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
 .battle-close-btn:hover { color: var(--text); }
-/* Стрічка прогресу турніру — сегмент на кожен розмір раунду. */
-.battle-progress-ribbon { display: flex; flex-wrap: wrap; row-gap: 6px; align-items: center; justify-content: center; gap: 0; padding: 10px 18px 0; }
-.battle-progress-seg {
-  font-family: var(--font-ui); font-size: 0.7rem; color: var(--muted); background: var(--surface2);
-  border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; transition: all 0.25s ease;
-}
-.battle-progress-seg.done { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
-.battle-progress-seg.current {
-  color: var(--on-accent); background: var(--accent-grad);
-  border-color: transparent; font-weight: 700; box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-/* Фінальний сегмент "1" — окремий стан (не .current): турнір уже завершено,
-   а не просто "зараз триває цей раунд", тож підсвічуємо пульсуючим золотим
-   світінням, щоб було явно видно переможний крок. */
-.battle-progress-seg.winner {
-  color: var(--on-accent); background: var(--accent-grad);
-  border-color: transparent; font-weight: 700; animation: battleProgressWinnerPulse 1.6s ease-in-out infinite;
-}
-@keyframes battleProgressWinnerPulse { 0%, 100% { box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent); } 50% { box-shadow: 0 2px 20px color-mix(in srgb, var(--accent) 75%, transparent); } }
-.battle-progress-sep { width: 16px; height: 1px; background: var(--border); flex-shrink: 0; }
+.battle-header .battle-round-label { color: var(--text); font-weight: 600; }
+/* Прогрес турніру — тонка смужка зіграних матчів; після фіналу світиться. */
+.battle-progress-ribbon { height: 4px; margin: 10px 18px 0; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+.battle-progress-fill { display: block; height: 100%; width: 0; background: var(--accent-grad); border-radius: inherit; transition: width 0.35s ease; }
+.battle-progress-ribbon.winner { overflow: visible; }
+.battle-progress-ribbon.winner .battle-progress-fill { animation: battleProgressWinnerPulse 1.6s ease-in-out infinite; }
+@keyframes battleProgressWinnerPulse { 0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent); } 50% { box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 75%, transparent); } }
 /* Два ряди: відео+VS (media-row) окремо від інфо+кнопки (details-row) —
    так VS центрується по висоті САМЕ відео, а не всієї колонки разом з
    текстом і кнопкою нижче (яка тягнула центр вниз). */
@@ -415,8 +402,6 @@ tbody tr:last-child td { border-bottom: none; }
   .battle-vs { width: 100%; padding: 10px 0; }
   .battle-vs-spacer { display: none; }
   .battle-choose-btn { padding: 1rem 1.2rem; font-size: 0.95rem; }
-  .battle-progress-seg { font-size: 0.62rem; padding: 2px 7px; }
-  .battle-progress-sep { width: 8px; }
 }
 
 /* Граф схожості */

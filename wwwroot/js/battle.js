@@ -249,26 +249,34 @@ function _wireBattleHoverListeners(){
   wire(wrapB, () => battleRightPlayer, 'b');
 }
 
-// Стрічка прогресу: сегмент на кожен розмір раунду від старту до фіналу
-// (16→8→4→2→1), поточний підсвічений, пройдені — позначені як завершені.
-function _renderBattleProgress(){
+// Прогрес турніру — тонка смужка: зіграні матчі з усіх (у турнірі на N пісень їх N − 1).
+// Раніше була стрічка сегментів 16→8→4→2→1, але на 1024 пісні це 11 кроків, що не влазять на телефоні.
+function _renderBattleProgress(finished){
   const el = document.getElementById('battle-progress-ribbon');
   if(!el || !battleInitialSize) return;
-  const sizes = [];
-  for(let s = battleInitialSize; s >= 1; s = s/2) sizes.push(s);
-  el.innerHTML = sizes.map(s => {
-    const cls = s === battleRound.length ? 'current' : (s > battleRound.length ? 'done' : '');
-    return `<span class="battle-progress-seg ${cls}">${s}</span>`;
-  }).join('<span class="battle-progress-sep"></span>');
+  let fill = el.querySelector('.battle-progress-fill');
+  if(!fill){ el.innerHTML = '<span class="battle-progress-fill"></span>'; fill = el.firstChild; }
+  const total = battleInitialSize - 1;
+  const played = finished ? total : battleInitialSize - battleRound.length + battleMatchIndex;
+  fill.style.width = `${played / total * 100}%`;
+  el.classList.toggle('winner', !!finished);
+}
+// «Раунд 3 з 10 — 5/128» (n/m — матч у раунді); останні раунди — за назвою.
+function _battleRoundTitle(size, match){
+  if(size === 2) return t('battle.final');
+  const pair = `${match}/${size/2}`;
+  if(size === 4) return `${t('battle.semifinal')} — ${pair}`;
+  if(size === 8) return `${t('battle.quarterfinal')} — ${pair}`;
+  const rounds = Math.log2(battleInitialSize);
+  const round = rounds - Math.log2(size) + 1;
+  return `${t('battle.round').replace('{x}', round).replace('{n}', rounds)} — ${pair}`;
 }
 
 async function loadBattleMatch(){
   _renderBattleProgress();
   const a = battleRound[battleMatchIndex*2];
   const b = battleRound[battleMatchIndex*2+1];
-  document.getElementById('battle-round-label').textContent =
-    `${t('battle.roundLabel')}${battleRound.length} → ${battleRound.length/2}`;
-  document.getElementById('battle-match-label').textContent = `· ${battleMatchIndex + 1}/${battleRound.length/2}`;
+  document.getElementById('battle-round-label').textContent = _battleRoundTitle(battleRound.length, battleMatchIndex + 1);
   battleActiveSide = null;
   _renderBattleListen();
   _setMarqueeText(document.getElementById('battle-a-artist'), a.artist);
@@ -410,16 +418,9 @@ function showBattleChampion(song){
   document.getElementById('battle-split').style.display = 'none';
   document.getElementById('battle-champion').style.display = 'block';
   _battleConfetti();
-  // Стрічка прогресу востаннє малювалась для матчу "2 → 1" (loadBattleMatch
-  // більше не викликається після визначення чемпіона) — тож сегмент "1"
-  // ніколи не підсвічувався, а "2" губив .current і лишався взагалі без
-  // класу (не позначений завершеним, на відміну від 16/8/4). Проставляємо
-  // все явно: усі, крім останнього, — .done; останній — .winner.
-  const segs = document.querySelectorAll('#battle-progress-ribbon .battle-progress-seg');
-  segs.forEach((seg, i) => {
-    if(i === segs.length - 1){ seg.classList.remove('current', 'done'); seg.classList.add('winner'); }
-    else { seg.classList.remove('current'); seg.classList.add('done'); }
-  });
+  // loadBattleMatch після фіналу більше не викликається — довершуємо смужку й підпис тут.
+  _renderBattleProgress(true);
+  document.getElementById('battle-round-label').textContent = ''; // «Переможець» — уже на картці
 }
 // Невеликий конфеті-вибух над карткою чемпіона — той самий прийом, що й на
 // колесі фортуни (прості DOM-елементи з CSS-анімацією, самі прибираються).

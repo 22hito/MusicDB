@@ -397,7 +397,10 @@ export const I18N = {
     'battle.privateBadge': 'приватний', // NEW
     'battle.chooseSize': 'Оберіть розмір турніру:', // NEW
     'battle.notEnough': 'Замало пісень у плейлисті — потрібно щонайменше 4.', // NEW
-    'battle.roundLabel': 'Учасників: ', // NEW
+    'battle.round': 'Раунд {x} з {n}',
+    'battle.quarterfinal': 'Чвертьфінал',
+    'battle.semifinal': 'Півфінал',
+    'battle.final': 'Фінал',
     'battle.vs': 'VS', // NEW
     'battle.chooseBtn': 'Обрати цю', // NEW
     'battle.listenBtn': 'Послухати', // NEW
@@ -978,7 +981,10 @@ export const I18N = {
     'battle.privateBadge': 'private', // NEW
     'battle.chooseSize': 'Choose tournament size:', // NEW
     'battle.notEnough': 'Not enough songs in this playlist — need at least 4.', // NEW
-    'battle.roundLabel': 'Contestants: ', // NEW
+    'battle.round': 'Round {x} of {n}',
+    'battle.quarterfinal': 'Quarterfinal',
+    'battle.semifinal': 'Semifinal',
+    'battle.final': 'Final',
     'battle.vs': 'VS', // NEW
     'battle.chooseBtn': 'Pick this one', // NEW
     'battle.listenBtn': 'Listen', // NEW

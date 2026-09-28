@@ -35,10 +35,7 @@
   .battle-header { padding: 12px 16px; justify-content: center; gap: 6px; border-bottom: none; }
   .battle-header .battle-hover-toggle, .battle-header .battle-undo-btn, .battle-header .battle-close-btn { display: none; }
   .battle-header span { font-size: 0.78rem; }
-  .battle-match-label { display: inline; }
-  .battle-progress-ribbon { padding: 0 16px; gap: 6px; }
-  .battle-progress-sep { display: none; }
-  .battle-progress-seg { font-size: 0.72rem; padding: 3px 10px; min-width: 34px; text-align: center; }
+  .battle-progress-ribbon { margin: 0 16px; }
   .battle-split { flex: 1; min-height: 0; padding: 14px 16px 0; overflow-y: auto; }
   .battle-media-row { position: relative; flex-direction: row; padding: 0; margin: 0 0 22px; width: 100%;
     height: clamp(120px, min(calc((100vw - 32px) * 0.5625), calc(100dvh - 430px)), 420px);

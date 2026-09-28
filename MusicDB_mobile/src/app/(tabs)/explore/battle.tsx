@@ -200,28 +200,29 @@ export default function BattleScreen() {
   const reserved = landscape ? 70 : 370; // стрічка + підпис + картки (мін. 190) + нижні кнопки
   const videoH = Math.max(90, Math.min((videoW * 9) / 16, (areaH || winH * 0.6) - reserved));
 
-  // ─── Стрічка прогресу: 16 → 8 → 4 → 2 → 1 ───
-  const sizes: number[] = [];
-  if (bt) for (let s = bt.initialSize; s >= 1; s = s / 2) sizes.push(s);
-  const ribbon = (
+  // ─── Прогрес: «Раунд 3 з 10 — 5/128» (останні раунди — за назвою) і смужка зіграних матчів (їх N − 1) ───
+  const roundTitle = (size: number, match: number, initial: number) => {
+    if (size === 2) return t('battle.final');
+    const pair = `${match}/${size / 2}`;
+    if (size === 4) return `${t('battle.semifinal')} — ${pair}`;
+    if (size === 8) return `${t('battle.quarterfinal')} — ${pair}`;
+    const rounds = Math.log2(initial);
+    const round = rounds - Math.log2(size) + 1;
+    return `${t('battle.round').replace('{x}', String(round)).replace('{n}', String(rounds))} — ${pair}`;
+  };
+  const played = bt ? (bt.champion ? bt.initialSize - 1 : bt.initialSize - bt.round.length + bt.matchIndex) : 0;
+  const ribbon = bt ? (
     <View style={styles.ribbon}>
-      {sizes.map((s) => {
-        const current = bt?.champion ? s === 1 : s === bt?.round.length;
-        const done = bt?.champion ? s > 1 : s > (bt?.round.length ?? 0);
-        return (
-          <View
-            key={s}
-            style={[
-              styles.ribbonSeg,
-              { borderColor: current ? theme.accent : theme.border, backgroundColor: current ? theme.accent : done ? `${theme.accent}26` : 'transparent' },
-            ]}
-          >
-            <Text style={{ color: current ? theme.onAccent : done ? theme.accent : theme.muted, fontFamily: FONT_MONO_MEDIUM, fontSize: 12 }}>{s}</Text>
-          </View>
-        );
-      })}
+      {!bt.champion ? (
+        <Text style={{ color: theme.text, textAlign: 'center', fontFamily: FONT_SANS_BOLD, fontSize: 13 }}>
+          {roundTitle(bt.round.length, bt.matchIndex + 1, bt.initialSize)}
+        </Text>
+      ) : null}
+      <View style={[styles.progress, { backgroundColor: theme.surface2 }]}>
+        <View style={[styles.progressFill, { width: `${(played / Math.max(1, bt.initialSize - 1)) * 100}%`, backgroundColor: theme.accent }]} />
+      </View>
     </View>
-  );
+  ) : null;
 
   const contender = (song: Song, side: 0 | 1) => {
     const isCur = player.current?.id === song.id;
@@ -293,10 +294,6 @@ export default function BattleScreen() {
             </ScrollView>
           ) : a && b ? (
             <Animated.View style={{ flex: 1, opacity: fade }}>
-              <Text style={{ color: theme.muted, textAlign: 'center', fontSize: 12, marginBottom: SPACING.sm }}>
-                {t('battle.roundLabel')}
-                {bt.round.length} → {bt.round.length / 2} · {bt.matchIndex + 1}/{bt.round.length / 2}
-              </Text>
               <View style={[{ flex: 1, gap: SPACING.md }, landscape && { flexDirection: 'row' }]}>
                 <View style={{ alignItems: 'center' }}>{videoFrame}</View>
                 <View style={{ flex: 1 }}>
@@ -416,8 +413,9 @@ const styles = StyleSheet.create({
   plCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, marginBottom: SPACING.sm },
   plIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   genreCard: { borderWidth: 1, borderLeftWidth: 3, borderRadius: RADIUS.lg, padding: SPACING.md, gap: SPACING.md, marginBottom: SPACING.sm },
-  ribbon: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: SPACING.lg, flexWrap: 'wrap' },
-  ribbonSeg: { minWidth: 34, paddingVertical: 4, paddingHorizontal: 8, borderRadius: RADIUS.pill, borderWidth: 1, alignItems: 'center' },
+  ribbon: { gap: 8, marginBottom: SPACING.md },
+  progress: { height: 4, borderRadius: RADIUS.pill, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: RADIUS.pill },
   matchArea: { flex: 1 },
   pair: { flexDirection: 'row', gap: 10, flex: 1, minHeight: 190, maxHeight: 260, marginTop: 12 },
   contender: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, paddingTop: SPACING.md + 6 },
