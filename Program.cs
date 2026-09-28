@@ -210,9 +210,9 @@ app.Use(async (ctx, next) =>
         // www-widgetapi.js у батьківський документ (не у сам iframe); без
         // нього YT.Player створюється, але керування (play/pause/стан) мовчки
         // не працює, бо CSP блокує саме цей скрипт іншого походження.
-        "script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com https://cdn.jsdelivr.net; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "font-src 'self' https://fonts.gstatic.com; " +
+        "script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "font-src 'self'; " +
         // blob: — прев'ю скріншотів у формі баг-репорту; R2 — самі скріншоти в адмінці; dzcdn — обкладинки альбомів.
         $"img-src 'self' data: blob: https://img.youtube.com https://*.ytimg.com https://*.googleusercontent.com https://cdn-images.dzcdn.net{r2MediaSources}; " +
         "connect-src 'self' https://www.googleapis.com https://www.youtube.com; " +

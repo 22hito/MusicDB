@@ -271,3 +271,15 @@
   /* Заголовки сторінок — як у застосунку */
   .container > h2 { font-size: 1.75rem; }
 }
+
+/* Прокрутка на телефоні: backdrop-filter під липкими панелями (шапка, вкладки, плеєр) браузер перераховував
+   на кожен кадр прокрутки — натомість майже суцільний фон. Сяйво — без filter: blur: радіальні градієнти й так
+   м'які, а розмиття шару на всю ширину з DPR 3 — найдорожча відмальовка сторінки. */
+@media (max-width: 768px) {
+  nav, .mobile-tabbar, #player-bar, .queue-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  nav { background: color-mix(in srgb, var(--bg) 97%, transparent); }
+  .mobile-tabbar { background: var(--surface); }
+  #player-bar { --glass: color-mix(in srgb, var(--elevated) 97%, transparent); }
+  .queue-panel { background: var(--elevated); }
+  .ambient-band, .ambient-comet { filter: none; }
+}

@@ -257,32 +257,37 @@ function login() { window.location.href = '/auth/login'; }
 // Обидві головні таблиці разом — будь-яка мутація (підтвердження заявки,
 // редагування) може зачепити будь-яку з них.
 async function loadSongs() {
-  const [res, communityRes] = await Promise.all([fetch('/api/songs'), fetch('/api/songs?source=community')]);
+  const [res, communityRes] = await Promise.all([fetch('/api/songs?format=cols'), fetch('/api/songs?source=community&format=cols')]);
   if (!res.ok) throw new Error('songs fetch failed');
-  songs = (await res.json()).map(_expandListSong);
-  if (communityRes.ok) communitySongs = (await communityRes.json()).map(_expandListSong);
+  songs = _decodeCatalog(await res.json());
+  if (communityRes.ok) communitySongs = _decodeCatalog(await communityRes.json());
 }
-// Список каталогу приходить компактним (сервер не шле null/0/"catalog" і дає artistIds замість
-// artists, коли імена збігаються з полем artist) — доповнюємо, щоб решта коду бачила звичну пісню.
-function _expandListSong(s){
-  if(!s.artists && s.artistIds){
-    const names = s.artist.split(',').map(n => n.trim()).filter(Boolean);
-    s.artists = s.artistIds.map((id, i) => ({ id, name: names[i] }));
+// Каталог «стовпчиками» (format=cols): по масиву на поле, виконавці/альбоми/жанри — словниками,
+// рідкісні поля — «індекс → значення». Утричі менший JSON і швидший розбір, ніж 18 000 об'єктів.
+function _hms(sec){
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+function _decodeCatalog(c){
+  const n = c.id.length, out = new Array(n);
+  const artists = c.artists || {}, source = c.source || {}, audio = c.audio || {}, rating = c.rating || {}, ratingCount = c.ratingCount || {}, submittedBy = c.submittedBy || {};
+  for(let i = 0; i < n; i++){
+    const artist = c.artistDict[c.artist[i]];
+    let refs = artists[i];
+    if(!refs){
+      const ids = c.artistIds[i];
+      if(ids){ const names = artist.split(',').map(x => x.trim()).filter(Boolean); refs = ids.map((id, k) => ({ id, name: names[k] })); }
+    }
+    out[i] = {
+      id: c.id[i], artist, title: c.title[i], release: c.release[i], duration: _hms(c.dur[i]),
+      genres: c.genres[i].map(g => c.genreDict[g]), album: c.album[i] >= 0 ? c.albumDict[c.album[i]] : null,
+      trackNumber: c.track[i] || null, youtubeVideoId: c.yt[i] || null, playCount: c.plays[i] || 0,
+      artists: refs || [], source: source[i] || 'catalog', audioUrl: audio[i] || null,
+      avgRating: rating[i] ?? null, ratingCount: ratingCount[i] || 0, submittedBy: submittedBy[i] || null,
+    };
   }
-  s.artists ??= [];
-  s.genres ??= [];
-  s.album ??= null;
-  s.source ??= 'catalog';
-  s.playCount ??= 0;
-  s.ratingCount ??= 0;
-  s.avgRating ??= null;
-  s.youtubeVideoId ??= null;
-  s.audioUrl ??= null;
-  s.submittedBy ??= null;
-  s.trackNumber ??= null;
-  return s;
+  return out;
 }
-
 async function logout() {
   await fetch('/auth/logout', {method:'POST'});
   currentUser = {authenticated:false};

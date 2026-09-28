@@ -48,26 +48,63 @@ import type {
   TasteGraph,
 } from './types';
 
-// Каталог — десятки тисяч пісень. Сервер віддає компактний список: без null/0/"catalog" і з
-// artistIds замість artists, коли імена збігаються з полем artist, — доповнюємо до звичної пісні.
-type CompactSong = Song & { artistIds?: number[] };
-function expandSong(s: CompactSong): Song {
-  if (!s.artists && s.artistIds) {
-    const names = s.artist.split(',').map((n) => n.trim()).filter(Boolean);
-    s.artists = s.artistIds.map((id, i) => ({ id, name: names[i] ?? '' }));
+// Каталог «стовпчиками» (GET /api/songs?format=cols, див. Models/CatalogColumns.cs на сервері): по масиву на
+// поле, виконавці/альбоми/жанри — словниками, рідкісні поля — «індекс → значення». Утричі менший JSON і
+// швидший розбір на телефоні, ніж 18 000 об'єктів.
+interface CatalogColumns {
+  id: number[];
+  title: string[];
+  artistDict: string[];
+  artist: number[];
+  artistIds: (number[] | null)[];
+  albumDict: string[];
+  album: number[];
+  genreDict: string[];
+  genres: number[][];
+  release: string[];
+  dur: number[];
+  track: number[];
+  yt: (string | null)[];
+  plays: number[];
+  artists?: Record<string, { id: number; name: string }[]>;
+  source?: Record<string, SongSource>;
+  audio?: Record<string, string>;
+  rating?: Record<string, number>;
+  ratingCount?: Record<string, number>;
+  submittedBy?: Record<string, Song['submittedBy']>;
+}
+const pad2 = (n: number) => String(n).padStart(2, '0');
+function decodeCatalog(c: CatalogColumns): Song[] {
+  const out: Song[] = new Array(c.id.length);
+  for (let i = 0; i < c.id.length; i++) {
+    const artist = c.artistDict[c.artist[i]];
+    let refs = c.artists?.[i];
+    const ids = c.artistIds[i];
+    if (!refs && ids) {
+      const names = artist.split(',').map((n) => n.trim()).filter(Boolean);
+      refs = ids.map((id, k) => ({ id, name: names[k] ?? '' }));
+    }
+    const sec = c.dur[i];
+    out[i] = {
+      id: c.id[i],
+      artist,
+      title: c.title[i],
+      release: c.release[i],
+      duration: `${pad2(Math.floor(sec / 3600))}:${pad2(Math.floor((sec % 3600) / 60))}:${pad2(sec % 60)}`,
+      genres: c.genres[i].map((g) => c.genreDict[g]),
+      album: c.album[i] >= 0 ? c.albumDict[c.album[i]] : null,
+      trackNumber: c.track[i] || null,
+      youtubeVideoId: c.yt[i] || null,
+      playCount: c.plays[i] || 0,
+      artists: refs ?? [],
+      source: c.source?.[i] ?? 'catalog',
+      audioUrl: c.audio?.[i] ?? null,
+      avgRating: c.rating?.[i] ?? null,
+      ratingCount: c.ratingCount?.[i] ?? 0,
+      submittedBy: c.submittedBy?.[i] ?? null,
+    } as Song;
   }
-  s.artists ??= [];
-  s.genres ??= [];
-  s.album ??= null;
-  s.source ??= 'catalog';
-  s.playCount ??= 0;
-  s.ratingCount ??= 0;
-  s.avgRating ??= null;
-  s.youtubeVideoId ??= null;
-  s.audioUrl ??= null;
-  s.submittedBy ??= null;
-  s.trackNumber ??= null;
-  return s;
+  return out;
 }
 
 // Один каталог на весь застосунок: головна, батл, колесо, черга й пошук раніше тягнули кожен свою
@@ -143,7 +180,7 @@ export function useMusicApi() {
         const load = (src: 'catalog' | 'community') => {
           let p = fresh ? undefined : songsCache.get(src);
           if (!p) {
-            p = request<CompactSong[]>('/api/songs', { query: { source: src } }).then((list) => list.map(expandSong));
+            p = request<CatalogColumns>('/api/songs', { query: { source: src, format: 'cols' } }).then(decodeCatalog);
             p.catch(() => songsCache.delete(src));
             songsCache.set(src, p);
           }

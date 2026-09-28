@@ -20,7 +20,7 @@ self.addEventListener('fetch', (event) => {
   // браузер блокував їх за connect-src і показував "бите" зображення.
   if (event.request.destination === 'audio' || url.pathname.endsWith('/audio')) return;
   if (event.request.destination === 'image' || /\/screenshots\/\d+$/.test(url.pathname)) return;
-  if (url.origin === self.location.origin) {
-    event.respondWith(fetch(event.request));
-  }
+  // Раніше свої запити теж проганялись через respondWith(fetch(...)) — нічого не кешуючи, лише затримка
+  // на кожен запит (особливо на телефоні). Тепер обробник нічого не перехоплює: браузер іде в мережу сам.
+  void url;
 });

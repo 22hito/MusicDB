@@ -20,16 +20,19 @@ public class SongsController(
     // source: "catalog" (головна таблиця_1, за замовчуванням — так старі клієнти,
     // зокрема мобільний, і далі бачать лише каталог), "community" (таблиця_2), "all"
     // або "background" — пісні з файлом з обох таблиць (вкладка "У фоні").
+    // format=cols — стовпчиками зі словниками (див. CatalogColumns): утричі менший JSON і швидший розбір
+    // на телефоні; без параметра — як раніше (старі версії застосунку).
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] string source = SongSources.Catalog)
+    public async Task<IActionResult> GetAll([FromQuery] string source = SongSources.Catalog, [FromQuery] string? format = null)
     {
+        var cols = format == "cols";
         if (source != "all" && source != SongSources.Background && !SongSources.IsValid(source)) return BadRequest("Unknown source.");
 
         // Кеш: список — 6 послідовних запитів до БД, і після кожної зміни каталогу
         // його разом перезапитують усі відкриті вкладки (див. CatalogCache). Каталог — десятки
         // тисяч пісень, тож кешуємо вже стиснуту компактну відповідь з ETag (PackedJson).
         // Лічильники прослуховувань без мутації каталогу оновлюються раз на 2 хв.
-        var packed = await catalogCache.GetOrCreateAsync($"songs:{source}", async () =>
+        var packed = await catalogCache.GetOrCreateAsync(cols ? $"songs:{source}:cols" : $"songs:{source}", async () =>
         {
             var query = db.Songs.AsNoTracking().Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
             if (source == SongSources.Background) query = query.Where(m => m.AudioFile != null);
@@ -41,7 +44,7 @@ public class SongsController(
                 .ToListAsync();
 
             var dtos = await musicService.BuildSongDtosAsync(songs);
-            return PackedJson.Create(dtos.Select(CompactForList).ToList());
+            return cols ? PackedJson.Create(CatalogColumns.From(dtos)) : PackedJson.Create(dtos.Select(CompactForList).ToList());
         }, TimeSpan.FromMinutes(2));
         return packed.ToResult(HttpContext);
     }

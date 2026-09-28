@@ -28,6 +28,13 @@ public sealed record PackedJson(string ETag, string ContentType, byte[] Raw, byt
 
     private static byte[] Compress(byte[] data, bool brotli)
     {
+        // Brotli якості 6 з вікном 4 МБ: каталог на третину менший, ніж з CompressionLevel.Optimal (це якість 4),
+        // а стискається однаково швидко (~40 мс) — один раз на весь час кешу.
+        if (brotli)
+        {
+            var buf = new byte[BrotliEncoder.GetMaxCompressedLength(data.Length)];
+            if (BrotliEncoder.TryCompress(data, buf, out var written, quality: 6, window: 22)) return buf[..written];
+        }
         using var ms = new MemoryStream();
         using (Stream z = brotli ? new BrotliStream(ms, CompressionLevel.Optimal) : new GZipStream(ms, CompressionLevel.Optimal))
             z.Write(data);
