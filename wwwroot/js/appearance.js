@@ -139,6 +139,7 @@ function _applyArtworkColor(vid){
 const PREF_DEFAULTS = {
   motion: 'system', artColors: true, glowFollow: true, glow: 100,
   accent: 'amber', uiScale: 100, autoScale: true, density: 'comfortable', highContrast: false, playerKeys: true,
+  startPage: 'catalog', hiddenCols: [], desktopNotifs: false, msgSound: false,
 };
 const ACCENT_HUES = { amber: 78, coral: 38, rose: 5, lavender: 295, ocean: 235, emerald: 158 };
 let PREFS = (() => {
@@ -163,6 +164,7 @@ function applyPrefs(){
   setAttr('data-density', PREFS.density === 'compact' ? 'compact' : null);
   setAttr('data-contrast', PREFS.highContrast ? 'high' : null);
   setAttr('data-glow-follow', PREFS.glowFollow ? '' : null);
+  setAttr('data-hide-cols', PREFS.hiddenCols?.length ? PREFS.hiddenCols.join(' ') : null);
   if(PREFS.uiScale !== 100) root.style.setProperty('--ui-scale', PREFS.uiScale / 100);
   else root.style.removeProperty('--ui-scale');
   setAttr('data-auto-scale', PREFS.autoScale ? null : 'off');
@@ -170,9 +172,18 @@ function applyPrefs(){
   root.style.setProperty('--glow-k', PREFS.glow / 100);
   _paintArtworkColor();
 }
-function setPref(key, value){
+async function setPref(key, value){
   if(key === 'theme'){ selectTheme(value); return; }
   if(key === 'lang'){ selectLang(value); return; }
+  // Сповіщення браузера — лише з дозволу; браузер відмовив — лишаємо вимкненим і кажемо чому.
+  if(key === 'desktopNotifs' && value){
+    const perm = 'Notification' in window ? await Notification.requestPermission().catch(() => 'denied') : 'denied';
+    if(perm !== 'granted'){
+      value = false;
+      const hint = document.getElementById('pref-desktopNotifs-hint');
+      if(hint) hint.textContent = t('settings.desktopNotifs.denied');
+    }
+  }
   PREFS[key] = value;
   try { localStorage.setItem('prefs', JSON.stringify(PREFS)); } catch(e){}
   applyPrefs();
@@ -188,10 +199,16 @@ function syncSettingsUI(){
   const page = document.getElementById('page-settings');
   if(!page) return;
   const values = { ...PREFS, theme: localStorage.getItem('theme') || 'dark', lang: currentLang };
+  page.querySelectorAll('#pref-columns [data-col]').forEach(b => {
+    const on = !(PREFS.hiddenCols || []).includes(b.dataset.col);
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   page.querySelectorAll('[data-pref]').forEach(el => {
     const key = el.getAttribute('data-pref');
     const val = values[key];
     if(el.type === 'checkbox') el.checked = !!val;
+    else if(el.tagName === 'SELECT') el.value = val;
     else if(el.type === 'range'){
       el.value = val;
       el.style.setProperty('--fill', ((val - el.min) / (el.max - el.min) * 100) + '%');
@@ -215,6 +232,13 @@ function loadSettingsPage(){
   const page = document.getElementById('page-settings');
   if(!page) return;
   page.addEventListener('click', e => {
+    const col = e.target.closest('#pref-columns [data-col]');
+    if(col){
+      const hidden = new Set(PREFS.hiddenCols || []);
+      hidden.has(col.dataset.col) ? hidden.delete(col.dataset.col) : hidden.add(col.dataset.col);
+      setPref('hiddenCols', [...hidden]);
+      return;
+    }
     const btn = e.target.closest('[data-pref] [data-value]');
     if(!btn) return;
     const key = btn.closest('[data-pref]').getAttribute('data-pref');
@@ -224,6 +248,7 @@ function loadSettingsPage(){
   page.addEventListener('change', e => {
     const el = e.target;
     if(el.type === 'checkbox' && el.dataset.pref) setPref(el.dataset.pref, el.checked);
+    else if(el.tagName === 'SELECT' && el.dataset.pref) setPref(el.dataset.pref, el.value);
   });
   page.addEventListener('input', e => {
     const el = e.target;
@@ -231,6 +256,32 @@ function loadSettingsPage(){
   });
 })();
 applyPrefs();
+
+// Нове особисте повідомлення: звук і (у фоновій вкладці) сповіщення системи — за налаштуваннями.
+let _pingCtx = null;
+function _messagePing(){
+  try {
+    _pingCtx = _pingCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const now = _pingCtx.currentTime;
+    [[880, 0], [1320, 0.09]].forEach(([freq, delay]) => {
+      const osc = _pingCtx.createOscillator(), gain = _pingCtx.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + delay + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.22);
+      osc.connect(gain).connect(_pingCtx.destination);
+      osc.start(now + delay); osc.stop(now + delay + 0.25);
+    });
+  } catch(e){}
+}
+function notifyIncomingMessage(fromUserId, name){
+  if(PREFS.msgSound) _messagePing();
+  if(!PREFS.desktopNotifs || !document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(t('notif.dmFrom').replace('{name}', name || ''), { body: t('notif.dmBody'), icon: '/images/favicon.png', tag: `dm-${fromUserId}` });
+    n.onclick = () => { window.focus(); openDirectChat(fromUserId); n.close(); };
+  } catch(e){}
+}
 
 // Клавіші плеєра: пробіл — пауза, Shift+←/→ — попередня/наступна, M — звук.
 let _volBeforeMute = null;

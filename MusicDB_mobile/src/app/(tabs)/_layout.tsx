@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { FONT_SANS_SEMIBOLD } from '@/constants/theme';
@@ -14,7 +14,14 @@ import { ChatIcon, NoteIcon, PersonIcon, SendIcon, ShieldIcon, SlidersIcon, Spar
 const TAB_BAR_CONTENT_HEIGHT = 58;
 
 export default function TabsLayout() {
-  const { theme, t } = useSettings();
+  const { theme, t, ready, startTab } = useSettings();
+  // Стартова вкладка з налаштувань — один раз під час запуску.
+  const startApplied = React.useRef(false);
+  useEffect(() => {
+    if (!ready || startApplied.current) return;
+    startApplied.current = true;
+    if (startTab !== 'index') router.replace(`/${startTab}`);
+  }, [ready, startTab]);
   const { currentUser, subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const isAdmin = !!currentUser?.isAdmin;

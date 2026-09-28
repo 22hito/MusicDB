@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSettings } from '@/state/SettingsContext';
+import { useSettings, type StartTab } from '@/state/SettingsContext';
 import { Card, SegmentedPicker } from '@/components/UI';
 import { ContrastIcon, MonitorIcon, MoonIcon, SunIcon } from '@/components/Icons';
 import {
@@ -21,7 +21,7 @@ import type { Lang } from '@/constants/i18n';
 // тема, акцентний колір, мова. Адреси сервера тут немає (див. SettingsContext).
 // Вкладка таббару "Налаштування" (як на мобільному сайті).
 export function SettingsScreen() {
-  const { theme, t, themeMode, setThemeMode, accent, setAccent, lang, setLang } = useSettings();
+  const { theme, t, themeMode, setThemeMode, accent, setAccent, lang, setLang, startTab, setStartTab } = useSettings();
 
   const label = (text: string) => <Text style={[styles.label, { color: theme.text }]}>{text}</Text>;
 
@@ -66,6 +66,21 @@ export function SettingsScreen() {
                 );
               })}
             </View>
+          </View>
+
+          <View>
+            {label(t('settings.startTab'))}
+            <Text style={[styles.hint, { color: theme.muted }]}>{t('settings.startTab.hint')}</Text>
+            <SegmentedPicker<StartTab>
+              value={startTab}
+              onChange={setStartTab}
+              options={[
+                { value: 'index', label: t('nav.library') },
+                { value: 'top', label: t('nav.topShort') },
+                { value: 'community', label: t('nav.social') },
+                { value: 'explore', label: t('nav.explore') },
+              ]}
+            />
           </View>
 
           <View>

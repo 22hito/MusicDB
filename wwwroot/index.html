@@ -786,6 +786,34 @@
     <p class="settings-lead" data-i18n="settings.lead">Зберігаються на цьому пристрої й діють одразу, без перезавантаження.</p>
 
     <div class="settings-grid">
+      <!-- ЗАГАЛЬНЕ -->
+      <section class="settings-card">
+        <header class="settings-card-head">
+          <span class="settings-card-icon"><svg class="icon"><use href="#icon-globe"/></svg></span>
+          <div><h3 data-i18n="settings.general">Загальне</h3><p data-i18n="settings.general.sub">Мова й стартова сторінка</p></div>
+        </header>
+        <div class="setting-row">
+          <div class="setting-text"><div class="setting-label" data-i18n="settings.language">Мова</div></div>
+          <div class="seg-switch" data-pref="lang">
+            <button type="button" data-value="uk">Українська</button>
+            <button type="button" data-value="en">English</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.startPage">Стартова сторінка</div>
+            <div class="setting-hint" data-i18n="settings.startPage.hint">Що відкривати, коли заходите на сайт.</div>
+          </div>
+          <select class="setting-select" data-pref="startPage">
+            <option value="catalog" data-i18n="home.source.catalog">Каталог</option>
+            <option value="community" data-i18n="home.source.community">Ком'юніті</option>
+            <option value="top" data-i18n="nav.top">Топ 100</option>
+            <option value="artists" data-i18n="nav.artists">Виконавці</option>
+            <option value="explore" data-i18n="nav.explore">Цікаве</option>
+          </select>
+        </div>
+      </section>
       <!-- ВИГЛЯД -->
       <section class="settings-card">
         <header class="settings-card-head">
@@ -824,12 +852,12 @@
             <div class="setting-hint" data-i18n="settings.uiScale.mobileHint">На телефоні інтерфейс завжди 100% — розмір тексту задає система, а збільшити можна жестом.</div>
           </div>
         </div>
-        <div class="setting-row setting-row-desktop-only">
+        <div class="setting-row setting-row-stack setting-row-desktop-only">
           <div class="setting-text">
             <div class="setting-label" data-i18n="settings.uiScale">Розмір інтерфейсу</div>
             <div class="setting-hint" data-i18n="settings.uiScale.hint">Масштабує все: текст, кнопки, іконки й відступи.</div>
           </div>
-          <div class="seg-switch" data-pref="uiScale">
+          <div class="seg-switch seg-full" data-pref="uiScale">
             <button type="button" data-value="85">85%</button>
             <button type="button" data-value="90">90%</button>
             <button type="button" data-value="100">100%</button>
@@ -846,16 +874,6 @@
           <span class="switch"><input type="checkbox" data-pref="autoScale"><span class="switch-track"></span></span>
         </label>
 
-        <div class="setting-row">
-          <div class="setting-text">
-            <div class="setting-label" data-i18n="settings.density">Щільність таблиць</div>
-            <div class="setting-hint" data-i18n="settings.density.hint">Компактна вміщує більше пісень на екрані.</div>
-          </div>
-          <div class="seg-switch" data-pref="density">
-            <button type="button" data-value="comfortable" data-i18n="settings.density.comfortable">Комфортна</button>
-            <button type="button" data-value="compact" data-i18n="settings.density.compact">Компактна</button>
-          </div>
-        </div>
 
         <label class="setting-row">
           <div class="setting-text">
@@ -866,6 +884,39 @@
         </label>
       </section>
 
+      <!-- ТАБЛИЦЯ -->
+      <section class="settings-card">
+        <header class="settings-card-head">
+          <span class="settings-card-icon"><svg class="icon"><use href="#icon-sliders"/></svg></span>
+          <div><h3 data-i18n="settings.table">Таблиця пісень</h3><p data-i18n="settings.table.sub">Щільність і колонки</p></div>
+        </header>
+
+        <div class="setting-row setting-row-stack">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.density">Щільність таблиць</div>
+            <div class="setting-hint" data-i18n="settings.density.hint">Компактна вміщує більше пісень на екрані.</div>
+          </div>
+          <div class="seg-switch seg-full" data-pref="density">
+            <button type="button" data-value="comfortable" data-i18n="settings.density.comfortable">Комфортна</button>
+            <button type="button" data-value="compact" data-i18n="settings.density.compact">Компактна</button>
+          </div>
+        </div>
+
+        <div class="setting-row setting-row-stack setting-row-desktop-only">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.columns">Колонки</div>
+            <div class="setting-hint" data-i18n="settings.columns.hint">Що показувати в головній таблиці. Виконавець і назва — завжди.</div>
+          </div>
+          <div class="chip-toggles" id="pref-columns">
+            <button type="button" data-col="release" data-i18n="table.release">Дата релізу</button>
+            <button type="button" data-col="duration" data-i18n="table.duration">Тривалість</button>
+            <button type="button" data-col="genres" data-i18n="table.genres">Жанри</button>
+            <button type="button" data-col="album" data-i18n="table.album">Альбом</button>
+            <button type="button" data-col="plays" data-i18n="table.plays">Прослух.</button>
+            <button type="button" data-col="rating" data-i18n="table.rating">Оцінка</button>
+          </div>
+        </div>
+      </section>
       <!-- РУХ І ЕФЕКТИ -->
       <section class="settings-card">
         <header class="settings-card-head">
@@ -910,21 +961,27 @@
 
       </section>
 
-      <!-- МОВА -->
+      <!-- ПОВІДОМЛЕННЯ -->
       <section class="settings-card">
         <header class="settings-card-head">
-          <span class="settings-card-icon"><svg class="icon"><use href="#icon-globe"/></svg></span>
-          <div><h3 data-i18n="settings.language">Мова</h3><p data-i18n="settings.language.sub">Мова інтерфейсу</p></div>
+          <span class="settings-card-icon"><svg class="icon"><use href="#icon-bell"/></svg></span>
+          <div><h3 data-i18n="settings.notify">Повідомлення</h3><p data-i18n="settings.notify.sub">Нові особисті повідомлення</p></div>
         </header>
-        <div class="setting-row">
-          <div class="setting-text"><div class="setting-label" data-i18n="settings.language">Мова</div></div>
-          <div class="seg-switch" data-pref="lang">
-            <button type="button" data-value="uk">Українська</button>
-            <button type="button" data-value="en">English</button>
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.desktopNotifs">Сповіщення браузера</div>
+            <div class="setting-hint" id="pref-desktopNotifs-hint" data-i18n="settings.desktopNotifs.hint">Коли сайт у фоновій вкладці — сповіщення системи про нове повідомлення.</div>
           </div>
-        </div>
+          <span class="switch"><input type="checkbox" data-pref="desktopNotifs"><span class="switch-track"></span></span>
+        </label>
+        <label class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label" data-i18n="settings.msgSound">Звук нового повідомлення</div>
+            <div class="setting-hint" data-i18n="settings.msgSound.hint">Короткий сигнал, коли вам пишуть.</div>
+          </div>
+          <span class="switch"><input type="checkbox" data-pref="msgSound"><span class="switch-track"></span></span>
+        </label>
       </section>
-
       <!-- КЛАВІАТУРА -->
       <section class="settings-card settings-card-keyboard">
         <header class="settings-card-head">
@@ -1626,7 +1683,7 @@
 
 <!-- Модальне вікно "додати пісню в плейлист" -->
 <div class="modal-overlay" id="add-to-playlist-modal-overlay">
-  <div class="modal-box" style="width:360px;">
+  <div class="modal-box" style="width:400px;">
     <div class="modal-title-row">
       <span data-i18n="profile.addToPlaylistTitle">Додати в плейлист</span>
     </div>
@@ -1634,14 +1691,18 @@
       <button type="button" class="btn btn-outline" onclick="addToQueue(addToPlaylistMusicId, true); closeAddToPlaylistModal()"><svg class="icon"><use href="#icon-play"/></svg> <span data-i18n="queue.playNext">Грати наступною</span></button>
       <button type="button" class="btn btn-outline" onclick="addToQueue(addToPlaylistMusicId); closeAddToPlaylistModal()"><svg class="icon"><use href="#icon-queue"/></svg> <span data-i18n="queue.add">Додати в чергу</span></button>
     </div>
-    <div id="add-to-playlist-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;max-height:240px;overflow-y:auto;"></div>
-    <div id="add-to-playlist-empty" style="color:var(--muted);font-size:0.8rem;margin-bottom:1rem;display:none;" data-i18n="profile.playlistsEmpty">Ще немає плейлистів</div>
-    <div class="form-group" style="margin-bottom:0.75rem;">
-      <input type="text" id="add-to-playlist-new-name" data-i18n-placeholder="profile.newPlaylistPlaceholder" placeholder="Назва нового плейлиста">
+    <!-- Плейлист — випадаючим списком; останній пункт — новий плейлист (тоді з'являється поле назви). -->
+    <div class="form-group atp-field">
+      <label for="add-to-playlist-select" data-i18n="profile.playlistLabel">Плейлист</label>
+      <select id="add-to-playlist-select" onchange="_syncAddToPlaylistMode()"></select>
+    </div>
+    <div class="form-group atp-field" id="add-to-playlist-new-wrap">
+      <input type="text" id="add-to-playlist-new-name" data-i18n-placeholder="profile.newPlaylistPlaceholder" placeholder="Назва нового плейлиста"
+             onkeydown="if(event.key==='Enter') submitAddToPlaylist()">
     </div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeAddToPlaylistModal()" data-i18n="modal.cancel">Скасувати</button>
-      <button class="modal-btn-primary" onclick="createPlaylistAndAdd()" data-i18n="profile.createAndAddBtn">Створити й додати</button>
+      <button class="modal-btn-primary" id="add-to-playlist-submit" onclick="submitAddToPlaylist()" data-i18n="profile.addBtn">Додати</button>
     </div>
   </div>
 </div>

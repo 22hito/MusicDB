@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { Button } from './UI';
+import { SelectField } from './SelectField';
 import { PlayIcon, QueueIcon } from './Icons';
 import { usePlayer } from '@/player/PlayerContext';
 import { RADIUS, SPACING } from '@/constants/theme';
@@ -21,22 +23,29 @@ export function AddToPlaylistModal({
   onClose: () => void;
   onAdded?: () => void;
 }) {
-  const { theme, t } = useSettings();
+  const { theme, t, count } = useSettings();
   const player = usePlayer();
   const api = useMusicApi();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(false);
   const [newName, setNewName] = useState('');
   const [busy, setBusy] = useState(false);
+  // Плейлист — випадаючим списком, як на сайті; 'new' — створити новий (тоді з'являється поле назви).
+  const [selected, setSelected] = useState<string>('new');
 
   useEffect(() => {
     if (!visible) return;
     setNewName('');
     setLoading(true);
-    api
-      .getPlaylists()
-      .then(setPlaylists)
-      .catch(() => setPlaylists([]))
+    Promise.all([api.getPlaylists(), AsyncStorage.getItem('lastPlaylistId').catch(() => null)])
+      .then(([list, last]) => {
+        setPlaylists(list);
+        setSelected(list.some((p) => String(p.id) === last) ? last! : list[0] ? String(list[0].id) : 'new');
+      })
+      .catch(() => {
+        setPlaylists([]);
+        setSelected('new');
+      })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -46,6 +55,7 @@ export function AddToPlaylistModal({
     setBusy(true);
     try {
       await api.addSongToPlaylist(playlistId, musicId);
+      AsyncStorage.setItem('lastPlaylistId', String(playlistId)).catch(() => {});
       onAdded?.();
       onClose();
     } catch {
@@ -104,39 +114,41 @@ export function AddToPlaylistModal({
             </View>
           ) : null}
 
-          <ScrollView style={{ maxHeight: 240, marginBottom: 14 }} showsVerticalScrollIndicator={false}>
-            {!loading && playlists.length === 0 ? (
-              <Text style={{ color: theme.muted, fontSize: 14 }}>{t('profile.playlistsEmpty')}</Text>
-            ) : null}
-            {playlists.map((pl) => (
-              <TouchableOpacity
-                key={pl.id}
-                disabled={busy}
-                onPress={() => addTo(pl.id)}
-                style={[styles.playlistRow, { borderColor: theme.border }]}
-              >
-                <Text numberOfLines={1} style={{ color: theme.text, fontSize: 14, flex: 1, marginRight: 8 }}>
-                  {pl.name}
-                </Text>
-                <Text style={{ color: theme.muted, fontSize: 12 }}>{pl.songCount}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <Text style={[styles.label, { color: theme.muted }]}>{t('profile.playlistLabel')}</Text>
+          {loading ? (
+            <ActivityIndicator color={theme.accent} style={{ marginVertical: 14 }} />
+          ) : (
+            <SelectField<string>
+              value={selected}
+              options={[
+                ...playlists.map((pl) => ({ value: String(pl.id), label: `${pl.name} — ${count('count.songs', pl.songCount)}` })),
+                { value: 'new', label: `＋ ${t('profile.newPlaylistOption')}` },
+              ]}
+              onChange={setSelected}
+              title={t('profile.playlistLabel')}
+              searchable={playlists.length > 8}
+              style={{ marginBottom: 14 }}
+            />
+          )}
 
-          <TextInput
-            value={newName}
-            onChangeText={setNewName}
-            placeholder={t('profile.newPlaylistPlaceholder')}
-            placeholderTextColor={theme.muted}
-            style={[
-              styles.input,
-              { backgroundColor: theme.surface2, borderColor: theme.border, color: theme.text },
-            ]}
-          />
+          {selected === 'new' ? (
+            <TextInput
+              value={newName}
+              onChangeText={setNewName}
+              autoFocus={!loading && playlists.length > 0}
+              placeholder={t('profile.newPlaylistPlaceholder')}
+              placeholderTextColor={theme.muted}
+              style={[styles.input, { backgroundColor: theme.surface2, borderColor: theme.border, color: theme.text }]}
+            />
+          ) : null}
 
           <View style={styles.actions}>
             <Button label={t('common.cancel')} variant="outline" onPress={onClose} small />
-            <Button label={t('profile.createAndAddBtn')} onPress={createAndAdd} small loading={busy} disabled={!newName.trim()} />
+            {selected === 'new' ? (
+              <Button label={t('profile.createAndAddBtn')} onPress={createAndAdd} small loading={busy} disabled={!newName.trim()} />
+            ) : (
+              <Button label={t('profile.addBtn')} onPress={() => addTo(Number(selected))} small loading={busy} />
+            )}
           </View>
         </View>
       </View>
@@ -160,15 +172,7 @@ const styles = StyleSheet.create({
   },
   queueRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   queueBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 8 },
-  playlistRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 44,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-  },
+  label: { fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '600', marginBottom: 6 },
   input: {
     minHeight: 48,
     borderWidth: 1,

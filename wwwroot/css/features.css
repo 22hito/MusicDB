@@ -39,6 +39,11 @@
   .battle-hover-toggle:hover, .battle-hover-toggle:active { transform: none; }
 }
 
+/* «Додати в плейлист»: список і поле назви нового — на всю ширину вікна. */
+.atp-field { margin-bottom: 0.9rem; }
+.atp-field label { display: block; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.atp-field select { cursor: pointer; }
+
 /* Вікно підтвердження — над будь-якою модалкою (напр. "Вийти з турніру?" поверх батлу). */
 #confirm-modal-overlay { z-index: 1100; }
 /* Багаторядкові повідомлення (список об'єднаних жанрів) — з переносами. */
@@ -645,3 +650,11 @@ tr.rows-sentinel, tr.rows-sentinel > td { height: 1px !important; padding: 0 !im
 .corr-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 0.7rem; }
 .corr-card-actions input { flex: 1 1 220px; min-width: 0; }
 .btn-icon-flag .icon { width: 15px; height: 15px; }
+
+/* Налаштування «Колонки»: приховані колонки головної таблиці (заголовок і клітинки). */
+html[data-hide-cols~="release"] #songs-table .col-release, html[data-hide-cols~="release"] #songs-table .td-release,
+html[data-hide-cols~="duration"] #songs-table .col-duration, html[data-hide-cols~="duration"] #songs-table .td-duration,
+html[data-hide-cols~="genres"] #songs-table .col-genres, html[data-hide-cols~="genres"] #songs-table .td-genres,
+html[data-hide-cols~="album"] #songs-table .col-album, html[data-hide-cols~="album"] #songs-table .td-album,
+html[data-hide-cols~="plays"] #songs-table .col-plays, html[data-hide-cols~="plays"] #songs-table .td-plays,
+html[data-hide-cols~="rating"] #songs-table .col-rating, html[data-hide-cols~="rating"] #songs-table .td-rating { display: none; }

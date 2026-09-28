@@ -35,7 +35,7 @@ if (window.signalR) {
     }).catch(()=>{});
     if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
   });
-  rtConn.on('dmReceived', (fromUserId, name) => onDirectMessageEvent(fromUserId, name));
+  rtConn.on('dmReceived', (fromUserId, name) => { onDirectMessageEvent(fromUserId, name); notifyIncomingMessage(fromUserId, name); });
   rtConn.on('dmSent', (toUserId) => onDirectMessageEvent(toUserId));
   rtConn.on('dmRequestsChanged', (otherUserId, name) => onDmRequestsEvent(otherUserId, name));
   // Друзі: запит / прийняття / видалення — раніше інша сторона бачила це лише після перезавантаження.

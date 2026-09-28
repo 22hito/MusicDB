@@ -249,18 +249,34 @@ function togglePlaylistPublic(id, makePublic){
 // ADD TO PLAYLIST (з головної таблиці — кнопка "➕")
 // ================================================================
 let addToPlaylistMusicId = null;
+let _addToPlaylistNames = {};
+// Плейлист — випадаючим списком (раніше — стовпчик карток, що з кількома плейлистами займав усе вікно).
+// Типово обраний той, у який додавали востаннє; «＋ Новий плейлист…» показує поле назви.
 function openAddToPlaylistModal(musicId){
   addToPlaylistMusicId = musicId;
   document.getElementById('add-to-playlist-new-name').value = '';
   fetch('/api/playlists').then(r=>r.json()).then(list=>{
-    const wrap = document.getElementById('add-to-playlist-list');
-    document.getElementById('add-to-playlist-empty').style.display = list.length ? 'none' : '';
-    wrap.innerHTML = list.map(p=>`
-      <div class="ext-search-item" onclick="addSongToExistingPlaylist(${p.id})">
-        <div class="es-main"><strong>${esc(p.name)}</strong><span>${countLabel('count.songs', p.songCount)}</span></div>
-      </div>`).join('');
+    _addToPlaylistNames = Object.fromEntries(list.map(p => [p.id, p.name]));
+    let last = null;
+    try { last = localStorage.getItem('lastPlaylistId'); } catch(e){}
+    const select = document.getElementById('add-to-playlist-select');
+    select.innerHTML = list.map(p => `<option value="${p.id}">${esc(p.name)} — ${esc(countLabel('count.songs', p.songCount))}</option>`).join('')
+      + `<option value="new">＋ ${esc(t('profile.newPlaylistOption'))}</option>`;
+    select.value = list.some(p => String(p.id) === last) ? last : (list[0] ? String(list[0].id) : 'new');
+    _syncAddToPlaylistMode();
     document.getElementById('add-to-playlist-modal-overlay').classList.add('open');
   }).catch(()=>{ alert(t('msg.connectionError')); });
+}
+function _syncAddToPlaylistMode(){
+  const isNew = document.getElementById('add-to-playlist-select').value === 'new';
+  document.getElementById('add-to-playlist-new-wrap').style.display = isNew ? '' : 'none';
+  document.getElementById('add-to-playlist-submit').textContent = t(isNew ? 'profile.createAndAddBtn' : 'profile.addBtn');
+  if(isNew) setTimeout(() => document.getElementById('add-to-playlist-new-name').focus(), 30);
+}
+function submitAddToPlaylist(){
+  const value = document.getElementById('add-to-playlist-select').value;
+  if(value === 'new') createPlaylistAndAdd();
+  else addSongToExistingPlaylist(+value);
 }
 // Симетричний вихід для всіх модалок сайту: додає .closing (запускає
 // modalOut-анімацію через CSS), і лише після її завершення знімає .open —
@@ -328,23 +344,26 @@ function closeAddToPlaylistModal(){
 document.getElementById('add-to-playlist-modal-overlay').addEventListener('click', function(e){
   if(e.target === this) closeAddToPlaylistModal();
 });
-function addSongToExistingPlaylist(playlistId){
+function addSongToExistingPlaylist(playlistId, name){
   if(!addToPlaylistMusicId) return;
   fetch(`/api/playlists/${playlistId}/songs/${addToPlaylistMusicId}`, { method:'POST' })
     .then(r=>{
       if(!r.ok){ alert(t('msg.connectionError')); return; }
+      try { localStorage.setItem('lastPlaylistId', String(playlistId)); } catch(e){}
       closeAddToPlaylistModal();
+      showToast(t('profile.addedToPlaylist').replace('{name}', name || _addToPlaylistNames[playlistId] || ''), () => openPlaylist(playlistId));
     })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
 function createPlaylistAndAdd(){
-  const name = document.getElementById('add-to-playlist-new-name').value.trim();
-  if(!name){ alert(t('msg.fillRequiredFields')); return; }
+  const input = document.getElementById('add-to-playlist-new-name');
+  const name = input.value.trim();
+  if(!name){ input.focus(); return; }
   fetch('/api/playlists', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) })
     .then(r=>r.ok?r.json():null)
     .then(playlist=>{
       if(!playlist){ alert(t('msg.connectionError')); return; }
-      return addSongToExistingPlaylist(playlist.id);
+      return addSongToExistingPlaylist(playlist.id, name);
     })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }

@@ -7,6 +7,10 @@ import { ACCENT_HUES, buildTheme, type AccentKey, type AppTheme, type ThemePref 
 const KEY_API_BASE = 'musicdb.apiBase';
 const KEY_THEME = 'musicdb.theme';
 const KEY_LANG = 'musicdb.lang';
+const KEY_START_TAB = 'musicdb.startTab';
+// Вкладка, що відкривається під час запуску (як «Стартова сторінка» на сайті).
+export type StartTab = 'index' | 'top' | 'community' | 'explore';
+const START_TABS: StartTab[] = ['index', 'top', 'community', 'explore'];
 const KEY_ACCENT = 'musicdb.accent';
 
 // Той самий бекенд, що й у веб- і десктоп-версіях — застосунок працює "з коробки".
@@ -25,6 +29,8 @@ interface SettingsState {
   setAccent: (accent: AccentKey) => void;
   lang: Lang;
   setLang: (lang: Lang) => void;
+  startTab: StartTab;
+  setStartTab: (tab: StartTab) => void;
   t: (key: keyof typeof I18N['uk'], vars?: Record<string, string | number>) => string;
   // Число з правильною формою слова: «1 пісня», «23 пісні», «25 пісень» (ключі count.*: «одна|кілька|багато»).
   count: (key: keyof typeof I18N['uk'], n: number) => string;
@@ -39,17 +45,20 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemePref>('system');
   const [accent, setAccentState] = useState<AccentKey>('amber');
   const [lang, setLangState] = useState<Lang>('uk');
+  const [startTab, setStartTabState] = useState<StartTab>('index');
 
   useEffect(() => {
     (async () => {
       try {
         // Раніше адресу можна було змінити вручну — прибираємо старе збережене значення.
         AsyncStorage.removeItem(KEY_API_BASE).catch(() => {});
-        const [savedTheme, savedLang, savedAccent] = await Promise.all([
+        const [savedTheme, savedLang, savedAccent, savedStart] = await Promise.all([
           AsyncStorage.getItem(KEY_THEME),
           AsyncStorage.getItem(KEY_LANG),
           AsyncStorage.getItem(KEY_ACCENT),
+          AsyncStorage.getItem(KEY_START_TAB),
         ]);
+        if (savedStart && (START_TABS as string[]).includes(savedStart)) setStartTabState(savedStart as StartTab);
         if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'gray' || savedTheme === 'system') setThemeModeState(savedTheme);
         if (savedAccent && savedAccent in ACCENT_HUES) setAccentState(savedAccent as AccentKey);
         if (savedLang === 'uk' || savedLang === 'en') setLangState(savedLang);
@@ -68,6 +77,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const setThemeMode = useCallback((mode: ThemePref) => {
     setThemeModeState(mode);
     AsyncStorage.setItem(KEY_THEME, mode).catch(() => {});
+  }, []);
+
+  const setStartTab = useCallback((next: StartTab) => {
+    setStartTabState(next);
+    AsyncStorage.setItem(KEY_START_TAB, next).catch(() => {});
   }, []);
 
   const setLang = useCallback((next: Lang) => {
@@ -117,6 +131,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setAccent,
       lang,
       setLang,
+      startTab,
+      setStartTab,
       t,
       count,
     }),
@@ -130,6 +146,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       systemScheme,
       lang,
       setLang,
+      startTab,
+      setStartTab,
       t,
       count,
     ],

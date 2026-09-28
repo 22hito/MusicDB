@@ -218,11 +218,28 @@ html[data-glow-follow] #player-bar { transition: background-position 1s linear; 
 html[data-page="settings"] .nav-icon-btn#nav-settings-btn { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
 .settings-lead { color: var(--muted); margin: -0.9rem 0 1.6rem; font-size: 0.92rem; }
-.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 1.25rem; align-items: start; }
+/* «Цеглинки»: картки різної висоти в дві колонки без дір (раніше сітка auto-fit лишала під короткими порожнечу). */
+.settings-grid { columns: 2 460px; column-gap: 1.25rem; }
 .settings-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
   padding: 1.2rem 1.4rem 0.5rem; box-shadow: var(--shadow-sm), var(--card-hl);
+  break-inside: avoid; margin-bottom: 1.25rem; display: block;
 }
+.setting-select {
+  min-width: 170px; background: var(--bg); border: 1px solid var(--border-strong); border-radius: 10px; color: var(--text);
+  font-family: var(--font-ui); font-size: 0.85rem; padding: 0.55rem 0.8rem; cursor: pointer; outline: none;
+}
+.setting-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+/* Колонки таблиці — перемикачі-«пігулки»: увімкнена — показується. */
+.chip-toggles { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip-toggles button {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.85rem; border-radius: 999px; cursor: pointer;
+  font-family: var(--font-ui); font-size: 0.8rem; font-weight: 550; color: var(--muted);
+  background: transparent; border: 1px dashed var(--border-strong); transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.chip-toggles button::before { content: '+'; font-weight: 700; }
+.chip-toggles button.active { color: var(--text); background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.chip-toggles button.active::before { content: '✓'; color: var(--accent); }
 .settings-card-head { display: flex; align-items: center; gap: 0.9rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
 .settings-card-head h3 { font-size: 1.02rem; margin: 0; color: var(--text); }
 .settings-card-head p { color: var(--muted); font-size: 0.8rem; margin-top: 0.1rem; }

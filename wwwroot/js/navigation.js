@@ -218,7 +218,10 @@ window.addEventListener('popstate', () => {
 // Викликається з initApp(), коли вже відомо, хто залогінений.
 function _initRouter(){
   _routerReady = true;
-  const r = _parsePath(location.pathname);
+  let r = _parsePath(location.pathname);
+  const start = typeof PREFS !== 'undefined' ? PREFS.startPage : 'catalog';
+  if(location.pathname === '/' && start && start !== 'catalog')
+    r = start === 'community' ? { page: 'home', source: 'community' } : { page: start };
   if(r.page === 'home' && r.source === 'catalog'){
     history.replaceState({ page: 'home', scrollY: 0 }, '', '/' + location.search);
     return;
