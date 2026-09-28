@@ -13,7 +13,7 @@ import { ChevronRightIcon, DiscIcon, GlobeIcon, NoteIcon, PauseIcon, PlayIcon, T
 import { FONT_MONO_MEDIUM, FONT_MONO_REGULAR, FONT_SANS_BOLD, FONT_SANS_REGULAR, FONT_SERIF_BOLD, PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, PublicPlaylist, Song } from '@/api/types';
 
-const BATTLE_SIZES = [16, 32, 64];
+const BATTLE_SIZES = [4, 8, 16, 32, 64, 128, 256, 512, 1024];
 
 interface BattleState {
   round: Song[]; // пісні поточного кола (i та i+1 — пара)

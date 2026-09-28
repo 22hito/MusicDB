@@ -396,7 +396,7 @@ export const I18N = {
     'battle.publicBadge': 'публічний', // NEW
     'battle.privateBadge': 'приватний', // NEW
     'battle.chooseSize': 'Оберіть розмір турніру:', // NEW
-    'battle.notEnough': 'Замало пісень у плейлисті — потрібно щонайменше 16.', // NEW
+    'battle.notEnough': 'Замало пісень у плейлисті — потрібно щонайменше 4.', // NEW
     'battle.roundLabel': 'Учасників: ', // NEW
     'battle.vs': 'VS', // NEW
     'battle.chooseBtn': 'Обрати цю', // NEW
@@ -406,9 +406,9 @@ export const I18N = {
     'battle.exitConfirm': 'Вийти з турніру? Прогрес буде втрачено.', // NEW
     'battle.exit': 'Вийти', // NEW
     'battle.genreHeading': 'Батл за жанром',
-    'battle.genreHint': 'Випадкові пісні одного жанру — жанри, де пісень щонайменше 16',
+    'battle.genreHint': 'Випадкові пісні одного жанру — жанри, де пісень щонайменше 4',
     'battle.genreStart': 'Почати',
-    'battle.genreEmpty': 'Поки що немає жанру з 16+ піснями',
+    'battle.genreEmpty': 'Поки що немає жанру з 4+ піснями',
     'battle.mobileHint': 'Послухайте обидві пісні й оберіть кращу. Переможці виходять у наступне коло.', // NEW
     'artists.heading.pre': 'Всі', // NEW
     'artists.heading.accent': 'виконавці', // NEW
@@ -977,7 +977,7 @@ export const I18N = {
     'battle.publicBadge': 'public', // NEW
     'battle.privateBadge': 'private', // NEW
     'battle.chooseSize': 'Choose tournament size:', // NEW
-    'battle.notEnough': 'Not enough songs in this playlist — need at least 16.', // NEW
+    'battle.notEnough': 'Not enough songs in this playlist — need at least 4.', // NEW
     'battle.roundLabel': 'Contestants: ', // NEW
     'battle.vs': 'VS', // NEW
     'battle.chooseBtn': 'Pick this one', // NEW
@@ -987,9 +987,9 @@ export const I18N = {
     'battle.exitConfirm': 'Leave the tournament? Progress will be lost.', // NEW
     'battle.exit': 'Leave', // NEW
     'battle.genreHeading': 'Genre battle',
-    'battle.genreHint': 'Random songs of one genre — genres with at least 16 songs',
+    'battle.genreHint': 'Random songs of one genre — genres with at least 4 songs',
     'battle.genreStart': 'Start',
-    'battle.genreEmpty': 'No genre has 16+ songs yet',
+    'battle.genreEmpty': 'No genre has 4+ songs yet',
     'battle.mobileHint': 'Listen to both songs and pick the better one. Winners go to the next round.', // NEW
     'artists.heading.pre': 'All', // NEW
     'artists.heading.accent': 'artists', // NEW

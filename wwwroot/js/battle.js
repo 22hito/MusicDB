@@ -3,7 +3,7 @@
 // ================================================================
 // БАТЛ РОЯЛЬ: одиночне вибування з плейлиста (16/32/64 учасників)
 // ================================================================
-const BATTLE_SIZES = [16, 32, 64];
+const BATTLE_SIZES = [4, 8, 16, 32, 64, 128, 256, 512, 1024];
 let battleRound = [];    // пісні поточного раунду (парна кількість, i та i+1 — пара)
 let battleWinners = [];  // переможці поточного раунду, стають battleRound наступного
 let battleMatchIndex = 0;
@@ -98,7 +98,7 @@ function startGenreBattle(){
   if(!genre || !battleAllSongs) return;
   currentPlaylistId = null;
   currentPlaylistSongs = battleAllSongs.filter(s => s.genres.includes(genre));
-  openBattleSetup(); // розмір (16/32/64) — із тих, на які вистачає пісень; перемішування — у startBattleRoyale
+  openBattleSetup(); // розмір (4…1024) — із тих, на які вистачає пісень; перемішування — у startBattleRoyale
 }
 
 // Сторінка "Батл рояль" у навбарі: власні плейлисти (якщо залогінені) + публічні чужі.
