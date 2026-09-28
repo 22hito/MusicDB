@@ -266,8 +266,8 @@ function _renderBattleProgress(finished){
 }
 // Тло сцени — розмиті обкладинки YouTube обох пісень (у пісні ком'юніті без відео — порожньо).
 function _setBattleBg(side, song){
-  const vid = song?.youtubeVideoId;
-  document.getElementById(`battle-bg-${side}`).style.backgroundImage = vid ? `url("https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg")` : '';
+  const thumb = _battleThumb(song);
+  document.getElementById(`battle-bg-${side}`).style.backgroundImage = thumb ? `url("${thumb}")` : '';
 }
 // «Раунд 3 з 10 — 5/128» (n/m — матч у раунді); останні раунди — за назвою.
 function _battleRoundTitle(size, match){
@@ -345,11 +345,19 @@ function seekBattleMini(side, e){
   });
 });
 
+// Відео, знайдені пошуком під час турніру (у пісні з каталогу id відео може й не бути) — для обкладинок переможця.
+const _battleFoundVids = new Map();
+function _battleVid(song){ return song?.youtubeVideoId || _battleFoundVids.get(song?.id) || null; }
+function _battleThumb(song, size = 'mqdefault'){
+  const vid = _battleVid(song);
+  return vid ? `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/${size}.jpg` : null;
+}
 async function _resolveBattleVid(song){
   if(song.youtubeVideoId) return song.youtubeVideoId;
   if(song.source === 'community') return null;
+  if(_battleFoundVids.has(song.id)) return _battleFoundVids.get(song.id);
   const vid = await fetchVid(song.artist, song.title);
-  if(vid) _cacheYoutubeVideo(song.id, vid);
+  if(vid){ _cacheYoutubeVideo(song.id, vid); _battleFoundVids.set(song.id, vid); }
   return vid;
 }
 
@@ -386,7 +394,8 @@ function chooseBattleWinner(side){
   _stopBattleMinis();
 
   const winner = battleRound[battleMatchIndex*2 + side];
-  battleHistory.push({ round: battleRound.slice(), winners: battleWinners.slice(), matchIndex: battleMatchIndex });
+  // side — хто переміг у цьому матчі: з історії складаються «шлях до перемоги» й призери.
+  battleHistory.push({ round: battleRound.slice(), winners: battleWinners.slice(), matchIndex: battleMatchIndex, side });
   _syncBattleUndo();
   battleWinners.push(winner);
   battleMatchIndex++;
@@ -425,11 +434,13 @@ function showBattleChampion(song){
   document.getElementById('battle-champion-artist').textContent = song.artist;
   document.getElementById('battle-champion-title').textContent = song.title;
   const cover = document.getElementById('battle-champion-cover');
-  cover.style.display = song.youtubeVideoId ? '' : 'none';
-  if(song.youtubeVideoId) cover.src = `https://i.ytimg.com/vi/${encodeURIComponent(song.youtubeVideoId)}/hqdefault.jpg`;
+  const thumb = _battleThumb(song, 'hqdefault');
+  cover.closest('.battle-champ-cover-wrap').classList.toggle('no-cover', !thumb);
+  if(thumb) cover.src = thumb; else cover.removeAttribute('src');
   _setBattleBg('a', song); _setBattleBg('b', song);
+  _renderChampionDetails(song);
   document.getElementById('battle-split').style.display = 'none';
-  document.getElementById('battle-champion').style.display = 'flex';
+  document.getElementById('battle-champion').style.display = '';
   _battleConfetti();
   // loadBattleMatch після фіналу більше не викликається — довершуємо смужку й підпис тут.
   _renderBattleProgress(true);
@@ -456,6 +467,50 @@ function _battleConfetti(){
   }
 }
 // "Слухати переможця" — закриває турнір і одразу вмикає переможну пісню в основному плеєрі.
+// Матчі турніру з історії: розмір раунду, обидві пісні, переможець.
+function _battleMatches(){
+  return battleHistory.map(h => {
+    const a = h.round[h.matchIndex*2], b = h.round[h.matchIndex*2+1];
+    return { size: h.round.length, winner: h.side ? b : a, loser: h.side ? a : b };
+  });
+}
+function _battleRoundShort(size){
+  if(size === 2) return t('battle.final');
+  if(size === 4) return t('battle.semifinal');
+  if(size === 8) return t('battle.quarterfinal');
+  return t('battle.roundShort').replace('{x}', Math.log2(battleInitialSize) - Math.log2(size) + 1);
+}
+function _championRowHtml(song, tag, cls = ''){
+  const thumb = _battleThumb(song);
+  return `<li class="battle-champ-row ${cls}">
+    <span class="battle-champ-tag">${esc(tag)}</span>
+    ${thumb ? `<img class="battle-champ-thumb" src="${esc(thumb)}" alt="" loading="lazy">` : `<span class="battle-champ-thumb no-cover"><svg class="icon"><use href="#icon-music"/></svg></span>`}
+    <span class="battle-champ-song"><strong>${esc(song.artist)}</strong><span>${esc(song.title)}</span></span>
+  </li>`;
+}
+// Шлях переможця (кого переміг у кожному раунді) і призери: фіналіст, півфіналісти.
+function _renderChampionDetails(song){
+  const matches = _battleMatches();
+  const path = matches.filter(m => m.winner.id === song.id);
+  document.getElementById('battle-champ-path').innerHTML = path
+    .map(m => _championRowHtml(m.loser, _battleRoundShort(m.size), m.size === 2 ? 'final' : '')).join('');
+  const finalist = matches.find(m => m.size === 2)?.loser;
+  const semis = matches.filter(m => m.size === 4).map(m => m.loser);
+  document.getElementById('battle-champ-podium').innerHTML = [
+    _championRowHtml(song, '1', 'place-1'),
+    finalist ? _championRowHtml(finalist, '2', 'place-2') : '',
+    ...semis.map(s => _championRowHtml(s, '3', 'place-3')),
+  ].join('');
+  document.getElementById('battle-champ-stats').innerHTML =
+    `<span>${esc(t('battle.statSize').replace('{n}', countLabel('count.songs', battleInitialSize)))}</span>`
+    + `<span>${esc(countLabel('count.wins', path.length))}</span>`;
+}
+// Ще раз із тими самими піснями — нове жеребкування.
+function rematchBattle(){
+  if(!battleInitialSize || !currentPlaylistSongs?.length) return;
+  startBattleRoyale(battleInitialSize);
+}
+
 function playBattleChampion(){
   if(!battleChampionSong) return;
   const champion = battleChampionSong;
