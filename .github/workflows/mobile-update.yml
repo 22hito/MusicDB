@@ -54,7 +54,7 @@ jobs:
           cache: npm
           cache-dependency-path: MusicDB_mobile/package-lock.json
 
-      - uses: expo/expo-github-action@v8
+      - uses: expo/expo-github-action@v9
         if: steps.token.outputs.present == 'true'
         with:
           eas-version: latest
