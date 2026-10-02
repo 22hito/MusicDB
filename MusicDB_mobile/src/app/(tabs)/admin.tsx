@@ -20,14 +20,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
-import { Badge, Button, EmptyState, ErrorState, Field, Heading, SegmentedPicker } from '@/components/UI';
+import { Badge, Button, EmptyState, ErrorState, Field, Heading, SegmentedPicker, TileGrid } from '@/components/UI';
 import { CommunityFields } from '@/components/CommunityFields';
 import { SongFormModal, type SongFormValues } from '@/components/SongFormModal';
-import { EditIcon, TrashIcon } from '@/components/Icons';
+import { BugIcon, EditIcon, FlagIcon, PlusIcon, SendIcon, TrashIcon } from '@/components/Icons';
 import { PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import { DateField } from '@/components/DateField';
 import { AudioPreview } from '@/components/AudioPreview';
 import type { BugReport, BugStatus, Correction, CorrectionStatus, ExternalSongResult, PickedAudio, SongRequest, SongSource } from '@/api/types';
+import { formatStamp } from '@/utils/time';
 
 const EMPTY_ADD = { artist: '', title: '', release: '', duration: '', album: '', genres: '' };
 
@@ -47,6 +48,12 @@ function requestToForm(r: SongRequest): SongFormValues {
 // Адмін-панель — як на сайті: заголовок і вкладки-кнопки Запити · Додати пісню · Баг-репорти · Правки
 // (сповіщення адміна — у дзвіночку шапки, разом з іншими сповіщеннями).
 type AdminMode = 'requests' | 'add' | 'bugs' | 'corrections';
+const TAB_ICONS: Record<AdminMode, (color: string) => React.ReactNode> = {
+  requests: (c) => <SendIcon size={16} color={c} />,
+  add: (c) => <PlusIcon size={17} color={c} />,
+  bugs: (c) => <BugIcon size={16} color={c} />,
+  corrections: (c) => <FlagIcon size={16} color={c} />,
+};
 export default function AdminScreen() {
   const { theme, t } = useSettings();
   const api = useMusicApi();
@@ -84,28 +91,13 @@ export default function AdminScreen() {
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
       <View style={styles.hubHead}>
         <Heading pre={t('adminHub.heading.pre')} accent={t('adminHub.heading.accent')} />
-        <View style={styles.hubTabs}>
-          {tabs.map(({ key, label, badge }) => {
-            const active = mode === key;
-            return (
-              <TouchableOpacity
-                key={key}
-                onPress={() => setMode(key)}
-                style={[
-                  styles.hubTab,
-                  { borderColor: active ? theme.accent : theme.border, backgroundColor: active ? `${theme.accent}1a` : theme.surface },
-                ]}
-              >
-                <Text style={{ color: active ? theme.accent : theme.text, fontSize: 13, fontWeight: '600' }}>{label}</Text>
-                {badge ? (
-                  <View style={[styles.hubBadge, { backgroundColor: theme.accent }]}>
-                    <Text style={{ color: theme.onAccent, fontSize: 10.5, fontWeight: '700' }}>{badge > 99 ? '99+' : badge}</Text>
-                  </View>
-                ) : null}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <TileGrid<AdminMode>
+          columns={2}
+          compact
+          value={mode}
+          onChange={setMode}
+          options={tabs.map(({ key, label, badge }) => ({ value: key, label, badge, icon: (c: string) => TAB_ICONS[key](c) }))}
+        />
       </View>
 
       {mode === 'requests' ? (
@@ -198,7 +190,13 @@ function RequestsPanel() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Heading pre={t('admin.heading.pre')} accent={t('admin.heading.accent')} />
+      {/* Один великий заголовок — у шапці адмінки; тут — скромний підзаголовок із лічильником. */}
+      <View style={styles.panelHead}>
+        <Text style={[styles.panelTitle, { color: theme.text }]}>
+          {t('admin.heading.pre')} {t('admin.heading.accent')}
+        </Text>
+        {requests.length ? <Text style={[styles.panelCount, { color: theme.accent }]}>{requests.length}</Text> : null}
+      </View>
       {loadError ? (
         <ErrorState label={t('error.loadFailed')} onRetry={load} />
       ) : requests.length === 0 ? (
@@ -235,8 +233,8 @@ function RequestsPanel() {
             </View>
             {r.audioUrl ? <AudioPreview getUrl={() => api.getRequestAudioLink(r.id)} getDownloadUrl={() => api.getRequestAudioLink(r.id, true)} /> : null}
             <View style={styles.reqActions}>
-              <Button label={t('admin.approveBtn')} variant="success" small loading={busyId === r.id} onPress={() => approve(r.id)} />
-              <Button label={t('admin.rejectBtn')} variant="danger" small loading={busyId === r.id} onPress={() => reject(r.id)} />
+              <Button label={t('admin.approveBtn')} variant="success" small loading={busyId === r.id} onPress={() => approve(r.id)} style={{ flex: 1 }} />
+              <Button label={t('admin.rejectBtn')} variant="danger" small loading={busyId === r.id} onPress={() => reject(r.id)} style={{ flex: 1 }} />
             </View>
           </View>
         ))
@@ -414,7 +412,7 @@ function AddSongPanel() {
 
 // Баг-репорти від користувачів: фільтр відкриті/вирішені/усі, перемикання статусу.
 function BugsPanel({ onChanged }: { onChanged?: () => void }) {
-  const { theme, t } = useSettings();
+  const { theme, t, lang } = useSettings();
   const { subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const [filter, setFilter] = useState<BugStatus | 'all'>('open');
@@ -508,7 +506,7 @@ function BugsPanel({ onChanged }: { onChanged?: () => void }) {
           <View key={b.id} style={[styles.reqCard, { backgroundColor: theme.surface, borderColor: b.status === 'open' ? theme.accent : theme.border }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <Text style={{ color: theme.text, fontWeight: '700' }}>{b.reporter?.displayName ?? t('adminNotif.someone')}</Text>
-              <Text style={{ color: theme.muted, fontSize: 11 }}>{b.createdAt}</Text>
+              <Text style={{ color: theme.muted, fontSize: 11 }}>{formatStamp(b.createdAt, lang)}</Text>
               <Text style={{ color: b.status === 'open' ? theme.accent : theme.green, fontSize: 11, marginLeft: 'auto' }}>
                 {t(b.status === 'open' ? 'bugs.status.open' : 'bugs.status.resolved')}
               </Text>
@@ -541,9 +539,9 @@ function BugsPanel({ onChanged }: { onChanged?: () => void }) {
             ) : null}
             <View style={styles.reqActions}>
               {b.status === 'open' ? (
-                <Button small variant="success" label={t('bugs.resolveBtn')} loading={busyId === b.id} onPress={() => setStatus(b.id, 'resolved')} />
+                <Button small variant="success" label={t('bugs.resolveBtn')} loading={busyId === b.id} onPress={() => setStatus(b.id, 'resolved')} style={{ flex: 1 }} />
               ) : (
-                <Button small variant="outline" label={t('bugs.reopenBtn')} loading={busyId === b.id} onPress={() => setStatus(b.id, 'open')} />
+                <Button small variant="outline" label={t('bugs.reopenBtn')} loading={busyId === b.id} onPress={() => setStatus(b.id, 'open')} style={{ flex: 1 }} />
               )}
               <TouchableOpacity
                 onPress={() => remove(b.id)}
@@ -568,7 +566,7 @@ function BugsPanel({ onChanged }: { onChanged?: () => void }) {
 
 // Запити на правку від користувачів: перевірити (джерело, наданий файл), виправити дані, відповісти автору.
 function CorrectionsPanel({ onChanged }: { onChanged?: () => void }) {
-  const { theme, t } = useSettings();
+  const { theme, t, lang } = useSettings();
   const { subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const [filter, setFilter] = useState<CorrectionStatus | 'all'>('open');
@@ -644,7 +642,7 @@ function CorrectionsPanel({ onChanged }: { onChanged?: () => void }) {
           <View key={c.id} style={[styles.reqCard, { backgroundColor: theme.surface, borderColor: c.status === 'open' ? theme.accent : theme.border }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <Text style={{ color: theme.text, fontWeight: '700' }}>{c.requester?.displayName ?? t('adminNotif.someone')}</Text>
-              <Text style={{ color: theme.muted, fontSize: 11 }}>{c.createdAt}</Text>
+              <Text style={{ color: theme.muted, fontSize: 11 }}>{formatStamp(c.createdAt, lang)}</Text>
               <Text style={{ color: statusColor(c.status), fontSize: 11, marginLeft: 'auto' }}>{t(`corr.status.${c.status}` as never)}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
@@ -691,8 +689,8 @@ function CorrectionsPanel({ onChanged }: { onChanged?: () => void }) {
                   style={[styles.noteInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface2 }]}
                 />
                 <View style={styles.reqActions}>
-                  <Button small variant="success" label={t('corr.doneBtn')} loading={busyId === c.id} onPress={() => resolve(c.id, 'done')} />
-                  <Button small variant="outline" label={t('corr.rejectBtn')} disabled={busyId === c.id} onPress={() => resolve(c.id, 'rejected')} />
+                  <Button small variant="success" label={t('corr.doneBtn')} loading={busyId === c.id} onPress={() => resolve(c.id, 'done')} style={{ flex: 1 }} />
+                  <Button small variant="outline" label={t('corr.rejectBtn')} disabled={busyId === c.id} onPress={() => resolve(c.id, 'rejected')} style={{ flex: 1 }} />
                   <TouchableOpacity
                     onPress={() => remove(c.id)}
                     disabled={busyId === c.id}
@@ -732,18 +730,10 @@ function CorrectionsPanel({ onChanged }: { onChanged?: () => void }) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   noteInput: { borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13.5, marginTop: 10 },
-  hubHead: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg },
-  hubTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  hubTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 38,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderRadius: RADIUS.md,
-  },
-  hubBadge: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  hubHead: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.xs },
+  panelHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: SPACING.md },
+  panelTitle: { fontSize: 17, fontWeight: '700' },
+  panelCount: { fontSize: 15, fontWeight: '700' },
   // Запас під плаваючий міні-плеєр — щоб нижні кнопки не ховались під ним.
   content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: PLAYER_BAR_HEIGHT + 60 },
   reqCard: {
@@ -757,8 +747,9 @@ const styles = StyleSheet.create({
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
   reqActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
-    marginTop: 12,
+    marginTop: 14,
   },
   alert: {
     borderWidth: 1,

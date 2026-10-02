@@ -92,7 +92,7 @@ function showMyCorrections(){
     list.innerHTML = items.length ? items.map(c => `
       <div class="corr-mine-item">
         <div class="corr-mine-head"><span class="badge corr-status ${c.status}">${esc(t('corr.status.' + c.status))}</span>
-          <strong>${esc(c.targetLabel)}</strong><span class="hint" style="margin:0">${esc(t('corr.field.' + c.field))} · ${esc(c.createdAt)}</span></div>
+          <strong>${esc(c.targetLabel)}</strong><span class="hint" style="margin:0">${esc(t('corr.field.' + c.field))} · ${timeHtml(c.createdAt)}</span></div>
         ${c.message ? `<div class="corr-mine-text">${esc(c.message)}</div>` : ''}
         ${c.adminNote ? `<div class="corr-note"><b>${esc(t('corr.adminReply'))}:</b> ${esc(c.adminNote)}</div>` : ''}
       </div>`).join('') : `<div class="empty" style="padding:1.2rem 0"><span>${esc(t('corr.emptyMine'))}</span></div>`;
@@ -129,7 +129,7 @@ function loadCorrections(){
           <span class="badge corr-status ${c.status}">${esc(t('corr.status.' + c.status))}</span>
           <span class="badge">${esc(t('corr.field.' + c.field))}</span>
           ${c.requester ? `<a href="#" class="artist-link" onclick="openUserProfilePage(${c.requester.userId});return false;">${esc(c.requester.displayName)}</a>` : ''}
-          <span class="hint" style="margin:0;">${esc(c.createdAt)}</span>
+          <span class="hint" style="margin:0;">${timeHtml(c.createdAt)}</span>
           <span style="flex:1"></span>
           <button class="btn btn-outline bug-delete-btn" onclick="deleteCorrection(${c.id})" title="${esc(t('bugs.deleteBtn'))}" aria-label="${esc(t('bugs.deleteBtn'))}"><svg class="icon"><use href="#icon-trash"/></svg></button>
         </div>

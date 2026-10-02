@@ -121,7 +121,7 @@ function loadBugReports(){
         <div class="bug-card-head">
           <span class="badge${b.status==='open'?' source-community':''}">${t('bugs.status.' + b.status)}</span>
           ${b.reporter ? `<a href="#" class="artist-link" onclick="openUserProfilePage(${b.reporter.userId});return false;">${esc(b.reporter.displayName)}</a>` : ''}
-          <span class="hint" style="margin:0;">${esc(b.createdAt)}</span>
+          <span class="hint" style="margin:0;">${timeHtml(b.createdAt)}</span>
           <span style="flex:1"></span>
           <button class="btn btn-outline" style="font-size:0.7rem;padding:0.3rem 0.7rem;" onclick="setBugStatus(${b.id}, '${b.status==='open'?'resolved':'open'}')">${t(b.status==='open' ? 'bugs.resolveBtn' : 'bugs.reopenBtn')}</button>
           <button class="btn btn-outline bug-delete-btn" onclick="deleteBugReport(${b.id})" title="${t('bugs.deleteBtn')}" aria-label="${t('bugs.deleteBtn')}"><svg class="icon"><use href="#icon-trash"/></svg></button>

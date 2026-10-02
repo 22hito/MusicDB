@@ -42,14 +42,16 @@ export type RealtimeEvent =
   | 'ratingChanged'
   | 'friendsChanged'
   | 'bugReportsChanged'
-  | 'correctionsChanged';
+  | 'correctionsChanged'
+  | 'threadReply' // новий допис у гілці, де я учасник: [threadId, ім'я автора, назва гілки, чи це відповідь мені]
+  | 'threadNotificationsChanged'; // прочитав гілку на іншому пристрої / перестав стежити
 
 // Ті самі SignalR-події, що слухає сайт (wwwroot/app.js); args — аргументи події
 // (напр. userId співрозмовника для dm*, id гілки, [musicId, avg, count] для оцінки).
 const REALTIME_EVENTS: RealtimeEvent[] = [
   'songsChanged', 'requestsChanged', 'adminNotification', 'dmReceived', 'dmSent',
   'dmRequestsChanged', 'threadsChanged', 'ratingChanged', 'friendsChanged', 'bugReportsChanged',
-  'correctionsChanged',
+  'correctionsChanged', 'threadReply', 'threadNotificationsChanged',
 ];
 
 interface ApiBridgeState {

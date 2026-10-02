@@ -16,6 +16,31 @@ let _graphView = { x: 0, y: 0, scale: 1 };
 let _graphRaf = 0, _graphDirty = false;
 
 function _graphCanvas(){ return document.getElementById('graph-canvas'); }
+
+// Категоріальна палітра графів (dataviz-скіл): колір = тотожність (жанр, тип зв'язку, роль), а не номер вузла.
+// Три слоти, що проходять validate_palette.js для ВСІХ пар (дальтонізм і звичайний зір), окремо для
+// світлої й темної/сірої теми; решта категорій — нейтральні «інші». Та сама палітра — у застосунку.
+const GRAPH_SERIES = { dark: ['#3987e5', '#d95926', '#199e70'], light: ['#2a78d6', '#eb6834', '#1baf7a'] };
+function _graphSeries(){ return GRAPH_SERIES[document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark']; }
+function _graphCss(name, fallback){ return (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback; }
+// Будь-який CSS-колір (зокрема oklch із токенів) → "r,g,b" для rgba() на канві.
+function _cssRgb(color){
+  const c = document.createElement('canvas'); c.width = c.height = 1;
+  const x = c.getContext('2d'); x.fillStyle = color; x.fillRect(0, 0, 1, 1);
+  const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
+  return `${r},${g},${b}`;
+}
+// Колір за основним жанром: три найчастіші — слоти палітри, решта — нейтральні; легенда — ті самі назви.
+function _genreColoring(items, genreOf){
+  const counts = new Map();
+  items.forEach(it => { const g = genreOf(it); if(g) counts.set(g, (counts.get(g) || 0) + 1); });
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([g]) => g);
+  const series = _graphSeries(), other = _graphCss('--muted', '#888');
+  const color = it => { const k = top.indexOf(genreOf(it)); return k >= 0 ? series[k] : other; };
+  const legend = top.map((g, k) => ({ color: series[k], label: abbrGenre(g) }));
+  if(counts.size > top.length) legend.push({ color: other, label: t('graph.legend.other') });
+  return { color, legend };
+}
 function _graphRequestDraw(){
   if(_graphDirty) return;
   _graphDirty = true;
@@ -55,13 +80,58 @@ function _graphFit(){
     minX = Math.min(minX, _g.cx-R); maxX = Math.max(maxX, _g.cx+R); minY = Math.min(minY, _g.cy-R); maxY = Math.max(maxY, _g.cy+R);
   }
   const w = c.clientWidth || 700, h = c.clientHeight || 500;
+  // Радіальні розкладки з підписами: вписуємо РАЗОМ із підписами (на телефоні вони інакше обрізались краєм).
+  if(_g.nodeLabels && _g.radialLabels){
+    _g.fit = _graphFitWithLabels(w, h, pad);
+    // Розкладка стиснулась (вузький екран) — вузли теж менші, інакше налазять один на одного в центрі.
+    _g.fitK = Math.max(0.55, Math.min(1, _g.fit.s * 1.25));
+    return;
+  }
   const padB = _g.nodeLabels ? pad + 22 : pad; // місце під підписи нижніх вузлів
   const s = Math.min((w-pad*2)/Math.max(1,maxX-minX), (h-pad-padB)/Math.max(1,maxY-minY), 2);
   _g.fit = { s, ox: (w - s*(maxX+minX))/2, oy: pad + ((h-pad-padB) - s*(maxY-minY))/2 - s*minY };
 }
+// Найбільший масштаб, за якого кожен вузол разом із «коробкою» свого підпису (у пікселях екрана,
+// відносно вузла) влазить у рамку; зсув центрує вміст. Двійковий пошук — вузлів тут десятки.
+function _graphFitWithLabels(w, h, pad){
+  const ctx = _graphCanvas().getContext('2d');
+  ctx.font = `600 11px ${_g.font}`;
+  const pts = [];
+  for(let i=0;i<_g.n;i++){
+    const dx = _g.xs[i] - _g.cx, dy = _g.ys[i] - _g.cy, d = Math.hypot(dx, dy);
+    const r = _g.radius * (_g.sizes ? _g.sizes[i] : 1) * (_g.ring.includes(i) ? 1.45 : 1) + 5;
+    const lw = ctx.measureText(_g.nodeLabels[i]).width;
+    let x0 = -r, x1 = r, y0 = -r, y1 = r;
+    if(d > 1){
+      const ux = dx / d, uy = dy / d, ax = ux * r, ay = uy * r;
+      const bx = Math.abs(ux) < 0.3 ? ax - lw/2 : ux > 0 ? ax : ax - lw;
+      const by = Math.abs(uy) < 0.3 ? ay - 7 : uy > 0 ? ay : ay - 14;
+      x0 = Math.min(x0, bx); x1 = Math.max(x1, bx + lw); y0 = Math.min(y0, by); y1 = Math.max(y1, by + 14);
+    } else { x0 = Math.min(x0, -lw/2); x1 = Math.max(x1, lw/2); y1 = Math.max(y1, r + 20); }
+    pts.push([_g.xs[i], _g.ys[i], x0, x1, y0, y1]);
+  }
+  if(_g.rings){
+    const R = Math.max(..._g.rings.map(rr => rr.r));
+    pts.push([_g.cx + R, _g.cy, 0, 0, 0, 0], [_g.cx - R, _g.cy, 0, 0, 0, 0], [_g.cx, _g.cy + R, 0, 0, 0, 0], [_g.cx, _g.cy - R, 0, 0, -14, 0]);
+  }
+  const axis = (k, lo, hi, size) => {
+    const feasible = sc => {
+      let L = -Infinity, Rr = Infinity;
+      for(const p of pts){ L = Math.max(L, pad - sc*p[k] - p[lo]); Rr = Math.min(Rr, size - pad - sc*p[k] - p[hi]); }
+      return L <= Rr;
+    };
+    let a = 0.01, b = 2;
+    for(let it = 0; it < 26; it++){ const m = (a + b) / 2; if(feasible(m)) a = m; else b = m; }
+    return a;
+  };
+  const sc = Math.min(axis(0, 2, 3, w), axis(1, 4, 5, h));
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for(const p of pts){ minX = Math.min(minX, sc*p[0] + p[2]); maxX = Math.max(maxX, sc*p[0] + p[3]); minY = Math.min(minY, sc*p[1] + p[4]); maxY = Math.max(maxY, sc*p[1] + p[5]); }
+  return { s: sc, ox: (w - (maxX - minX)) / 2 - minX, oy: (h - (maxY - minY)) / 2 - minY };
+}
 // Радіус вузла на екрані: базовий × масштаб × власний розмір вузла (opts.sizes).
 function _graphNodeR(i){
-  const r = _g.radius * Math.min(2.2, Math.max(1, Math.sqrt(_graphView.scale)));
+  const r = _g.radius * (_g.fitK || 1) * Math.min(2.2, Math.max(1, Math.sqrt(_graphView.scale)));
   return _g.sizes ? r * _g.sizes[i] : r;
 }
 
@@ -85,13 +155,13 @@ function _graphDraw(){
     const f = _g.fit, v = _graphView;
     const ccx = v.x + v.scale*(f.ox + f.s*_g.cx), ccy = v.y + v.scale*(f.oy + f.s*_g.cy);
     ctx.save();
-    ctx.setLineDash([4, 6]); ctx.lineWidth = 1;
+    ctx.lineWidth = 1; // суцільні тонкі кола: пунктир читається як «поріг», а це лише шкала
     ctx.font = `600 10px ${_g.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     for(const ring of _g.rings){
       const rr = ring.r * f.s * v.scale;
       ctx.beginPath(); ctx.arc(ccx, ccy, rr, 0, Math.PI*2);
-      ctx.strokeStyle = `rgba(${edgeRgb},0.22)`; ctx.stroke();
-      if(ring.label){ ctx.fillStyle = `rgba(${edgeRgb},0.75)`; ctx.fillText(ring.label, ccx, ccy - rr - 3); }
+      ctx.strokeStyle = `rgba(${edgeRgb},0.12)`; ctx.stroke();
+      if(ring.label){ ctx.fillStyle = _g.mutedColor; ctx.fillText(ring.label, ccx, ccy - rr - 3); }
     }
     ctx.restore();
   }
@@ -104,14 +174,14 @@ function _graphDraw(){
     if(!list.length) return;
     ctx.beginPath();
     for(const [i,j] of list){ ctx.moveTo(pos[i*2], pos[i*2+1]); ctx.lineTo(pos[j*2], pos[j*2+1]); }
-    ctx.strokeStyle = `rgba(${edgeRgb},${hov != null ? 0.05 : (0.14 + b*0.09).toFixed(2)})`;
+    ctx.strokeStyle = `rgba(${edgeRgb},${hov != null ? 0.04 : (0.07 + b*0.07).toFixed(2)})`;
     ctx.lineWidth = 1 + b*0.5;
     ctx.stroke();
   });
   if(hov != null){
     ctx.beginPath();
     for(const j of _g.adj[hov]){ ctx.moveTo(pos[hov*2], pos[hov*2+1]); ctx.lineTo(pos[j*2], pos[j*2+1]); }
-    ctx.strokeStyle = `rgba(${edgeRgb},0.8)`; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = _g.ringColor; ctx.globalAlpha = 0.85; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 1;
   }
 
   const hl = hov != null ? new Set([hov, ..._g.adj[hov]]) : null;
@@ -122,6 +192,8 @@ function _graphDraw(){
       const ri = _graphNodeR(i) * (i === hov ? 1.15 : 1);
       ctx.globalAlpha = hl && !hl.has(i) ? 0.3 : 1;
       const img = _g.images?.[i];
+      ctx.beginPath(); ctx.arc(x, y, ri + 2, 0, Math.PI*2);
+      ctx.fillStyle = _g.haloColor; ctx.fill();
       ctx.beginPath(); ctx.arc(x, y, ri, 0, Math.PI*2);
       ctx.fillStyle = _g.avColors?.[i] || _g.colors[i]; ctx.fill();
       if(img && img.complete && img.naturalWidth){
@@ -166,24 +238,38 @@ function _graphDraw(){
   }
   // Підписи під вузлами — лише для невеликих графів (люди, виконавці), інакше каша.
   if(_g.nodeLabels){
-    ctx.font = `500 11px ${_g.font}`;
+    ctx.font = `600 11px ${_g.font}`;
+    ctx.lineJoin = 'round';
     // Радіальні розкладки: підпис — назовні від центру (менше наповзань), центральний вузол — під ним.
+    // Ореол кольору тла робить текст читабельним поверх ліній; підписи, що налазять на вже
+    // поставлені, ховаються (спершу позначені й більші вузли) — наблизьте, і їх стане видно.
     const f = _g.fit, v = _graphView;
     const ccx = v.x + v.scale*(f.ox + f.s*_g.cx), ccy = v.y + v.scale*(f.oy + f.s*_g.cy);
-    for(let i=0;i<n;i++){
-      ctx.globalAlpha = hl && !hl.has(i) ? 0.25 : 0.9;
-      ctx.fillStyle = _g.textColor;
+    const order = [...Array(n).keys()].sort((a, b) => (hov === b) - (hov === a) || _g.ring.includes(b) - _g.ring.includes(a) || (_g.sizes ? _g.sizes[b] - _g.sizes[a] : 0));
+    const boxes = [];
+    for(const i of order){
       const x = pos[i*2], y = pos[i*2+1], dx = x - ccx, dy = y - ccy, d = Math.hypot(dx, dy);
       const ri = _graphNodeR(i) * (_g.ring.includes(i) ? 1.45 : 1);
+      let lx, ly, align, base;
       if(_g.radialLabels && d > 1){
         const ux = dx / d, uy = dy / d;
-        ctx.textAlign = Math.abs(ux) < 0.3 ? 'center' : ux > 0 ? 'left' : 'right';
-        ctx.textBaseline = Math.abs(uy) < 0.3 ? 'middle' : uy > 0 ? 'top' : 'bottom';
-        ctx.fillText(_g.nodeLabels[i], x + ux*(ri + 5), y + uy*(ri + 5));
+        align = Math.abs(ux) < 0.3 ? 'center' : ux > 0 ? 'left' : 'right';
+        base = Math.abs(uy) < 0.3 ? 'middle' : uy > 0 ? 'top' : 'bottom';
+        lx = x + ux*(ri + 5); ly = y + uy*(ri + 5);
       } else {
-        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-        ctx.fillText(_g.nodeLabels[i], x, y + ri + 6);
+        align = 'center'; base = 'top'; lx = x; ly = y + ri + 6;
       }
+      const w = ctx.measureText(_g.nodeLabels[i]).width;
+      const bx = align === 'center' ? lx - w/2 : align === 'left' ? lx : lx - w;
+      const by = base === 'top' ? ly : base === 'bottom' ? ly - 13 : ly - 6.5;
+      const box = [bx - 2, by - 1, bx + w + 2, by + 14];
+      if(i !== hov && boxes.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
+      boxes.push(box);
+      ctx.globalAlpha = hl && !hl.has(i) ? 0.25 : 1;
+      ctx.textAlign = align; ctx.textBaseline = base;
+      ctx.lineWidth = 3.5; ctx.strokeStyle = _g.haloColor; ctx.strokeText(_g.nodeLabels[i], lx, ly);
+      ctx.fillStyle = _g.ring.includes(i) ? _g.ringColor : _g.textColor;
+      ctx.fillText(_g.nodeLabels[i], lx, ly);
     }
     ctx.globalAlpha = 1;
   }
@@ -256,8 +342,9 @@ function _startGraph(items, simFn, labelFn, colorFn, onClickFn, opts = {}){
   if(opts.positions) opts.positions.forEach(([x, y], i) => { xs[i] = x; ys[i] = y; });
   const css = getComputedStyle(document.documentElement);
   const accent = (css.getPropertyValue('--accent') || '').trim();
+  const maxLabel = document.getElementById('graph-canvas-wrap').clientWidth < 480 ? 14 : 18;
   const nodeLabels = opts.nodeLabels && n <= 80
-    ? items.map(it => { const s = String(opts.nodeLabels(it)); return s.length > 18 ? s.slice(0, 17) + '…' : s; })
+    ? items.map(it => { const s = String(opts.nodeLabels(it)); return s.length > maxLabel ? s.slice(0, maxLabel - 1) + '…' : s; })
     : null;
   const images = opts.images ? opts.images.map(u => {
     if(!u) return null;
@@ -272,12 +359,14 @@ function _startGraph(items, simFn, labelFn, colorFn, onClickFn, opts = {}){
     xs, ys, vx: new Float32Array(n), vy: new Float32Array(n), fx: new Float32Array(n), fy: new Float32Array(n),
     cx: 400, cy: 300, iter: 0, maxIter: opts.positions ? 0 : n > 200 ? 110 : 160,
     radius: opts.radius || (n > 150 ? 3.5 : n > 50 ? 5.5 : 8), hover: null,
-    edgeRgb: '200,169,110', ringColor: accent || '#fff', fit: { s: 1, ox: 0, oy: 0 },
+    edgeRgb: _cssRgb(_graphCss('--text', '#ddd')), ringColor: accent || '#fff', fit: { s: 1, ox: 0, oy: 0 },
+    haloColor: _graphCss('--elevated', '#111'),
     ring: opts.ring || [], nodeLabels, pin: opts.pin ?? null,
     rich: !!(opts.sizes || opts.images || opts.initials), sizes: opts.sizes || null, images,
     initials: opts.initials || null, avColors: opts.avatarColors || null, marks: opts.marks || null, rings: opts.rings || null,
     radialLabels: !!opts.radialLabels,
     textColor: (css.getPropertyValue('--text') || '').trim() || '#ddd', font: getComputedStyle(document.body).fontFamily || 'sans-serif',
+    mutedColor: (css.getPropertyValue('--muted') || '').trim() || '#999',
     serif: (css.getPropertyValue('--font-serif') || '').trim() || 'serif',
   };
   _graphRaf = requestAnimationFrame(_graphTick);
@@ -298,12 +387,20 @@ function _graphHitTest(px, py){
 function _graphSetHover(i, px, py){
   const tip = document.getElementById('graph-tooltip');
   if(i != null){
-    tip.style.left = px + 'px'; tip.style.top = py + 'px';
+    // Біля країв підказка не вилазить за межі графа (телефон).
+    const w = _graphCanvas().clientWidth;
+    const half = Math.min(tip.offsetWidth / 2 || 90, w / 2 - 8);
+    tip.style.left = Math.max(half + 8, Math.min(w - half - 8, px)) + 'px'; tip.style.top = py + 'px';
   }
   if(_g.hover === i) return;
   _g.hover = i;
   if(i == null) tip.classList.remove('show');
-  else { tip.textContent = _g.labelFn ? _g.labelFn(_g.items[i]) : ''; tip.classList.add('show'); }
+  else {
+    tip.textContent = _g.labelFn ? _g.labelFn(_g.items[i]) : '';
+    // На дотик — підказка, що другий дотик відкриває.
+    if(_graphTouch()){ const sub = document.createElement('span'); sub.className = 'graph-tooltip-sub'; sub.textContent = t('graph.tapAgain'); tip.appendChild(sub); }
+    tip.classList.add('show');
+  }
   _graphCanvas().style.cursor = i == null ? '' : 'pointer';
   _graphRequestDraw();
 }
@@ -313,6 +410,13 @@ function _graphNodeUnhover(){ if(_g) _graphSetHover(null); }
   const wrap = document.getElementById('graph-canvas-wrap');
   const local = e => { const rect = wrap.getBoundingClientRect(); const z = _uiZoom(); return [(e.clientX-rect.left)/z, (e.clientY-rect.top)/z]; };
   let drag = null;
+  // Активні дотики — для щипка двома пальцями (масштаб навколо середини між пальцями + зсув).
+  const pts = new Map();
+  let pinch = null;
+  const pinchState = () => {
+    const [a, b] = [...pts.values()];
+    return { d: Math.hypot(a[0]-b[0], a[1]-b[1]) || 1, mx: (a[0]+b[0])/2, my: (a[1]+b[1])/2 };
+  };
   wrap.addEventListener('wheel', e => {
     e.preventDefault();
     const [x,y] = local(e);
@@ -321,34 +425,52 @@ function _graphNodeUnhover(){ if(_g) _graphSetHover(null); }
   // Pointer events — і миша, і палець (телефон).
   wrap.addEventListener('pointerdown', e => {
     if(e.target.closest('.graph-zoom-controls')) return;
-    drag = { x: e.clientX, y: e.clientY, vx: _graphView.x, vy: _graphView.y, moved: false };
+    pts.set(e.pointerId, local(e));
     wrap.setPointerCapture(e.pointerId);
+    if(pts.size === 2){ pinch = pinchState(); drag = null; return; }
+    if(pts.size > 2) return;
+    drag = { x: e.clientX, y: e.clientY, vx: _graphView.x, vy: _graphView.y, moved: false, touch: e.pointerType !== 'mouse' };
   });
   wrap.addEventListener('pointermove', e => {
     if(!_g) return;
     const [x,y] = local(e);
+    if(pts.has(e.pointerId)) pts.set(e.pointerId, [x, y]);
+    if(pinch && pts.size === 2){
+      const cur = pinchState();
+      _graphView.x += cur.mx - pinch.mx;
+      _graphView.y += cur.my - pinch.my;
+      _graphZoomAt(cur.mx, cur.my, cur.d / pinch.d);
+      pinch = cur;
+      return;
+    }
     if(drag){
       const z = _uiZoom();
       const dx = (e.clientX-drag.x)/z, dy = (e.clientY-drag.y)/z;
-      if(Math.abs(dx)+Math.abs(dy) > 4){ drag.moved = true; wrap.classList.add('panning'); }
+      if(Math.abs(dx)+Math.abs(dy) > (drag.touch ? 8 : 4)){ drag.moved = true; wrap.classList.add('panning'); }
       if(drag.moved){ _graphView.x = drag.vx+dx; _graphView.y = drag.vy+dy; _graphRequestDraw(); return; }
     }
-    _graphSetHover(_graphHitTest(x, y), x, y);
+    if(e.pointerType === 'mouse') _graphSetHover(_graphHitTest(x, y), x, y);
   });
   const end = e => {
+    pts.delete(e.pointerId);
+    if(pts.size < 2) pinch = null;
     if(!drag) return;
-    const wasClick = !drag.moved;
+    const wasClick = !drag.moved, touch = drag.touch;
     drag = null;
     wrap.classList.remove('panning');
-    if(wasClick && _g && e.type === 'pointerup'){
-      const [x,y] = local(e);
-      const i = _graphHitTest(x, y);
-      if(i != null && _g.onClick) _g.onClick(_g.items[i]);
+    if(!wasClick || !_g || e.type !== 'pointerup') return;
+    const [x,y] = local(e);
+    const i = _graphHitTest(x, y);
+    // Дотик: перший — показати назву й сусідів (наведення на телефоні немає), другий по тому ж вузлу — відкрити.
+    if(touch){
+      if(i == null){ _graphSetHover(null); return; }
+      if(_g.hover !== i){ const [sx, sy] = _graphScreen(i); _graphSetHover(i, sx, sy); return; }
     }
+    if(i != null && _g.onClick) _g.onClick(_g.items[i]);
   };
   wrap.addEventListener('pointerup', end);
   wrap.addEventListener('pointercancel', end);
-  wrap.addEventListener('pointerleave', () => { if(!drag && _g) _graphSetHover(null); });
+  wrap.addEventListener('pointerleave', e => { if(e.pointerType === 'mouse' && !drag && _g) _graphSetHover(null); });
   if(typeof ResizeObserver === 'function') new ResizeObserver(() => { if(_g){ _graphFit(); _graphRequestDraw(); } }).observe(wrap);
 })();
 
@@ -370,14 +492,14 @@ function _graphTop(list, weight){
     .sort((a, b) => b.w - a.w || a.i - b.i).slice(0, GRAPH_MAX_ITEMS).map(x => x.it);
 }
 function openSimilarityGraph(kind){
-  let items, simFn, labelFn, colorFn, onClickFn, titleKey;
+  let items, simFn, labelFn, colorFn, onClickFn, titleKey, legend = null;
 
   if(kind === 'songs'){
     items = _graphTop(songs, s => s.playCount || 0);
     const sets = items.map(_genreSet);
     simFn = (i,j) => _jaccard(sets[i], sets[j]);
     labelFn = s => `${s.artist} — ${s.title}`;
-    colorFn = (s,i) => WHEEL_COLORS[i % WHEEL_COLORS.length];
+    ({ color: colorFn, legend } = _genreColoring(items, s => s.genres[0]));
     onClickFn = s => { closeGraph(); playSong(s.id); };
     titleKey = 'graph.titleSongs';
   } else if(kind === 'genres'){
@@ -387,7 +509,8 @@ function openSimilarityGraph(kind){
     items = genreNames;
     simFn = (i,j) => _jaccard(songIdSets[i], songIdSets[j]);
     labelFn = g => abbrGenre(g);
-    colorFn = (g,i) => WHEEL_COLORS[i % WHEEL_COLORS.length];
+    // Одна категорія (жанри) — один колір: різні кольори тут нічого б не означали.
+    colorFn = () => _graphSeries()[0];
     onClickFn = g => { closeGraph(); showPage('home'); document.getElementById('filter-genre').value = g; renderSongs(); };
     titleKey = 'graph.titleGenres';
   } else { // 'albums' | 'singles'
@@ -418,14 +541,14 @@ function openSimilarityGraph(kind){
       return genreSim*0.8 + sameArtist*0.2;
     };
     labelFn = g => g.name;
-    colorFn = (g,i) => WHEEL_COLORS[i % WHEEL_COLORS.length];
+    ({ color: colorFn, legend } = _genreColoring(groups, g => g.songs[0]?.genres[0]));
     onClickFn = kind === 'albums'
       ? g => { closeGraph(); showPage('home'); document.getElementById('search').value = g.name; renderSongs(); }
       : g => { closeGraph(); playSong(g.songs[0].id); };
     titleKey = kind === 'albums' ? 'graph.titleAlbums' : 'graph.titleSingles';
   }
 
-  _openGraphModal(t(titleKey), items, simFn, labelFn, colorFn, onClickFn, { search: kind === 'songs' });
+  _openGraphModal(t(titleKey), items, simFn, labelFn, colorFn, onClickFn, { search: kind === 'songs', legend });
 }
 
 // ─── Граф навколо пісні: обрана — в центрі й виділена, навколо — найсхожіші ───
@@ -439,6 +562,12 @@ function _songSim(a, b){
   const sameArtist = a.artist && (b.artist || '').toLowerCase() === a.artist.toLowerCase() ? 0.3 : 0;
   const sameAlbum = a.album && b.album === a.album ? 0.1 : 0;
   return Math.min(1, genre * 0.8 + sameArtist + sameAlbum);
+}
+// Чим пісня пов'язана з центральною: 0 — лише жанри, 1 — той самий виконавець, 2 — той самий альбом.
+function _songRelation(center, s){
+  if(center.album && s.album === center.album) return 2;
+  if(center.artist && (s.artist || '').toLowerCase() === center.artist.toLowerCase()) return 1;
+  return 0;
 }
 function openSongEgoGraph(songId){
   const center = songs.find(s => s.id === songId);
@@ -459,11 +588,13 @@ function openSongEgoGraph(songId){
   _openGraphModal(t('graph.egoTitle').replace('{song}', `${center.artist} — ${center.title}`), items,
     (i,j) => (i === 0 ? score.get(items[j].id) : j === 0 ? score.get(items[i].id) : 0) || 0,
     s => s.id === center.id ? `${s.artist} — ${s.title} · ${t('graph.egoPlay')}` : `${s.artist} — ${s.title} · ${Math.round(score.get(s.id)*100)}%`,
-    (s,i) => i === 0 ? '#c8a96e' : WHEEL_COLORS[(i % (WHEEL_COLORS.length - 1)) + 1],
+    (s,i) => i === 0 ? _graphCss('--accent', '#c8a96e') : _graphSeries()[_songRelation(center, s)],
     s => { if(s.id === center.id){ closeGraph(); playSong(s.id); } else openSongEgoGraph(s.id); },
     { positions, ring: [0], radius: 7, sizes: items.map((s,i) => i === 0 ? 2.2 : 0.8 + (score.get(s.id) || 0) * 0.6),
       rings: [80, 60, 40].map(p => ({ r: _egoRadius(p / 100), label: `${p}%` })),
-      nodeLabels: s => s.title, radialLabels: true, hint: t('graph.egoHint'), search: true, back: true });
+      nodeLabels: s => s.title, radialLabels: true, hint: t('graph.egoHint'), search: true, back: true,
+      legend: [0, 1, 2].filter(k => items.slice(1).some(s => _songRelation(center, s) === k))
+        .map(k => ({ color: _graphSeries()[k], label: t(['graph.rel.genre', 'graph.rel.artist', 'graph.rel.album'][k]) })) });
 }
 function onGraphSearchInput(){
   const q = document.getElementById('graph-search-input').value.trim().toLowerCase();
@@ -483,7 +614,11 @@ function _openGraphModal(title, items, simFn, labelFn, colorFn, onClickFn, opts 
   document.getElementById('graph-search-input').value = '';
   const results = document.getElementById('graph-search-results');
   results.innerHTML = ''; results.classList.remove('open');
-  document.querySelector('#graph-modal-overlay .graph-hint').textContent = opts.hint || t('graph.hint');
+  // На сенсорному екрані наведення немає: підказка — про дотик і щипок.
+  document.querySelector('#graph-modal-overlay .graph-hint').textContent =
+    `${opts.hint || t('graph.hint')}${_graphTouch() ? ' ' + t('graph.touchHint') : ''}`;
+  document.getElementById('graph-legend').innerHTML = (opts.legend || []).map(l =>
+    `<span class="graph-legend-item"><span class="graph-legend-swatch${l.ring ? ' ring' : ''}" style="--c:${esc(l.color)}"></span>${esc(l.label)}</span>`).join('');
   document.getElementById('graph-loading').style.display = 'block';
   _g = null;
   const c = _graphCanvas(); c.getContext('2d').clearRect(0, 0, c.width, c.height);
@@ -493,6 +628,7 @@ function _openGraphModal(title, items, simFn, labelFn, colorFn, onClickFn, opts 
   requestAnimationFrame(() => _startGraph(items, simFn, labelFn, colorFn, onClickFn, opts));
 }
 
+function _graphTouch(){ return matchMedia('(hover: none), (pointer: coarse)').matches; }
 function closeGraph(){
   _closeModalAnimated('graph-modal-overlay');
   _graphNodeUnhover();

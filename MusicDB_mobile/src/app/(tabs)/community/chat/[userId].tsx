@@ -1,17 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { DownloadIcon, NoteIcon, PaperclipIcon, PlayIcon, QueueIcon, TrashIcon } from '@/components/Icons';
 import { openUserProfile } from '@/components/FriendsPanel';
 import { AudioPreview } from '@/components/AudioPreview';
+import { useAbsoluteUrl } from '@/components/ArtistAvatar';
+import { ImageGalleryModal, openExternal, TextModal, VideoModal, type ViewerImage } from '@/components/AttachmentViewers';
 import { ChatSongPicker, SongMini } from '@/components/ChatSongPicker';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
 import { useMusicApi } from '@/api/endpoints';
 import { usePlayer } from '@/player/PlayerContext';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
-import type { DirectMessage, DmThread, PickedAudio, Song } from '@/api/types';
+import type { DirectMessage, DmAttachment, DmThread, PickedAudio, Song } from '@/api/types';
+import { formatStamp } from '@/utils/time';
 
 const STATE_HINT_KEYS = {
   none: 'chat.state.none',
@@ -23,30 +27,50 @@ const MAX_FILE = 20 * 1024 * 1024;
 const fmtBytes = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 // Картинка з повідомлення: пряме посилання беремо окремим запитом (Image не несе куку сесії).
-function AttachmentImage({ messageId }: { messageId: number }) {
+// Натиснути — переглядач фото просто в застосунку (галерея всіх фото розмови), а не браузер.
+function AttachmentImage({ messageId, onOpen, onLink }: { messageId: number; onOpen: () => void; onLink: (id: number, url: string) => void }) {
   const { theme } = useSettings();
   const api = useMusicApi();
+  const absUrl = useAbsoluteUrl();
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
-    api.getAttachmentLink(messageId).then(setUrl).catch(() => {});
+    api
+      .getAttachmentLink(messageId)
+      .then((u) => {
+        const abs = absUrl(u) ?? u;
+        setUrl(abs);
+        onLink(messageId, abs);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, messageId]);
   return (
-    <TouchableOpacity onPress={() => url && Linking.openURL(url)} disabled={!url}>
+    <Pressable onPress={onOpen} disabled={!url} accessibilityRole="imagebutton" style={({ pressed }) => pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }}>
       {url ? (
-        <Image source={{ uri: url }} style={styles.image} resizeMode="cover" />
+        <ExpoImage source={{ uri: url }} style={styles.image} contentFit="cover" transition={150} recyclingKey={url} />
       ) : (
         <View style={[styles.image, { backgroundColor: theme.surface2, alignItems: 'center', justifyContent: 'center' }]}>
           <ActivityIndicator color={theme.accent} />
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
+}
+
+const attExt = (name: string) => /\.([a-z0-9]{1,5})$/i.exec(name)?.[1]?.toUpperCase() ?? 'FILE';
+type AttType = 'image' | 'audio' | 'video' | 'pdf' | 'text' | 'file';
+function attType(a: DmAttachment): AttType {
+  if (a.kind !== 'file') return a.kind;
+  const ext = attExt(a.name);
+  if (ext === 'PDF' || a.contentType === 'application/pdf') return 'pdf';
+  if (ext === 'TXT' || a.contentType === 'text/plain') return 'text';
+  return 'file';
 }
 
 // Один діалог. Не-другу перше повідомлення надходить як запит — далі пишемо після схвалення.
 // Можна прикріпити файл (до 20 МБ) і пісню з каталогу — як на сайті.
 export default function ChatScreen() {
-  const { theme, t } = useSettings();
+  const { theme, t, lang } = useSettings();
   const { subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const player = usePlayer();
@@ -114,27 +138,73 @@ export default function ChatScreen() {
       },
     ]);
 
-  const openFile = (m: DirectMessage) => api.getAttachmentLink(m.id).then((u) => Linking.openURL(u)).catch(() => {});
+  // ─── Вкладення: кожен тип — так, як ним зручно користуватись ───
+  const absUrl = useAbsoluteUrl();
+  const link = (id: number, opts?: { download?: boolean; inline?: boolean }) => api.getAttachmentLink(id, opts).then((u) => absUrl(u) ?? u);
+  const download = (id: number) => link(id, { download: true }).then(openExternal).catch(() => {});
+  const imageLinks = useRef(new Map<number, string>());
+  const [gallery, setGallery] = useState<{ images: ViewerImage[]; index: number } | null>(null);
+  const [video, setVideo] = useState<{ uri: string; name: string; id: number } | null>(null);
+  const [textFile, setTextFile] = useState<{ uri: string; name: string; id: number } | null>(null);
+
+  const openGallery = async (msgId: number) => {
+    const msgs = (thread?.messages ?? []).filter((x) => x.attachment && attType(x.attachment) === 'image');
+    const urls = await Promise.all(msgs.map((x) => imageLinks.current.get(x.id) ?? link(x.id).catch(() => '')));
+    const images = msgs.map((x, k) => ({ uri: urls[k], name: x.attachment!.name, download: () => download(x.id) })).filter((x) => x.uri);
+    const index = Math.max(0, msgs.findIndex((x) => x.id === msgId));
+    setGallery({ images, index: Math.min(index, images.length - 1) });
+  };
+  const openAttachment = (m: DirectMessage) => {
+    const a = m.attachment!;
+    const type = attType(a);
+    if (type === 'video') link(m.id).then((uri) => setVideo({ uri, name: a.name, id: m.id })).catch(() => {});
+    else if (type === 'text') link(m.id, { inline: true }).then((uri) => setTextFile({ uri, name: a.name, id: m.id })).catch(() => {});
+    // PDF — системним переглядачем (у WebView на Android PDF не показується); решта — завантаженням.
+    else if (type === 'pdf') link(m.id, { inline: true }).then(openExternal).catch(() => {});
+    else download(m.id);
+  };
+
+  const fileCard = (m: DirectMessage, preview: boolean) => {
+    const a = m.attachment!;
+    const type = attType(a);
+    return (
+      <View style={[styles.fileCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Pressable onPress={() => openAttachment(m)} style={styles.fileMain} accessibilityRole="button" accessibilityLabel={`${a.name}, ${fmtBytes(a.size)}`}>
+          <View style={[styles.fileType, { backgroundColor: `${theme.accent}22`, borderColor: `${theme.accent}55` }]}>
+            {type === 'video' ? <PlayIcon size={15} color={theme.accent} /> : <Text style={[styles.fileExt, { color: theme.accent }]}>{attExt(a.name)}</Text>}
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ color: theme.text, fontWeight: '600', fontSize: 13 }}>{a.name}</Text>
+            <Text style={{ color: theme.muted, fontSize: 11, marginTop: 1 }}>
+              {fmtBytes(a.size)}
+              {preview ? ` · ${t(type === 'video' ? 'chat.watch' : 'chat.preview')}` : ''}
+            </Text>
+          </View>
+        </Pressable>
+        <Pressable onPress={() => download(m.id)} hitSlop={8} accessibilityLabel={t('player.download')} style={({ pressed }) => [styles.fileAct, { borderColor: theme.border, opacity: pressed ? 0.6 : 1 }]}>
+          <DownloadIcon size={16} color={theme.text2} />
+        </Pressable>
+      </View>
+    );
+  };
 
   const renderAttachment = (m: DirectMessage) => {
     const a = m.attachment!;
-    if (a.kind === 'image') return <AttachmentImage messageId={m.id} />;
-    if (a.kind === 'audio')
+    const type = attType(a);
+    if (type === 'image')
+      return <AttachmentImage messageId={m.id} onOpen={() => openGallery(m.id)} onLink={(id, u) => imageLinks.current.set(id, u)} />;
+    if (type === 'audio')
       return (
-        <View style={{ minWidth: 220 }}>
-          <AudioPreview getUrl={() => api.getAttachmentLink(m.id)} />
-          <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 11, marginTop: 4 }}>{a.name}</Text>
+        <View style={{ minWidth: 240, gap: 6 }}>
+          <View style={styles.audioHead}>
+            <NoteIcon size={14} color={theme.accent} />
+            <Text numberOfLines={1} style={{ flex: 1, color: theme.text, fontWeight: '600', fontSize: 13 }}>{a.name.replace(/\.[a-z0-9]{1,5}$/i, '')}</Text>
+            <Text style={{ color: theme.muted, fontSize: 11 }}>{fmtBytes(a.size)}</Text>
+          </View>
+          <AudioPreview getUrl={() => link(m.id)} getDownloadUrl={() => link(m.id, { download: true })} />
         </View>
       );
-    return (
-      <TouchableOpacity onPress={() => openFile(m)} style={[styles.file, { backgroundColor: theme.surface }]} accessibilityLabel={t('chat.openFile')}>
-        <DownloadIcon size={18} color={theme.accent} />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ color: theme.text, fontWeight: '600', fontSize: 13 }}>{a.name}</Text>
-          <Text style={{ color: theme.muted, fontSize: 11 }}>{fmtBytes(a.size)}</Text>
-        </View>
-      </TouchableOpacity>
-    );
+    return fileCard(m, type === 'video' || type === 'pdf' || type === 'text');
   };
 
   const hintKey = thread ? STATE_HINT_KEYS[thread.state as keyof typeof STATE_HINT_KEYS] : undefined;
@@ -200,7 +270,7 @@ export default function ChatScreen() {
               ) : null}
               {item.attachment ? renderAttachment(item) : null}
               {item.body ? <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{item.body}</Text> : null}
-              <Text style={[styles.time, { color: theme.muted, fontFamily: FONT_MONO_REGULAR }]}>{item.createdAt}</Text>
+              <Text style={[styles.time, { color: theme.muted, fontFamily: FONT_MONO_REGULAR }]}>{formatStamp(item.createdAt, lang)}</Text>
             </View>
           )}
         />
@@ -258,6 +328,9 @@ export default function ChatScreen() {
           </View>
         </View>
       ) : null}
+      <ImageGalleryModal images={gallery?.images ?? []} index={gallery ? gallery.index : null} onClose={() => setGallery(null)} />
+      <VideoModal uri={video?.uri ?? null} name={video?.name ?? ''} onClose={() => setVideo(null)} onDownload={video ? () => download(video.id) : undefined} />
+      <TextModal uri={textFile?.uri ?? null} name={textFile?.name ?? ''} onClose={() => setTextFile(null)} onDownload={textFile ? () => download(textFile.id) : undefined} />
       <ChatSongPicker
         visible={picking}
         onClose={() => setPicking(false)}
@@ -286,4 +359,10 @@ const styles = StyleSheet.create({
   roundBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   image: { width: 230, height: 170, borderRadius: 10 },
   file: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 10, padding: 10, minWidth: 210 },
+  fileCard: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1, padding: 8, minWidth: 240 },
+  fileMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  fileType: { width: 40, height: 46, borderRadius: 7, borderTopRightRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 6 },
+  fileExt: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.3 },
+  fileAct: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  audioHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

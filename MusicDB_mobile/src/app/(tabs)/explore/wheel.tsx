@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Circle, G, Path, Polygon, Text as SvgText } from 'react-native-svg';
 import { useSettings } from '@/state/SettingsContext';
@@ -20,8 +20,9 @@ import { usePlayer } from '@/player/PlayerContext';
 import { Button, EmptyState, ErrorState, SectionTitle, SegmentedPicker } from '@/components/UI';
 import { SongListBlock } from '@/components/SongListBlock';
 import { GenrePickerModal } from '@/components/GenrePickerModal';
+import { NumberStepper } from '@/components/NumberStepper';
 import { CloseIcon, ShuffleIcon, SlidersIcon } from '@/components/Icons';
-import { FONT_MONO_MEDIUM, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
+import { FONT_MONO_MEDIUM, FONT_SANS_SEMIBOLD, FONT_SERIF_BOLD, RADIUS, SPACING } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
 // Та сама палітра, що й WHEEL_COLORS на сайті; понад 12 секторів — HSL за "золотим кутом".
@@ -62,27 +63,6 @@ function baseFontSize(n: number) {
   if (n <= 28) return 11;
   if (n <= 45) return 9.8;
   return 8.8;
-}
-
-function Stepper({ value, min, max, onChange, disabled }: { value: number; min: number; max: number; onChange: (v: number) => void; disabled?: boolean }) {
-  const { theme } = useSettings();
-  const btn = (label: string, next: number, off: boolean) => (
-    <TouchableOpacity
-      disabled={off || disabled}
-      onPress={() => onChange(next)}
-      hitSlop={6}
-      style={[styles.stepBtn, { borderColor: theme.border, backgroundColor: theme.surface2, opacity: off || disabled ? 0.4 : 1 }]}
-    >
-      <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700' }}>{label}</Text>
-    </TouchableOpacity>
-  );
-  return (
-    <View style={styles.stepper}>
-      {btn('−', value - 1, value <= min)}
-      <Text style={{ color: theme.accent, fontFamily: FONT_MONO_MEDIUM, fontSize: 16, minWidth: 34, textAlign: 'center' }}>{value}</Text>
-      {btn('+', value + 1, value >= max)}
-    </View>
-  );
 }
 
 const MIN_SONGS = 5; // жанр на колесі — лише з 5+ піснями (в обох режимах)
@@ -151,16 +131,14 @@ export default function WheelScreen() {
   const rotationDeg = useRef(0);
   const rotate = useRef(rotation.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] })).current;
   const spinRef = useRef<() => void>(() => {});
-  // Змах пальцем по колесу вбік — теж крутить (вертикальний жест лишається прокрутці сторінки).
-  const pan = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: (_, g) => {
-        if (Math.abs(g.vx) > 0.25 || Math.abs(g.dx) > 60) spinRef.current();
-      },
-    }),
-  ).current;
+  // Змах пальцем по колесу вбік — теж крутить; вертикальний рух одразу віддаємо прокрутці сторінки.
+  const flick = Gesture.Pan()
+    .activeOffsetX([-12, 12])
+    .failOffsetY([-14, 14])
+    .runOnJS(true)
+    .onEnd((e) => {
+      if (Math.abs(e.velocityX) > 250 || Math.abs(e.translationX) > 60) spinRef.current();
+    });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -264,9 +242,9 @@ export default function WheelScreen() {
               />
               {mode === 'random' ? (
                 <View style={styles.controlRow}>
-                  <Text style={[styles.controlLabel, { color: theme.muted }]}>{t('wheel.countLabel')}</Text>
+                  <Text style={[styles.controlLabel, { color: theme.text2 }]}>{t('wheel.countLabel')}</Text>
                   {pool.length >= 2 ? (
-                    <Stepper value={count} min={2} max={pool.length} onChange={changeCount} disabled={spinning} />
+                    <NumberStepper value={count} min={2} max={pool.length} onChange={changeCount} disabled={spinning} accessibilityLabel={t('wheel.countLabel')} />
                   ) : (
                     <Text style={{ color: theme.muted, fontSize: 12, flexShrink: 1 }}>{t('wheel.notEnough')}</Text>
                   )}
@@ -311,17 +289,38 @@ export default function WheelScreen() {
                   />
                 </View>
               )}
-              <View style={styles.controlRow}>
-                <Text style={[styles.controlLabel, { color: theme.muted }]}>{t('wheel.durationLabel')}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Stepper value={secMin} min={1} max={30} disabled={spinning} onChange={(v) => { setSecMin(v); if (v > secMax) setSecMax(v); }} />
-                  <Text style={{ color: theme.muted }}>—</Text>
-                  <Stepper value={secMax} min={1} max={30} disabled={spinning} onChange={(v) => { setSecMax(v); if (v < secMin) setSecMin(v); }} />
-                </View>
+              {/* Тривалість — окремим рядком: два поля «від — до» поруч завжди влазять у ширину. */}
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <Text style={[styles.controlLabel, { color: theme.text2 }]}>{t('wheel.durationLabel')}</Text>
+              <View style={styles.rangeRow}>
+                <NumberStepper
+                  value={secMin}
+                  min={1}
+                  max={30}
+                  disabled={spinning}
+                  accessibilityLabel={`${t('wheel.durationLabel')} — ${t('wheel.from')}`}
+                  onChange={(v) => {
+                    setSecMin(v);
+                    if (v > secMax) setSecMax(v);
+                  }}
+                />
+                <Text style={{ color: theme.muted, fontFamily: FONT_SANS_SEMIBOLD }}>—</Text>
+                <NumberStepper
+                  value={secMax}
+                  min={1}
+                  max={30}
+                  disabled={spinning}
+                  accessibilityLabel={`${t('wheel.durationLabel')} — ${t('wheel.to')}`}
+                  onChange={(v) => {
+                    setSecMax(v);
+                    if (v < secMin) setSecMin(v);
+                  }}
+                />
               </View>
             </View>
 
-            <View style={{ width: size, height: size + 14, alignSelf: 'center' }} {...pan.panHandlers}>
+            <GestureDetector gesture={flick}>
+            <View style={{ width: size, height: size + 14, alignSelf: 'center' }}>
               <Animated.View style={{ position: 'absolute', top: 14, width: size, height: size, transform: [{ rotate }] }}>
                 <Svg width={size} height={size}>
                   {genres.map((g, i) => (
@@ -349,6 +348,7 @@ export default function WheelScreen() {
                 <Polygon points="2,2 26,2 14,24" fill={theme.accent} stroke={theme.bg} strokeWidth={2} />
               </Svg>
             </View>
+            </GestureDetector>
 
             <Button label={t('wheel.spinBtn')} onPress={spin} disabled={spinning || n < 2} style={{ marginTop: SPACING.lg }} />
 
@@ -410,9 +410,9 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.lg, paddingBottom: 120 },
   controls: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, marginBottom: SPACING.lg, gap: 10 },
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-  controlLabel: { fontSize: 12, flexShrink: 1 },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  stepBtn: { width: 34, height: 34, borderRadius: RADIUS.sm, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  controlLabel: { fontSize: 13, flexShrink: 1, fontFamily: FONT_SANS_SEMIBOLD },
+  rangeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
   result: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.lg, alignItems: 'center', marginTop: SPACING.lg },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: RADIUS.pill, paddingVertical: 4, paddingHorizontal: 9 },

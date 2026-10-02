@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace MusicDB.Api.Models;
 
@@ -28,7 +28,8 @@ public record SongDto(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int[]? ArtistIds = null
 );
 
-public record UserRefDto(int UserId, string DisplayName);
+// AvatarUrl — фото (своє або з Google); без нього клієнт малює ініціали.
+public record UserRefDto(int UserId, string DisplayName, string? AvatarUrl = null);
 
 public record SetYoutubeVideoDto(string VideoId);
 
@@ -239,15 +240,25 @@ public record SendMessageDto(string Body);
 
 // ─── Обговорення ────────────────────────────────────────────────────────────
 
-public record ThreadSummaryDto(int Id, string Title, UserRefDto? Author, string CreatedAt, string LastPostAt, int PostCount);
+// Unread — нові дописи інших у гілці, де ви учасник (для гостя й не-учасника — 0).
+public record ThreadSummaryDto(int Id, string Title, UserRefDto? Author, string CreatedAt, string LastPostAt, int PostCount, int Unread = 0);
 
-public record ThreadPostDto(int Id, UserRefDto? Author, string Body, string CreatedAt);
+// ReplyTo — допис, на який відповідали (цитата над відповіддю); null, якщо відповідь усій гілці.
+public record ThreadPostDto(int Id, UserRefDto? Author, string Body, string CreatedAt, ThreadReplyRefDto? ReplyTo = null);
 
-public record ThreadDetailDto(int Id, string Title, string Body, UserRefDto? Author, string CreatedAt, List<ThreadPostDto> Posts);
+public record ThreadReplyRefDto(int PostId, UserRefDto? Author, string Snippet);
+
+// IsFollowing — чи приходять мені сповіщення про нові дописи в цій гілці.
+public record ThreadDetailDto(int Id, string Title, string Body, UserRefDto? Author, string CreatedAt, List<ThreadPostDto> Posts, bool IsFollowing = false);
 
 public record CreateThreadDto(string Title, string Body);
 
-public record CreatePostDto(string Body);
+public record CreatePostDto(string Body, int? ReplyToPostId = null);
+
+// Сповіщення про новий допис у гілці, де ви учасник. ToMe — відповідь саме на ваш допис.
+public record ThreadNotificationDto(int PostId, int ThreadId, string ThreadTitle, UserRefDto? Author, string Body, string CreatedAt, bool ToMe, bool Unread);
+
+public record ThreadNotificationsDto(int UnreadCount, List<ThreadNotificationDto> Recent);
 
 // ─── Баг-репорти ─────────────────────────────────────────────────────────────
 

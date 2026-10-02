@@ -12,12 +12,9 @@ import { Avatar, avatarColor, avatarInitials, Badge, Button, EmptyState, ErrorSt
 import { ArtistAvatar } from '@/components/ArtistAvatar';
 import { ForceGraph, type GraphEdge, type GraphNode } from '@/components/ForceGraph';
 import { MicIcon, PlayIcon, UsersIcon } from '@/components/Icons';
-import { FONT_MONO_MEDIUM, FONT_SANS_SEMIBOLD, RADIUS, SPACING } from '@/constants/theme';
+import { FONT_MONO_MEDIUM, FONT_SANS_SEMIBOLD, RADIUS, SPACING, graphSeries } from '@/constants/theme';
 import type { Song, TasteGraph, TasteNode } from '@/api/types';
 
-const ME_COLOR = '#c8a96e';
-const FRIEND_COLOR = '#4f8c6f';
-const ARTIST_COLOR = '#8a6fb0';
 // Карта смаку: відстань від центру — за збігом (як на сайті, у координатах розкладки).
 const R_MIN = 70;
 const R_MAX = 270;
@@ -73,7 +70,13 @@ export default function TasteScreen() {
   const player = usePlayer();
   const requireAuth = useRequireAuth();
   const authed = !!currentUser?.authenticated;
-  const { width } = useWindowDimensions();
+  const { width, height: winH } = useWindowDimensions();
+  const [graphZoomed, setGraphZoomed] = useState(false);
+  // Ролі на графі (dataviz: колір — тотожність): ви — акцент, друзі — обідок слоту 3, виконавці — слот 1.
+  const series = graphSeries(theme);
+  const ME_COLOR = theme.accent;
+  const FRIEND_COLOR = series[2];
+  const ARTIST_COLOR = series[0];
 
   const [data, setData] = useState<TasteGraph | null>(null);
   const [loading, setLoading] = useState(false);
@@ -177,7 +180,15 @@ export default function TasteScreen() {
       rings: undefined,
       pin: meIdx >= 0 ? meIdx : undefined,
     };
-  }, [data, mode, t]);
+  }, [data, mode, t, ME_COLOR, FRIEND_COLOR, ARTIST_COLOR]);
+  const legend = mode === 'people'
+    ? [{ color: ME_COLOR, label: t('graph.legend.you') }, { color: FRIEND_COLOR, label: t('graph.legend.friends'), ring: true }]
+    : [
+        { color: ME_COLOR, label: t('graph.legend.you') },
+        { color: FRIEND_COLOR, label: t('graph.legend.friends'), ring: true },
+        { color: ARTIST_COLOR, label: t('graph.legend.artists') },
+        { color: ME_COLOR, label: t('graph.legend.yourArtists'), ring: true },
+      ];
 
   const openItem = (i: number) => {
     const it = graph?.items[i];
@@ -232,7 +243,7 @@ export default function TasteScreen() {
 
   return (
     <SafeAreaView edges={[]} style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} scrollEnabled={!graphZoomed}>
         <Text style={[styles.sub, { color: theme.muted }]}>{t('taste.sub')}</Text>
 
         {data && data.myItemCount > 0 ? (
@@ -282,8 +293,11 @@ export default function TasteScreen() {
                 pin={graph.pin}
                 radialLabels={mode === 'people'}
                 baseRadius={11}
+                surface={theme.surface}
+                legend={legend}
+                onZoomChange={setGraphZoomed}
                 width={graphW}
-                height={360}
+                height={Math.round(Math.max(320, Math.min(winH * 0.55, graphW * 1.15)))}
                 onPressNode={openItem}
               />
             </View>

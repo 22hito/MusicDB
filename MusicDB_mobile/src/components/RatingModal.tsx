@@ -9,10 +9,11 @@ import { StarIcon, TrashIcon } from './Icons';
 import { openUserProfile } from './FriendsPanel';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Song, SongRatings } from '@/api/types';
+import { formatStamp } from '@/utils/time';
 
 // Оцінка пісні 0–100 (тимчасова шкала, як і на сайті) + необов'язкова рецензія.
 export function RatingModal({ song, onClose }: { song: Song | null; onClose: () => void }) {
-  const { theme, t } = useSettings();
+  const { theme, t, lang } = useSettings();
   const { currentUser, openLogin, subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const [data, setData] = useState<SongRatings | null>(null);
@@ -143,7 +144,7 @@ export function RatingModal({ song, onClose }: { song: Song | null; onClose: () 
                           </TouchableOpacity>
                         ) : null}
                       </View>
-                      <Text style={{ color: theme.muted, fontSize: 11, marginBottom: 4 }}>{rv.updatedAt}</Text>
+                      <Text style={{ color: theme.muted, fontSize: 11, marginBottom: 4 }}>{formatStamp(rv.updatedAt, lang)}</Text>
                       <Text style={{ color: theme.text, fontSize: 14, lineHeight: 20 }}>{rv.review}</Text>
                     </View>
                   ))

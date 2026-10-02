@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -353,7 +353,21 @@ public class DiscussionPost
     [Column("author_id")] public int? AuthorId { get; set; }
     [Required, Column("body")] public string Body { get; set; } = "";
     [Column("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    // «Відповісти» на конкретний допис — цитата над відповіддю й сповіщення його автору.
+    [Column("reply_to_post_id")] public int? ReplyToPostId { get; set; }
     public DiscussionThread Thread { get; set; } = null!;
+}
+
+// Учасник гілки (автор або той, хто відповідав) — отримує сповіщення про нові дописи.
+// Як і з виконавцями, без фан-ауту: непрочитане = дописи інших новіші за last_read_at.
+[Table("thread_follows", Schema = "lab")]
+public class ThreadFollow
+{
+    [Column("user_id")] public int UserId { get; set; }
+    [Column("thread_id")] public int ThreadId { get; set; }
+    // Сповіщення — лише про дописи після того, як людина долучилась до гілки.
+    [Column("followed_at")] public DateTime FollowedAt { get; set; } = DateTime.UtcNow;
+    [Column("last_read_at")] public DateTime LastReadAt { get; set; } = DateTime.UtcNow;
 }
 
 // ─── Оцінки / рецензії ─────────────────────────────────────────────────────
@@ -397,6 +411,7 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
     public DbSet<DmCleared> DmCleared { get; set; }
     public DbSet<DiscussionThread> DiscussionThreads { get; set; }
     public DbSet<DiscussionPost> DiscussionPosts { get; set; }
+    public DbSet<ThreadFollow> ThreadFollows { get; set; }
     public DbSet<SongRating> SongRatings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder mb)
@@ -465,5 +480,14 @@ public class MusicDbContext(DbContextOptions<MusicDbContext> opts) : DbContext(o
             .HasOne(p => p.Thread)
             .WithMany(t => t.Posts)
             .HasForeignKey(p => p.ThreadId);
+
+        // Гілку видалили — підписки на неї теж.
+        mb.Entity<ThreadFollow>().HasKey(f => new { f.UserId, f.ThreadId });
+        mb.Entity<ThreadFollow>().HasIndex(f => f.ThreadId);
+        mb.Entity<ThreadFollow>()
+            .HasOne<DiscussionThread>()
+            .WithMany()
+            .HasForeignKey(f => f.ThreadId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

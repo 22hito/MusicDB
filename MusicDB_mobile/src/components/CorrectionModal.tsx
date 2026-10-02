@@ -10,11 +10,12 @@ import { FlagIcon, UploadIcon } from './Icons';
 import { FONT_SANS_MEDIUM, FONT_SANS_REGULAR, FONT_SANS_SEMIBOLD, RADIUS, SPACING } from '@/constants/theme';
 import { CORR_ARTIST_FIELDS, CORR_SONG_FIELDS } from '@/api/types';
 import type { Correction, CorrectionField, CorrectionTarget, PickedAudio } from '@/api/types';
+import { formatStamp } from '@/utils/time';
 
 // Запит на правку (як вікно з прапорцем на сайті): що не так у пісні чи виконавця, як правильно, джерело,
 // за потреби — файл пісні. target = null → одразу «Мої запити» (з профілю).
 export function CorrectionModal({ target, visible, onClose }: { target: CorrectionTarget | null; visible: boolean; onClose: () => void }) {
-  const { theme, t } = useSettings();
+  const { theme, t, lang } = useSettings();
   const api = useMusicApi();
   const fields: readonly CorrectionField[] = target && 'artistId' in target ? CORR_ARTIST_FIELDS : CORR_SONG_FIELDS;
   const [field, setField] = useState<CorrectionField>(fields[0]);
@@ -133,7 +134,7 @@ export function CorrectionModal({ target, visible, onClose }: { target: Correcti
                 <View key={c.id} style={[styles.item, { borderColor: theme.border, backgroundColor: theme.surface2 }]}>
                   <Text style={{ color: statusColor(c.status), fontFamily: FONT_SANS_SEMIBOLD, fontSize: 12 }}>{t(`corr.status.${c.status}` as never)}</Text>
                   <Text style={{ color: theme.text, fontFamily: FONT_SANS_SEMIBOLD, marginTop: 2 }}>{c.targetLabel}</Text>
-                  <Text style={{ color: theme.muted, fontSize: 12 }}>{t(`corr.field.${c.field}` as never)} · {c.createdAt}</Text>
+                  <Text style={{ color: theme.muted, fontSize: 12 }}>{t(`corr.field.${c.field}` as never)} · {formatStamp(c.createdAt, lang)}</Text>
                   {c.message ? <Text style={{ color: theme.text2, marginTop: 6, fontSize: 13 }}>{c.message}</Text> : null}
                   {c.adminNote ? (
                     <Text style={[styles.note, { color: theme.text, backgroundColor: theme.surface }]}>

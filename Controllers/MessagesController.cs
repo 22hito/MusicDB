@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -330,29 +330,43 @@ public class MessagesController(MusicDbContext db, UserDirectoryService userDire
 
     // Файл із повідомлення — лише відправнику й отримувачу. Картинки, аудіо й відео — для показу в чаті,
     // решта — завантаженням під назвою від відправника.
+    // download=true — будь-який файл на збереження (кнопка «Завантажити»);
+    // inline=true — PDF і текст для перегляду просто на сайті (вбудований переглядач), а не завантаженням.
     [HttpGet("attachment/{messageId:int}")]
-    public async Task<IActionResult> GetAttachment(int messageId)
+    public async Task<IActionResult> GetAttachment(int messageId, [FromQuery] bool download = false, [FromQuery] bool inline = false)
     {
-        var source = await OpenAttachmentAsync(messageId);
-        return source is null ? NotFound() : this.ToResult(source);
+        var source = await OpenAttachmentAsync(messageId, download, inline);
+        if (source is null) return NotFound();
+        // Локальне сховище віддає файл саме — переглядач показує його у фреймі нашого ж сайту.
+        if (inline && source.RedirectUrl is null)
+        {
+            Response.Headers.XFrameOptions = "SAMEORIGIN";
+            Response.Headers.ContentSecurityPolicy = "frame-ancestors 'self'";
+        }
+        return this.ToResult(source);
     }
 
     // Пряме посилання (застосунку: картинка чи плеєр не несуть куку сесії).
     [HttpGet("attachment/{messageId:int}/link")]
-    public async Task<IActionResult> GetAttachmentLink(int messageId)
+    public async Task<IActionResult> GetAttachmentLink(int messageId, [FromQuery] bool download = false, [FromQuery] bool inline = false)
     {
-        var source = await OpenAttachmentAsync(messageId);
+        var source = await OpenAttachmentAsync(messageId, download, inline);
         if (source is null) return NotFound();
-        return Ok(new { url = source.RedirectUrl ?? $"/api/messages/attachment/{messageId}" });
+        var query = download ? "?download=true" : inline ? "?inline=true" : "";
+        return Ok(new { url = source.RedirectUrl ?? $"/api/messages/attachment/{messageId}{query}" });
     }
 
-    private async Task<AudioSource?> OpenAttachmentAsync(int messageId)
+    private async Task<AudioSource?> OpenAttachmentAsync(int messageId, bool download = false, bool inline = false)
     {
         var myId = await userDirectory.GetCurrentUserIdAsync(User);
         var m = await db.DirectMessages.FindAsync(messageId);
         if (m?.AttachmentFile is null || (m.SenderId != myId && m.RecipientId != myId)) return null;
-        var inline = AudioFiles.IsInlineType(AudioFiles.GetContentType(m.AttachmentFile));
-        return await storage.OpenAsync(m.AttachmentFile, inline ? null : m.AttachmentName);
+        var type = AudioFiles.GetContentType(m.AttachmentFile);
+        if (download) return await storage.OpenAsync(m.AttachmentFile, m.AttachmentName ?? "file");
+        if (AudioFiles.IsInlineType(type)) return await storage.OpenAsync(m.AttachmentFile);
+        if (inline && type == "text/plain") return await storage.OpenAsync(m.AttachmentFile, null, "text/plain; charset=utf-8");
+        if (inline && type == "application/pdf") return await storage.OpenAsync(m.AttachmentFile);
+        return await storage.OpenAsync(m.AttachmentFile, m.AttachmentName);
     }
 
     private async Task<Dictionary<int, SongDto>> SongsForAsync(IEnumerable<DirectMessage> messages)

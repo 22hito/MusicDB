@@ -100,7 +100,7 @@ function _applyWheelCustom(){
   wheelGenres = wheelCustomGenres.filter(g => available.has(g));
   _redrawWheel();
   _renderWheelChips();
-  document.getElementById('wheel-spin-btn').disabled = wheelGenres.length < 2;
+  _setWheelSpinDisabled(wheelGenres.length < 2);
 }
 function _renderWheelChips(){
   const chips = document.getElementById('wheel-custom-chips');
@@ -183,7 +183,7 @@ function openWheelPage(){
     : defaultCount;
   document.getElementById('wheel-count-max').textContent = `/ ${total}`;
   wheelSpinning = false;
-  document.getElementById('wheel-spin-btn').disabled = false;
+  _setWheelSpinDisabled(false);
   if(wheelMode === 'custom') _applyWheelCustom(); else _applyWheelCount();
   _resetWheelResult();
 }
@@ -214,7 +214,7 @@ function onWheelCountChange(){
 function _applyWheelCount(){
   const v = parseInt(document.getElementById('wheel-count').value) || wheelAllGenres.length;
   wheelGenres = wheelAllGenres.slice(0, v);
-  document.getElementById('wheel-spin-btn').disabled = wheelSpinning;
+  _setWheelSpinDisabled(wheelSpinning);
   _redrawWheel();
 }
 function _redrawWheel(){
@@ -336,6 +336,43 @@ function _syncWheelSecRange(changedEl){
   }
 }
 
+// Дві кнопки «Крутити»: у картці параметрів (ПК) і під колесом (телефон) — стан спільний.
+function _setWheelSpinDisabled(v){
+  ['wheel-spin-btn', 'wheel-spin-btn-m'].forEach(id => { const b = document.getElementById(id); if(b) b.disabled = v; });
+}
+// − / + біля числових полів: натиск — крок, утримання — повтор із прискоренням (як у застосунку).
+let _wheelStepTimer = null;
+function stepWheelInput(id, dir){
+  const el = document.getElementById(id);
+  if(!el || wheelSpinning) return false;
+  const min = parseInt(el.min) || 1, max = parseInt(el.max) || 99;
+  const cur = parseInt(el.value, 10) || min;
+  const next = Math.max(min, Math.min(max, cur + dir));
+  if(next === cur) return false;
+  el.value = String(next);
+  if(id === 'wheel-count') onWheelCountChange();
+  else _syncWheelSecRange(el);
+  return true;
+}
+function startWheelStep(e, id, dir){
+  e.preventDefault(); // без фокусу на кнопці й без виділення тексту при утриманні
+  const btn = e.currentTarget;
+  stopWheelStep();
+  if(!stepWheelInput(id, dir)) return;
+  let delay = 380;
+  const tick = () => {
+    if(!stepWheelInput(id, dir)) return stopWheelStep();
+    delay = Math.max(40, delay * 0.82);
+    _wheelStepTimer = setTimeout(tick, delay);
+  };
+  _wheelStepTimer = setTimeout(tick, delay);
+  const stop = () => { stopWheelStep(); btn.removeEventListener('pointerup', stop); btn.removeEventListener('pointerleave', stop); btn.removeEventListener('pointercancel', stop); };
+  btn.addEventListener('pointerup', stop);
+  btn.addEventListener('pointerleave', stop);
+  btn.addEventListener('pointercancel', stop);
+}
+function stopWheelStep(){ clearTimeout(_wheelStepTimer); _wheelStepTimer = null; }
+
 function spinWheel(){
   if(wheelSpinning || wheelGenres.length < (wheelMode === 'custom' ? 2 : 1)) return;
   const secMin = Math.max(1, Math.min(99, parseFloat(document.getElementById('wheel-sec-min').value) || 3));
@@ -343,7 +380,7 @@ function spinWheel(){
   const duration = secMin + Math.random()*(secMax-secMin);
 
   wheelSpinning = true;
-  document.getElementById('wheel-spin-btn').disabled = true;
+  _setWheelSpinDisabled(true);
   document.getElementById('wheel-result').style.display = 'none';
   document.getElementById('wheel-playlist-empty').style.display = '';
   document.getElementById('wheel-playlist-wrap').style.display = 'none';
@@ -361,7 +398,7 @@ function spinWheel(){
   disc.style.transform = `rotate(${rotation}deg)`;
   setTimeout(()=>{
     wheelSpinning = false;
-    document.getElementById('wheel-spin-btn').disabled = false;
+    _setWheelSpinDisabled(false);
     wheelResultGenre = wheelGenres[winnerIndex];
     document.getElementById('wheel-result-genre').textContent = abbrGenre(wheelResultGenre);
     document.getElementById('wheel-result').style.display = 'flex';
@@ -489,6 +526,14 @@ function _renderActiveFilters(gf){
   box.hidden = chips.length === 0;
 }
 
+// Скільки колонок таблиці видно зараз. Службові рядки (порожньо, «довантажити ще») охоплюють саме їх:
+// colspan="13" створював і приховані налаштуваннями колонки — у фіксованій розкладці вони забирали вільне
+// місце, і таблиця з кількома колонками займала лише половину ширини картки.
+function _songsColspan(){
+  let n = 0;
+  document.querySelectorAll('#songs-table thead th').forEach(th => { if(getComputedStyle(th).display !== 'none') n++; });
+  return n || 13;
+}
 function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
@@ -519,7 +564,7 @@ function renderSongs(){
   if(!ordered.length){
     _songRows = null;
     _songRowsObserver?.disconnect();
-    tbody.innerHTML=`<tr><td colspan="13"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t(isCommunity?'table.communityEmpty':homeSource==='background'?'table.backgroundEmpty':'table.empty')}</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="${_songsColspan()}"><div class="empty"><svg class="icon"><use href="#icon-music"/></svg>${t(isCommunity?'table.communityEmpty':homeSource==='background'?'table.backgroundEmpty':'table.empty')}</div></td></tr>`;
     return;
   }
   const curId=playerQueue.length&&playerQueue[playerIndex]?playerQueue[playerIndex].id:null;
@@ -589,7 +634,7 @@ function _appendSongRows(){
   let html = '';
   for(let i = _songRows.shown; i < next; i++) html += rowHtml(list[i], i);
   _songRows.shown = next;
-  if(next < list.length) html += '<tr class="rows-sentinel" aria-hidden="true"><td colspan="13"></td></tr>';
+  if(next < list.length) html += `<tr class="rows-sentinel" aria-hidden="true"><td colspan="${_songsColspan()}"></td></tr>`;
   tbody.insertAdjacentHTML('beforeend', html);
   _songRowsObserver?.disconnect();
   const sentinel = tbody.querySelector('.rows-sentinel');

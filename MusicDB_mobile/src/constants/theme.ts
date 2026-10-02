@@ -172,5 +172,14 @@ export const SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 };
 // Єдина висота полів і кнопок-іконок у рядках фільтрів/форм — щоб усе стояло рівно.
 export const CONTROL_HEIGHT = 48;
 
+// Категоріальна палітра графів (тотожність, не ранг): три слоти, що проходять перевірку валідатора
+// (scripts/validate_palette.js зі скіла dataviz) для всіх пар — і на дальтонізм, і на звичайний зір.
+// Для темної й сірої теми — «темні» кроки, для світлої — «світлі». Більше трьох категорій — у «інші».
+export const GRAPH_SERIES: Record<'dark' | 'light', [string, string, string]> = {
+  dark: ['#3987e5', '#d95926', '#199e70'],
+  light: ['#2a78d6', '#eb6834', '#1baf7a'],
+};
+export const graphSeries = (theme: AppTheme) => GRAPH_SERIES[theme.mode === 'light' ? 'light' : 'dark'];
+
 // Висота міні-плеєра (картка з обкладинкою, як .player-bar на телефоні).
 export const PLAYER_BAR_HEIGHT = 90;

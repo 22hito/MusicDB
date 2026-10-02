@@ -9,7 +9,8 @@ import { usePlayer } from '@/player/PlayerContext';
 import { Button, EmptyState, SectionTitle } from '@/components/UI';
 import { MarqueeText } from '@/components/MarqueeText';
 import { SelectField } from '@/components/SelectField';
-import { ChevronRightIcon, DiscIcon, GlobeIcon, NoteIcon, PauseIcon, PlayIcon, TrophyIcon, VideoIcon } from '@/components/Icons';
+import { BattleChampion, type BattleMatchLog } from '@/components/BattleChampion';
+import { ChevronRightIcon, DiscIcon, GlobeIcon, NoteIcon, PauseIcon, PlayIcon, VideoIcon } from '@/components/Icons';
 import { FONT_MONO_MEDIUM, FONT_MONO_REGULAR, FONT_SANS_BOLD, FONT_SANS_REGULAR, FONT_SERIF_BOLD, PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { Playlist, PublicPlaylist, Song } from '@/api/types';
 
@@ -26,11 +27,7 @@ interface BattleState {
 }
 
 // Зіграний матч — для «шляху до перемоги» й призерів на екрані переможця.
-interface BattleMatch {
-  size: number;
-  winner: Song;
-  loser: Song;
-}
+type BattleMatch = BattleMatchLog;
 
 function shuffled<T>(arr: T[]): T[] {
   const a = arr.slice();
@@ -67,6 +64,8 @@ export default function BattleScreen() {
   const [pool, setPool] = useState<Song[] | null>(null); // пісні турніру — для «Нового турніру»
   const fade = useRef(new Animated.Value(1)).current;
   const busy = useRef(false);
+  // Де зупинилась кожна пісня турніру: повернулись до неї — грає далі, а не з початку.
+  const positions = useRef(new Map<number, number>());
 
   const loadLists = useCallback(() => {
     setListsLoading(true);
@@ -118,6 +117,7 @@ export default function BattleScreen() {
     setHistory([]);
     setLog([]);
     setPool(songs);
+    positions.current.clear();
   };
   const start = (size: number) => {
     if (!picked) return;
@@ -185,9 +185,15 @@ export default function BattleScreen() {
       { text: t('battle.exit'), style: 'destructive', onPress: leave },
     ]);
 
+  // Одна пісня матчу грає основним плеєром: перемикаючись на іншу, запам'ятовуємо місце поточної.
   const listen = (song: Song) => {
-    if (player.current?.id === song.id) player.toggle();
-    else player.playFrom([song], song.id);
+    const cur = player.current;
+    if (cur?.id === song.id) return player.toggle();
+    if (cur && (cur.id === a?.id || cur.id === b?.id)) {
+      const { currentTime, duration } = player.getPosition();
+      positions.current.set(cur.id, duration && currentTime > duration - 3 ? 0 : currentTime);
+    }
+    player.playFrom([song], song.id, { startAt: positions.current.get(song.id) });
   };
 
   // ─── Відео-док: той самий плеєр малюється в рамці над картками ───
@@ -271,41 +277,6 @@ export default function BattleScreen() {
     if (size === 8) return t('battle.quarterfinal');
     return t('battle.roundShort').replace('{x}', String(Math.log2(bt?.initialSize || 2) - Math.log2(size) + 1));
   };
-  const championPath = bt?.champion ? log.filter((m) => m.winner.id === bt.champion!.id) : [];
-  const finalist = log.find((m) => m.size === 2)?.loser;
-  const podium = bt?.champion
-    ? [
-        { song: bt.champion, place: '1', color: theme.accent },
-        ...(finalist ? [{ song: finalist, place: '2', color: '#aab3bd' }] : []),
-        ...log.filter((m) => m.size === 4).map((m) => ({ song: m.loser, place: '3', color: '#c08a5f' })),
-      ]
-    : [];
-  const champRow = (key: string, song: Song, tag: string, tagColor: string, medal = false) => {
-    const uri = ytThumb(song);
-    return (
-      <View key={key} style={styles.champRow}>
-        {medal ? (
-          <View style={[styles.medal, { backgroundColor: tagColor }]}>
-            <Text style={{ color: '#1a1a1a', fontFamily: FONT_SANS_BOLD, fontSize: 12 }}>{tag}</Text>
-          </View>
-        ) : (
-          <Text numberOfLines={1} style={[styles.champTag, { color: tagColor }]}>{tag}</Text>
-        )}
-        {uri ? (
-          <Image source={{ uri }} style={styles.champThumb} />
-        ) : (
-          <View style={[styles.champThumb, { backgroundColor: theme.surface2, alignItems: 'center', justifyContent: 'center' }]}>
-            <NoteIcon size={12} color={theme.muted} />
-          </View>
-        )}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ color: theme.text, fontFamily: FONT_SANS_BOLD, fontSize: 13 }}>{song.artist}</Text>
-          <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 12 }}>{song.title}</Text>
-        </View>
-      </View>
-    );
-  };
-
   const contender = (song: Song, side: 0 | 1) => {
     const isCur = player.current?.id === song.id;
     const playingThis = isCur && player.isPlaying;
@@ -363,47 +334,18 @@ export default function BattleScreen() {
         <View style={[styles.matchArea, { padding: pad, paddingBottom: pad + (player.isOpen ? PLAYER_BAR_HEIGHT + 8 : 0) }]} onLayout={(e) => setAreaH(e.nativeEvent.layout.height)}>
           {ribbon}
           {bt.champion ? (
-            <ScrollView contentContainerStyle={{ flexGrow: 1, gap: SPACING.md, paddingTop: 22 }}>
-              <View style={[styles.champion, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
-                <View style={[styles.championCoverWrap, { borderColor: theme.accent, backgroundColor: theme.surface2 }]}>
-                  {ytThumb(bt.champion, 'hqdefault') ? (
-                    <Image source={{ uri: ytThumb(bt.champion, 'hqdefault')! }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                  ) : (
-                    <NoteIcon size={40} color={theme.accent} />
-                  )}
-                </View>
-                <View style={[styles.crown, { backgroundColor: theme.accent, borderColor: theme.bg }]}>
-                  <TrophyIcon size={20} color={theme.onAccent} />
-                </View>
-                <Text style={{ color: theme.accent, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginTop: 4, fontFamily: FONT_SANS_BOLD }}>
-                  {t('battle.championLabel')}
-                </Text>
-                <Text style={{ color: theme.text, fontFamily: FONT_SERIF_BOLD, fontSize: 24, marginTop: 6, textAlign: 'center' }}>{bt.champion.artist}</Text>
-                <Text style={{ color: theme.muted, fontSize: 15, marginTop: 4, textAlign: 'center' }}>{bt.champion.title}</Text>
-                <View style={styles.statRow}>
-                  {[t('battle.statSize').replace('{n}', count('count.songs', bt.initialSize)), count('count.wins', championPath.length)].map((s) => (
-                    <Text key={s} style={[styles.statChip, { color: theme.text2, borderColor: `${theme.accent}55`, backgroundColor: `${theme.accent}18` }]}>
-                      {s}
-                    </Text>
-                  ))}
-                </View>
-                <View style={{ flexDirection: 'row', gap: SPACING.sm, alignSelf: 'stretch', marginTop: 16 }}>
-                  <Button label={t('battle.listenToWinnerBtn')} small onPress={() => player.playFrom([bt.champion!], bt.champion!.id)} style={{ flex: 1 }} />
-                  <Button label={t('battle.rematch')} small variant="outline" onPress={rematch} style={{ flex: 1 }} />
-                </View>
-              </View>
-              {championPath.length ? (
-                <View style={[styles.champCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                  <Text style={[styles.champCardTitle, { color: theme.muted }]}>{t('battle.pathTitle')}</Text>
-                  {championPath.map((m, i) => champRow(`p${i}`, m.loser, roundShort(m.size), m.size === 2 ? theme.accent : theme.muted))}
-                </View>
-              ) : null}
-              <View style={[styles.champCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                <Text style={[styles.champCardTitle, { color: theme.muted }]}>{t('battle.podiumTitle')}</Text>
-                {podium.map((p, i) => champRow(`pod${i}`, p.song, p.place, p.color, true))}
-              </View>
-              {bottomBar}
-            </ScrollView>
+            <BattleChampion
+              champion={bt.champion}
+              initialSize={bt.initialSize}
+              log={log}
+              roundShort={roundShort}
+              isCurrent={player.current?.id === bt.champion.id}
+              isPlaying={player.isPlaying}
+              onListen={() => (player.current?.id === bt.champion!.id ? player.toggle() : player.playFrom([bt.champion!], bt.champion!.id))}
+              onRematch={rematch}
+              onExit={leave}
+              bottomInset={SPACING.md}
+            />
           ) : a && b ? (
             <Animated.View style={{ flex: 1, opacity: fade }}>
               <View style={[{ flex: 1, gap: SPACING.md }, landscape && { flexDirection: 'row' }]}>
@@ -529,16 +471,6 @@ const styles = StyleSheet.create({
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   progress: { flex: 1, height: 4, borderRadius: RADIUS.pill, overflow: 'hidden' },
   bgHalf: { position: 'absolute', top: '-10%', bottom: '-10%', width: '60%', opacity: 0.55 },
-  championCoverWrap: { width: '100%', aspectRatio: 16 / 9, borderRadius: RADIUS.lg, borderWidth: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  crown: { width: 42, height: 42, borderRadius: 21, borderWidth: 3, alignItems: 'center', justifyContent: 'center', marginTop: -21, marginBottom: 6 },
-  statRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 },
-  statChip: { fontSize: 12, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.pill, borderWidth: 1, overflow: 'hidden' },
-  champCard: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, gap: 8 },
-  champCardTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT_SANS_BOLD, marginBottom: 2 },
-  champRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  champTag: { width: 92, fontSize: 11, fontFamily: FONT_SANS_BOLD, textTransform: 'uppercase' },
-  medal: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  champThumb: { width: 56, height: 32, borderRadius: 6 },
   progressFill: { height: '100%', borderRadius: RADIUS.pill },
   matchArea: { flex: 1 },
   pair: { flexDirection: 'row', gap: 10, flex: 1, minHeight: 190, maxHeight: 260, marginTop: 12 },
@@ -552,7 +484,6 @@ const styles = StyleSheet.create({
   vs: { position: 'absolute', left: '50%', top: -14, marginLeft: -17, width: 34, height: 34, borderRadius: 17, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   videoFrame: { borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   bottomBar: { flexDirection: 'row', gap: 10, marginTop: SPACING.md },
-  champion: { borderWidth: 1, borderRadius: RADIUS.xl, padding: SPACING.xl, alignItems: 'center' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
   sizeBox: { width: 340, maxWidth: '90%', borderRadius: RADIUS.xl, borderWidth: 1, padding: SPACING.xl, alignItems: 'center' },
 });

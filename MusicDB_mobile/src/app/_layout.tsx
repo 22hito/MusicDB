@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import {
@@ -15,6 +16,7 @@ import { ApiBridgeProvider } from '@/api/ApiBridge';
 import { FavoritesProvider } from '@/state/FavoritesContext';
 import { PlayerProvider } from '@/player/PlayerContext';
 import { UpdateBanner } from '@/components/UpdateBanner';
+import { ThreadReplyToast } from '@/components/ThreadReplyToast';
 
 // Раніше тут був expo-router-івський <Stack> ((tabs) + модальний "settings").
 // Виміри (onLayout-логи на кожному рівні дерева) показали, що ЛИШЕ контент
@@ -71,10 +73,9 @@ function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
     return <View style={{ flex: 1, backgroundColor: '#090c14' }} />;
   }
 
+  // GestureHandlerRootView — без нього жести (колесо, зум графів) мовчки не працюють.
   return (
-    <View
-      style={{ flex: 1, backgroundColor: theme.bg }}
-    >
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.bg }}>
       <ApiBridgeProvider>
         <FavoritesProvider>
           <PlayerProvider>
@@ -82,10 +83,11 @@ function RootInner({ fontsLoaded }: { fontsLoaded: boolean }) {
             <View style={{ flex: 1 }}>
               <Slot />
             </View>
+            <ThreadReplyToast />
             <UpdateBanner />
           </PlayerProvider>
         </FavoritesProvider>
       </ApiBridgeProvider>
-    </View>
+    </GestureHandlerRootView>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSettings } from '@/state/SettingsContext';
@@ -11,6 +11,7 @@ import { ChatIcon, PersonIcon } from '@/components/Icons';
 import { FriendsPanel, openUserProfile } from '@/components/FriendsPanel';
 import { FONT_MONO_REGULAR, RADIUS, SPACING } from '@/constants/theme';
 import type { Conversation, DmRequest, ThreadSummary } from '@/api/types';
+import { formatStamp } from '@/utils/time';
 
 type Tab = 'dm' | 'requests' | 'threads' | 'friends';
 type MainTab = 'threads' | 'friends' | 'dm';
@@ -20,7 +21,7 @@ type MainTab = 'threads' | 'friends' | 'dm';
 // ?tab=friends|dm|requests відкриває потрібну вкладку (з профілю, сповіщень).
 const TABS: Tab[] = ['dm', 'requests', 'threads', 'friends'];
 export default function CommunityScreen() {
-  const { theme, t } = useSettings();
+  const { theme, t, lang } = useSettings();
   const { currentUser, subscribeRealtime } = useApiBridge();
   const api = useMusicApi();
   const requireAuth = useRequireAuth();
@@ -77,7 +78,7 @@ export default function CommunityScreen() {
   useEffect(
     () =>
       subscribeRealtime((event) => {
-        if (event === 'dmReceived' || event === 'dmSent' || event === 'dmRequestsChanged' || event === 'threadsChanged' || event === 'friendsChanged') load();
+        if (event === 'dmReceived' || event === 'dmSent' || event === 'dmRequestsChanged' || event === 'threadsChanged' || event === 'friendsChanged' || event === 'threadNotificationsChanged') load();
       }),
     [subscribeRealtime, load],
   );
@@ -186,7 +187,7 @@ export default function CommunityScreen() {
                   </TouchableOpacity>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={{ color: theme.text, fontWeight: '700' }}>{r.displayName}</Text>
-                    <Text style={{ color: theme.muted, fontSize: 11 }}>{r.createdAt}</Text>
+                    <Text style={{ color: theme.muted, fontSize: 11 }}>{formatStamp(r.createdAt, lang)}</Text>
                     <Text style={{ color: theme.text, fontSize: 14, marginTop: 6 }}>{r.preview}</Text>
                   </View>
                   <View style={styles.requestActions}>
@@ -243,22 +244,33 @@ export default function CommunityScreen() {
               <EmptyState icon="🗨️" label={t('threads.empty')} />
             ) : (
               threads.map((th) => (
-                <TouchableOpacity
+                <Pressable
                   key={th.id}
-                  style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                  style={({ pressed }) => [
+                    styles.threadCard,
+                    { backgroundColor: theme.surface, borderColor: th.unread ? `${theme.accent}66` : theme.border, transform: [{ scale: pressed ? 0.985 : 1 }] },
+                  ]}
                   onPress={() => router.push({ pathname: '/community/thread/[id]', params: { id: String(th.id) } })}
                 >
+                  <Avatar url={th.author?.avatarUrl} name={th.author?.displayName ?? '?'} size={38} />
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ color: theme.text, fontWeight: '700', fontSize: 15 }}>{th.title}</Text>
-                    <Text style={{ color: theme.muted, fontSize: 12, marginTop: 3 }}>
-                      {t('threads.by')} {th.author?.displayName ?? t('threads.deletedUser')} · {th.lastPostAt}
+                    <Text numberOfLines={2} style={{ color: theme.text, fontWeight: '700', fontSize: 15, lineHeight: 20 }}>{th.title}</Text>
+                    <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 12, marginTop: 3 }}>
+                      {th.author?.displayName ?? t('threads.deletedUser')} · {formatStamp(th.lastPostAt, lang)}
                     </Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <ChatIcon size={14} color={theme.muted} />
-                    <Text style={{ color: theme.muted, fontFamily: FONT_MONO_REGULAR }}>{th.postCount}</Text>
+                  <View style={{ alignItems: 'flex-end', gap: 5 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <ChatIcon size={13} color={theme.muted} />
+                      <Text style={{ color: theme.muted, fontFamily: FONT_MONO_REGULAR, fontSize: 12.5 }}>{th.postCount}</Text>
+                    </View>
+                    {th.unread ? (
+                      <View style={[styles.count, { backgroundColor: theme.accent }]}>
+                        <Text style={{ color: theme.onAccent, fontSize: 10.5, fontWeight: '700' }}>{t('threads.newCount').replace('{n}', String(th.unread))}</Text>
+                      </View>
+                    ) : null}
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ))
             )}
           </>
@@ -282,6 +294,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   avatar: { width: 40, height: 40, borderRadius: 20 },
+  threadCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, marginBottom: SPACING.sm },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   count: { minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
   requestActions: { flexDirection: 'row', gap: 8, width: '100%', justifyContent: 'flex-end', marginTop: 8 },

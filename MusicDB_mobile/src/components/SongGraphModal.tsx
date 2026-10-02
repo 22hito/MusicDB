@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSettings } from '@/state/SettingsContext';
 import { ForceGraph, type GraphEdge, type GraphNode } from './ForceGraph';
 import { CloseIcon, SearchIcon } from './Icons';
-import { CONTROL_HEIGHT, FONT_SANS_REGULAR, FONT_SANS_SEMIBOLD, RADIUS, SPACING } from '@/constants/theme';
+import { CONTROL_HEIGHT, FONT_SANS_REGULAR, FONT_SANS_SEMIBOLD, RADIUS, SPACING, graphSeries } from '@/constants/theme';
 import type { Song } from '@/api/types';
 
 // Граф навколо пісні — як на сайті: знайти пісню, вона в центрі й виділена, навколо
@@ -13,7 +14,6 @@ import type { Song } from '@/api/types';
 const EGO_SIZE = 20;
 const R_MIN = 90;
 const R_MAX = 280;
-const COLORS = ['#8a6fb0', '#4f8c6f', '#b5555a', '#5b84a8', '#c98a4b', '#6fa89e', '#9a6b8f', '#7d9153', '#b0703f', '#5f6fa0', '#a3824f'];
 const radiusFor = (v: number) => R_MIN + (1 - Math.max(0, Math.min(1, v))) * (R_MAX - R_MIN);
 
 function jaccard(a: Set<string>, b: Set<string>) {
@@ -29,6 +29,13 @@ function songSim(a: Song, b: Song) {
   const sameArtist = a.artist && (b.artist || '').toLowerCase() === a.artist.toLowerCase() ? 0.3 : 0;
   const sameAlbum = a.album && b.album === a.album ? 0.1 : 0;
   return Math.min(1, jaccard(ga, gb) * 0.8 + sameArtist + sameAlbum);
+}
+// Колір вузла — ЧИМ пісня пов'язана з центральною (тотожність зв'язку, а не порядковий номер):
+// 0 — лише схожі жанри, 1 — той самий виконавець, 2 — той самий альбом.
+function relation(center: Song, s: Song): 0 | 1 | 2 {
+  if (center.album && s.album === center.album) return 2;
+  if (center.artist && (s.artist || '').toLowerCase() === center.artist.toLowerCase()) return 1;
+  return 0;
 }
 
 export function SongGraphModal({
@@ -46,7 +53,8 @@ export function SongGraphModal({
 }) {
   const { theme, t } = useSettings();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height: winH } = useWindowDimensions();
+  const series = graphSeries(theme);
   const [centerId, setCenterId] = useState<number | null>(null);
   const [q, setQ] = useState('');
 
@@ -75,13 +83,19 @@ export function SongGraphModal({
     const nodes: GraphNode[] = items.map((s, i) => ({
       key: String(s.id),
       label: s.title,
-      color: i === 0 ? theme.accent : COLORS[i % COLORS.length],
+      color: i === 0 ? theme.accent : series[relation(center, s)],
       ring: i === 0,
       size: i === 0 ? 2.2 : 0.8 + scored[i - 1].v * 0.6,
     }));
     const edges: GraphEdge[] = scored.map((x, k) => ({ i: 0, j: k + 1, w: x.v }));
-    return { items, nodes, edges, positions };
-  }, [songs, center, theme.accent]);
+    const used = new Set(items.slice(1).map((s) => relation(center, s)));
+    return { items, nodes, edges, positions, used };
+  }, [songs, center, theme.accent, series]);
+  const legend = graph
+    ? ([0, 1, 2] as const).filter((k) => graph.used.has(k)).map((k) => ({ color: series[k], label: t(k === 0 ? 'graph.rel.genre' : k === 1 ? 'graph.rel.artist' : 'graph.rel.album') }))
+    : [];
+  // Висота — під екран телефона: аркуш займає до ~88% висоти, граф — решту після шапки й пошуку.
+  const graphH = Math.max(300, Math.min(winH * 0.88 - 230 - insets.bottom, width * 1.25));
 
   const pick = (s: Song) => {
     setCenterId(s.id);
@@ -89,7 +103,8 @@ export function SongGraphModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={[styles.sheet, { backgroundColor: theme.surface, borderColor: theme.border, paddingBottom: insets.bottom + SPACING.md }]} onPress={() => {}}>
           <View style={styles.head}>
@@ -128,22 +143,25 @@ export function SongGraphModal({
                 rings={[80, 60, 40].map((p) => ({ r: radiusFor(p / 100), label: `${p}%` }))}
                 radialLabels
                 baseRadius={7}
+                surface={theme.bg}
+                legend={legend}
                 width={width - SPACING.lg * 2 - 2}
-                height={380}
+                height={graphH}
                 onPressNode={(i) => (i === 0 ? (onPlay(graph.items[0]), onClose()) : setCenterId(graph.items[i].id))}
               />
             </View>
           ) : null}
-          <Text style={{ color: theme.muted, fontSize: 11, textAlign: 'center', marginTop: 8 }}>{t('graph.egoHint')}</Text>
+          <Text style={{ color: theme.muted, fontSize: 11.5, lineHeight: 16, textAlign: 'center', marginTop: 8 }}>{t('graph.egoHint')}</Text>
         </Pressable>
       </Pressable>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
-  sheet: { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, borderWidth: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.md },
+  sheet: { borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, borderWidth: 1, borderBottomWidth: 0, paddingHorizontal: SPACING.lg, paddingTop: SPACING.md },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: SPACING.md },
   title: { flex: 1, fontSize: 15, fontFamily: FONT_SANS_SEMIBOLD },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: CONTROL_HEIGHT, borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, marginBottom: SPACING.sm },

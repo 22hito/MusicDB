@@ -51,7 +51,7 @@ function _loadRatingModal(){
           <div class="rating-review-head">
             ${_userLinkHtml(rv.user)}
             <span class="rating-chip has-rating"><svg class="icon"><use href="#icon-star"/></svg> ${rv.score}</span>
-            <span class="rating-review-date">${esc(rv.updatedAt)}</span>
+            <span class="rating-review-date">${timeHtml(rv.updatedAt)}</span>
             ${currentUser?.isAdmin && rv.user.userId !== currentUser?.userId ? _deleteBtnHtml(`adminDeleteReview(${rv.user.userId})`) : ''}
           </div>
           <div class="rating-review-body">${esc(rv.review)}</div>

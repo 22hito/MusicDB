@@ -26,6 +26,7 @@ export type SongSource = 'catalog' | 'community';
 export interface UserRef {
   userId: number;
   displayName: string;
+  avatarUrl?: string | null;
 }
 
 export interface ArtistRef {
@@ -255,6 +256,7 @@ export interface ThreadSummary {
   createdAt: string;
   lastPostAt: string;
   postCount: number;
+  unread?: number; // нові дописи інших у гілці, де я учасник
 }
 
 export interface ThreadPost {
@@ -262,6 +264,7 @@ export interface ThreadPost {
   author: UserRef | null;
   body: string;
   createdAt: string;
+  replyTo?: { postId: number; author: UserRef | null; snippet: string } | null;
 }
 
 export interface ThreadDetail {
@@ -271,6 +274,24 @@ export interface ThreadDetail {
   author: UserRef | null;
   createdAt: string;
   posts: ThreadPost[];
+  isFollowing?: boolean;
+}
+
+// Новий допис у гілці, де я учасник (вкладка «Обговорення» в сповіщеннях).
+export interface ThreadNotification {
+  postId: number;
+  threadId: number;
+  threadTitle: string;
+  author: UserRef | null;
+  body: string;
+  createdAt: string;
+  toMe: boolean; // відповідь саме на мій допис (або в моїй гілці)
+  unread: boolean;
+}
+
+export interface ThreadNotificationsSummary {
+  unreadCount: number;
+  recent: ThreadNotification[];
 }
 
 export interface AdminNotification {

@@ -4,6 +4,7 @@ import { useSettings } from '@/state/SettingsContext';
 import type {
   AdminNotificationsSummary,
   NotificationsSummary,
+  ThreadNotificationsSummary,
   HistoryItem,
   ArtistDetail,
   ArtistSort,
@@ -279,7 +280,7 @@ export function useMusicApi() {
 
       // History
       logListen: (musicId: number) => request<void>('/api/history', { method: 'POST', body: { musicId } }),
-      getHistory: (limit = 30) => request<HistoryItem[]>('/api/history', { query: { limit } }),
+      getHistory: (limit = 30, offset = 0) => request<HistoryItem[]>('/api/history', { query: { limit, offset: offset || undefined } }),
 
       // Recommendations
       getRecommendations: (lang: string) => request<Recommendation[]>('/api/recommendations', { query: { lang } }),
@@ -322,16 +323,23 @@ export function useMusicApi() {
         return upload<DirectMessage>(`/api/messages/${userId}/rich`, fd);
       },
       // Пряме посилання на файл із повідомлення (картинка й плеєр не несуть куку сесії).
-      getAttachmentLink: (messageId: number) =>
-        request<{ url: string }>(`/api/messages/attachment/${messageId}/link`).then((r) => r.url),
+      // download — на збереження (під назвою від відправника); inline — PDF і текст для перегляду, а не завантаження.
+      getAttachmentLink: (messageId: number, opts?: { download?: boolean; inline?: boolean }) =>
+        request<{ url: string }>(`/api/messages/attachment/${messageId}/link`, {
+          query: { download: opts?.download ? 'true' : undefined, inline: opts?.inline ? 'true' : undefined },
+        }).then((r) => r.url),
 
       // Гілки обговорень
       getThreads: (q?: string) => request<ThreadSummary[]>('/api/threads', { query: { q: q || undefined } }),
       getThread: (id: number) => request<ThreadDetail>(`/api/threads/${id}`),
       createThread: (title: string, body: string) =>
         request<ThreadSummary>('/api/threads', { method: 'POST', body: { title, body } }),
-      replyToThread: (id: number, body: string) =>
-        request<ThreadPost>(`/api/threads/${id}/posts`, { method: 'POST', body: { body } }),
+      replyToThread: (id: number, body: string, replyToPostId?: number | null) =>
+        request<ThreadPost>(`/api/threads/${id}/posts`, { method: 'POST', body: { body, replyToPostId: replyToPostId ?? null } }),
+      followThread: (id: number) => request<void>(`/api/threads/${id}/follow`, { method: 'POST' }),
+      unfollowThread: (id: number) => request<void>(`/api/threads/${id}/follow`, { method: 'DELETE' }),
+      getThreadNotifications: (limit = 30) => request<ThreadNotificationsSummary>('/api/notifications/threads', { query: { limit } }),
+      markThreadNotificationsRead: () => request<void>('/api/notifications/threads/mark-read', { method: 'POST' }),
       deleteThread: (id: number) => request<void>(`/api/threads/${id}`, { method: 'DELETE' }),
       deleteThreadPost: (postId: number) => request<void>(`/api/threads/posts/${postId}`, { method: 'DELETE' }),
 

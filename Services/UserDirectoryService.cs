@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using MusicDB.Api.Data;
 using MusicDB.Api.Models;
@@ -52,7 +52,19 @@ public class UserDirectoryService(MusicDbContext db)
 
     public record UserCard(int UserId, string DisplayName, string? AvatarUrl)
     {
-        public UserRefDto ToRef() => new(UserId, DisplayName);
+        public UserRefDto ToRef() => new(UserId, DisplayName, AvatarLink(UserId, AvatarUrl));
+    }
+
+    // Своя аватарка зберігається data:-URI (base64, десятки КБ) — у посиланнях на автора (гілки, дописи,
+    // сповіщення) її віддаємо адресою /api/users/{id}/avatar з версією, а не вмістом: інакше кожен допис
+    // ніс би цілу картинку. Фото з Google — звичайна https-адреса, лишається як є.
+    public static string? AvatarLink(int userId, string? avatar)
+    {
+        if (string.IsNullOrEmpty(avatar)) return null;
+        if (!avatar.StartsWith("data:", StringComparison.OrdinalIgnoreCase)) return avatar;
+        uint h = 2166136261; // FNV-1a — версія змінюється разом із картинкою, тож її можна кешувати назавжди
+        foreach (var ch in avatar) h = (h ^ ch) * 16777619;
+        return $"/api/users/{userId}/avatar?v={h:x8}";
     }
 
     // Нік/аватарка для набору id одним запитом (не N+1) — той самий пріоритет,

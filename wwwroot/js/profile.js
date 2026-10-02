@@ -67,14 +67,86 @@ function toggleProfileHistory(force){
   list.innerHTML = `<div class="q-empty">${esc(t('notif.loading'))}</div>`;
   loadRecentHistory().then(items => {
     document.getElementById('profile-history-play').style.display = items.length ? '' : 'none';
-    list.innerHTML = items.length ? items.map((r, i) => _queueRowHtml(r.song, {
+    // Лише 5 останніх — решта у вікні «Уся історія».
+    list.innerHTML = items.length ? items.slice(0, PROFILE_HISTORY_PREVIEW).map((r, i) => _queueRowHtml(r.song, {
       onclick: `playProfileHistory(${i})`,
       meta: esc(_timeAgo(r.listenedAt)),
       acts: _qBtn('plus', t('queue.add'), `addToQueue(${r.song.id})`),
     })).join('') : `<div class="q-empty">${esc(t('queue.recentEmpty'))}</div>`;
+    const total = _profileListened || items.length;
+    const all = document.getElementById('profile-history-all');
+    all.style.display = total > PROFILE_HISTORY_PREVIEW ? '' : 'none';
+    all.textContent = t('history.showAll').replace('{n}', total);
   });
   scrollToProfileSection('profile-history-section');
 }
+const PROFILE_HISTORY_PREVIEW = 5;
+let _profileListened = 0; // «Прослухано» з профілю — для підпису «Уся історія (N)»
+
+// ─── Уся історія прослуховувань ──────────────────────────────────────────
+const HISTORY_PAGE = 50;
+let _history = [], _historyOffset = 0, _historyDone = false, _historyBusy = false;
+function openHistoryModal(){
+  _history = []; _historyOffset = 0; _historyDone = false;
+  document.getElementById('history-search').value = '';
+  document.getElementById('history-total').textContent = t('history.total').replace('{n}', _profileListened);
+  document.getElementById('history-list').innerHTML = `<div class="q-empty">${esc(t('notif.loading'))}</div>`;
+  document.getElementById('history-modal-overlay').classList.add('open');
+  _loadHistoryPage();
+}
+function closeHistoryModal(){ _closeModalAnimated('history-modal-overlay'); }
+function _loadHistoryPage(){
+  if(_historyBusy || _historyDone) return;
+  _historyBusy = true;
+  fetch(`/api/history?limit=${HISTORY_PAGE}&offset=${_historyOffset}`).then(r => r.ok ? r.json() : []).catch(() => [])
+    .then(page => {
+      _historyOffset += HISTORY_PAGE;
+      if(!page.length) _historyDone = true;
+      const seen = new Set(_history.map(h => h.song.id));
+      _history.push(...page.filter(h => !seen.has(h.song.id)));
+    })
+    .finally(() => { _historyBusy = false; renderHistoryModal(); });
+}
+function _historyShown(){
+  const words = document.getElementById('history-search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return words.length ? _history.filter(h => words.every(w => `${h.song.artist} ${h.song.title}`.toLowerCase().includes(w))) : _history;
+}
+function renderHistoryModal(){
+  const box = document.getElementById('history-list');
+  const shown = _historyShown();
+  let html = '', group = null;
+  shown.forEach((h, i) => {
+    const d = new Date(h.listenedAt);
+    const g = dayGroupLabel(d);
+    if(g !== group){ group = g; html += `<div class="history-group">${esc(g)}</div>`; }
+    html += _queueRowHtml(h.song, {
+      onclick: `playHistoryAt(${i})`,
+      meta: `<time datetime="${d.toISOString()}" title="${esc(fmtTimeFull(h.listenedAt))}">${esc(_fmt('time').format(d))}</time>`,
+      acts: _qBtn('plus', t('queue.add'), `addToQueue(${h.song.id})`),
+    });
+  });
+  if(!shown.length && (_historyDone || _history.length)) html = `<div class="q-empty">${esc(t(_history.length ? 'table.empty' : 'queue.recentEmpty'))}</div>`;
+  if(!_historyDone) html += `<div class="history-more" id="history-more">${_historyBusy ? esc(t('notif.loading')) : `<button type="button" class="btn btn-ghost" onclick="_loadHistoryPage()">${esc(t('history.loadOlder'))}</button>`}</div>`;
+  box.innerHTML = html;
+  // Довантаження, щойно низ списку видно (без обробника прокрутки на кожен піксель).
+  const more = document.getElementById('history-more');
+  if(more && !_historyBusy && 'IntersectionObserver' in window){
+    const io = new IntersectionObserver(entries => {
+      if(entries.some(e => e.isIntersecting)){ io.disconnect(); _loadHistoryPage(); }
+    }, { root: box, rootMargin: '200px' });
+    io.observe(more);
+  }
+}
+function playHistoryAt(i){
+  const list = _historyShown().map(h => h.song);
+  if(!list.length) return;
+  playerQueue = list.slice();
+  playerIndex = Math.min(i, list.length - 1);
+  _loadCurrent();
+}
+function playHistoryAll(){ playHistoryAt(0); }
+function queueHistoryAll(){ addManyToQueue(_historyShown().map(h => h.song.id)); }
+
 function playProfileHistory(i){
   const list = _recentServer.map(r => r.song);
   if(!list.length) return;
@@ -101,6 +173,7 @@ function loadProfilePage(){
     profileGooglePicture = p.picture || null;
     _profileLoaded = { displayName: p.displayName || '', avatarUrl: p.avatarUrl || null };
     _renderProfileAvatar();
+    _profileListened = p.totalListened || 0;
     _countUp(document.getElementById('profile-stat-listened'), p.totalListened);
     _countUp(document.getElementById('profile-stat-favorites'), p.favoritesCount);
     _countUp(document.getElementById('profile-stat-playlists'), p.playlistsCount);

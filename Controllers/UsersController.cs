@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +20,29 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
         CurrentEmail,
         User.FindFirstValue(ClaimTypes.Name),
         User.FindFirstValue("picture") ?? User.FindFirstValue("urn:google:picture"));
+
+    // Аватарка користувача (своя — з data:-URI профілю; з Google — редирект). Публічна, як і гілки,
+    // де її показують; адреса версійована (UserDirectoryService.AvatarLink), тож кеш — назавжди.
+    [AllowAnonymous]
+    [HttpGet("{id:int}/avatar")]
+    public async Task<IActionResult> Avatar(int id)
+    {
+        var card = (await userDirectory.GetUserCardsAsync([id])).GetValueOrDefault(id);
+        var avatar = card?.AvatarUrl;
+        if (string.IsNullOrEmpty(avatar)) return NotFound();
+        if (!avatar.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            return Uri.TryCreate(avatar, UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps ? Redirect(avatar) : NotFound();
+        var comma = avatar.IndexOf(',');
+        var meta = comma > 5 ? avatar[5..comma] : "";
+        if (comma < 0 || !meta.EndsWith(";base64", StringComparison.OrdinalIgnoreCase)) return NotFound();
+        var mime = meta[..^7];
+        if (!mime.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || mime.Contains("svg", StringComparison.OrdinalIgnoreCase)) return NotFound();
+        byte[] bytes;
+        try { bytes = Convert.FromBase64String(avatar[(comma + 1)..]); }
+        catch (FormatException) { return NotFound(); }
+        Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        return File(bytes, mime);
+    }
 
     [HttpGet("search")]
     public async Task<ActionResult<List<UserSearchResultDto>>> Search([FromQuery] string q, [FromQuery] int limit = 20)

@@ -84,7 +84,7 @@ function renderAuthArea() {
         <button class="dropdown-toggle" onclick="toggleDropdown(event,'notif-dropdown'); onOpenNotifDropdown();" title="${t('notif.bellTitle')}">
           <svg class="icon"><use href="#icon-bell"/></svg><span id="notif-badge" class="badge" style="display:none;margin-left:2px;"></span>
         </button>
-        <div class="dropdown-menu" id="notif-list" style="min-width:320px;max-height:420px;overflow-y:auto;"></div>
+        <div class="dropdown-menu notif-menu" id="notif-list" onclick="event.stopPropagation()"></div>
       </div>
       <button class="dropdown-toggle nav-dm-btn" onclick="openChatPage('dm')" title="${t('chat.tab.dm')}" style="margin-right:0.3rem;">
         <svg class="icon"><use href="#icon-chat"/></svg><span id="dm-badge" class="badge" style="display:none;margin-left:2px;"></span>
@@ -130,9 +130,10 @@ function refreshNotifBadge(){
   Promise.all([
     fetch('/api/notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null),
     fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).catch(()=>[]),
-    currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null)
-  ]).then(([notif, incoming, adminNotif])=>{
-    const count = (notif?.unreadCount || 0) + (incoming?.length || 0) + (adminNotif?.unreadCount || 0);
+    currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null),
+    fetch('/api/notifications/threads?limit=1').then(r=>r.ok?r.json():null).catch(()=>null)
+  ]).then(([notif, incoming, adminNotif, threadNotif])=>{
+    const count = (notif?.unreadCount || 0) + (incoming?.length || 0) + (adminNotif?.unreadCount || 0) + (threadNotif?.unreadCount || 0);
     const fb = document.getElementById('chat-tab-friends-badge');
     if(fb){ fb.textContent = incoming?.length || ''; fb.style.display = incoming?.length ? '' : 'none'; }
     if(count > 0){ badge.textContent = count > 99 ? '99+' : count; badge.style.display = ''; }
@@ -183,61 +184,140 @@ function _adminEventText(n){
   const src = n.source === 'community' ? ` <span class="badge source-community">${t('home.source.community')}</span>` : '';
   return `${actor} ${esc(verb)}${src}`;
 }
+// Дзвіночок: дві вкладки. «Загальні» — адмін-події, запити в друзі, нові пісні виконавців;
+// «Обговорення» — нові дописи в гілках, де ви писали, з відповіддю просто звідси.
+let _notifTab = 'general', _notifData = null, _notifReplyTo = null;
+function _notifGo(fn){ document.getElementById('notif-dropdown')?.classList.remove('open'); fn(); }
 function onOpenNotifDropdown(){
   const list = document.getElementById('notif-list');
-  list.innerHTML = `<div style="padding:0.8rem;color:var(--muted);font-size:0.8rem;">${t('notif.loading')}</div>`;
+  if(!list) return;
+  if(!_notifData) list.innerHTML = `<div class="notif-loading">${t('notif.loading')}</div>`;
   Promise.all([
     fetch('/api/notifications?limit=30').then(r=>r.ok?r.json():null).catch(()=>null),
     fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).catch(()=>[]),
-    currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=30').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null)
-  ]).then(([d, incoming, adminData])=>{
-    const recent = d?.recent || [];
-    const adminRecent = adminData?.recent || [];
-    const adminUnread = adminData?.unreadCount || 0;
-    if(!recent.length && !incoming.length && !adminRecent.length){
-      list.innerHTML = `<div style="padding:0.8rem;color:var(--muted);font-size:0.8rem;">${t('notif.empty')}</div>`;
-      return;
+    currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=30').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null),
+    fetch('/api/notifications/threads?limit=30').then(r=>r.ok?r.json():null).catch(()=>null)
+  ]).then(([d, incoming, adminData, threadData])=>{
+    const first = !_notifData;
+    _notifData = { d, incoming, adminData, threadData };
+    // Уперше відкриваємо ту вкладку, де є нове (обговорення — коли нове лише там).
+    if(first){
+      const general = (d?.unreadCount || 0) + incoming.length + (adminData?.unreadCount || 0);
+      _notifTab = !general && threadData?.unreadCount ? 'threads' : 'general';
     }
-    const incomingHtml = incoming.map(r=>`
-      <div style="padding:0.5rem 0.8rem;border-top:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;" onclick="openUserProfilePage(${r.userId})">
-        <div style="font-size:0.8rem;"><strong>${esc(r.displayName)}</strong><div style="font-size:0.72rem;color:var(--muted);">${t('friends.incomingRequestLabel')}</div></div>
-        <div style="display:flex;gap:6px;flex-shrink:0;">
-          <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.55rem;" onclick="event.stopPropagation();acceptFriendRequest(${r.requestId})">${t('friends.acceptBtn')}</button>
-          <button class="btn btn-outline" style="font-size:0.7rem;padding:0.25rem 0.55rem;" onclick="event.stopPropagation();cancelOrRejectFriendRequest(${r.requestId})">${t('friends.rejectBtn')}</button>
-        </div>
-      </div>`).join('');
-    const notifHtml = recent.map(n=>`
-      <div style="padding:0.5rem 0.8rem;border-top:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;" onclick="openArtistPage(${n.artistId})">
-        <div>
-          <div style="font-size:0.8rem;"><strong>${esc(n.artistName)}</strong> — ${_notifEventText(n.eventType)}</div>
-          <div style="font-size:0.75rem;color:var(--muted);">${esc(n.songLabel)}</div>
-          <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${esc(n.createdAt)}</div>
-        </div>
-        <button class="btn btn-outline" style="font-size:0.7rem;padding:0.15rem 0.4rem;flex-shrink:0;" title="${t('notif.markOneRead')}" onclick="event.stopPropagation();markOneNotificationRead(${n.id})"><svg class="icon"><use href="#icon-check"/></svg></button>
-      </div>`).join('');
-    // Непрочитані адмін-події йдуть першими в списку (сортування — новіші вгорі).
-    const adminHtml = adminRecent.length ? `
-      <div class="notif-section-title">${t('adminNotif.sectionTitle')}</div>
-      ${adminRecent.map((n,i)=>`
-      <div class="notif-item${i<adminUnread?' unread':''}" onclick="openAdminHub('${n.eventType}')">
-        <div style="font-size:0.8rem;">${_adminEventText(n)}</div>
-        <div style="font-size:0.75rem;color:var(--muted);">${esc(n.label)}</div>
-        <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${esc(n.createdAt)}</div>
-      </div>`).join('')}
-      ${(recent.length || incoming.length) ? `<div class="notif-section-title">${t('notif.sectionTitle')}</div>` : ''}` : '';
-    list.innerHTML = `
-      ${(recent.length || adminUnread) ? `<div style="display:flex;justify-content:flex-end;padding:0.3rem 0.5rem;">
-        <button class="btn btn-outline" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="markAllNotificationsRead()">${t('notif.markAllRead')}</button>
-      </div>` : ''}
-      ${adminHtml}${incomingHtml}${notifHtml}
-    `;
+    _renderNotif();
   });
 }
+function setNotifTab(tab){ _notifTab = tab; _notifReplyTo = null; _renderNotif(); }
+function _renderNotif(){
+  const list = document.getElementById('notif-list');
+  if(!list || !_notifData) return;
+  const { d, incoming, adminData, threadData } = _notifData;
+  const recent = d?.recent || [], adminRecent = adminData?.recent || [], adminUnread = adminData?.unreadCount || 0;
+  const threads = threadData?.recent || [], threadsUnread = threadData?.unreadCount || 0;
+  const generalUnread = (d?.unreadCount || 0) + incoming.length + adminUnread;
+  const badge = n => n ? `<span class="count-badge">${n > 99 ? '99+' : n}</span>` : '';
+  const unreadHere = _notifTab === 'threads' ? threadsUnread : (d?.unreadCount || 0) + adminUnread;
+  const head = `
+    <div class="notif-head">
+      <strong>${esc(t('notif.bellTitle'))}</strong>
+      ${unreadHere ? `<button type="button" class="notif-markall" onclick="markAllNotificationsRead()"><svg class="icon"><use href="#icon-check"/></svg>${esc(t('notif.markAllRead'))}</button>` : ''}
+    </div>
+    <div class="seg-switch notif-tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="${_notifTab === 'general'}" class="${_notifTab === 'general' ? 'active' : ''}" onclick="setNotifTab('general')"><svg class="icon"><use href="#icon-bell"/></svg>${esc(t('notif.tab.general'))}${badge(generalUnread)}</button>
+      <button type="button" role="tab" aria-selected="${_notifTab === 'threads'}" class="${_notifTab === 'threads' ? 'active' : ''}" onclick="setNotifTab('threads')"><svg class="icon"><use href="#icon-chat"/></svg>${esc(t('notif.tab.threads'))}${badge(threadsUnread)}</button>
+    </div>`;
+  const empty = (icon, text) => `<div class="notif-empty"><span class="notif-empty-icon"><svg class="icon"><use href="#icon-${icon}"/></svg></span>${esc(text)}</div>`;
+  let body;
+  if(_notifTab === 'threads'){
+    body = threads.length ? threads.map(n => {
+      const name = n.author?.displayName || t('threads.deletedUser');
+      const verb = t(n.toMe ? 'notif.thread.toMe' : 'notif.thread.posted');
+      const replying = _notifReplyTo === n.postId;
+      const actions = n._sent
+        ? `<div class="notif-sent"><svg class="icon"><use href="#icon-check"/></svg>${esc(t('notif.thread.sent'))}</div>`
+        : replying ? `
+          <div class="notif-composer">
+            <textarea id="notif-reply-input" rows="2" maxlength="10000" placeholder="${esc(t('notif.thread.replyTo').replace('{name}', name))}" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();sendNotifReply(${n.threadId},${n.postId});}"></textarea>
+            <div class="notif-actions">
+              <button type="button" class="btn btn-outline" onclick="notifReply(null)">${esc(t('modal.cancel'))}</button>
+              <button type="button" class="btn btn-primary" id="notif-reply-send" onclick="sendNotifReply(${n.threadId},${n.postId})">${esc(t('notif.thread.send'))}</button>
+            </div>
+          </div>` : `
+          <div class="notif-actions">
+            <button type="button" class="btn btn-outline" onclick="notifReply(${n.postId})"><svg class="icon"><use href="#icon-reply"/></svg>${esc(t('notif.thread.reply'))}</button>
+            <button type="button" class="btn btn-ghost" onclick="_notifGo(() => openThread(${n.threadId}, ${n.postId}))">${esc(t('notif.thread.open'))}</button>
+          </div>`;
+      return `
+      <div class="notif-card${n.unread ? ' unread' : ''}">
+        <button type="button" class="notif-card-main" onclick="_notifGo(() => openThread(${n.threadId}, ${n.postId}))">
+          ${avatarHtml(n.author?.avatarUrl, name, 'notif-avatar')}
+          <span class="notif-card-text"><span><strong>${esc(name)}</strong> ${esc(verb)} <em>«${esc(n.threadTitle)}»</em></span>${timeHtml(n.createdAt, 'notif-time')}</span>
+          ${n.unread ? '<span class="notif-dot" aria-hidden="true"></span>' : ''}
+        </button>
+        <blockquote class="notif-quote">${esc(n.body)}</blockquote>
+        ${actions}
+      </div>`;
+    }).join('') : empty('chat', t('notif.thread.empty'));
+  } else {
+    const adminHtml = adminRecent.map((n,i)=>`
+      <button type="button" class="notif-row${i<adminUnread?' unread':''}" onclick="_notifGo(() => openAdminHub('${n.eventType}'))">
+        <span class="notif-kind"><svg class="icon"><use href="#icon-settings"/></svg></span>
+        <span class="notif-card-text"><span>${_adminEventText(n)}</span><span class="notif-sub">${esc(n.label)}</span>${timeHtml(n.createdAt, 'notif-time')}</span>
+        ${i<adminUnread ? '<span class="notif-dot" aria-hidden="true"></span>' : ''}
+      </button>`).join('');
+    const incomingHtml = incoming.map(r=>`
+      <div class="notif-card">
+        <button type="button" class="notif-card-main" onclick="_notifGo(() => openUserProfilePage(${r.userId}))">
+          ${avatarHtml(r.avatarUrl, r.displayName, 'notif-avatar')}
+          <span class="notif-card-text"><strong>${esc(r.displayName)}</strong><span class="notif-sub">${t('friends.incomingRequestLabel')}</span></span>
+          <span class="notif-dot" aria-hidden="true"></span>
+        </button>
+        <div class="notif-actions">
+          <button type="button" class="btn btn-primary" onclick="acceptFriendRequest(${r.requestId})">${t('friends.acceptBtn')}</button>
+          <button type="button" class="btn btn-outline" onclick="cancelOrRejectFriendRequest(${r.requestId})">${t('friends.rejectBtn')}</button>
+        </div>
+      </div>`).join('');
+    const artistHtml = recent.map(n=>`
+      <div class="notif-row-wrap">
+        <button type="button" class="notif-row unread" onclick="_notifGo(() => openArtistPage(${n.artistId}))">
+          <span class="notif-kind"><svg class="icon"><use href="#icon-mic"/></svg></span>
+          <span class="notif-card-text"><span><strong>${esc(n.artistName)}</strong> — ${_notifEventText(n.eventType)}</span><span class="notif-sub">${esc(n.songLabel)}</span>${timeHtml(n.createdAt, 'notif-time')}</span>
+        </button>
+        <button type="button" class="notif-check" title="${t('notif.markOneRead')}" aria-label="${t('notif.markOneRead')}" onclick="markOneNotificationRead(${n.id})"><svg class="icon"><use href="#icon-check"/></svg></button>
+      </div>`).join('');
+    body = adminRecent.length || incoming.length || recent.length
+      ? (adminRecent.length ? `<div class="notif-section-title">${t('adminNotif.sectionTitle')}</div>${adminHtml}` : '')
+        + ((incoming.length || recent.length) && adminRecent.length ? `<div class="notif-section-title">${t('notif.sectionTitle')}</div>` : '')
+        + incomingHtml + artistHtml
+      : empty('bell', t('notif.empty'));
+  }
+  list.innerHTML = head + `<div class="notif-body">${body}</div>`;
+  if(_notifReplyTo != null) document.getElementById('notif-reply-input')?.focus();
+}
+function notifReply(postId){ _notifReplyTo = postId; _renderNotif(); }
+function sendNotifReply(threadId, postId){
+  const input = document.getElementById('notif-reply-input');
+  const body = input?.value.trim();
+  if(!body) return;
+  const btn = document.getElementById('notif-reply-send');
+  if(btn) btn.disabled = true;
+  fetch(`/api/threads/${threadId}/posts`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body, replyToPostId: postId }) })
+    .then(r => {
+      if(!r.ok){ alert(t('msg.connectionError')); if(btn) btn.disabled = false; return; }
+      const n = _notifData?.threadData?.recent?.find(x => x.postId === postId);
+      if(n) n._sent = true;
+      _notifReplyTo = null;
+      _renderNotif();
+      refreshNotifBadge();
+    })
+    .catch(() => { alert(t('msg.connectionError')); if(btn) btn.disabled = false; });
+}
 function markAllNotificationsRead(){
-  Promise.all([
-    fetch('/api/notifications/mark-read', { method:'POST' }),
-    currentUser?.isAdmin ? fetch('/api/admin-notifications/mark-read', { method:'POST' }) : Promise.resolve()
-  ]).then(()=>{ refreshNotifBadge(); onOpenNotifDropdown(); }).catch(()=>{});
+  const reqs = _notifTab === 'threads'
+    ? [fetch('/api/notifications/threads/mark-read', { method:'POST' })]
+    : [fetch('/api/notifications/mark-read', { method:'POST' }), currentUser?.isAdmin ? fetch('/api/admin-notifications/mark-read', { method:'POST' }) : Promise.resolve()];
+  Promise.all(reqs).then(()=>{ refreshNotifBadge(); onOpenNotifDropdown(); }).catch(()=>{});
 }
 // Кількість заявок, що чекають розгляду — біля пункту "Адмін-панель" у меню профілю.
 function refreshAdminRequestsBadge(){

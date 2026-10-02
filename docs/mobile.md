@@ -20,7 +20,10 @@ app/
     admin.tsx             Адмінка: заявки, додавання, баги (сповіщення — у дзвіночку шапки)
     request.tsx           Форма заявки (з файлом для ком'юніті)
 api/        ApiBridge.tsx (запити й SignalR через прихований WebView), endpoints.ts, types.ts
-components/ UI-кіт, BrandHeader (пошук, дзвіночок, аватар), SongRow, SongListBlock, MarqueeText, SelectField,
+components/ UI-кіт (Button із відгуком на натискання, TileGrid — плитки «цеглинками»), BrandHeader (пошук, дзвіночок, аватар),
+            NotificationsModal (вкладки «Загальні» / «Обговорення» з відповіддю), ThreadReplyToast, HistorySheet
+            (уся історія з групами за днями), BattleChampion, NumberStepper (− / поле / +), AttachmentViewers (фото розмови
+            галереєю зі щипком і свайпами, відео у WebView-плеєрі, текст; PDF і документи — системою), SongRow, SongListBlock, MarqueeText, SelectField,
             DateField, GenrePickerModal, ForceGraph (граф на SVG), SongGraphModal, ArtistAvatar, TopPodium,
             модалки (черга, альбом, сповіщення, оцінки, текст, баг-репорт…)
 player/     PlayerContext.tsx, MiniPlayerBar.tsx
@@ -34,6 +37,9 @@ constants/  theme.ts, i18n.ts
   заголовком `X-Upload-Token`, бо нативний `fetch` не завжди має куку сесії (на iOS — ніколи).
   Ім'я файлу перед відправкою зводиться до ASCII (розширення зберігається): OkHttp на Android відкидає
   запит, якщо в заголовку частини multipart є кирилиця.
+- **Час:** API віддає UTC; `utils/time.ts` (`formatStamp`) показує його в часовому поясі телефона.
+- **Графи (`ForceGraph`):** вписування разом із підписами, ореол під текстом, приховування підписів, що налазять,
+  щипок / кнопки +/− (gesture-handler + Reanimated), легенда; палітра — `GRAPH_SERIES` у `constants/theme.ts`.
 - **Плеєр:** два рушії. Пісні з файлом грає нативний `expo-audio`: у фоні, при вимкненому екрані, з керуванням
   на екрані блокування. YouTube грає у WebView (`mobile-player.html`), лише на активному екрані (правила
   YouTube API), тому поки він грає, екран не гасне (`expo-keep-awake`). Для батлу WebView-плеєр «докується» в

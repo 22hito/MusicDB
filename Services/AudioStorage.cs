@@ -1,4 +1,4 @@
-using Amazon.Runtime;
+﻿using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +24,8 @@ public interface IAudioStorage
 
     // null — файла нема або ім'я підозріле. downloadName — віддати на збереження
     // (Content-Disposition: attachment) під цим ім'ям, а не для відтворення.
-    Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null);
+    // contentType — інший Content-Type відповіді (текст вкладення — з charset=utf-8, щоб кирилиця не ламалась).
+    Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null, string? contentType = null);
 
     Task DeleteAsync(string? fileName);
 }
@@ -235,11 +236,11 @@ public class LocalAudioStorage : IAudioStorage
         return (name, null);
     }
 
-    public Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null)
+    public Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null, string? contentType = null)
     {
         if (!AudioFiles.IsSafeName(fileName)) return Task.FromResult<AudioSource?>(null);
         var path = Path.Combine(_root, fileName!);
-        return Task.FromResult(File.Exists(path) ? new AudioSource(path, null, AudioFiles.GetContentType(path), downloadName) : null);
+        return Task.FromResult(File.Exists(path) ? new AudioSource(path, null, contentType ?? AudioFiles.GetContentType(path), downloadName) : null);
     }
 
     public Task DeleteAsync(string? fileName)
@@ -321,11 +322,11 @@ public sealed class R2AudioStorage : IAudioStorage, IDisposable
         return (name, null);
     }
 
-    public async Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null)
+    public async Task<AudioSource?> OpenAsync(string? fileName, string? downloadName = null, string? contentTypeOverride = null)
     {
         if (!AudioFiles.IsSafeName(fileName)) return null;
-        var contentType = AudioFiles.GetContentType(fileName!);
-        if (_publicBaseUrl is not null && downloadName is null)
+        var contentType = contentTypeOverride ?? AudioFiles.GetContentType(fileName!);
+        if (_publicBaseUrl is not null && downloadName is null && contentTypeOverride is null)
             return new AudioSource(null, $"{_publicBaseUrl}/{Uri.EscapeDataString(fileName!)}", contentType);
 
         // Підпис рахується локально — без звернення до R2 на кожне прослуховування.
@@ -340,6 +341,8 @@ public sealed class R2AudioStorage : IAudioStorage, IDisposable
         // "Скачати": R2 віддасть файл із Content-Disposition: attachment (браузер збереже, а не заграє).
         if (downloadName is not null)
             request.ResponseHeaderOverrides.ContentDisposition = $"attachment; filename*=UTF-8''{Uri.EscapeDataString(downloadName)}";
+        if (contentTypeOverride is not null)
+            request.ResponseHeaderOverrides.ContentType = contentTypeOverride;
         var url = await _s3.GetPreSignedURLAsync(request);
         return new AudioSource(null, url, contentType);
     }

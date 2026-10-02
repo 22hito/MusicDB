@@ -87,7 +87,7 @@ function loadDmRequests(){
       <div class="dm-request-card">
         ${r.avatarUrl ? `<img src="${esc(r.avatarUrl)}" alt="">` : avatarHtml(null, r.displayName, 'chat-conv-ph')}
         <div class="dm-request-main">
-          <div><a href="#" class="artist-link" onclick="openUserProfilePage(${r.userId});return false;"><strong>${esc(r.displayName)}</strong></a> <span class="hint">· ${esc(r.createdAt)}</span></div>
+          <div><a href="#" class="artist-link" onclick="openUserProfilePage(${r.userId});return false;"><strong>${esc(r.displayName)}</strong></a> <span class="hint">· ${timeHtml(r.createdAt)}</span></div>
           <div class="dm-request-preview">${esc(r.preview)}</div>
         </div>
         <div class="dm-request-actions">
@@ -169,14 +169,25 @@ function loadDmThread(){
     document.getElementById('chat-dm-input-row').style.display = thread.canSend ? '' : 'none';
     const box = document.getElementById('chat-dm-messages');
     list.forEach(m => { if(m.song && !_chatSharedSongs.some(s => s.id === m.song.id)) _chatSharedSongs.push(_normalizeSharedSong(m.song)); });
-    box.innerHTML = list.length
-      ? list.map(m=>`<div class="chat-msg${m.isMine?' mine':''}${m.attachment?.kind === 'image' && !m.body ? ' media' : ''}">`
-          + (m.song ? _chatSongHtml(m.song) : '')
-          + (m.attachment ? _chatAttachmentHtml(m.attachment) : '')
-          + (m.body ? `<div class="chat-msg-body">${esc(m.body)}</div>` : '')
-          + `<div class="chat-msg-time">${esc(m.createdAt)}</div></div>`).join('')
-      : `<div class="empty" style="padding:2rem 1rem;">${t('chat.startConversation')}</div>`;
-    box.scrollTop = box.scrollHeight;
+    const msgHtml = m => `<div class="chat-msg${m.isMine?' mine':''}${m.attachment?.kind === 'image' && !m.body ? ' media' : ''}" data-id="${m.id}">`
+      + (m.song ? _chatSongHtml(m.song) : '')
+      + (m.attachment ? _chatAttachmentHtml(m.attachment, m.id) : '')
+      + (m.body ? `<div class="chat-msg-body">${esc(m.body)}</div>` : '')
+      + `<div class="chat-msg-time">${timeHtml(m.createdAt)}</div></div>`;
+    // Нове повідомлення лише дописуємо: перемальовування всієї розмови зупиняло аудіо й відео, що грали.
+    const prev = _chatMessages, samePartner = box.dataset.partner === String(id);
+    const prefix = samePartner && prev.length && prev.length <= list.length && prev.every((m, i) => list[i].id === m.id);
+    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+    _chatMessages = list;
+    box.dataset.partner = String(id);
+    if(prefix){
+      if(list.length > prev.length) box.insertAdjacentHTML('beforeend', list.slice(prev.length).map(msgHtml).join(''));
+      if(nearBottom || list.length > prev.length && list[list.length - 1].isMine) box.scrollTop = box.scrollHeight;
+    } else {
+      box.innerHTML = list.length ? list.map(msgHtml).join('') : `<div class="empty" style="padding:2rem 1rem;">${t('chat.startConversation')}</div>`;
+      box.scrollTop = box.scrollHeight;
+      box.dataset.stick = '1';
+    }
     refreshDmBadge();
   }).catch(()=>{});
 }
@@ -257,12 +268,81 @@ function _chatSongHtml(s){
     <button type="button" class="chat-song-btn" onclick="addToQueue(${s.id})" title="${esc(t('queue.add'))}" aria-label="${esc(t('queue.add'))}"><svg class="icon"><use href="#icon-queue"/></svg></button>
   </div>`;
 }
-function _chatAttachmentHtml(a){
-  const url = esc(a.url), name = esc(a.name);
-  if(a.kind === 'image') return `<a class="chat-att-img" href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="${name}" loading="lazy"></a>`;
-  if(a.kind === 'audio') return `<div class="chat-att-media"><audio controls preload="none" src="${url}"></audio><div class="chat-att-caption">${name}</div></div>`;
-  if(a.kind === 'video') return `<div class="chat-att-media"><video controls preload="metadata" src="${url}"></video></div>`;
-  return `<a class="chat-att-file" href="${url}" download="${name}"><svg class="icon"><use href="#icon-download"/></svg><span><strong>${name}</strong><small>${esc(_fmtBytes(a.size))}</small></span></a>`;
+// Вкладення в повідомленні — кожен тип так, як людині зручно ним користуватись:
+// фото — мініатюра, відкривається у переглядачі на сайті (наближення, гортання фото розмови);
+// аудіо — наш міні-плеєр (один звук за раз, основний плеєр — на паузу) з назвою й «Завантажити»;
+// відео — прямо в розмові + «на весь екран»; PDF і текст — «Переглянути» на сайті; решта — картка з типом і розміром.
+function _attExt(name){ const m = /\.([a-z0-9]{1,5})$/i.exec(name || ''); return m ? m[1].toUpperCase() : 'FILE'; }
+function _attType(a){
+  const ext = _attExt(a.name);
+  if(a.kind !== 'file') return a.kind;
+  if(ext === 'PDF' || a.contentType === 'application/pdf') return 'pdf';
+  if(ext === 'TXT' || a.contentType === 'text/plain') return 'text';
+  return 'file';
+}
+function _attDownload(a){ return `${a.url}${a.url.includes('?') ? '&' : '?'}download=true`; }
+function _attInline(a){ return `${a.url}${a.url.includes('?') ? '&' : '?'}inline=true`; }
+function _attFileCard(a, actions){
+  return `<div class="chat-att-card">
+    <span class="chat-att-type" data-ext="${esc(_attExt(a.name))}">${esc(_attExt(a.name))}</span>
+    <span class="chat-att-main"><strong title="${esc(a.name)}">${esc(a.name)}</strong><small>${esc(_fmtBytes(a.size))}</small></span>
+    ${actions}
+  </div>`;
+}
+function _attDlBtn(a){
+  return `<a class="chat-att-act" href="${esc(_attDownload(a))}" download="${esc(a.name)}" title="${esc(t('player.download'))}" aria-label="${esc(t('player.download'))}: ${esc(a.name)}"><svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg></a>`;
+}
+function _chatAttachmentHtml(a, msgId){
+  const type = _attType(a);
+  if(type === 'image')
+    return `<button type="button" class="chat-att-img" data-msg="${msgId}" onclick="openChatMedia(${msgId})" aria-label="${esc(t('chat.openImage'))}: ${esc(a.name)}">
+      <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy" decoding="async" onload="_chatMediaLoaded(this)" onerror="_chatMediaLoaded(this)"></button>`;
+  if(type === 'audio')
+    return `<div class="chat-att-audio">
+      <div class="chat-att-audio-head"><svg class="icon" aria-hidden="true"><use href="#icon-music"/></svg><strong title="${esc(a.name)}">${esc(a.name.replace(/\.[a-z0-9]{1,5}$/i, ''))}</strong><small>${esc(_fmtBytes(a.size))}</small></div>
+      ${miniAudioHtml(a.url)}
+    </div>`;
+  if(type === 'video')
+    return `<div class="chat-att-video">
+      <video src="${esc(a.url)}" controls preload="metadata" playsinline onloadedmetadata="_chatMediaLoaded(this)"></video>
+      <div class="chat-att-video-meta"><span title="${esc(a.name)}">${esc(a.name)} · ${esc(_fmtBytes(a.size))}</span>
+        <button type="button" class="chat-att-act" onclick="openChatMedia(${msgId})" title="${esc(t('chat.fullscreen'))}" aria-label="${esc(t('chat.fullscreen'))}"><svg class="icon" aria-hidden="true"><use href="#icon-external"/></svg></button>
+        ${_attDlBtn(a)}</div>
+    </div>`;
+  if(type === 'pdf' || type === 'text')
+    return _attFileCard(a, `<button type="button" class="chat-att-view" onclick="openChatMedia(${msgId})">${esc(t('chat.preview'))}</button>${_attDlBtn(a)}`);
+  return _attFileCard(a, _attDlBtn(a));
+}
+// Фото й відео довантажуються вже після прокрутки донизу й зсували розмову вгору — поки людина
+// не прокрутила вище сама, тримаємо низ розмови (останні повідомлення) на місці.
+function _chatMediaLoaded(el){
+  el.parentElement?.classList.add('loaded');
+  const box = document.getElementById('chat-dm-messages');
+  if(box && box.dataset.stick !== '0') box.scrollTop = box.scrollHeight;
+}
+(() => {
+  const box = document.getElementById('chat-dm-messages');
+  box?.addEventListener('scroll', () => { box.dataset.stick = box.scrollHeight - box.scrollTop - box.clientHeight < 80 ? '1' : '0'; }, { passive: true });
+})();
+// Переглядач: фото — уся галерея розмови (гортати стрілками/свайпом), інші типи — поодинці.
+let _chatMessages = [];
+function openChatMedia(msgId){
+  const m = _chatMessages.find(x => x.id === msgId);
+  if(!m?.attachment) return;
+  const a = m.attachment, type = _attType(a);
+  if(type === 'image'){
+    const imgs = _chatMessages.filter(x => x.attachment && _attType(x.attachment) === 'image');
+    openMediaViewer(imgs.map(x => ({ kind: 'image', src: x.attachment.url, name: x.attachment.name, download: _attDownload(x.attachment) })), imgs.indexOf(m));
+    return;
+  }
+  if(type === 'video'){
+    document.querySelectorAll('#chat-dm-messages video').forEach(v => v.pause());
+    openMediaViewer([{ kind: 'video', src: a.url, name: a.name, download: _attDownload(a) }]);
+    return;
+  }
+  // PDF: вбудований переглядач браузера є не всюди (на Android його нема) — тоді просто відкриваємо файл.
+  if(type === 'pdf' && navigator.pdfViewerEnabled === false){ window.open(_attInline(a), '_blank', 'noopener'); return; }
+  openMediaViewer([{ kind: type, src: _attInline(a), name: a.name, download: _attDownload(a) }]);
 }
 // Прикріплене до повідомлення, що пишеться: чипи над полем вводу.
 function _renderChatPending(){
@@ -403,13 +483,18 @@ function shareSongTo(userId, btn){
 }
 
 // ─── Гілки обговорень ────────────────────────────────────────────────────
+// Автор гілки й ті, хто в ній відповідав, — учасники: їм приходять сповіщення про нові дописи
+// (дзвіночок → «Обговорення»). На кожен допис можна відповісти окремо — над відповіддю цитата.
 let threadsSearchTimer = null;
+let _threadData = null;       // відкрита гілка (для цитат і «Відповісти»)
+let _threadReplyTo = null;    // допис, на який відповідаємо (null — уся гілка)
+let _threadFocusPost = null;  // допис, до якого прокрутити (перехід зі сповіщення)
 function onThreadsSearchInput(){
   clearTimeout(threadsSearchTimer);
   threadsSearchTimer = setTimeout(loadThreads, 300);
 }
 function _userLinkHtml(u){
-  if(!u) return `<span style="color:var(--muted)">${esc(t('threads.deletedUser'))}</span>`;
+  if(!u) return `<span class="thread-deleted">${esc(t('threads.deletedUser'))}</span>`;
   return `<a href="#" class="artist-link" onclick="event.stopPropagation();openUserProfileOrLogin(${u.userId});return false;">${esc(u.displayName)}</a>`;
 }
 function loadThreads(){
@@ -418,14 +503,15 @@ function loadThreads(){
   fetch(`/api/threads${q ? `?q=${encodeURIComponent(q)}` : ''}`).then(r=>r.ok?r.json():[]).then(list=>{
     document.getElementById('threads-empty').style.display = list.length ? 'none' : '';
     document.getElementById('threads-list').innerHTML = list.map(th=>`
-      <div class="ext-search-item thread-card" onclick="openThread(${th.id})">
-        <div class="es-main">
+      <div class="thread-card${th.unread ? ' unread' : ''}" role="button" tabindex="0" onclick="openThread(${th.id})" onkeydown="if(event.key==='Enter')openThread(${th.id})">
+        ${avatarHtml(th.author?.avatarUrl, th.author?.displayName || '?', 'thread-avatar')}
+        <div class="thread-card-main">
           <strong>${esc(th.title)}</strong>
-          <span>${t('threads.by')} ${_userLinkHtml(th.author)} · ${esc(th.createdAt)}</span>
+          <span class="thread-card-meta">${_userLinkHtml(th.author)} · ${t('threads.lastActivity')} ${timeHtml(th.lastPostAt)}</span>
         </div>
-        <div class="es-meta">
-          <span class="es-year"><svg class="icon"><use href="#icon-chat"/></svg> ${th.postCount}</span>
-          <span class="es-year">${t('threads.lastActivity')} ${esc(th.lastPostAt)}</span>
+        <div class="thread-card-side">
+          <span class="thread-count" title="${esc(t('threads.repliesTitle'))}"><svg class="icon"><use href="#icon-chat"/></svg>${th.postCount}</span>
+          ${th.unread ? `<span class="count-badge">${esc(t('threads.newCount').replace('{n}', th.unread))}</span>` : ''}
         </div>
       </div>`).join('');
   }).catch(()=>{});
@@ -460,14 +546,19 @@ function createThread(){
     })
     .catch(()=>{ alert(t('msg.connectionError')); });
 }
-function openThread(id){
+// postId — прокрутити до допису й підсвітити його (перехід зі сповіщення).
+function openThread(id, postId){
+  if(currentThreadId !== id){ _threadReplyTo = null; _renderReplyChip(); }
   currentThreadId = id;
+  _threadFocusPost = postId ?? null;
   chatTab = 'threads';
   if(!document.getElementById('page-chat').classList.contains('active')) showPage('chat');
   else loadThreadDetail();
 }
 function closeThreadDetail(){
   currentThreadId = null;
+  _threadData = null;
+  _threadReplyTo = null;
   document.getElementById('thread-detail-view').style.display = 'none';
   document.getElementById('threads-list-view').style.display = '';
   loadThreads();
@@ -476,7 +567,32 @@ function _canModerate(author){
   return !!currentUser?.isAdmin || (!!author && author.userId === currentUser?.userId);
 }
 function _deleteBtnHtml(onclick){
-  return `<button class="btn-icon-danger" onclick="event.stopPropagation();${onclick}" title="${t('modal.confirmDelete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg></button>`;
+  return `<button type="button" class="btn-icon-danger" onclick="event.stopPropagation();${onclick}" title="${t('modal.confirmDelete')}" aria-label="${t('modal.confirmDelete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg></button>`;
+}
+function _threadPostHtml(p, th){
+  const mine = !!p.author && p.author.userId === currentUser?.userId;
+  const op = !!th.author && p.author?.userId === th.author.userId;
+  const quote = p.replyTo ? `
+    <button type="button" class="thread-quote" onclick="scrollToThreadPost(${p.replyTo.postId})">
+      <span class="thread-quote-name"><svg class="icon"><use href="#icon-reply"/></svg>${esc(p.replyTo.author?.displayName || t('threads.deletedUser'))}</span>
+      <span class="thread-quote-text">${esc(p.replyTo.snippet)}</span>
+    </button>` : '';
+  return `
+    <article class="thread-post${mine ? ' mine' : ''}" id="thread-post-${p.id}">
+      ${avatarHtml(p.author?.avatarUrl, p.author?.displayName || '?', 'thread-avatar')}
+      <div class="thread-bubble">
+        <div class="thread-post-head">
+          <span class="thread-author">${_userLinkHtml(p.author)}${op ? `<span class="thread-op-badge">${esc(t('threads.authorBadge'))}</span>` : ''}</span>
+          ${timeHtml(p.createdAt, 'thread-time')}
+        </div>
+        ${quote}
+        <div class="thread-post-body">${esc(p.body)}</div>
+        <div class="thread-post-actions">
+          <button type="button" class="thread-action" onclick="startThreadReply(${p.id})"><svg class="icon"><use href="#icon-reply"/></svg>${esc(t('threads.replyBtn'))}</button>
+          ${_canModerate(p.author) ? _deleteBtnHtml(`deleteThreadPost(${p.id})`) : ''}
+        </div>
+      </div>
+    </article>`;
 }
 function loadThreadDetail(){
   const id = currentThreadId;
@@ -489,28 +605,79 @@ function loadThreadDetail(){
   fetch(`/api/threads/${id}`).then(r=>r.ok?r.json():null).then(th=>{
     if(currentThreadId !== id) return;
     if(!th){ closeThreadDetail(); return; }
+    _threadData = th;
     document.getElementById('thread-detail-title').textContent = th.title;
-    document.getElementById('thread-detail-meta').innerHTML = `${_userLinkHtml(th.author)} · ${esc(th.createdAt)}`;
+    document.getElementById('thread-detail-meta').innerHTML =
+      `${avatarHtml(th.author?.avatarUrl, th.author?.displayName || '?', 'thread-avatar sm')}<span class="thread-author-text">${_userLinkHtml(th.author)}${timeHtml(th.createdAt, 'thread-time')}</span>`;
     document.getElementById('thread-detail-body').textContent = th.body;
-    document.getElementById('thread-detail-actions').innerHTML = _canModerate(th.author) ? _deleteBtnHtml(`deleteThread(${th.id})`) : '';
-    document.getElementById('thread-posts').innerHTML = th.posts.map(p=>`
-      <div class="thread-post">
-        <div class="thread-post-head"><div class="thread-post-meta">${_userLinkHtml(p.author)} · ${esc(p.createdAt)}</div>${_canModerate(p.author) ? _deleteBtnHtml(`deleteThreadPost(${p.id})`) : ''}</div>
-        <div class="thread-post-body">${esc(p.body)}</div>
-      </div>`).join('');
+    document.getElementById('thread-detail-actions').innerHTML =
+      (authed ? `<button type="button" class="thread-follow${th.isFollowing ? ' on' : ''}" aria-pressed="${!!th.isFollowing}" onclick="toggleThreadFollow()" title="${esc(t('threads.followHint'))}"><svg class="icon"><use href="#icon-bell"/></svg>${esc(t(th.isFollowing ? 'threads.following' : 'threads.follow'))}</button>` : '')
+      + (_canModerate(th.author) ? _deleteBtnHtml(`deleteThread(${th.id})`) : '');
+    document.getElementById('thread-replies-title').textContent = th.posts.length
+      ? `${t('threads.repliesTitle')} · ${th.posts.length}` : t('threads.noReplies');
+    document.getElementById('thread-posts').innerHTML = th.posts.map(p => _threadPostHtml(p, th)).join('');
+    if(_threadFocusPost != null){ const pid = _threadFocusPost; _threadFocusPost = null; requestAnimationFrame(() => scrollToThreadPost(pid)); }
+    // Сервер позначив гілку прочитаною — оновлюємо дзвіночок.
+    if(authed) refreshNotifBadge();
   }).catch(()=>{});
 }
+function scrollToThreadPost(postId){
+  const el = document.getElementById(`thread-post-${postId}`);
+  if(!el) return;
+  el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  el.classList.remove('flash');
+  void el.offsetWidth; // перезапуск підсвітки
+  el.classList.add('flash');
+}
+function startThreadReply(postId){
+  if(!currentUser?.authenticated){ confirmLogin(); return; }
+  _threadReplyTo = _threadData?.posts.find(p => p.id === postId) || null;
+  _renderReplyChip();
+  document.getElementById('thread-reply-input').focus();
+}
+function cancelThreadReply(){ _threadReplyTo = null; _renderReplyChip(); }
+function _renderReplyChip(){
+  const chip = document.getElementById('thread-reply-chip');
+  const input = document.getElementById('thread-reply-input');
+  if(!chip || !input) return;
+  const p = _threadReplyTo;
+  chip.style.display = p ? '' : 'none';
+  chip.innerHTML = p ? `<svg class="icon"><use href="#icon-reply"/></svg><span><strong>${esc(p.author?.displayName || t('threads.deletedUser'))}</strong>: ${esc(p.body)}</span><button type="button" onclick="cancelThreadReply()" aria-label="${esc(t('modal.cancel'))}">×</button>` : '';
+  input.placeholder = p ? t('notif.thread.replyTo').replace('{name}', p.author?.displayName || '…') : t('threads.replyPlaceholder');
+}
+function onThreadReplyKeydown(e){
+  if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); replyToThread(); }
+  else if(e.key === 'Escape' && _threadReplyTo){ e.preventDefault(); cancelThreadReply(); }
+}
+// Поле росте з текстом (до межі в CSS), а не прокручується в трьох рядках.
+function _autoGrow(el){ el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
 function replyToThread(){
   const input = document.getElementById('thread-reply-input');
   const body = input.value.trim();
   if(!body || currentThreadId == null) return;
-  fetch(`/api/threads/${currentThreadId}/posts`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body }) })
-    .then(r=>{
-      if(!r.ok){ alert(t('msg.connectionError')); return; }
+  const btn = document.getElementById('thread-send-btn');
+  btn.disabled = true;
+  fetch(`/api/threads/${currentThreadId}/posts`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body, replyToPostId: _threadReplyTo?.id ?? null }) })
+    .then(r=>r.ok?r.json():null)
+    .then(post=>{
+      if(!post){ alert(t('msg.connectionError')); return; }
       input.value = '';
+      _autoGrow(input);
+      _threadReplyTo = null;
+      _renderReplyChip();
+      _threadFocusPost = post.id;
       loadThreadDetail();
     })
-    .catch(()=>{ alert(t('msg.connectionError')); });
+    .catch(()=>{ alert(t('msg.connectionError')); })
+    .finally(()=>{ btn.disabled = false; });
+}
+function toggleThreadFollow(){
+  const th = _threadData;
+  if(!th) return;
+  const next = !th.isFollowing;
+  fetch(`/api/threads/${th.id}/follow`, { method: next ? 'POST' : 'DELETE' })
+    .then(r => { if(r.ok){ th.isFollowing = next; loadThreadDetail(); } else alert(t('msg.connectionError')); })
+    .catch(() => alert(t('msg.connectionError')));
 }
 async function deleteThread(id){
   if(!await confirmModal({ title: t('modal.deleteShortTitle'), text: t('threads.confirmDeleteThread'), confirmLabel: t('modal.confirmDelete') })) return;

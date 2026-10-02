@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <title id="page-title">N'Owl</title>
 <meta name="description" content="N'Owl — музична база з пошуком, плейлистами, рекомендаціями та іграми (колесо фортуни, батл рояль) для спільноти меломанів.">
 <meta name="theme-color" content="#090c14">
@@ -62,6 +62,7 @@
 <link rel="stylesheet" href="/css/responsive.css">
 <link rel="stylesheet" href="/css/features.css">
 <link rel="stylesheet" href="/css/mobile-app.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" data-i18n="a11y.skip">Перейти до вмісту</a>
@@ -121,6 +122,11 @@
   <symbol id="icon-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
   <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></symbol>
   <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="icon-tag" viewBox="0 0 24 24"><path d="M3 12.6V4a1 1 0 0 1 1-1h8.6a1 1 0 0 1 .7.3l7.4 7.4a1 1 0 0 1 0 1.4l-8.6 8.6a1 1 0 0 1-1.4 0L3.3 13.3a1 1 0 0 1-.3-.7z"/><circle cx="7.5" cy="7.5" r="1.4"/></symbol>
+  <symbol id="icon-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
+  <symbol id="icon-reply" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></symbol>
   <symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.7 3.5 2.8 3.5 5.7"/></symbol>
   <symbol id="icon-star" viewBox="0 0 24 24"><polygon points="12 3 14.8 8.9 21 9.6 16.4 13.9 17.6 20.1 12 17 6.4 20.1 7.6 13.9 3 9.6 9.2 8.9 12 3"/></symbol>
   <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V4"/><polyline points="7 8 12 3 17 8"/><path d="M4 19h16"/></symbol>
@@ -313,7 +319,7 @@
 <div id="page-admin-hub" class="page">
   <div class="container">
     <h2><span data-i18n="adminHub.heading.pre">Адмін</span> <span class="hl" data-i18n="adminHub.heading.accent">панель</span></h2>
-    <div class="filter-bar" style="margin-bottom:1.5rem;">
+    <div class="filter-bar admin-hub-tabs" style="margin-bottom:1.5rem;">
       <button type="button" class="btn btn-outline active" id="admin-hub-tab-requests" onclick="switchAdminHubTab('requests')" data-i18n="adminHub.requestsTab">Запити</button>
       <button type="button" class="btn btn-outline" id="admin-hub-tab-add" onclick="switchAdminHubTab('add')" data-i18n="adminHub.addTab">Додати пісню</button>
       <button type="button" class="btn btn-outline" id="admin-hub-tab-bugs" onclick="switchAdminHubTab('bugs')"><span data-i18n="adminHub.bugsTab">Баг-репорти</span> <span class="count-badge" id="admin-bugs-badge" style="display:none;"></span></button>
@@ -459,6 +465,8 @@
         <button type="button" class="btn btn-outline" id="profile-history-play" onclick="playProfileHistory(0)"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="artist.playAll">Слухати</span></button>
       </div>
       <div id="profile-history-list" class="profile-history-list"></div>
+      <!-- У профілі — 5 останніх; уся історія (їх бувають сотні) — окремим вікном, щоб сторінка не тягнулась нескінченно. -->
+      <button type="button" class="btn btn-outline profile-history-all" id="profile-history-all" style="display:none;" onclick="openHistoryModal()"></button>
     </section>
 
     <section class="profile-section" id="profile-favorites-section">
@@ -558,6 +566,8 @@
             <div id="wheel-result-genre" class="wheel-result-genre"></div>
           </div>
         </div>
+        <!-- Телефон: як у застосунку — «Крутити» під колесом, під великим пальцем. -->
+        <button type="button" class="wheel-spin-btn m-only" id="wheel-spin-btn-m" onclick="spinWheel()" data-i18n="wheel.spinBtn">Крутити</button>
       </div>
       <div class="wheel-col wheel-playlist-col">
         <div class="wheel-params-card">
@@ -573,16 +583,16 @@
           <div class="wheel-duration-row" id="wheel-count-row">
             <span data-i18n="wheel.countLabel">Кількість жанрів на колесі:</span>
             <span class="wheel-input-group">
-              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); onWheelCountChange();">
+              <span class="num-stepper"><button type="button" class="num-step" aria-label="−" onpointerdown="startWheelStep(event, 'wheel-count', -1)">−</button><input enterkeyhint="done" type="text" inputmode="numeric" class="wheel-num-input" id="wheel-count" min="2" max="2" value="2" oninput="onWheelCountChange()" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); onWheelCountChange();"><button type="button" class="num-step" aria-label="+" onpointerdown="startWheelStep(event, 'wheel-count', 1)">+</button></span>
               <span id="wheel-count-max" class="wheel-count-max"></span>
             </span>
           </div>
           <div class="wheel-duration-row">
             <span data-i18n="wheel.durationLabel">Тривалість прокрутки, сек:</span>
             <span class="wheel-input-group">
-              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); _syncWheelSecRange(this)">
+              <span class="num-stepper"><button type="button" class="num-step" aria-label="−" onpointerdown="startWheelStep(event, 'wheel-sec-min', -1)">−</button><input enterkeyhint="done" type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-min" min="1" max="99" value="3" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); _syncWheelSecRange(this)"><button type="button" class="num-step" aria-label="+" onpointerdown="startWheelStep(event, 'wheel-sec-min', 1)">+</button></span>
               <span data-i18n="wheel.durationTo">—</span>
-              <input type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); _syncWheelSecRange(this)">
+              <span class="num-stepper"><button type="button" class="num-step" aria-label="−" onpointerdown="startWheelStep(event, 'wheel-sec-max', -1)">−</button><input enterkeyhint="done" type="text" inputmode="numeric" class="wheel-num-input" id="wheel-sec-max" min="1" max="99" value="6" oninput="_clampWheelSecInput(this)" onfocus="this.select()" onblur="_restoreIntInputIfEmpty(this); _syncWheelSecRange(this)"><button type="button" class="num-step" aria-label="+" onpointerdown="startWheelStep(event, 'wheel-sec-max', 1)">+</button></span>
             </span>
           </div>
           <div class="wheel-actions">
@@ -693,7 +703,16 @@
             <div class="artist-albums" id="artist-albums"></div>
           </section>
           <section class="artist-section">
-            <h3 data-i18n="artist.discography">Дискографія</h3>
+            <div class="artist-disco-head">
+              <h3 data-i18n="artist.discography">Дискографія</h3>
+              <span class="artist-disco-count" id="artist-disco-count"></span>
+            </div>
+            <!-- Пошук у дискографії: назва, альбом, жанр, рік, співвиконавець — кілька слів через пробіл. -->
+            <label class="artist-disco-search" id="artist-disco-search">
+              <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+              <input type="search" id="artist-songs-search" name="artist-songs-search" autocomplete="off" spellcheck="false" enterkeyhint="search"
+                data-i18n-placeholder="artist.searchSongs" placeholder="Пошук у дискографії…" data-i18n-aria="artist.searchSongs" aria-label="Пошук у дискографії…" oninput="onArtistSongsSearch()">
+            </label>
             <div class="table-wrap mobile-cards">
               <table>
                 <thead><tr><th style="width:50px"></th><th data-i18n="table.artist">Виконавець</th><th data-i18n="table.title">Назва</th><th data-i18n="table.genres">Жанри</th></tr></thead>
@@ -913,13 +932,15 @@
             <div class="setting-label" data-i18n="settings.columns">Колонки</div>
             <div class="setting-hint" data-i18n="settings.columns.hint">Що показувати в головній таблиці. Виконавець і назва — завжди.</div>
           </div>
+          <!-- Як виглядатиме шапка таблиці: виконавець і назва — завжди, далі — увімкнені колонки. -->
+          <div class="cols-preview" id="pref-columns-preview" aria-hidden="true"></div>
           <div class="chip-toggles" id="pref-columns">
-            <button type="button" data-col="release" data-i18n="table.release">Дата релізу</button>
-            <button type="button" data-col="duration" data-i18n="table.duration">Тривалість</button>
-            <button type="button" data-col="genres" data-i18n="table.genres">Жанри</button>
-            <button type="button" data-col="album" data-i18n="table.album">Альбом</button>
-            <button type="button" data-col="plays" data-i18n="table.plays">Прослух.</button>
-            <button type="button" data-col="rating" data-i18n="table.rating">Оцінка</button>
+            <button type="button" data-col="release" role="switch" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#icon-calendar"/></svg><span data-i18n="table.release">Дата релізу</span><span class="chip-check" aria-hidden="true"></span></button>
+            <button type="button" data-col="duration" role="switch" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#icon-clock"/></svg><span data-i18n="table.duration">Тривалість</span><span class="chip-check" aria-hidden="true"></span></button>
+            <button type="button" data-col="genres" role="switch" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#icon-tag"/></svg><span data-i18n="table.genres">Жанри</span><span class="chip-check" aria-hidden="true"></span></button>
+            <button type="button" data-col="album" role="switch" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#icon-disc"/></svg><span data-i18n="table.album">Альбом</span><span class="chip-check" aria-hidden="true"></span></button>
+            <button type="button" data-col="plays" role="switch" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#icon-headphones"/></svg><span data-i18n="table.plays">Прослух.</span><span class="chip-check" aria-hidden="true"></span></button>
+            <button type="button" data-col="rating" role="switch" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#icon-star"/></svg><span data-i18n="table.rating">Оцінка</span><span class="chip-check" aria-hidden="true"></span></button>
           </div>
         </div>
       </section>
@@ -1122,17 +1143,22 @@
         <div id="threads-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
       </div>
       <div id="thread-detail-view" style="display:none;">
-        <button class="btn btn-outline" onclick="closeThreadDetail()" style="margin-bottom:1rem;"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="threads.back">До всіх обговорень</span></button>
-        <div class="thread-post thread-op">
-          <div class="thread-post-head"><h3 id="thread-detail-title" style="margin:0;font-size:1.25rem;"></h3><span id="thread-detail-actions"></span></div>
-          <div class="thread-post-meta" id="thread-detail-meta"></div>
+        <button type="button" class="btn btn-ghost thread-back" onclick="closeThreadDetail()"><svg class="icon"><use href="#icon-arrow-left"/></svg> <span data-i18n="threads.back">До всіх обговорень</span></button>
+        <article class="thread-op">
+          <h3 id="thread-detail-title"></h3>
+          <div class="thread-op-meta"><div id="thread-detail-meta" class="thread-author"></div><div id="thread-detail-actions" class="thread-op-actions"></div></div>
           <div class="thread-post-body" id="thread-detail-body"></div>
-        </div>
-        <div id="thread-posts" style="display:flex;flex-direction:column;gap:0.6rem;margin:1rem 0;"></div>
-        <div id="thread-reply-login-hint" class="hint" style="display:none;" data-i18n="threads.loginToReply">Увійдіть, щоб відповісти</div>
-        <div class="chat-input-row" id="thread-reply-row">
-          <textarea id="thread-reply-input" rows="3" maxlength="10000" data-i18n-placeholder="threads.replyPlaceholder" placeholder="Ваша відповідь…"></textarea>
-          <button class="btn btn-primary" onclick="replyToThread()" data-i18n="threads.replyBtn">Відповісти</button>
+        </article>
+        <div class="thread-replies-title" id="thread-replies-title"></div>
+        <div id="thread-posts" class="thread-posts"></div>
+        <div id="thread-reply-login-hint" class="thread-login-hint" style="display:none;"><button type="button" class="btn btn-outline" onclick="confirmLogin()" data-i18n="threads.loginToReply">Увійдіть, щоб відповісти</button></div>
+        <!-- Поле відповіді закріплене внизу екрана (над плеєром), а не загублене під довгою гілкою. -->
+        <div class="thread-composer" id="thread-reply-row">
+          <div class="thread-reply-chip" id="thread-reply-chip" style="display:none;"></div>
+          <div class="thread-composer-row">
+            <textarea id="thread-reply-input" rows="1" maxlength="10000" data-i18n-placeholder="threads.replyPlaceholder" placeholder="Ваша відповідь…" onkeydown="onThreadReplyKeydown(event)" oninput="_autoGrow(this)"></textarea>
+            <button type="button" class="btn btn-primary thread-send" id="thread-send-btn" onclick="replyToThread()" data-i18n-title="threads.sendHint" title="Ctrl+Enter"><svg class="icon"><use href="#icon-send"/></svg><span data-i18n="threads.replyBtn">Відповісти</span></button>
+          </div>
         </div>
       </div>
     </div>
@@ -1260,6 +1286,40 @@
 </div>
 
 <!-- АЛЬБОМ (сторінка виконавця): обкладинка, рік, пісні — подивитись перед тим, як слухати -->
+<!-- Переглядач вкладень (фото, відео, PDF, текст) — замість нової вкладки. -->
+<div class="media-viewer" id="media-viewer" hidden role="dialog" aria-modal="true" aria-label="Перегляд файлу" data-i18n-aria="chat.viewer">
+  <div class="mv-top">
+    <span class="mv-count" id="mv-count"></span>
+    <span class="mv-name" id="mv-name"></span>
+    <button type="button" class="mv-btn" id="mv-zoom" onclick="mediaViewerToggleZoom()" aria-pressed="false" aria-label="Наблизити" data-i18n-aria="chat.zoom" title="Наблизити" data-i18n-title="chat.zoom"><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg></button>
+    <a class="mv-btn" id="mv-download" href="#" download aria-label="Завантажити" data-i18n-aria="player.download" title="Завантажити" data-i18n-title="player.download"><svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg></a>
+    <button type="button" class="mv-btn" id="mv-close" onclick="closeMediaViewer()" aria-label="Закрити" data-i18n-aria="player.close"><svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg></button>
+  </div>
+  <div class="mv-stage" id="mv-stage"></div>
+  <button type="button" class="mv-nav prev" onclick="mediaViewerStep(-1)" aria-label="Попереднє" data-i18n-aria="chat.prevMedia"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"/></svg></button>
+  <button type="button" class="mv-nav next" onclick="mediaViewerStep(1)" aria-label="Наступне" data-i18n-aria="chat.nextMedia"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-right"/></svg></button>
+</div>
+
+<!-- Уся історія прослуховувань: групи за днями, пошук, довантаження під час прокрутки. -->
+<div class="modal-overlay" id="history-modal-overlay" onclick="if(event.target===this)closeHistoryModal()">
+  <div class="modal-box history-box" role="dialog" aria-modal="true" aria-labelledby="history-title">
+    <div class="history-head">
+      <div><h3 id="history-title" data-i18n="history.title">Історія прослуховувань</h3><span class="hint" id="history-total"></span></div>
+      <button type="button" class="history-close" onclick="closeHistoryModal()" aria-label="Закрити" data-i18n-aria="player.close">×</button>
+    </div>
+    <label class="artist-disco-search">
+      <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+      <input type="search" id="history-search" name="history-search" autocomplete="off" spellcheck="false" enterkeyhint="search"
+        data-i18n-placeholder="history.search" placeholder="Пошук в історії…" data-i18n-aria="history.search" aria-label="Пошук в історії…" oninput="renderHistoryModal()">
+    </label>
+    <div class="history-actions">
+      <button type="button" class="btn btn-primary" onclick="playHistoryAll()"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="artist.playAll">Слухати</span></button>
+      <button type="button" class="btn btn-outline" onclick="queueHistoryAll()"><svg class="icon"><use href="#icon-queue"/></svg> <span data-i18n="history.queueAll">У чергу</span></button>
+    </div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="album-modal-overlay" onclick="if(event.target===this)closeAlbumModal()">
   <div class="modal-box album-box">
     <div class="album-head">
@@ -1869,18 +1929,19 @@
         <div class="graph-search-results" id="graph-search-results"></div>
       </div>
       <button type="button" class="btn btn-outline graph-back-btn" id="graph-back-btn" style="display:none;" onclick="openSimilarityGraph('songs')" data-i18n="graph.allSongs">← Усі пісні</button>
-      <button class="battle-close-btn" onclick="closeGraph()"><svg class="icon"><use href="#icon-x"/></svg></button>
+      <button type="button" class="battle-close-btn" onclick="closeGraph()" aria-label="Закрити" data-i18n-aria="player.close"><svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg></button>
     </div>
     <div id="graph-loading" class="graph-loading" data-i18n="graph.loading">Обчислюємо розташування…</div>
     <div class="graph-canvas-wrap" id="graph-canvas-wrap">
       <canvas id="graph-canvas" class="graph-svg"></canvas>
       <div id="graph-tooltip" class="graph-tooltip"></div>
       <div class="graph-zoom-controls">
-        <button type="button" onclick="_graphZoomBy(1.3)" title="+">+</button>
-        <button type="button" onclick="_graphZoomBy(1/1.3)" title="−">−</button>
-        <button type="button" onclick="_graphResetView()" title="⟲">⟲</button>
+        <button type="button" onclick="_graphZoomBy(1.3)" title="+" aria-label="+">+</button>
+        <button type="button" onclick="_graphZoomBy(1/1.3)" title="−" aria-label="−">−</button>
+        <button type="button" onclick="_graphResetView()" title="1:1" aria-label="1:1">⟲</button>
       </div>
     </div>
+    <div class="graph-legend" id="graph-legend"></div>
     <div class="graph-hint" data-i18n="graph.hint">Чим ближче — тим більше схожі. Клік по вузлу — відтворити/перейти. Коліщатко/перетягування — масштаб і зсув.</div>
   </div>
 </div>
@@ -1912,6 +1973,7 @@
 <script defer src="/js/bug-reports.js"></script>
 <script defer src="/js/corrections.js"></script>
 <script defer src="/js/chat.js"></script>
+<script defer src="/js/media-viewer.js"></script>
 <script defer src="/js/ratings.js"></script>
 <script defer src="/js/nav-search.js"></script>
 <script defer src="/js/realtime.js"></script>

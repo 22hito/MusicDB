@@ -165,6 +165,8 @@ function applyPrefs(){
   setAttr('data-contrast', PREFS.highContrast ? 'high' : null);
   setAttr('data-glow-follow', PREFS.glowFollow ? '' : null);
   setAttr('data-hide-cols', PREFS.hiddenCols?.length ? PREFS.hiddenCols.join(' ') : null);
+  // Службові рядки таблиці охоплюють лише видимі колонки (див. _songsColspan).
+  if(typeof _songsColspan === 'function'){ const n = _songsColspan(); document.querySelectorAll('#songs-table td[colspan]').forEach(td => { td.colSpan = n; }); }
   if(PREFS.uiScale !== 100) root.style.setProperty('--ui-scale', PREFS.uiScale / 100);
   else root.style.removeProperty('--ui-scale');
   setAttr('data-auto-scale', PREFS.autoScale ? null : 'off');
@@ -199,11 +201,15 @@ function syncSettingsUI(){
   const page = document.getElementById('page-settings');
   if(!page) return;
   const values = { ...PREFS, theme: localStorage.getItem('theme') || 'dark', lang: currentLang };
+  const preview = [`<span class="locked">${esc(t('table.artist'))}</span>`, `<span class="locked wide">${esc(t('table.title'))}</span>`];
   page.querySelectorAll('#pref-columns [data-col]').forEach(b => {
     const on = !(PREFS.hiddenCols || []).includes(b.dataset.col);
     b.classList.toggle('active', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+    if(on) preview.push(`<span>${esc(b.textContent.trim())}</span>`);
   });
+  const pv = document.getElementById('pref-columns-preview');
+  if(pv) pv.innerHTML = preview.join('');
   page.querySelectorAll('[data-pref]').forEach(el => {
     const key = el.getAttribute('data-pref');
     const val = values[key];

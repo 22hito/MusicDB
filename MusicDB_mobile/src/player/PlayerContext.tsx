@@ -134,7 +134,10 @@ interface PlayerState {
   volume: number;
   videoPopupOpen: boolean;
   isOpen: boolean;
-  playFrom: (list: Song[], songId: number) => void;
+  // startAt — з якої секунди почати (батл: повернулись до пісні — грає далі, а не спочатку).
+  playFrom: (list: Song[], songId: number, opts?: { startAt?: number }) => void;
+  // Поточна позиція без підписки на щотиковий прогрес (для збереження місця перед перемиканням).
+  getPosition: () => PlayerProgress;
   // Черга — як на сайті: "Моя черга" грає перед рештою списку й не губиться при playFrom.
   userQueue: Song[];
   addToQueue: (song: Song, playNext?: boolean) => void;
@@ -222,6 +225,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Для колбеків ("назад" з початку пісні, перемикання відео↔аудіо) — щоб вони не мінялись щотику.
   const currentTimeRef = useRef(0);
   currentTimeRef.current = currentTime;
+  const durationRef = useRef(0);
+  durationRef.current = duration;
+  // Позиція для наступного завантаження (playFrom з startAt) і відкладений перехід для нативного
+  // плеєра — до завантаження файлу seekTo нічого не робить, тож переходимо з першим статусом isLoaded.
+  const startAtRef = useRef<number | null>(null);
+  const pendingSeekRef = useRef<number | null>(null);
   const [shuffle, setShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
   const [volume, setVolumeState] = useState(80);
@@ -263,6 +272,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const _loadCurrent = useCallback(
     async (song: Song) => {
       const mySeq = ++requestSeqRef.current;
+      const startAt = startAtRef.current;
+      startAtRef.current = null;
+      pendingSeekRef.current = null;
       listenLoggedRef.current = false;
       setVideoId(null);
       setVideoNotFound(false);
@@ -277,6 +289,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         postCommand({ cmd: 'stop' }); // YouTube у WebView — замовкає
         native.replace({ uri: `${apiBase}${song.audioUrl}` });
         native.volume = volume / 100;
+        pendingSeekRef.current = startAt;
         native.play();
         showOnLockScreen(native, song);
         return;
@@ -306,7 +319,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setVideoId(vid);
-      postCommand({ cmd: 'load', videoId: vid, autoplay: true });
+      postCommand({ cmd: 'load', videoId: vid, autoplay: true, ...(startAt ? { startSeconds: startAt } : null) });
     },
     [ytApiKeys, api, postCommand, apiBase, volume],
   );
@@ -319,8 +332,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [current?.id, pageReady]);
 
   const playFrom = useCallback(
-    (list: Song[], songId: number) => {
+    (list: Song[], songId: number, opts?: { startAt?: number }) => {
       const idx = Math.max(0, list.findIndex((s) => s.id === songId));
+      startAtRef.current = opts?.startAt && opts.startAt > 1 ? opts.startAt : null;
       if (shuffle && list.length > 1) {
         unshuffledRef.current = list;
         setQueue([list[idx], ...shuffled(list.filter((_, i) => i !== idx))]);
@@ -536,10 +550,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (isNative()) nativeRef.current!.pause();
     else postCommand({ cmd: 'pause' });
   }, [postCommand]);
+  const getPosition = useCallback((): PlayerProgress => ({ currentTime: currentTimeRef.current, duration: durationRef.current }), []);
 
   // Оновлюємо обробник щорендеру (актуальні repeat/next/current), підписка — одна.
   nativeStatusRef.current = (st: AudioStatus) => {
     if (modeRef.current !== 'native') return;
+    const seekTo = pendingSeekRef.current;
+    if (seekTo != null && st.isLoaded && st.duration > 0) {
+      pendingSeekRef.current = null;
+      if (seekTo < st.duration - 2) nativeRef.current?.seekTo(seekTo).catch(() => {});
+    }
     setCurrentTime(st.currentTime || 0);
     setDuration(st.duration || 0);
     if (st.didJustFinish) {
@@ -630,6 +650,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       videoPopupOpen,
       isOpen,
       playFrom,
+      getPosition,
       userQueue,
       addToQueue,
       addManyToQueue,
@@ -669,6 +690,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       videoPopupOpen,
       isOpen,
       playFrom,
+      getPosition,
       userQueue,
       addToQueue,
       addManyToQueue,

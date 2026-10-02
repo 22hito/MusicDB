@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.RateLimiting;
@@ -215,8 +215,9 @@ app.Use(async (ctx, next) =>
         "font-src 'self'; " +
         // blob: — прев'ю скріншотів у формі баг-репорту; R2 — самі скріншоти в адмінці; dzcdn — обкладинки альбомів.
         $"img-src 'self' data: blob: https://img.youtube.com https://*.ytimg.com https://*.googleusercontent.com https://cdn-images.dzcdn.net{r2MediaSources}; " +
-        "connect-src 'self' https://www.googleapis.com https://www.youtube.com; " +
-        "frame-src https://www.youtube.com; " +
+        // R2 у connect-src — текст вкладення читається fetch-ем для перегляду; у frame-src — PDF у переглядачі.
+        $"connect-src 'self' https://www.googleapis.com https://www.youtube.com{r2MediaSources}; " +
+        $"frame-src 'self' https://www.youtube.com{r2MediaSources}; " +
         // data: — беззвучний data:audio/wav-якір (#ms-anchor), що утримує media
         // session на нашій сторінці, а не на чужому youtube.com iframe; без
         // data: тут CSP блокував саме його завантаження.

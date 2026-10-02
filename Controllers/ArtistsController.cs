@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,23 +28,41 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
     // Каталог виконавців — публічний, як і сам список пісень. Увесь (їх тисячі, а не сотні — інакше сортування
     // за алфавітом показувало б лише перших за кількістю пісень); клієнт малює порціями.
     // sort: songs (типово) | name | name_desc | plays (унікальні слухачі пісень) | followers | new (нові в каталозі).
+    // Лічильники — трьома згрупованими запитами (а не підзапитом на кожного з тисяч виконавців,
+    // що сканував усю історію прослуховувань для кожного), і в кеші: пошук і сортування — у пам'яті.
+    private sealed record ArtistRow(int Id, string Name, string? ImageUrl, DateTime CreatedAt, int SongCount, int Followers, int Plays);
+
+    private Task<List<ArtistRow>> ArtistRowsAsync() => catalogCache.GetOrCreateAsync("artists-all", async () =>
+    {
+        var songCounts = await db.MusicArtists.GroupBy(ma => ma.ArtistId)
+            .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
+        var followers = await db.ArtistFollows.GroupBy(f => f.ArtistId)
+            .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
+        var plays = await (
+            from h in db.ListeningHistory
+            join ma in db.MusicArtists on h.MusicId equals ma.MusicId
+            group h by ma.ArtistId into g
+            select new { g.Key, Count = g.Count() }
+        ).ToDictionaryAsync(x => x.Key, x => x.Count);
+        var artists = await db.Artists.AsNoTracking()
+            .Select(a => new { a.Id, a.Name, a.ImageUrl, a.CreatedAt }).ToListAsync();
+        return artists
+            .Where(a => songCounts.ContainsKey(a.Id))
+            .Select(a => new ArtistRow(a.Id, a.Name, a.ImageUrl, a.CreatedAt, songCounts[a.Id],
+                followers.GetValueOrDefault(a.Id), plays.GetValueOrDefault(a.Id)))
+            .ToList();
+    }, TimeSpan.FromMinutes(2));
+
     [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<List<ArtistSummaryDto>>> GetAll([FromQuery] string? q, [FromQuery] string? sort)
     {
-        var query = db.Artists.AsNoTracking().Where(a => a.MusicArtists.Any());
+        IEnumerable<ArtistRow> artists = await ArtistRowsAsync();
         if (!string.IsNullOrWhiteSpace(q))
-            query = query.Where(a => EF.Functions.ILike(a.Name, $"%{q.Trim()}%"));
-
-        var artists = await query
-            .Select(a => new
-            {
-                a.Id, a.Name, a.ImageUrl, a.CreatedAt,
-                SongCount = a.MusicArtists.Count,
-                Followers = db.ArtistFollows.Count(f => f.ArtistId == a.Id),
-                Plays = db.ListeningHistory.Count(h => a.MusicArtists.Any(ma => ma.MusicId == h.MusicId)),
-            })
-            .ToListAsync();
+        {
+            var needle = q.Trim();
+            artists = artists.Where(a => a.Name.Contains(needle, StringComparison.OrdinalIgnoreCase));
+        }
 
         var ordered = (sort ?? "").ToLowerInvariant() switch
         {
@@ -122,6 +140,7 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
         artist.ImageUrl = name;
         await db.SaveChangesAsync();
         await storage.DeleteAsync(old);
+        catalogCache.Remove("artists-all");
         return await GetById(id);
     }
 
@@ -135,6 +154,7 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
         artist.ImageUrl = null;
         await db.SaveChangesAsync();
         await storage.DeleteAsync(old);
+        catalogCache.Remove("artists-all");
         return await GetById(id);
     }
 
@@ -204,6 +224,7 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
         {
             db.ArtistFollows.Add(new ArtistFollow { ArtistId = id, UserId = userId });
             await db.SaveChangesAsync();
+            catalogCache.Remove("artists-all");
         }
         return Ok();
     }
@@ -218,6 +239,7 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
         {
             db.ArtistFollows.Remove(follow);
             await db.SaveChangesAsync();
+            catalogCache.Remove("artists-all");
         }
         return NoContent();
     }

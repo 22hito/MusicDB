@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSettings } from '@/state/SettingsContext';
 import { FONT_SERIF_BOLD } from '@/constants/theme';
 
@@ -16,7 +17,17 @@ export function ArtistAvatar({ name, imageUrl, size = 40 }: { name: string; imag
   const { theme } = useSettings();
   const abs = useAbsoluteUrl()(imageUrl);
   if (abs) {
-    return <Image source={{ uri: abs }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.surface2 }} />;
+    // expo-image: кеш на диску й у пам'яті, recyclingKey — у віртуалізованому списку не блимає чуже фото.
+    return (
+      <Image
+        source={{ uri: abs }}
+        recyclingKey={abs}
+        cachePolicy="memory-disk"
+        transition={120}
+        contentFit="cover"
+        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.surface2 }}
+      />
+    );
   }
   let h = 0;
   for (const ch of name) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0;

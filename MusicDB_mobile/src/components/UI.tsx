@@ -2,6 +2,7 @@ import React from 'react';
 import {
   ActivityIndicator,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -81,12 +82,20 @@ export function Button({
     </Text>
   );
 
+  // Відгук — у мить дотику (стиснення 0.97), а не після відпускання: так кнопка відчувається «живою».
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.8}
-      style={[styles.btn, small && styles.btnSmall, { backgroundColor: bg, borderColor, opacity: disabled ? 0.5 : 1 }, variant === 'primary' && styles.btnPrimary, style]}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!(disabled || loading) }}
+      style={({ pressed }) => [
+        styles.btn,
+        small && styles.btnSmall,
+        { backgroundColor: bg, borderColor, opacity: disabled ? 0.5 : pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        variant === 'primary' && styles.btnPrimary,
+        style,
+      ]}
     >
       {/* Основна кнопка — градієнт --accent-grad (hi → accent → lo), як "Увійти через Google". */}
       {variant === 'primary' ? (
@@ -99,7 +108,7 @@ export function Button({
         />
       ) : null}
       {content}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -225,8 +234,10 @@ export function avatarInitials(name: string | null | undefined) {
 
 // Кругла аватарка користувача: фото або ініціали (name); без імені — силует.
 export function Avatar({ url, size = 40, name }: { url: string | null | undefined; size?: number; name?: string | null }) {
-  const { theme } = useSettings();
-  if (url) return <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
+  const { theme, apiBase } = useSettings();
+  // Своя аватарка в посиланнях на автора — відносна адреса /api/users/{id}/avatar (див. UserDirectoryService.AvatarLink).
+  const src = url?.startsWith('/') ? `${apiBase}${url}` : url;
+  if (src) return <Image source={{ uri: src }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.surface2 }} />;
   return (
     <View
       style={{
@@ -258,7 +269,77 @@ export function SectionTitle({ label, right }: { label: string; right?: React.Re
   );
 }
 
+// Плитки рівної ширини, що лягають сіткою «як цеглинки» (тема, стартова вкладка, мова, вкладки адмінки) —
+// на відміну від SegmentedPicker не переносяться рваним рядком. columns — скільки в рядку.
+export function TileGrid<T extends string>({
+  options,
+  value,
+  onChange,
+  columns,
+  compact,
+}: {
+  options: { value: T; label: string; icon?: (color: string) => React.ReactNode; preview?: React.ReactNode; badge?: number }[];
+  value: T;
+  onChange: (value: T) => void;
+  columns: number;
+  compact?: boolean; // іконка поруч із підписом, нижча плитка (вкладки адмінки)
+}) {
+  const { theme } = useSettings();
+  return (
+    <View style={styles.tiles} accessibilityRole="radiogroup">
+      {options.map((opt) => {
+        const active = opt.value === value;
+        const color = active ? theme.accent : theme.text2;
+        return (
+          <View key={opt.value} style={{ width: `${100 / columns}%`, padding: 4 }}>
+          <Pressable
+            onPress={() => onChange(opt.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active }}
+            style={({ pressed }) => [
+              styles.tile,
+              compact && styles.tileCompact,
+              {
+                borderColor: active ? theme.accent : theme.border,
+                backgroundColor: active ? `${theme.accent}1c` : theme.surface2,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+          >
+            {opt.preview ?? (opt.icon ? opt.icon(color) : null)}
+            <Text numberOfLines={1} style={[styles.tileText, { color: active ? theme.text : theme.text2 }]}>
+              {opt.label}
+            </Text>
+            {opt.badge ? (
+              <View style={[styles.tileBadge, { backgroundColor: theme.accent }]}>
+                <Text style={[styles.segmentBadgeText, { color: theme.onAccent }]}>{opt.badge > 99 ? '99+' : opt.badge}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  // Сітка плиток: від'ємні поля + внутрішній відступ = однакові проміжки між плитками.
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', margin: -4 },
+  tile: {
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    flexGrow: 1,
+    minHeight: 72,
+  },
+  tileCompact: { flexDirection: 'row', minHeight: 48, paddingVertical: 10, gap: 8 },
+  tileText: { fontSize: 13, fontFamily: FONT_SANS_SEMIBOLD, flexShrink: 1 },
+  tileBadge: { position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
   card: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,

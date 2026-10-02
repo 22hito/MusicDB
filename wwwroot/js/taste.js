@@ -115,8 +115,7 @@ function tasteAddFriend(userId, btn){
 // 'people' — карта смаку: ви в центрі, люди на відстані за збігом (кола 75/50/25%),
 // поруч — ті, хто любить того самого виконавця; розмір — активність.
 // 'artists' — люди разом зі своїми топ-виконавцями; ви закріплені в центрі,
-// розмір виконавця — скільки людей його люблять, спільні з вами — золотий обідок.
-const TASTE_FRIEND_COLOR = '#4f8c6f', TASTE_ARTIST_COLOR = '#8a6fb0';
+// розмір виконавця — скільки людей його люблять, спільні з вами — обідок кольору акценту.
 const TASTE_R_MIN = 70, TASTE_R_MAX = 270;
 
 function _tasteRadius(score){ return TASTE_R_MIN + (1 - Math.max(0, Math.min(100, score)) / 100) * (TASTE_R_MAX - TASTE_R_MIN); }
@@ -135,8 +134,11 @@ function openTasteGraph(mode){
     ? `${p.displayName} (${t('taste.you')})`
     : `${p.displayName} — ${p.score}%${p.topArtists.length ? ' · ' + p.topArtists.map(a=>a.name).join(', ') : ''}`;
   const openPerson = p => { closeGraph(); if(p.isMe) showPage('profile'); else openUserProfilePage(p.userId); };
+  // Ролі (dataviz): ви — акцент, друзі — обідок слоту 3, виконавці — слот 1, ваші виконавці — обідок акценту.
+  const series = _graphSeries(), ME = _graphCss('--accent', '#c8a96e'), FRIEND = series[2], ARTIST = series[0];
   const marks = new Map();
-  people.forEach((p,i) => { if(p.relationshipStatus === 'friends') marks.set(i, TASTE_FRIEND_COLOR); });
+  people.forEach((p,i) => { if(p.relationshipStatus === 'friends') marks.set(i, FRIEND); });
+  const legendBase = [{ color: ME, label: t('graph.legend.you') }, { color: FRIEND, label: t('graph.legend.friends'), ring: true }];
 
   if(mode !== 'artists'){
     // Радіальна розкладка: кут — групами за першим улюбленим виконавцем, радіус — за збігом.
@@ -150,13 +152,13 @@ function openTasteGraph(mode){
       positions[i] = [400 + Math.cos(ang) * r, 300 + Math.sin(ang) * r];
     });
     _openGraphModal(t('taste.graphTitlePeople'), people, pSim, personLabel,
-      p => p.isMe ? '#c8a96e' : avatarColor(p.displayName), openPerson, {
+      p => p.isMe ? ME : avatarColor(p.displayName), openPerson, {
         positions, radius: 11, sizes: people.map(personSize), ring: meIdx >= 0 ? [meIdx] : [], marks,
         images: people.map(p => p.avatarUrl), initials: people.map(p => avatarInitials(p.displayName)),
         avatarColors: people.map(p => avatarColor(p.displayName)),
         nodeLabels: p => p.isMe ? t('taste.you') : p.displayName,
         rings: [75, 50, 25].map(s => ({ r: _tasteRadius(s), label: `${s}%` })), radialLabels: true,
-        hint: t('taste.mapHint'),
+        hint: t('taste.mapHint'), legend: legendBase,
       });
     return;
   }
@@ -178,17 +180,18 @@ function openTasteGraph(mode){
     return link.get(i < j ? `${i}:${j}` : `${j}:${i}`) || 0;
   };
   const mine = new Set((d.myTopArtists || []).map(a => a.id));
-  artistItems.forEach((a,k) => { if(mine.has(a.id)) marks.set(n + k, '#c8a96e'); });
+  artistItems.forEach((a,k) => { if(mine.has(a.id)) marks.set(n + k, ME); });
   _openGraphModal(t('taste.graphTitleArtists'), items, simFn,
     it => it.kind === 'artist' ? `${it.name} — ${t('taste.fans').replace('{n}', it.fans)}` : personLabel(it),
-    it => it.kind === 'artist' ? TASTE_ARTIST_COLOR : it.isMe ? '#c8a96e' : avatarColor(it.displayName),
+    it => it.kind === 'artist' ? ARTIST : it.isMe ? ME : avatarColor(it.displayName),
     it => { if(it.kind === 'artist'){ closeGraph(); openArtistPage(it.id); } else openPerson(it); }, {
       pin: meIdx >= 0 ? meIdx : null, radius: 10, ring: meIdx >= 0 ? [meIdx] : [], marks,
       sizes: items.map(it => it.kind === 'artist' ? 0.7 + Math.min(0.9, (it.fans - 1) * 0.3) : personSize(it)),
       images: items.map(it => it.kind === 'artist' ? null : it.avatarUrl),
       initials: items.map(it => it.kind === 'artist' ? avatarInitials(it.name) : avatarInitials(it.displayName)),
-      avatarColors: items.map(it => it.kind === 'artist' ? TASTE_ARTIST_COLOR : avatarColor(it.displayName)),
+      avatarColors: items.map(it => it.kind === 'artist' ? ARTIST : it.isMe ? ME : avatarColor(it.displayName)),
       nodeLabels: it => it.kind === 'artist' ? it.name : (it.isMe ? t('taste.you') : it.displayName),
       hint: t('taste.artistsHint'),
+      legend: [...legendBase, { color: ARTIST, label: t('graph.legend.artists') }, { color: ME, label: t('graph.legend.yourArtists'), ring: true }],
     });
 }

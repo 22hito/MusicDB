@@ -39,7 +39,8 @@ export function BrandHeader() {
   useEffect(
     () =>
       subscribeRealtime((event) => {
-        if (event === 'songsChanged' || event === 'adminNotification' || event === 'friendsChanged') refresh();
+        if (event === 'songsChanged' || event === 'adminNotification' || event === 'friendsChanged' || event === 'threadNotificationsChanged') refresh();
+        if (event === 'threadReply') refresh();
       }),
     [subscribeRealtime, refresh],
   );

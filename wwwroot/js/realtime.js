@@ -49,6 +49,18 @@ if (window.signalR) {
     if(name && kind === 'request') showToast(t('toast.friendRequest').replace('{name}', name), () => openChatPage('friends'));
     if(name && kind === 'accepted') showToast(t('toast.friendAccepted').replace('{name}', name), () => openUserProfilePage(otherUserId));
   });
+  // Новий допис у гілці, де я учасник: бейдж дзвіночка й тост (якщо гілку не відкрито просто зараз).
+  rtConn.on('threadReply', (threadId, name, title, toMe) => {
+    refreshNotifBadge();
+    if(document.getElementById('notif-dropdown')?.classList.contains('open')) onOpenNotifDropdown();
+    const viewing = document.getElementById('page-chat')?.classList.contains('active') && chatTab === 'threads' && currentThreadId === threadId;
+    if(!viewing) showToast(t(toMe ? 'toast.threadReplyToMe' : 'toast.threadPost').replace('{name}', name || '…').replace('{title}', title), () => openThread(threadId));
+  });
+  // Прочитав гілку в іншій вкладці / перестав стежити — лічильники.
+  rtConn.on('threadNotificationsChanged', () => {
+    refreshNotifBadge();
+    if(document.getElementById('page-chat')?.classList.contains('active') && chatTab === 'threads' && currentThreadId == null) loadThreads();
+  });
   rtConn.on('threadsChanged', (threadId) => {
     if(!document.getElementById('page-chat')?.classList.contains('active') || chatTab !== 'threads') return;
     if(currentThreadId === threadId) loadThreadDetail();

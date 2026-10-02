@@ -47,10 +47,11 @@ public class HistoryController(MusicDbContext db, MusicService musicService) : C
         return Ok();
     }
 
-    // Нещодавно прослухані (черга плеєра, профіль) — новіші першими.
+    // Нещодавно прослухані (черга плеєра, профіль) — новіші першими. offset — для довантаження
+    // наступної сторінки в повному списку історії (профіль): прослуханих бувають сотні.
     [HttpGet]
     [DisableRateLimiting]
-    public async Task<ActionResult<List<HistoryItemDto>>> Recent([FromQuery] int limit = 30)
+    public async Task<ActionResult<List<HistoryItemDto>>> Recent([FromQuery] int limit = 30, [FromQuery] int offset = 0)
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? "";
         if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
@@ -58,6 +59,8 @@ public class HistoryController(MusicDbContext db, MusicService musicService) : C
         var rows = await db.ListeningHistory
             .Where(h => h.UserEmail == email)
             .OrderByDescending(h => h.ListenedAt)
+            .ThenByDescending(h => h.MusicId)
+            .Skip(Math.Max(0, offset))
             .Take(Math.Clamp(limit, 1, 100))
             .Select(h => new { h.MusicId, h.ListenedAt })
             .ToListAsync();

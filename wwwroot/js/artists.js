@@ -83,6 +83,7 @@ function loadArtistPage(){
   ]).then(([a, list])=>{
     if(id !== currentArtistId) return; // уже відкрили іншого
     if(!a){ document.getElementById('artist-not-found').style.display = ''; return; }
+    if(currentArtist?.id !== a.id){ const q = document.getElementById('artist-songs-search'); if(q) q.value = ''; }
     currentArtist = a;
     currentArtistSongs = list.slice().sort((x,y) => (y.release||'').localeCompare(x.release||''));
     document.getElementById('artist-content').style.display = '';
@@ -182,8 +183,32 @@ function _renderArtistAlbums(){
       <span>${al.year && al.year !== '0001' ? al.year + ' · ' : ''}${esc(countLabel('count.songs', al.songs.length))}</span>
     </div>`).join('');
 }
+// Пошук у дискографії: усі слова запиту мають знайтись у назві, альбомі, виконавцях, жанрах чи році.
+function _artistShownSongs(){
+  const words = (document.getElementById('artist-songs-search')?.value || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if(!words.length) return currentArtistSongs;
+  return currentArtistSongs.filter(s => {
+    const hay = `${s.title} ${s.album || ''} ${s.artist} ${s.genres.join(' ')} ${(s.release || '').slice(0, 4)}`.toLowerCase();
+    return words.every(w => hay.includes(w));
+  });
+}
+let _artistSearchTimer = null;
+function onArtistSongsSearch(){
+  clearTimeout(_artistSearchTimer);
+  _artistSearchTimer = setTimeout(_renderArtistDiscography, 120);
+}
 function _renderArtistDiscography(){
-  document.getElementById('artist-songs-body').innerHTML = currentArtistSongs.map(s=>`
+  const shown = _artistShownSongs();
+  const searching = shown !== currentArtistSongs;
+  document.getElementById('artist-disco-search').style.display = currentArtistSongs.length > 6 ? '' : 'none';
+  document.getElementById('artist-disco-count').textContent = searching
+    ? t('artist.found').replace('{n}', shown.length).replace('{total}', currentArtistSongs.length)
+    : countLabel('count.songs', currentArtistSongs.length);
+  if(!shown.length){
+    document.getElementById('artist-songs-body').innerHTML = `<tr><td colspan="4" class="empty-cell">${esc(t('table.empty'))}</td></tr>`;
+    return;
+  }
+  document.getElementById('artist-songs-body').innerHTML = shown.map(s=>`
     <tr>
       <td class="td-icon-lead" data-label=""><button class="btn-icon-fav" onclick="toggleOrPlay(${s.id}, playFromArtist)" title="${t('profile.playBtn')}">
         <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
@@ -234,7 +259,7 @@ function _playArtistQueue(queue, id){
   playerIndex = Math.max(0, playerQueue.findIndex(s=>s.id===id));
   _loadCurrent();
 }
-function playFromArtist(id){ _playArtistQueue(currentArtistSongs, id); }
+function playFromArtist(id){ _playArtistQueue(_artistShownSongs(), id); }
 function playArtistSong(id, from){ _playArtistQueue(from === 'popular' ? _artistPopularSongs() : currentArtistSongs, id); }
 function playArtistAlbum(i){ const al = _artistAlbums()[i]; if(al) _playArtistQueue(al.songs, al.songs[0].id); }
 // ─── Альбом: обкладинка, рік, пісні — подивитись, а не лише ввімкнути ─────

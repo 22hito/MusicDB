@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
 
@@ -37,6 +37,9 @@ public class CatalogCache(IMemoryCache cache)
             .AddExpirationToken(new CancellationChangeToken(token)));
         return value;
     }
+
+    // Один ключ — коли змінилось лише те, що в ньому (підписка, фото виконавця), а решта кешу ще свіжа.
+    public void Remove(string key) => cache.Remove(key);
 
     // Будь-яка зміна пісень/оцінок — скидаємо все одразу (ключів мало, дешево).
     public void Invalidate()

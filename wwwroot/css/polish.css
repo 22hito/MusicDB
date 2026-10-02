@@ -1,0 +1,498 @@
+/* N'Owl — шар «полірування» (підключається ОСТАННІМ).
+   1) Платформа й дотик (скіл mobile-native): ефекти наведення не «залипають» після дотику,
+      поля не змушують iOS наближати сторінку, відгук — у мить натискання, безпечні зони.
+   2) Рух (скіл emil-design-eng): сильніші криві, короткі тривалості, лише transform/opacity.
+   3) Доступність і типографіка (Vercel Web Interface Guidelines): видимий фокус, tabular-nums,
+      text-wrap: balance для заголовків.
+   4) Нові й перероблені компоненти: сповіщення з вкладками, обговорення, пошук у дискографії,
+      уся історія, колесо й графи на телефоні, налаштування й адмінка «цеглинками». */
+
+:root {
+  /* Криві з бібліотеки Емiля Ковальського: вбудовані ease-out надто слабкі. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ─── 1. Платформа й дотик ─────────────────────────────────────────────── */
+html { -webkit-text-size-adjust: 100%; }
+/* Підписи кнопок і вкладок — не текст для виділення: довге натискання не виділяє «Слухати». */
+button, [role="button"], .mtab, .seg-switch button, .chip-toggles button, .num-step, .thread-action, .notif-tabs button {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+/* iOS наближає сторінку, щойно фокус потрапляє в поле з шрифтом < 16px, і не віддаляє назад. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select { font-size: 16px !important; }
+}
+/* На дотику :hover лишається після тапу — кнопки й картки «зависали» піднятими. Рух — лише для миші. */
+@media (hover: none) {
+  .stat-card:hover, .rec-item:hover, .btn:hover, .btn-icon-danger:hover, .btn-icon-edit:hover, .btn-icon-fav:hover,
+  .wheel-spin-btn:hover:not(:disabled), .battle-choose-btn:hover, .battle-pl-card:hover, .play-row-btn:hover, .bug-card-shot:hover,
+  .taste-card:hover, .top-podium-card:hover, .mini-audio-btn:hover, .profile-stat:hover, .nav-login-btn:hover, .battle-mini-play:hover,
+  .explore-tile:hover, .pc-main:hover, .accent-swatches button:hover, .pc-icon-btn:hover, .nav-brand:hover img,
+  .artist-album:hover .artist-album-cover img, .thread-card:hover { transform: none; }
+  .stat-card:hover, .top-podium-card:hover { box-shadow: var(--shadow-sm), var(--card-hl); }
+}
+/* Відгук — у мить дотику (scale 0.97, ~100 мс), а не після відпускання. */
+.btn:active:not(:disabled), .wheel-spin-btn:active:not(:disabled), .battle-choose-btn:active, .explore-tile:active,
+.profile-stat:active, .battle-pl-card:active, .taste-card:active, .thread-card:active, .notif-card-main:active, .notif-row:active,
+.num-step:active, .q-btn:active, .mtab:active, .seg-switch button:active {
+  transform: scale(0.97); transition-duration: 90ms;
+}
+.seg-switch button, .mtab, .q-btn, .num-step, .notif-row, .notif-card-main, .thread-card, .explore-tile {
+  transition-property: transform, background-color, color, border-color, opacity; transition-timing-function: var(--ease-out-strong);
+}
+
+/* ─── 3. Фокус і типографіка ───────────────────────────────────────────── */
+:is(button, a, summary, [role="button"], [role="tab"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+h1, h2, h3, .album-info h3, .thread-op h3 { text-wrap: balance; }
+.thread-post-body, .artist-bio, .setting-hint, .notif-quote { text-wrap: pretty; }
+.count-badge, .stat-card .value, .setting-value, time, .thread-count, .wheel-num-input, .artist-disco-count, .history-group { font-variant-numeric: tabular-nums; }
+
+/* ─── Спільне ──────────────────────────────────────────────────────────── */
+.btn-ghost { background: transparent; color: var(--text2); border-color: transparent; }
+.btn-ghost:hover { background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text); }
+.empty-cell { text-align: center; color: var(--muted); padding: 1.6rem 0.8rem !important; }
+time { white-space: nowrap; }
+
+/* Пошукове поле з іконкою (дискографія, історія). */
+.artist-disco-search {
+  display: flex; align-items: center; gap: 0.55rem; margin: 0 0 0.8rem; padding: 0 0.85rem; height: 42px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease; cursor: text;
+}
+.artist-disco-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.artist-disco-search .icon { width: 16px; height: 16px; color: var(--muted); flex-shrink: 0; }
+.artist-disco-search input { flex: 1; min-width: 0; height: 100%; background: none; border: none; outline: none; color: var(--text); font: inherit; font-size: 0.88rem; }
+.artist-disco-search input::placeholder { color: var(--muted); }
+.artist-disco-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; }
+.artist-disco-head h3 { margin-bottom: 0.7rem; }
+.artist-disco-count { color: var(--muted); font-size: 0.78rem; }
+
+/* ─── Налаштування: колонки таблиці — плитки-перемикачі з попереднім переглядом ───
+   Було: пунктирні «+ Жанри» і «✓ Оцінка» в рваному рядку — стан читався погано, а «+» виглядав як «додати щось».
+   Тепер: рівна сітка, значок колонки, чекбокс праворуч; зверху — шапка таблиці, яка з цього вийде. */
+.cols-preview {
+  display: flex; gap: 3px; margin-bottom: 0.75rem; padding: 6px; border-radius: var(--radius-sm);
+  background: var(--bg); border: 1px solid var(--border); overflow: hidden;
+}
+.cols-preview span {
+  flex: 1 1 0; min-width: 0; padding: 0.35rem 0.45rem; border-radius: 5px; background: var(--surface2);
+  color: var(--text2); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cols-preview span.locked { color: var(--muted); }
+.cols-preview span.wide { flex-grow: 1.4; }
+.chip-toggles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.chip-toggles button {
+  display: flex; align-items: center; gap: 0.55rem; min-height: 44px; padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2);
+  color: var(--muted); font: 600 0.82rem var(--font-ui); text-align: left; cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s var(--ease-out-strong);
+}
+.chip-toggles button::before, .chip-toggles button.active::before { content: none; }
+.chip-toggles button > span:not(.chip-check) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-toggles button .icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--muted); }
+.chip-toggles button.active { color: var(--text); background: color-mix(in srgb, var(--accent) 9%, var(--surface2)); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.chip-toggles button.active .icon { color: var(--accent); }
+.chip-check {
+  margin-left: auto; flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px; position: relative;
+  border: 1.5px solid var(--border-strong); transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.chip-toggles button.active .chip-check { background: var(--accent); border-color: var(--accent); }
+.chip-toggles button.active .chip-check::after {
+  content: ""; position: absolute; left: 5px; top: 1.5px; width: 5px; height: 9px;
+  border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+@media (hover: hover) and (pointer: fine) { .chip-toggles button:hover { border-color: var(--accent); } }
+.chip-toggles button:active { transform: scale(0.97); }
+@media (max-width: 768px) { .chip-toggles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ─── Головна таблиця з прихованими колонками ─────────────────────────────
+   Фіксована розкладка ділить зайву ширину між УСІМА колонками — кнопка ▶ ставала завширшки як назва.
+   Коли якісь колонки сховані в налаштуваннях, звільнене місце забирають лише виконавець і назва (auto). */
+@media (min-width: 769px) {
+  html[data-hide-cols] #songs-table th.col-artist, html[data-hide-cols] #songs-table th.col-title { width: auto; }
+}
+
+/* ─── Сповіщення: вкладки, картки, відповідь звідси ────────────────────── */
+#notif-list.notif-menu { width: 400px; min-width: 0 !important; max-height: min(78vh, 640px); overflow: hidden; padding: 0; display: flex; flex-direction: column; }
+#notif-dropdown:not(.open) #notif-list.notif-menu { display: none; }
+.notif-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.85rem 1rem 0.55rem; }
+.notif-head strong { font-size: 0.95rem; color: var(--text); }
+#notif-list .notif-markall { display: inline-flex; align-items: center; gap: 0.35rem; background: none; border: none; color: var(--accent); font: 600 0.76rem var(--font-ui); cursor: pointer; padding: 0.3rem 0.4rem; border-radius: 6px; }
+#notif-list .notif-markall:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+#notif-list .notif-markall .icon { width: 14px; height: 14px; }
+.notif-tabs { display: flex; margin: 0 1rem 0.7rem; }
+#notif-list .notif-tabs button { flex: 1; justify-content: center; font-size: 0.8rem; letter-spacing: 0; }
+#notif-list .notif-tabs button .icon { width: 15px; height: 15px; }
+.notif-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 0.6rem 0.7rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.notif-loading { padding: 1rem; color: var(--muted); font-size: 0.82rem; }
+.notif-body .notif-section-title { border-top: none; padding: 0.55rem 0.4rem 0.2rem; }
+.notif-card, .notif-row-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.notif-card { padding: 0.65rem 0.7rem; }
+.notif-card.unread { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+#notif-list .notif-card-main, #notif-list .notif-row {
+  display: flex; align-items: center; gap: 0.7rem; width: 100%; text-align: left; background: none; border: none; color: var(--text);
+  font: inherit; cursor: pointer; padding: 0; border-radius: 8px;
+}
+#notif-list .notif-row { padding: 0.65rem 0.7rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.notif-row-wrap { display: flex; align-items: center; gap: 0.3rem; padding-right: 0.5rem; }
+#notif-list .notif-row-wrap .notif-row { border: none; background: none; flex: 1; min-width: 0; }
+#notif-list .notif-row:hover, #notif-list .notif-card-main:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
+.notif-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.83rem; line-height: 1.4; }
+.notif-card-text em { font-style: normal; color: var(--accent); font-weight: 600; }
+.notif-sub { color: var(--text2); font-size: 0.78rem; overflow-wrap: anywhere; }
+.notif-time { color: var(--muted); font-size: 0.72rem; }
+.notif-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+.notif-kind { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
+.notif-kind .icon { width: 16px; height: 16px; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+#notif-list .notif-check { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+#notif-list .notif-check:hover { color: var(--accent); border-color: var(--accent); }
+#notif-list .notif-check .icon { width: 14px; height: 14px; }
+.notif-quote {
+  margin: 0.55rem 0 0; padding: 0.45rem 0.7rem; border-left: 3px solid var(--accent); border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--text2); font-size: 0.82rem; line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.notif-actions { display: flex; gap: 0.45rem; margin-top: 0.6rem; }
+/* Загальні стилі .dropdown-menu button (без тла й рамки, ✓ біля активного) — не для кнопок у сповіщеннях. */
+#notif-list .btn { border: 1px solid transparent; justify-content: center; text-align: center; border-radius: var(--radius-sm); font-weight: 600; }
+#notif-list .btn-primary { background: var(--accent-grad); color: var(--on-accent); border-color: var(--accent); }
+#notif-list .btn-outline { background: var(--surface2); border-color: var(--border-strong); color: var(--text); }
+#notif-list .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--surface2); }
+#notif-list .btn-ghost:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
+#notif-list .notif-tabs button.active { background: var(--surface2); color: var(--accent); }
+#notif-list button.active::after { content: none; }
+#notif-list .notif-actions .btn { flex: 1; font-size: 0.78rem; padding: 0.45rem 0.6rem; }
+#notif-list .notif-actions .btn .icon { width: 14px; height: 14px; }
+.notif-composer { margin-top: 0.6rem; border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 0.45rem; background: var(--bg); }
+.notif-composer textarea { width: 100%; resize: none; background: none; border: none; outline: none; color: var(--text); font: inherit; font-size: 0.85rem; line-height: 1.45; min-height: 3.2em; max-height: 9em; }
+.notif-composer .notif-actions { margin-top: 0.35rem; }
+.notif-sent { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.6rem; color: var(--green); font-size: 0.8rem; font-weight: 600; }
+.notif-sent .icon { width: 15px; height: 15px; }
+.notif-empty { display: flex; flex-direction: column; align-items: center; gap: 0.7rem; text-align: center; color: var(--muted); font-size: 0.82rem; line-height: 1.5; padding: 1.6rem 1rem 1.8rem; }
+.notif-empty-icon { width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface2); }
+.notif-empty-icon .icon { width: 22px; height: 22px; }
+
+/* ─── Обговорення ──────────────────────────────────────────────────────── */
+/* Комфортна довжина рядка: стрічка гілки не розтягується на весь широкий монітор. */
+#chat-threads-section { max-width: 920px; }
+#threads-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.thread-card {
+  display: flex; align-items: center; gap: 0.9rem; padding: 0.85rem 1rem; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-hl);
+}
+.thread-card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
+.thread-card.unread { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.thread-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.thread-card-main strong { font-size: 0.95rem; color: var(--text); overflow-wrap: anywhere; }
+.thread-card-meta { color: var(--muted); font-size: 0.76rem; }
+.thread-card-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex-shrink: 0; }
+.thread-count { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--muted); font-size: 0.8rem; }
+.thread-count .icon { width: 14px; height: 14px; }
+.thread-avatar { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; font-size: 0.82rem; }
+.thread-avatar.sm { width: 30px; height: 30px; font-size: 0.72rem; }
+.thread-deleted { color: var(--muted); font-style: italic; }
+.thread-back { margin-bottom: 0.9rem; padding-left: 0.4rem; }
+
+.thread-op {
+  position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.2rem 1.35rem 1.3rem 1.5rem; box-shadow: var(--shadow-sm), var(--card-hl); overflow: hidden;
+}
+.thread-op::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent-grad); }
+.thread-op h3 { font-family: var(--font-serif); font-size: 1.45rem; line-height: 1.25; margin: 0 0 0.75rem; color: var(--text); overflow-wrap: anywhere; }
+.thread-op-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.thread-author { display: inline-flex; align-items: center; gap: 0.55rem; min-width: 0; font-size: 0.84rem; font-weight: 600; }
+.thread-author-text { display: flex; flex-direction: column; line-height: 1.3; }
+.thread-op-actions { display: flex; align-items: center; gap: 0.5rem; }
+.thread-follow {
+  display: inline-flex; align-items: center; gap: 0.4rem; height: 32px; padding: 0 0.8rem; border-radius: 999px; cursor: pointer;
+  background: transparent; border: 1px solid var(--border-strong); color: var(--text2); font: 600 0.78rem var(--font-ui);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s var(--ease-out-strong);
+}
+.thread-follow .icon { width: 14px; height: 14px; }
+.thread-follow.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.thread-follow:hover { border-color: var(--accent); }
+.thread-follow:active { transform: scale(0.96); }
+.thread-replies-title { margin: 1.6rem 0 0.8rem; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.thread-posts { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1rem; }
+.thread-post { display: flex; align-items: flex-start; gap: 0.7rem; background: none; border: none; padding: 0; scroll-margin-top: 90px; }
+.thread-bubble {
+  flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; border-top-left-radius: 6px;
+  padding: 0.6rem 0.95rem 0.45rem; transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.thread-post.mine .thread-bubble { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); }
+.thread-post.flash .thread-bubble { animation: threadFlash 1.8s var(--ease-out-strong); }
+@keyframes threadFlash {
+  0%, 35% { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.thread-post-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.3rem; }
+.thread-post-head .thread-author { font-size: 0.82rem; }
+.thread-op-badge { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px; padding: 0.05rem 0.4rem; }
+.thread-time { color: var(--muted); font-size: 0.72rem; font-weight: 400; }
+.thread-post-body { font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.thread-quote {
+  display: flex; flex-direction: column; gap: 0.1rem; width: 100%; text-align: left; margin: 0.15rem 0 0.45rem; padding: 0.35rem 0.65rem;
+  border: none; border-left: 3px solid var(--accent); border-radius: 6px; background: color-mix(in srgb, var(--bg) 55%, transparent);
+  color: var(--text2); font: inherit; cursor: pointer;
+}
+.thread-quote:hover { background: color-mix(in srgb, var(--accent) 8%, var(--bg)); }
+.thread-quote-name { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--accent); font-size: 0.75rem; font-weight: 600; }
+.thread-quote-name .icon { width: 12px; height: 12px; }
+.thread-quote-text { font-size: 0.8rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.thread-post-actions { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.35rem; }
+.thread-post-actions .btn-icon-danger { width: 28px; height: 28px; margin-left: auto; }
+.thread-post-actions .btn-icon-danger svg { width: 14px; height: 14px; }
+.thread-action { display: inline-flex; align-items: center; gap: 0.35rem; background: none; border: none; color: var(--muted); font: 600 0.76rem var(--font-ui); cursor: pointer; padding: 0.3rem 0.45rem; margin-left: -0.45rem; border-radius: 6px; }
+.thread-action:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.thread-action .icon { width: 14px; height: 14px; }
+.thread-login-hint { text-align: center; padding: 0.8rem 0; }
+/* Поле відповіді закріплене внизу вікна — над плеєром, коли той відкритий. */
+.thread-composer {
+  position: sticky; bottom: 0.75rem; z-index: 5; display: flex; flex-direction: column; gap: 0.45rem;
+  background: color-mix(in srgb, var(--elevated) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.55rem; box-shadow: var(--shadow-md);
+}
+body.player-open .thread-composer { bottom: calc(var(--player-h) + var(--player-gap) * 2); }
+.thread-composer-row { display: flex; align-items: flex-end; gap: 0.5rem; }
+.thread-composer textarea {
+  flex: 1; min-width: 0; resize: none; min-height: 42px; max-height: 200px; padding: 0.6rem 0.85rem; line-height: 1.45;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 21px; color: var(--text); font: inherit; font-size: 0.88rem; outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.thread-composer textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
+.thread-send { height: 42px; border-radius: 21px; padding: 0 1rem; }
+.thread-send .icon { width: 16px; height: 16px; }
+.thread-reply-chip {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.4rem 0.4rem 0.7rem; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text2); font-size: 0.78rem;
+}
+.thread-reply-chip > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread-reply-chip strong { color: var(--accent); }
+.thread-reply-chip .icon { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
+.thread-reply-chip button { width: 26px; height: 26px; border-radius: 50%; border: none; background: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; flex-shrink: 0; }
+.thread-reply-chip button:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+/* ─── Уся історія прослуховувань ───────────────────────────────────────── */
+.profile-history-all { margin-top: 0.7rem; width: 100%; }
+.history-box { width: min(560px, 94vw); display: flex; flex-direction: column; padding: 1.2rem 1.2rem 0.6rem !important; max-height: min(86dvh, 820px); overflow: hidden !important; }
+.history-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; }
+.history-head h3 { margin: 0 0 0.15rem; font-size: 1.2rem; }
+.history-close { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--surface2); color: var(--text2); font-size: 1.2rem; cursor: pointer; flex-shrink: 0; }
+.history-close:hover { color: var(--text); }
+.history-actions { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; }
+.history-actions .btn { flex: 1; }
+/* Колонка: шапка, пошук і кнопки не стискаються — прокручується лише сам список. */
+.history-box > * { flex-shrink: 0; }
+.history-list { overflow-y: auto; overscroll-behavior: contain; margin: 0 -0.4rem; padding: 0 0.4rem 0.6rem; flex: 1 1 auto; flex-shrink: 1; min-height: 120px; }
+.history-group {
+  position: sticky; top: 0; z-index: 1; padding: 0.7rem 0.2rem 0.35rem; background: var(--elevated);
+  color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.history-more { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 0.8rem 0; }
+
+/* ─── Колесо: кнопки − / + біля чисел ──────────────────────────────────── */
+.num-stepper { display: inline-flex; align-items: center; gap: 0.3rem; }
+.num-step {
+  width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+  font: 700 1.05rem var(--font-ui); line-height: 1; cursor: pointer; touch-action: manipulation;
+}
+.num-step:hover { border-color: var(--accent); color: var(--accent); }
+.num-stepper .wheel-num-input { text-align: center; }
+
+/* ─── Графи: легенда й підказка ────────────────────────────────────────── */
+.graph-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem 1rem; padding: 0.7rem 1rem 0; }
+.graph-legend:empty { display: none; }
+.graph-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text2); font-size: 0.78rem; }
+.graph-legend-swatch { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.graph-legend-swatch.ring { background: none; box-shadow: inset 0 0 0 2px var(--c); }
+.graph-tooltip-sub { display: block; color: var(--muted); font-size: 0.7rem; margin-top: 2px; }
+
+/* ─── Телефон (≤768px) ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Безпечні зони (viewport-fit=cover): шапка не під «чубчиком», краї — не під заокругленням у альбомній. */
+  nav { padding-top: env(safe-area-inset-top, 0px) !important; padding-left: max(0.75rem, env(safe-area-inset-left)) !important; padding-right: max(0.75rem, env(safe-area-inset-right)) !important; }
+
+  /* Сповіщення — аркуш на всю ширину під шапкою. Було top: calc(100% + 4px) від шапки, але шапка на телефоні
+     без backdrop-filter (оптимізація прокрутки) уже не тримає position: fixed — «100%» рахувалось від екрана,
+     і меню відкривалось за його нижнім краєм: на телефоні сповіщень не було видно взагалі. */
+  #notif-dropdown .dropdown-menu.notif-menu {
+    top: calc(env(safe-area-inset-top, 0px) + 60px) !important; width: auto;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 60px - var(--tabbar-h) - env(safe-area-inset-bottom, 0px) - 16px) !important;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Обговорення */
+  .thread-op { padding: 1rem 1rem 1.1rem 1.15rem; }
+  .thread-op h3 { font-size: 1.25rem; }
+  .thread-avatar { width: 34px; height: 34px; }
+  .thread-card { padding: 0.75rem 0.85rem; gap: 0.75rem; }
+  .thread-composer { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 0.5rem); border-radius: var(--radius); }
+  body.player-open .thread-composer { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--player-h) + var(--player-gap) * 2); }
+  .thread-send span { display: none; }
+  .thread-send { width: 42px; padding: 0; }
+
+  /* Колесо — як у застосунку: параметри → колесо → «Крутити» під ним → плейлист → легенда чипами. */
+  /* #page-wheel .container тримав 3rem з боків і на телефоні — колесо вилазило за край екрана. */
+  #page-wheel .container { padding-left: 1rem; padding-right: 1rem; }
+  .wheel-page-layout { flex-direction: column; flex-wrap: nowrap; gap: 1rem; align-items: stretch; }
+  .wheel-page-layout > .wheel-playlist-col { display: contents; }
+  .wheel-page-layout .wheel-params-card { order: 1; margin-bottom: 0; }
+  .wheel-page-layout > .wheel-col:not(.wheel-playlist-col) { order: 2; width: 100%; }
+  .wheel-page-layout #wheel-playlist-empty, .wheel-page-layout #wheel-playlist-wrap { order: 3; width: 100%; }
+  .wheel-page-layout .wheel-legend-col { order: 4; max-height: none; width: 100%; }
+  .wheel-params-card .wheel-actions { display: none; }
+  .wheel-params-card .wheel-duration-row:nth-last-child(2) { margin-bottom: 0; }
+  .wheel-wrap { width: min(calc(100vw - 2rem), 420px); height: min(calc(100vw - 2rem), 420px); margin: 10px auto 14px; }
+  #wheel-spin-btn-m { margin-top: 0.2rem; }
+  .wheel-duration-row { flex-direction: column; align-items: stretch; gap: 0.55rem; color: var(--text2); font-weight: 600; }
+  .wheel-duration-row .wheel-input-group { justify-content: space-between; }
+  .num-step { width: 40px; height: 40px; }
+  .wheel-num-input { height: 40px; }
+  .num-stepper { gap: 0.25rem; }
+  .num-stepper .wheel-num-input { width: 50px; padding-left: 0.2rem; padding-right: 0.2rem; }
+  .wheel-params-card { padding: 1.1rem 1rem; }
+  .wheel-legend { flex-direction: row; flex-wrap: wrap; gap: 0.35rem; max-height: none; overflow: visible; }
+  .wheel-legend-item { border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.6rem; font-size: 0.75rem; }
+  .wheel-legend-item.winner { border-color: var(--accent); }
+
+  /* Граф — на весь екран: більше місця пальцям; легенда й підказка внизу. */
+  #graph-modal-overlay { padding: 0 !important; align-items: stretch; }
+  .graph-box { width: 100vw; max-height: none; height: 100dvh; border-radius: 0; border: none; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .graph-header { padding-top: calc(env(safe-area-inset-top, 0px) + 0.6rem) !important; }
+  .graph-canvas-wrap { flex: 1; height: auto; min-height: 0; margin: 0; border-radius: 0; }
+  .graph-zoom-controls button { width: 38px; height: 38px; font-size: 1.15rem; }
+  .graph-tooltip { white-space: normal; max-width: min(260px, 80vw); text-align: center; }
+
+  /* Налаштування «цеглинками»: рівні плитки, тема — значок над підписом. */
+  .seg-switch.seg-full, div.setting-row .seg-switch { display: grid !important; grid-auto-flow: column; grid-auto-columns: 1fr; }
+  .seg-switch[data-pref="theme"] { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
+  .seg-switch[data-pref="theme"] button { flex-direction: column; gap: 0.3rem; padding: 0.65rem 0.2rem; font-size: 0.72rem; }
+  .seg-switch[data-pref="theme"] button .icon { width: 18px; height: 18px; }
+  .accent-swatches { display: grid; grid-template-columns: repeat(6, 1fr); justify-items: center; gap: 0.4rem; }
+
+  /* Адмінка: чотири вкладки — сітка 2×2 рівних плиток, а не рваний рядок. */
+  .admin-hub-tabs { display: grid !important; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .admin-hub-tabs .btn { width: 100%; min-height: 44px; }
+
+  .history-box { width: 100vw; max-width: 100vw !important; max-height: 92dvh; border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important; margin-top: auto; padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px)) !important; }
+  #history-modal-overlay { align-items: flex-end; padding: 0 !important; }
+}
+
+/* ─── Вкладення в особистих повідомленнях ──────────────────────────────── */
+.chat-msg[data-id] { scroll-margin: 12px; }
+/* Фото: кнопка-мініатюра (відкриває переглядач на сайті), «скелетон», поки вантажиться. */
+.chat-att-img {
+  display: block; padding: 0; border: none; background: var(--surface); border-radius: 10px; overflow: hidden; cursor: zoom-in;
+  width: fit-content; max-width: min(320px, 68vw); min-width: 120px; min-height: 90px; position: relative;
+}
+.chat-att-img:not(.loaded)::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--text) 7%, transparent) 50%, transparent 70%) var(--surface2);
+  background-size: 200% 100%; animation: attShimmer 1.2s linear infinite;
+}
+@keyframes attShimmer { to { background-position: -200% 0; } }
+.chat-att-img img { display: block; width: auto; max-width: 100%; max-height: 320px; border-radius: 10px; object-fit: cover; transition: opacity 0.2s ease; }
+.chat-att-img:not(.loaded) img { opacity: 0; }
+@media (hover: hover) and (pointer: fine) { .chat-att-img:hover img { opacity: 0.92; } }
+
+/* Аудіо: назва файлу + наш міні-плеєр замість системного <audio controls>. */
+.chat-att-audio { width: min(320px, 70vw); display: flex; flex-direction: column; gap: 0.4rem; }
+.chat-att-audio-head { display: flex; align-items: center; gap: 0.45rem; min-width: 0; }
+.chat-att-audio-head .icon { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
+.chat-att-audio-head strong { flex: 1; min-width: 0; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-att-audio-head small, .chat-att-main small { color: var(--muted); font-size: 0.7rem; flex-shrink: 0; }
+.chat-att-audio .mini-audio { width: 100%; }
+
+/* Відео: у розмові, з панеллю «на весь екран» і «завантажити». */
+.chat-att-video { width: min(360px, 70vw); }
+.chat-att-video video { display: block; width: 100%; max-height: 300px; border-radius: 10px; background: #000; }
+.chat-att-video-meta { display: flex; align-items: center; gap: 0.3rem; margin-top: 0.35rem; color: var(--muted); font-size: 0.72rem; }
+.chat-att-video-meta span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Файли: значок типу (PDF, ZIP, DOCX…), назва, розмір, дії. */
+.chat-att-card {
+  display: flex; align-items: center; gap: 0.65rem; width: min(380px, 72vw); padding: 0.55rem 0.55rem 0.55rem 0.6rem;
+  border-radius: 10px; background: color-mix(in srgb, var(--bg) 45%, transparent); border: 1px solid var(--border);
+}
+.chat-att-type {
+  width: 40px; height: 46px; flex-shrink: 0; border-radius: 6px 12px 6px 6px; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 6px; font: 800 0.6rem var(--font-ui); letter-spacing: 0.03em;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface2)); color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.chat-att-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+.chat-att-main strong { font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-att-act {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.chat-att-act .icon { width: 15px; height: 15px; }
+.chat-att-act:hover { color: var(--accent); border-color: var(--accent); }
+.chat-att-view {
+  height: 34px; padding: 0 0.75rem; flex-shrink: 0; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font: 600 0.76rem var(--font-ui); cursor: pointer;
+}
+.chat-att-view:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.chat-att-act:active, .chat-att-view:active, .chat-att-img:active { transform: scale(0.97); }
+
+/* ─── Переглядач вкладень ──────────────────────────────────────────────── */
+html.mv-open { overflow: hidden; }
+.media-viewer {
+  position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column;
+  background: rgba(4, 6, 12, 0.96); opacity: 0; transition: opacity 180ms var(--ease-out-strong);
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  overscroll-behavior: contain; touch-action: none;
+}
+.media-viewer.open { opacity: 1; }
+.media-viewer[hidden] { display: none; }
+.mv-top { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.75rem; color: #eef0f5; z-index: 2; }
+.mv-count { font: 600 0.8rem var(--font-ui); font-variant-numeric: tabular-nums; color: rgb(238 240 245 / 0.7); min-width: 3ch; }
+.mv-name { flex: 1; min-width: 0; font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mv-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none; background: rgb(255 255 255 / 0.1); color: #fff; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background-color 0.15s ease, transform 0.1s var(--ease-out-strong);
+}
+.mv-btn:hover { background: rgb(255 255 255 / 0.18); }
+.mv-btn:active { transform: scale(0.94); }
+.mv-btn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.mv-btn[hidden] { display: none; }
+.mv-btn .icon { width: 18px; height: 18px; }
+.mv-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0 0.75rem 0.75rem; overflow: hidden; }
+.mv-img {
+  max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; user-select: none; -webkit-user-drag: none;
+  cursor: zoom-in; transform-origin: center; transition: transform 200ms var(--ease-out-strong);
+  animation: mvIn 220ms var(--ease-out-strong);
+}
+.mv-img.zoomed { cursor: grab; }
+@keyframes mvIn { from { opacity: 0; transform: scale(0.96); } }
+.mv-video { max-width: 100%; max-height: 100%; border-radius: 8px; background: #000; }
+.mv-frame { width: min(1000px, 100%); height: 100%; border: none; border-radius: 8px; background: #fff; }
+.mv-stage[data-kind="text"] { align-items: flex-start; }
+.mv-text {
+  width: min(900px, 100%); max-height: 100%; overflow: auto; margin: 0; padding: 1.2rem 1.4rem; border-radius: 10px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); font: 0.88rem/1.6 var(--font-mono);
+  white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; touch-action: pan-y; overscroll-behavior: contain;
+}
+.mv-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: none; z-index: 2;
+  background: rgb(255 255 255 / 0.12); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background-color 0.15s ease;
+}
+.mv-nav:hover { background: rgb(255 255 255 / 0.22); }
+.mv-nav.prev { left: max(12px, env(safe-area-inset-left, 0px)); }
+.mv-nav.next { right: max(12px, env(safe-area-inset-right, 0px)); }
+.mv-nav[hidden] { display: none; }
+.mv-nav .icon { width: 20px; height: 20px; }
+@media (max-width: 768px) {
+  .mv-nav { display: none; } /* на телефоні — свайп */
+  .mv-stage { padding: 0 0 0.5rem; }
+  .mv-img { border-radius: 0; }
+  .mv-frame, .mv-text { border-radius: 0; }
+}

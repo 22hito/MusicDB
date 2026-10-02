@@ -260,7 +260,7 @@ tbody tr:last-child td { border-bottom: none; }
   width: 100%; padding: 1rem 1.5rem; border: none; border-radius: 10px; cursor: pointer;
   font-family: var(--font-ui); font-size: 0.95rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   background: var(--accent-grad); color: var(--on-accent);
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 28%, transparent); transition: all 0.2s cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 28%, transparent); transition: transform 0.2s var(--ease-out), box-shadow 0.2s ease, opacity 0.15s ease;
 }
 .wheel-spin-btn:hover:not(:disabled) { box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 40%, transparent); transform: translateY(-2px); }
 .wheel-spin-btn:disabled { opacity: 0.55; cursor: default; }
@@ -349,7 +349,7 @@ tbody tr:last-child td { border-bottom: none; }
 .battle-choose-btn {
   width: 100%; background: var(--accent-grad); color: var(--on-accent); border: none; border-radius: 10px;
   padding: 0.85rem 1.2rem; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 25%, transparent); transition: all 0.2s cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 25%, transparent); transition: transform 0.2s var(--ease-out), box-shadow 0.2s ease, opacity 0.15s ease;
   margin-top: auto; /* підстраховка: приклеює кнопку до низу навіть якщо висоти сторін розійдуться з іншої причини */
 }
 .battle-choose-btn:hover { box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 38%, transparent); transform: translateY(-2px); }

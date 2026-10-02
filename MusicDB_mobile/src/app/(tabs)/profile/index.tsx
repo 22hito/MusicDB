@@ -24,9 +24,12 @@ import { QueueRow, timeAgo } from '@/components/QueueModal';
 import { SongRow } from '@/components/SongRow';
 import { BugIcon, FlagIcon, ChevronRightIcon, DiscIcon, EditIcon, GlobeIcon, HeadphonesIcon, HeartIcon, LockIcon, PlusIcon, SlidersIcon, TrashIcon, UsersIcon } from '@/components/Icons';
 import { BugReportModal } from '@/components/BugReportModal';
+import { HistorySheet } from '@/components/HistorySheet';
 import { CorrectionModal } from '@/components/CorrectionModal';
 import { FONT_SANS_SEMIBOLD, FONT_SERIF_BLACK, PLAYER_BAR_HEIGHT, RADIUS, SPACING } from '@/constants/theme';
 import type { HistoryItem, Playlist, Profile, Song } from '@/api/types';
+
+const HISTORY_PREVIEW = 5;
 
 export default function ProfileScreen() {
   const { theme, t, count, lang } = useSettings();
@@ -51,6 +54,7 @@ export default function ProfileScreen() {
   // Редагування (фото, нікнейм) — лише після "Редагувати"; "Прослухано" розгортає історію.
   const [editing, setEditing] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyAll, setHistoryAll] = useState(false); // уся історія — окремим аркушем
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const [favY, setFavY] = useState(0);
@@ -59,7 +63,8 @@ export default function ProfileScreen() {
   const toggleHistory = () => {
     const open = !historyOpen;
     setHistoryOpen(open);
-    if (open) api.getHistory(50).then(setHistory).catch(() => setHistory([]));
+    // У профілі — лише 5 останніх; решта — в аркуші «Уся історія» (там групи за днями й довантаження).
+    if (open) api.getHistory(HISTORY_PREVIEW).then(setHistory).catch(() => setHistory([]));
   };
   const cancelEdit = () => {
     setDisplayName(profile?.displayName || '');
@@ -334,6 +339,15 @@ export default function ProfileScreen() {
                 <Text style={{ color: theme.muted, fontSize: 13, padding: 8 }}>{t('queue.recentEmpty')}</Text>
               )}
             </View>
+            {(profile?.totalListened ?? 0) > history.length && history.length ? (
+              <Button
+                label={t('history.showAll', { n: profile?.totalListened ?? 0 })}
+                variant="outline"
+                small
+                onPress={() => setHistoryAll(true)}
+                style={{ marginTop: SPACING.sm }}
+              />
+            ) : null}
           </View>
         ) : null}
 
@@ -431,6 +445,7 @@ export default function ProfileScreen() {
         <Text style={{ color: theme.muted, fontSize: 12, textAlign: 'center', marginTop: 18 }}>N'Owl {Constants.expoConfig?.version ?? ''}</Text>
       </ScrollView>
 
+      <HistorySheet visible={historyAll} total={profile?.totalListened ?? 0} onClose={() => setHistoryAll(false)} />
       <BugReportModal visible={bugOpen} onClose={() => setBugOpen(false)} />
       <CorrectionModal target={null} visible={myCorrOpen} onClose={() => setMyCorrOpen(false)} />
 
