@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { Easing, FadeIn, FadeInDown, useReducedMotion, ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming, ZoomIn } from 'react-native-reanimated';
 import { useSettings } from '@/state/SettingsContext';
 import { Button } from './UI';
 import { NoteIcon, PauseIcon, PlayIcon, TrophyIcon } from './Icons';
@@ -21,10 +21,26 @@ const thumb = (s: Song | null | undefined, size = 'mqdefault') =>
 
 // Невеликий одноразовий салют над обкладинкою: момент рідкісний (кінець турніру) — тут доречна радість.
 // Лише transform/opacity на UI-потоці; зі «Зменшити рух» його немає зовсім.
+type Piece = { dx: number; dy: number; size: number; round: boolean; color: string; delay: number };
+function ConfettiPiece({ p }: { p: Piece }) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.set(withDelay(p.delay, withTiming(1, { duration: 900 + p.delay * 2, easing: EASE_OUT })));
+  }, [t, p.delay]);
+  const style = useAnimatedStyle(() => ({
+    opacity: 1 - t.get(),
+    transform: [{ translateX: p.dx * t.get() }, { translateY: p.dy * t.get() }, { scale: 0.6 + 0.4 * t.get() }],
+  }));
+  return (
+    <Animated.View
+      style={[styles.piece, { width: p.size, height: p.size, borderRadius: p.round ? p.size / 2 : 2, backgroundColor: p.color }, style]}
+    />
+  );
+}
 function Confetti({ colors }: { colors: string[] }) {
   const pieces = useMemo(
     () =>
-      Array.from({ length: 22 }, (_, i) => {
+      Array.from({ length: 22 }, (_, i): Piece => {
         const angle = (i / 22) * Math.PI * 2 + Math.random() * 0.4;
         const dist = 70 + Math.random() * 90;
         return { dx: Math.cos(angle) * dist, dy: Math.sin(angle) * dist * 0.75 - 30, size: 5 + Math.random() * 4, round: i % 2 === 0, color: colors[i % colors.length], delay: Math.random() * 120 };
@@ -34,26 +50,7 @@ function Confetti({ colors }: { colors: string[] }) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {pieces.map((p, i) => (
-        <Animated.View
-          key={i}
-          style={[
-            styles.piece,
-            {
-              width: p.size,
-              height: p.size,
-              borderRadius: p.round ? p.size / 2 : 2,
-              backgroundColor: p.color,
-              animationName: {
-                from: { transform: [{ translateX: 0 }, { translateY: 0 }, { scale: 0.6 }], opacity: 1 },
-                to: { transform: [{ translateX: p.dx }, { translateY: p.dy }, { scale: 1 }], opacity: 0 },
-              },
-              animationDuration: 900 + p.delay * 2,
-              animationDelay: p.delay,
-              animationTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
-              animationFillMode: 'forwards',
-            },
-          ]}
-        />
+        <ConfettiPiece key={i} p={p} />
       ))}
     </View>
   );
