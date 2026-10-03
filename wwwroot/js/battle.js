@@ -480,30 +480,40 @@ function _battleRoundShort(size){
   if(size === 8) return t('battle.quarterfinal');
   return t('battle.roundShort').replace('{x}', Math.log2(battleInitialSize) - Math.log2(size) + 1);
 }
-function _championRowHtml(song, tag, cls = ''){
+function _battleThumbHtml(song, cls){
   const thumb = _battleThumb(song);
-  return `<li class="battle-champ-row ${cls}">
-    <span class="battle-champ-tag">${esc(tag)}</span>
-    ${thumb ? `<img class="battle-champ-thumb" src="${esc(thumb)}" alt="" loading="lazy">` : `<span class="battle-champ-thumb no-cover"><svg class="icon"><use href="#icon-music"/></svg></span>`}
-    <span class="battle-champ-song"><strong>${esc(song.artist)}</strong><span>${esc(song.title)}</span></span>
-  </li>`;
+  return thumb ? `<img class="${cls}" src="${esc(thumb)}" alt="" loading="lazy">` : `<span class="${cls} no-cover"><svg class="icon"><use href="#icon-music"/></svg></span>`;
 }
-// Шлях переможця (кого переміг у кожному раунді) і призери: фіналіст, півфіналісти.
+// Шлях переможця — таймлайном (раунд → кого переміг), призери — п'єдесталом 2 · 1 · 3
+// (третє місце ділять обидва півфіналісти), статистика — плитками.
 function _renderChampionDetails(song){
   const matches = _battleMatches();
   const path = matches.filter(m => m.winner.id === song.id);
-  document.getElementById('battle-champ-path').innerHTML = path
-    .map(m => _championRowHtml(m.loser, _battleRoundShort(m.size), m.size === 2 ? 'final' : '')).join('');
+  document.getElementById('battle-champ-path').innerHTML = path.map((m, i) => `
+    <li class="bc-step${m.size === 2 ? ' final' : ''}" style="--i:${i}">
+      <span class="bc-dot" aria-hidden="true"></span>
+      <div class="bc-step-body">
+        <span class="bc-step-tag">${esc(_battleRoundShort(m.size))}</span>
+        <div class="bc-step-song">${_battleThumbHtml(m.loser, 'bc-thumb')}
+          <span class="bc-song"><strong title="${esc(m.loser.title)}">${esc(m.loser.title)}</strong><span>${esc(m.loser.artist)}</span></span></div>
+      </div>
+    </li>`).join('');
   const finalist = matches.find(m => m.size === 2)?.loser;
   const semis = matches.filter(m => m.size === 4).map(m => m.loser);
-  document.getElementById('battle-champ-podium').innerHTML = [
-    _championRowHtml(song, '1', 'place-1'),
-    finalist ? _championRowHtml(finalist, '2', 'place-2') : '',
-    ...semis.map(s => _championRowHtml(s, '3', 'place-3')),
-  ].join('');
+  const col = (place, list) => list.length ? `
+    <div class="bc-col p${place}">
+      <div class="bc-people">${list.map(s => `
+        <div class="bc-person" title="${esc(`${s.artist} — ${s.title}`)}">${_battleThumbHtml(s, 'bc-avatar')}
+          <strong>${esc(s.title)}</strong><span>${esc(s.artist)}</span></div>`).join('')}</div>
+      ${place === 3 ? `<div class="bc-p3-names">${list.map(s => `<strong title="${esc(`${s.artist} — ${s.title}`)}">${esc(s.title)}</strong>`).join('')}</div>` : ''}
+      <div class="bc-stand"><span>${place}</span></div>
+    </div>` : '<div class="bc-col"></div>';
+  document.getElementById('battle-champ-podium').innerHTML = finalist ? col(2, [finalist]) + col(1, [song]) + col(3, semis) : col(1, [song]);
+  document.querySelector('#battle-champion .battle-champ-podium-col').hidden = !finalist;
+  const rounds = Math.round(Math.log2(battleInitialSize));
+  const stat = (n, key) => `<div class="bc-stat"><b>${n}</b><span>${esc(plural(key, n))}</span></div>`;
   document.getElementById('battle-champ-stats').innerHTML =
-    `<span>${esc(t('battle.statSize').replace('{n}', countLabel('count.songs', battleInitialSize)))}</span>`
-    + `<span>${esc(countLabel('count.wins', path.length))}</span>`;
+    stat(battleInitialSize, 'count.songs') + stat(path.length, 'count.wins') + stat(rounds, 'count.rounds');
 }
 // Ще раз із тими самими піснями — нове жеребкування.
 function rematchBattle(){

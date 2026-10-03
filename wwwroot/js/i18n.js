@@ -773,7 +773,8 @@ const I18N = {
     'chat.previewFailed': "Не вдалося показати файл — його можна завантажити.",
     'settings.autoScale.now': "Зараз: +{p}% · вікно {w} px",
     'settings.autoScale.none': "На цьому екрані без змін: вікно {w} px, збільшення — від {from} px",
-    'settings.autoScale.off': "Вимкнено · вікно {w} px"
+    'settings.autoScale.off': "Вимкнено · вікно {w} px",
+    'count.rounds': "раунд|раунди|раундів"
   },
   en: {
     'nav.home': 'Home',
@@ -1538,7 +1539,8 @@ const I18N = {
     'chat.previewFailed': "Couldn't show the file — you can download it.",
     'settings.autoScale.now': "Now: +{p}% · window {w} px",
     'settings.autoScale.none': "No change on this screen: the window is {w} px, enlarging starts at {from} px",
-    'settings.autoScale.off': "Off · window {w} px"
+    'settings.autoScale.off': "Off · window {w} px",
+    'count.rounds': "round|rounds"
   }
 };
 let currentLang = localStorage.getItem('lang') || 'uk';

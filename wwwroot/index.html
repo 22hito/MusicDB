@@ -1888,28 +1888,30 @@
     <div id="battle-champion" class="battle-champion" style="display:none;">
       <div class="battle-champ-hero">
         <div class="battle-champ-cover-wrap">
-          <img id="battle-champion-cover" class="battle-champion-cover" alt="">
-          <div class="battle-champ-cover-empty"><svg class="icon"><use href="#icon-music"/></svg></div>
-          <span class="battle-champ-crown"><svg class="icon"><use href="#icon-trophy"/></svg></span>
+          <img id="battle-champion-cover" class="battle-champion-cover" alt="" decoding="async">
+          <div class="battle-champ-cover-empty"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"/></svg></div>
+          <span class="battle-champ-crown" aria-hidden="true"><svg class="icon"><use href="#icon-trophy"/></svg></span>
         </div>
         <div class="battle-champion-label" data-i18n="battle.championLabel">Переможець</div>
+        <h3 class="battle-champion-title" id="battle-champion-title"></h3>
         <div class="battle-champion-artist" id="battle-champion-artist"></div>
-        <div class="battle-champion-title" id="battle-champion-title"></div>
         <div class="battle-champ-stats" id="battle-champ-stats"></div>
         <div class="battle-champion-actions">
-          <button class="btn btn-primary" onclick="playBattleChampion()"><svg class="icon icon-filled"><use href="#icon-play"/></svg> <span data-i18n="battle.listenToWinnerBtn">Слухати переможця</span></button>
-          <button class="btn btn-outline battle-rematch-btn" onclick="rematchBattle()"><svg class="icon"><use href="#icon-shuffle"/></svg> <span data-i18n="battle.rematch">Новий турнір</span></button>
-          <button class="btn btn-outline battle-champ-secondary" onclick="undoBattle()" data-i18n="battle.undo">↶ Крок назад</button>
-          <button class="btn btn-outline battle-champ-secondary" onclick="closeBattle()" data-i18n="player.close">Закрити</button>
+          <button type="button" class="btn btn-primary battle-champ-listen" onclick="playBattleChampion()"><svg class="icon icon-filled" aria-hidden="true"><use href="#icon-play"/></svg> <span data-i18n="battle.listenToWinnerBtn">Слухати переможця</span></button>
+          <div class="battle-champ-more">
+            <button type="button" class="btn btn-outline" onclick="rematchBattle()"><svg class="icon" aria-hidden="true"><use href="#icon-shuffle"/></svg> <span data-i18n="battle.rematch">Новий турнір</span></button>
+            <button type="button" class="btn btn-outline battle-champ-secondary" onclick="undoBattle()" data-i18n="battle.undo">↶ Крок назад</button>
+            <button type="button" class="btn btn-ghost battle-champ-secondary" onclick="closeBattle()" data-i18n="player.close">Закрити</button>
+          </div>
         </div>
       </div>
       <section class="battle-champ-card battle-champ-path-col">
-        <h4><svg class="icon"><use href="#icon-trophy"/></svg> <span data-i18n="battle.pathTitle">Шлях до перемоги</span></h4>
-        <ol class="battle-champ-list" id="battle-champ-path"></ol>
+        <h4><svg class="icon" aria-hidden="true"><use href="#icon-trophy"/></svg> <span data-i18n="battle.pathTitle">Шлях до перемоги</span></h4>
+        <ol class="bc-path" id="battle-champ-path"></ol>
       </section>
       <section class="battle-champ-card battle-champ-podium-col">
-        <h4><svg class="icon"><use href="#icon-users"/></svg> <span data-i18n="battle.podiumTitle">Призери</span></h4>
-        <ol class="battle-champ-list" id="battle-champ-podium"></ol>
+        <h4><svg class="icon" aria-hidden="true"><use href="#icon-users"/></svg> <span data-i18n="battle.podiumTitle">Призери</span></h4>
+        <div class="bc-podium" id="battle-champ-podium"></div>
       </section>
     </div>
     <!-- Телефон: нижні кнопки, як у мобільному застосунку. -->

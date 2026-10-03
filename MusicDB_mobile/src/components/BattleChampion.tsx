@@ -98,20 +98,33 @@ export function BattleChampion({
     { value: rounds, label: word('count.rounds', rounds) },
   ];
 
+  // Третє місце ділять двоє півфіналістів: обкладинки поруч (накладаються), назви — по рядку,
+  // щоб колонка не була вищою за переможця.
   const podiumCol = (place: 1 | 2 | 3, songs: Song[]) => {
     if (!songs.length) return <View style={{ flex: 1 }} />;
     const h = place === 1 ? 92 : place === 2 ? 66 : 48;
+    const size = place === 1 ? 60 : songs.length > 1 ? 42 : 52;
+    const avatar = (s: Song, k: number) => (
+      <View
+        key={s.id}
+        style={[styles.podiumThumb, { borderColor: MEDALS[place], width: size, height: size, backgroundColor: theme.surface2, marginLeft: k ? -12 : 0 }]}
+      >
+        {thumb(s) ? <Image source={{ uri: thumb(s)! }} style={StyleSheet.absoluteFill} /> : <NoteIcon size={14} color={theme.muted} />}
+      </View>
+    );
     return (
       <View style={{ flex: 1, alignItems: 'center', minWidth: 0 }}>
-        {songs.map((s) => (
-          <View key={s.id} style={{ alignItems: 'center', width: '100%', marginBottom: 6 }}>
-            <View style={[styles.podiumThumb, { borderColor: MEDALS[place], width: songs.length > 1 ? 40 : 52, height: songs.length > 1 ? 40 : 52, backgroundColor: theme.surface2 }]}>
-              {thumb(s) ? <Image source={{ uri: thumb(s)! }} style={StyleSheet.absoluteFill} /> : <NoteIcon size={14} color={theme.muted} />}
-            </View>
-            <Text numberOfLines={1} style={[styles.podiumTitle, { color: theme.text }]}>{s.title}</Text>
-            <Text numberOfLines={1} style={[styles.podiumArtist, { color: theme.muted }]}>{s.artist}</Text>
-          </View>
-        ))}
+        <View style={{ flexDirection: 'row', justifyContent: 'center' }}>{songs.map(avatar)}</View>
+        {songs.length > 1 ? (
+          songs.map((s) => (
+            <Text key={s.id} numberOfLines={1} style={[styles.podiumTitle, { color: theme.text }]}>{s.title}</Text>
+          ))
+        ) : (
+          <>
+            <Text numberOfLines={1} style={[styles.podiumTitle, { color: theme.text }]}>{songs[0].title}</Text>
+            <Text numberOfLines={1} style={[styles.podiumArtist, { color: theme.muted }]}>{songs[0].artist}</Text>
+          </>
+        )}
         <View style={[styles.podiumStep, { height: h, backgroundColor: `${MEDALS[place]}26`, borderColor: `${MEDALS[place]}66` }]}>
           <Text style={[styles.podiumPlace, { color: MEDALS[place] }]}>{place}</Text>
         </View>
@@ -235,7 +248,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   piece: { position: 'absolute', left: '50%', top: '50%' },
-  medal: { position: 'absolute', alignSelf: 'center', bottom: -22, width: 44, height: 44, borderRadius: 22, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  medal: { position: 'absolute', left: '50%', marginLeft: -22, bottom: -22, width: 44, height: 44, borderRadius: 22, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   kicker: { fontSize: 11.5, letterSpacing: 2.4, textTransform: 'uppercase', fontFamily: FONT_SANS_BOLD, marginTop: 14 },
   title: { fontFamily: FONT_SERIF_BLACK, fontSize: 28, lineHeight: 34, textAlign: 'center', marginTop: 6, letterSpacing: -0.3 },
   artist: { fontFamily: FONT_SANS_MEDIUM, fontSize: 15, marginTop: 4, textAlign: 'center' },
@@ -258,6 +271,6 @@ const styles = StyleSheet.create({
   podiumThumb: { borderRadius: 999, borderWidth: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
   podiumTitle: { fontSize: 12, fontFamily: FONT_SANS_SEMIBOLD, maxWidth: '100%', textAlign: 'center' },
   podiumArtist: { fontSize: 11, maxWidth: '100%', textAlign: 'center' },
-  podiumStep: { alignSelf: 'stretch', borderWidth: 1, borderBottomWidth: 0, borderTopLeftRadius: RADIUS.md, borderTopRightRadius: RADIUS.md, alignItems: 'center', paddingTop: 6, marginTop: 2 },
+  podiumStep: { alignSelf: 'stretch', borderWidth: 1, borderBottomWidth: 0, borderTopLeftRadius: RADIUS.md, borderTopRightRadius: RADIUS.md, alignItems: 'center', paddingTop: 6, marginTop: 8 },
   podiumPlace: { fontFamily: FONT_SERIF_BLACK, fontSize: 22 },
 });
