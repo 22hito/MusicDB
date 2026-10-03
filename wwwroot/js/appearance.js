@@ -157,6 +157,38 @@ function _reducedMotion(){
   if(PREFS.motion === 'full') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
+// Автомасштаб: від вікна 1680px інтерфейс плавно більшає (1920 → +8%, 2560 → +29%, далі до ×1.75).
+// Та сама формула — у ранньому скрипті index.html (до першої відмальовки).
+const AUTO_SCALE = { from: 1680, per: 3000, max: 1.75 };
+function _autoScaleFactor(){
+  const w = window.innerWidth;
+  if(w <= 768) return 1; // телефон — завжди 100%
+  return Math.min(AUTO_SCALE.max, Math.max(1, 1 + (w - AUTO_SCALE.from) / AUTO_SCALE.per));
+}
+function _applyAutoScale(){
+  const k = PREFS.autoScale ? _autoScaleFactor() : 1;
+  if(k > 1.005) document.documentElement.style.setProperty('--auto-scale', k.toFixed(3));
+  else document.documentElement.style.removeProperty('--auto-scale');
+  _renderAutoScaleStatus(k);
+}
+// Під перемикачем — що він робить саме на цьому екрані, а не лише обіцянка «на 2K/4K».
+function _renderAutoScaleStatus(k){
+  const el = document.getElementById('pref-autoScale-status');
+  if(!el) return;
+  const w = window.innerWidth;
+  const pct = Math.round((k - 1) * 100);
+  el.textContent = !PREFS.autoScale
+    ? t('settings.autoScale.off').replace('{w}', w)
+    : pct > 0 ? t('settings.autoScale.now').replace('{p}', pct).replace('{w}', w)
+    : t('settings.autoScale.none').replace('{w}', w).replace('{from}', AUTO_SCALE.from);
+  el.classList.toggle('active', !!PREFS.autoScale && pct > 0);
+}
+let _autoScaleRaf = 0;
+window.addEventListener('resize', () => {
+  cancelAnimationFrame(_autoScaleRaf);
+  _autoScaleRaf = requestAnimationFrame(_applyAutoScale);
+});
+
 function applyPrefs(){
   const root = document.documentElement;
   const setAttr = (name, val) => val == null ? root.removeAttribute(name) : root.setAttribute(name, val);
@@ -170,6 +202,7 @@ function applyPrefs(){
   if(PREFS.uiScale !== 100) root.style.setProperty('--ui-scale', PREFS.uiScale / 100);
   else root.style.removeProperty('--ui-scale');
   setAttr('data-auto-scale', PREFS.autoScale ? null : 'off');
+  _applyAutoScale();
   root.style.setProperty('--ah', ACCENT_HUES[PREFS.accent] ?? ACCENT_HUES.amber);
   root.style.setProperty('--glow-k', PREFS.glow / 100);
   _paintArtworkColor();
@@ -200,6 +233,7 @@ function resetPrefs(){
 function syncSettingsUI(){
   const page = document.getElementById('page-settings');
   if(!page) return;
+  _renderAutoScaleStatus(PREFS.autoScale ? _autoScaleFactor() : 1);
   const values = { ...PREFS, theme: localStorage.getItem('theme') || 'dark', lang: currentLang };
   const preview = [`<span class="locked">${esc(t('table.artist'))}</span>`, `<span class="locked wide">${esc(t('table.title'))}</span>`];
   page.querySelectorAll('#pref-columns [data-col]').forEach(b => {

@@ -496,3 +496,7 @@ html.mv-open { overflow: hidden; }
   .mv-img { border-radius: 0; }
   .mv-frame, .mv-text { border-radius: 0; }
 }
+
+/* Налаштування: живий статус під перемикачем (що саме він робить на цьому екрані). */
+.setting-status { margin-top: 0.35rem; font-size: 0.76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.setting-status.active { color: var(--accent); font-weight: 600; }

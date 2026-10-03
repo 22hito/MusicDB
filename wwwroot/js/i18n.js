@@ -49,7 +49,7 @@ const I18N = {
     'settings.uiScale': 'Розмір інтерфейсу',
     'settings.uiScale.hint': 'Масштабує все: текст, кнопки, іконки й відступи.',
     'settings.autoScale': 'Збільшувати на великих моніторах',
-    'settings.autoScale.hint': 'На екранах 2K/4K інтерфейс автоматично більший, щоб не губитись посередині.',
+    'settings.autoScale.hint': 'На широких екранах інтерфейс плавно більшає, щоб не губитись посередині.',
     'settings.density': 'Щільність таблиць',
     'settings.density.hint': 'Компактна вміщує більше пісень на екрані.',
     'settings.density.comfortable': 'Комфортна',
@@ -770,7 +770,10 @@ const I18N = {
     'chat.openImage': "Відкрити фото",
     'chat.fullscreen': "На весь екран",
     'chat.preview': "Переглянути",
-    'chat.previewFailed': "Не вдалося показати файл — його можна завантажити."
+    'chat.previewFailed': "Не вдалося показати файл — його можна завантажити.",
+    'settings.autoScale.now': "Зараз: +{p}% · вікно {w} px",
+    'settings.autoScale.none': "На цьому екрані без змін: вікно {w} px, збільшення — від {from} px",
+    'settings.autoScale.off': "Вимкнено · вікно {w} px"
   },
   en: {
     'nav.home': 'Home',
@@ -812,7 +815,7 @@ const I18N = {
     'settings.uiScale': 'Interface size',
     'settings.uiScale.hint': 'Scales everything: text, buttons, icons and spacing.',
     'settings.autoScale': 'Enlarge on large monitors',
-    'settings.autoScale.hint': 'On 2K/4K screens the interface grows automatically so it doesn’t get lost in the middle.',
+    'settings.autoScale.hint': 'On wide screens the interface grows smoothly so it doesn’t get lost in the middle.',
     'settings.density': 'Table density',
     'settings.density.hint': 'Compact fits more songs on screen.',
     'settings.density.comfortable': 'Comfortable',
@@ -1532,7 +1535,10 @@ const I18N = {
     'chat.openImage': "Open photo",
     'chat.fullscreen': "Full screen",
     'chat.preview': "Preview",
-    'chat.previewFailed': "Couldn't show the file — you can download it."
+    'chat.previewFailed': "Couldn't show the file — you can download it.",
+    'settings.autoScale.now': "Now: +{p}% · window {w} px",
+    'settings.autoScale.none': "No change on this screen: the window is {w} px, enlarging starts at {from} px",
+    'settings.autoScale.off': "Off · window {w} px"
   }
 };
 let currentLang = localStorage.getItem('lang') || 'uk';

@@ -35,6 +35,7 @@
       var ui = p.uiScale != null ? p.uiScale : p.fontScale;
       if (ui && ui !== 100) root.style.setProperty('--ui-scale', ui / 100);
       if (p.autoScale === false) root.setAttribute('data-auto-scale', 'off');
+      else { var w = window.innerWidth, k = w > 768 ? Math.min(1.75, Math.max(1, 1 + (w - 1680) / 3000)) : 1; if (k > 1.005) root.style.setProperty('--auto-scale', k.toFixed(3)); }
       if (p.accent && hues[p.accent] != null) root.style.setProperty('--ah', hues[p.accent]);
       if (p.glow != null) root.style.setProperty('--glow-k', p.glow / 100);
       if (p.hiddenCols && p.hiddenCols.length) root.setAttribute('data-hide-cols', p.hiddenCols.join(' '));
@@ -894,7 +895,8 @@
         <label class="setting-row setting-row-desktop-only">
           <div class="setting-text">
             <div class="setting-label" data-i18n="settings.autoScale">Збільшувати на великих моніторах</div>
-            <div class="setting-hint" data-i18n="settings.autoScale.hint">На екранах 2K/4K інтерфейс автоматично більший, щоб не губитись посередині.</div>
+            <div class="setting-hint" data-i18n="settings.autoScale.hint">На широких екранах інтерфейс плавно більшає, щоб не губитись посередині.</div>
+            <div class="setting-status" id="pref-autoScale-status" aria-live="polite"></div>
           </div>
           <span class="switch"><input type="checkbox" data-pref="autoScale"><span class="switch-track"></span></span>
         </label>
