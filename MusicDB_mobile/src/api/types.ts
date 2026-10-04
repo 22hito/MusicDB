@@ -132,6 +132,9 @@ export interface AuthMe {
   name?: string;
   picture?: string | null;
   isAdmin?: boolean;
+  // Нік і аватарка (посиланням) — сервер віддає їх прямо в /auth/me; старий сервер — ні.
+  displayName?: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface CurrentUser extends AuthMe {

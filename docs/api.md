@@ -17,7 +17,8 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
   `immutable`, інакше no-cache + ETag) →
   автентифікація → авторизація → rate limiter → контролери → SignalR (`/hubs/music`) → SPA fallback на ту саму
   головну.
-- **Мінімальні ендпоінти:** `GET /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /config`
+- **Мінімальні ендпоінти:** `GET /auth/login`, `POST /auth/logout`, `GET /auth/me` (id, email, адмін, а також нік і аватарка
+  посиланням — шапці сайту й застосунку не треба окремого `/api/profile`), `GET /config`
   (ключі YouTube для ротації квоти).
 - Для `/api/*` і `/hubs/*` замість редиректів на логін — статуси 401/403 (виклик автентифікації там іде на cookie-схему, а не на Google). Адмінські дії — `[Authorize, AdminOnly]`
   (`Filters/AdminOnlyAttribute.cs`).

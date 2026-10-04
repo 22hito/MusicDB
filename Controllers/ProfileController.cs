@@ -24,18 +24,21 @@ public class ProfileController(MusicDbContext db) : ControllerBase
 
         var profile = await db.UserProfiles.FindAsync(email);
 
-        var totalListened = await db.ListeningHistory.CountAsync(h => h.UserEmail == email);
-        var favoritesCount = await db.Favorites.CountAsync(f => f.UserEmail == email);
-        var playlistsCount = await db.Playlists.CountAsync(p => p.UserEmail == email);
+        // Три лічильники — одним запитом, а не трьома послідовними.
+        var counts = await db.Users.Where(u => u.Email == email).Select(u => new
+        {
+            Listened = db.ListeningHistory.Count(h => h.UserEmail == email),
+            Favorites = db.Favorites.Count(f => f.UserEmail == email),
+            Playlists = db.Playlists.Count(p => p.UserEmail == email),
+        }).FirstOrDefaultAsync();
+        var totalListened = counts?.Listened ?? 0;
+        var favoritesCount = counts?.Favorites ?? 0;
+        var playlistsCount = counts?.Playlists ?? 0;
 
-        // Топ-3 жанри за прослуховуваннями — для короткого "музичного портрету" в профілі.
-        var listenedMusicIds = await db.ListeningHistory
-            .Where(h => h.UserEmail == email)
-            .Select(h => h.MusicId)
-            .ToListAsync();
-
+        // Топ-3 жанри за прослуховуваннями — для короткого "музичного портрету" в профілі. Підзапитом,
+        // а не списком усіх прослуханих id, переданим назад у базу.
         var topGenres = await db.MusicGenres
-            .Where(mg => listenedMusicIds.Contains(mg.MusicId))
+            .Where(mg => db.ListeningHistory.Any(h => h.UserEmail == email && h.MusicId == mg.MusicId))
             .GroupBy(mg => mg.Genre.GenreName)
             .OrderByDescending(g => g.Count())
             .Take(3)

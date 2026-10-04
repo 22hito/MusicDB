@@ -35,13 +35,8 @@ async function initApp() {
   ]);
   if(cfgRes.youtubeApiKeys && cfgRes.youtubeApiKeys.length) ytApiKeys = cfgRes.youtubeApiKeys;
   if(cfgRes.version) appVersion = cfgRes.version;
+  // Нік і аватарка (displayName, avatarUrl) — уже в /auth/me, без окремого /api/profile.
   currentUser = meRes;
-  if(currentUser?.authenticated){
-    try {
-      const profile = await fetch('/api/profile').then(r=>r.ok?r.json():null);
-      if(profile){ currentUser.displayName = profile.displayName; currentUser.avatarUrl = profile.avatarUrl; }
-    } catch(e) {}
-  }
   await songsLoad;
   appReady = true;
   renderAuthArea();

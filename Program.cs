@@ -294,20 +294,29 @@ app.MapPost("/auth/logout", async (HttpContext ctx) =>
     return Results.Ok(new { message = "logged out" });
 });
 
-app.MapGet("/auth/me", async (HttpContext ctx, UserDirectoryService userDirectory) =>
+app.MapGet("/auth/me", async (HttpContext ctx, UserDirectoryService userDirectory, MusicDbContext db) =>
 {
     if (!ctx.User.Identity?.IsAuthenticated ?? true)
         return Results.Ok(new { authenticated = false });
 
+    // Opaque id з lab.users — щоб фронтенд розпізнавав власні повідомлення/дописи/рецензії.
+    var userId = await userDirectory.GetCurrentUserIdAsync(ctx.User);
+    var email = ctx.User.FindFirstValue(ClaimTypes.Email) ?? "";
+    var picture = ctx.User.FindFirstValue("picture") ?? ctx.User.FindFirstValue("urn:google:picture");
+    // Нік і аватарка для шапки — тут же: раніше сайт і застосунок на кожному відкритті окремо питали
+    // /api/profile (шість запитів до бази, з лічильниками, яких шапці не треба). Аватарка — посиланням.
+    var profile = await db.UserProfiles.AsNoTracking().Where(p => p.UserEmail == email)
+        .Select(p => new { p.DisplayName, p.AvatarUrl }).FirstOrDefaultAsync();
     return Results.Ok(new
     {
         authenticated = true,
-        // Opaque id з lab.users — щоб фронтенд розпізнавав власні повідомлення/дописи/рецензії.
-        userId = await userDirectory.GetCurrentUserIdAsync(ctx.User),
-        email = ctx.User.FindFirstValue(ClaimTypes.Email),
+        userId,
+        email,
         name = ctx.User.FindFirstValue(ClaimTypes.Name),
-        picture = ctx.User.FindFirstValue("picture") ?? ctx.User.FindFirstValue("urn:google:picture"),
-        isAdmin = ctx.User.HasClaim("role", "admin")
+        picture,
+        isAdmin = ctx.User.HasClaim("role", "admin"),
+        displayName = profile?.DisplayName,
+        avatarUrl = UserDirectoryService.AvatarLink(userId, profile?.AvatarUrl ?? picture),
     });
 });
 

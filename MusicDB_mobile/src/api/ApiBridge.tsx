@@ -218,11 +218,14 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
       const me = await request<AuthMe>('/auth/me');
       if (me.authenticated) {
         let extra: { displayName?: string | null; avatarUrl?: string | null } = {};
-        try {
-          const profile = await request<{ displayName: string | null; avatarUrl: string | null }>('/api/profile');
-          extra = { displayName: profile.displayName, avatarUrl: profile.avatarUrl };
-        } catch {
-          // профіль може бути тимчасово недоступний — не блокуємо авторизацію через це
+        // Новий сервер віддає нік і аватарку прямо в /auth/me — тоді без окремого /api/profile.
+        if (!('avatarUrl' in me)) {
+          try {
+            const profile = await request<{ displayName: string | null; avatarUrl: string | null }>('/api/profile');
+            extra = { displayName: profile.displayName, avatarUrl: profile.avatarUrl };
+          } catch {
+            // профіль може бути тимчасово недоступний — не блокуємо авторизацію через це
+          }
         }
         setCurrentUser({ ...me, ...extra });
       } else {

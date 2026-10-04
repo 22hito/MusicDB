@@ -89,15 +89,12 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
         var myId = await CurrentUserIdAsync();
         var status = id == myId ? "self" : await RelationshipStatusAsync(myId, id);
 
-        var totalListened = await db.ListeningHistory.CountAsync(h => h.UserEmail == user.Email);
-        var favoritesCount = await db.Favorites.CountAsync(f => f.UserEmail == user.Email);
-
-        var listenedMusicIds = await db.ListeningHistory
-            .Where(h => h.UserEmail == user.Email)
-            .Select(h => h.MusicId)
-            .ToListAsync();
+        var email = user.Email;
+        var totalListened = await db.ListeningHistory.CountAsync(h => h.UserEmail == email);
+        var favoritesCount = await db.Favorites.CountAsync(f => f.UserEmail == email);
+        // Підзапитом, а не списком усіх прослуханих id, переданим назад у базу.
         var topGenres = await db.MusicGenres
-            .Where(mg => listenedMusicIds.Contains(mg.MusicId))
+            .Where(mg => db.ListeningHistory.Any(h => h.UserEmail == email && h.MusicId == mg.MusicId))
             .GroupBy(mg => mg.Genre.GenreName)
             .OrderByDescending(g => g.Count())
             .Take(3)
