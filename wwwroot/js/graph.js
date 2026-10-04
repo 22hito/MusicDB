@@ -138,7 +138,9 @@ function _graphNodeR(i){
 function _graphDraw(){
   if(!_g) return;
   const c = _graphCanvas();
-  const dpr = window.devicePixelRatio || 1;
+  // Не більше 2×: на телефоні з 3× полотно на весь екран — понад 2 млн пікселів, які перемальовуються щокадру
+  // під час розкладки; для ліній і кружечків різниці між 2× і 3× не видно, а пікселів удвічі менше.
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = c.clientWidth, h = c.clientHeight;
   if(!w || !h) return;
   if(c.width !== Math.round(w*dpr) || c.height !== Math.round(h*dpr)){ c.width = Math.round(w*dpr); c.height = Math.round(h*dpr); }
@@ -477,6 +479,8 @@ function _graphNodeUnhover(){ if(_g) _graphSetHover(null); }
 function _jaccard(setA, setB){
   if(!setA.size && !setB.size) return 0;
   let inter = 0;
+  // Перебираємо менший набір: у графі жанрів це сотні пісень замість тисяч (hard rock — понад 2000).
+  if(setA.size > setB.size) [setA, setB] = [setB, setA];
   for(const x of setA) if(setB.has(x)) inter++;
   const union = setA.size + setB.size - inter;
   return union ? inter/union : 0;
@@ -503,9 +507,12 @@ function openSimilarityGraph(kind){
     onClickFn = s => { closeGraph(); playSong(s.id); };
     titleKey = 'graph.titleSongs';
   } else if(kind === 'genres'){
-    const genreNames = [...new Set(songs.flatMap(s=>s.genres))];
-    // Схожість жанрів = наскільки часто вони зустрічаються РАЗОМ у тих самих піснях.
-    const songIdSets = genreNames.map(g => new Set(songs.filter(s=>s.genres.includes(g)).map(s=>s.id)));
+    // Схожість жанрів = наскільки часто вони зустрічаються РАЗОМ у тих самих піснях. Набори пісень для всіх
+    // жанрів — одним проходом каталогу, а не окремим перебором 18 тис. пісень на кожен із сотень жанрів.
+    const byGenre = new Map();
+    for(const s of songs) for(const g of s.genres){ let set = byGenre.get(g); if(!set) byGenre.set(g, set = new Set()); set.add(s.id); }
+    const genreNames = [...byGenre.keys()];
+    const songIdSets = genreNames.map(g => byGenre.get(g));
     items = genreNames;
     simFn = (i,j) => _jaccard(songIdSets[i], songIdSets[j]);
     labelFn = g => abbrGenre(g);
