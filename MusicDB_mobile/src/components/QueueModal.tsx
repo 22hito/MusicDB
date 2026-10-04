@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/state/SettingsContext';
 import { useApiBridge } from '@/api/ApiBridge';
@@ -35,7 +36,7 @@ export function QueueRow({ song, meta, current, onPress, children }: { song: Son
   return (
     <TouchableOpacity onPress={onPress} style={[styles.row, current && { backgroundColor: `${theme.accent}1a` }]}>
       <View style={[styles.cover, { backgroundColor: theme.surface2 }]}>
-        {thumb ? <Image source={{ uri: thumb }} style={styles.coverImg} /> : <NoteIcon size={16} color={theme.muted} />}
+        {thumb ? <Image source={{ uri: thumb }} style={styles.coverImg} recyclingKey={thumb} cachePolicy="memory-disk" contentFit="cover" /> : <NoteIcon size={16} color={theme.muted} />}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={[styles.title, { color: current ? theme.accent : theme.text }]}>{song.title}</Text>

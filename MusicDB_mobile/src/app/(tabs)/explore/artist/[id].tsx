@@ -14,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+// Обкладинки в дискографії — через expo-image: кеш на диску, без блимання чужих картинок у списку.
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -237,7 +239,7 @@ export default function ArtistScreen() {
                       <TouchableOpacity key={s.id} onPress={() => play(popular, s.id)} style={styles.popRow}>
                         <Text style={[styles.popN, { color: theme.muted }]}>{i + 1}</Text>
                         <View style={[styles.popCover, { backgroundColor: theme.surface2 }]}>
-                          {th ? <Image source={{ uri: th }} style={StyleSheet.absoluteFill} /> : <NoteIcon size={14} color={theme.muted} />}
+                          {th ? <ExpoImage source={{ uri: th }} style={StyleSheet.absoluteFill} recyclingKey={th} cachePolicy="memory-disk" contentFit="cover" /> : <NoteIcon size={14} color={theme.muted} />}
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text numberOfLines={1} style={{ color: player.current?.id === s.id ? theme.accent : theme.text, fontFamily: FONT_SANS_SEMIBOLD }}>
@@ -260,7 +262,7 @@ export default function ArtistScreen() {
                       // Картка відкриває альбом (список пісень), ▶ на обкладинці — одразу грає (як на сайті).
                       <TouchableOpacity key={al.name} onPress={() => setOpenAlbum(al)} style={{ width: 128 }}>
                         <View style={[styles.albumCover, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
-                          {al.cover ? <Image source={{ uri: al.cover }} style={StyleSheet.absoluteFill} /> : <DiscIcon size={30} color={theme.muted} />}
+                          {al.cover ? <ExpoImage source={{ uri: al.cover }} style={StyleSheet.absoluteFill} recyclingKey={al.cover} cachePolicy="memory-disk" contentFit="cover" /> : <DiscIcon size={30} color={theme.muted} />}
                           <TouchableOpacity onPress={() => play(al.songs)} hitSlop={8} style={[styles.albumPlay, { backgroundColor: theme.accent }]}>
                             <PlayIcon size={12} color={theme.onAccent} />
                           </TouchableOpacity>

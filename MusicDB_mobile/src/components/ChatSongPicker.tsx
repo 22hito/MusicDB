@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSettings } from '@/state/SettingsContext';
 import { useMusicApi } from '@/api/endpoints';
 import { Button } from './UI';
@@ -16,7 +17,7 @@ export function SongMini({ song, right }: { song: Song; right?: React.ReactNode 
   return (
     <View style={styles.row}>
       {uri ? (
-        <Image source={{ uri }} style={styles.thumb} />
+        <Image source={{ uri }} style={styles.thumb} recyclingKey={uri} cachePolicy="memory-disk" contentFit="cover" />
       ) : (
         <View style={[styles.thumb, { backgroundColor: theme.surface2, alignItems: 'center', justifyContent: 'center' }]}>
           <NoteIcon size={14} color={theme.muted} />
