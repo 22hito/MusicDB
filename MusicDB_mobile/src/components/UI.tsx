@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { useSettings } from '@/state/SettingsContext';
 import {
   FONT_SANS_MEDIUM,
@@ -237,7 +237,16 @@ export function Avatar({ url, size = 40, name }: { url: string | null | undefine
   const { theme, apiBase } = useSettings();
   // Своя аватарка в посиланнях на автора — відносна адреса /api/users/{id}/avatar (див. UserDirectoryService.AvatarLink).
   const src = url?.startsWith('/') ? `${apiBase}${url}` : url;
-  if (src) return <Image source={{ uri: src }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.surface2 }} />;
+  if (src)
+    return (
+      <Image
+        source={{ uri: src }}
+        recyclingKey={src}
+        cachePolicy="memory-disk"
+        contentFit="cover"
+        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.surface2 }}
+      />
+    );
   return (
     <View
       style={{

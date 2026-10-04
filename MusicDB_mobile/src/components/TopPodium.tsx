@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSettings } from '@/state/SettingsContext';
 import { avatarColor } from './UI';
 import { HeadphonesIcon, HeartIcon, NoteIcon, PauseIcon, PlayIcon } from './Icons';
@@ -47,7 +48,7 @@ export function TopPodium({
             ]}
           >
             <View style={[styles.cover, { backgroundColor: thumb ? theme.surface2 : avatarColor(s.artist) }]}>
-              {thumb ? <Image source={{ uri: thumb }} style={StyleSheet.absoluteFill} /> : <NoteIcon size={22} color="rgba(255,255,255,0.85)" />}
+              {thumb ? <Image source={{ uri: thumb }} style={StyleSheet.absoluteFill} cachePolicy="memory-disk" contentFit="cover" /> : <NoteIcon size={22} color="rgba(255,255,255,0.85)" />}
               {cur ? (
                 <View style={[styles.playing, { backgroundColor: theme.accent }]}>
                   {isPlaying ? <PauseIcon size={12} color={theme.onAccent} /> : <PlayIcon size={11} color={theme.onAccent} />}

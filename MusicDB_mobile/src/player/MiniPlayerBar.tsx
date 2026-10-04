@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import Slider from '@react-native-community/slider';
 import { usePlayer, usePlayerProgress } from './PlayerContext';
 import { useSettings } from '@/state/SettingsContext';
@@ -86,7 +87,7 @@ export function MiniPlayerBar() {
         <View style={styles.side}>
           <View style={[styles.cover, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
             {p.videoId ? (
-              <Image source={{ uri: `https://img.youtube.com/vi/${p.videoId}/mqdefault.jpg` }} style={styles.coverImg} />
+              <Image source={{ uri: `https://img.youtube.com/vi/${p.videoId}/mqdefault.jpg` }} style={styles.coverImg} cachePolicy="memory-disk" contentFit="cover" />
             ) : (
               <Text style={{ color: theme.muted, fontSize: 18 }}>♪</Text>
             )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSettings } from '@/state/SettingsContext';
 import { Badge } from './UI';
 import { MarqueeText } from './MarqueeText';
@@ -105,7 +106,7 @@ export function SongRow({
         ) : null}
         {top ? (
           <TouchableOpacity onPress={onPlay} style={[styles.topCover, { backgroundColor: theme.surface2, borderColor: isCurrent ? theme.accent : theme.border }]} hitSlop={6}>
-            {thumb ? <Image source={{ uri: thumb }} style={StyleSheet.absoluteFill} /> : null}
+            {thumb ? <Image source={{ uri: thumb }} style={StyleSheet.absoluteFill} recyclingKey={thumb} cachePolicy="memory-disk" contentFit="cover" /> : null}
             <View style={[styles.topCoverPlay, { backgroundColor: thumb ? 'rgba(0,0,0,0.38)' : 'transparent' }]}>
               {isCurrent && isPlaying ? <PauseIcon size={14} color={thumb ? '#fff' : theme.accent} /> : <PlayIcon size={13} color={thumb ? '#fff' : isCurrent ? theme.accent : theme.text} />}
             </View>
