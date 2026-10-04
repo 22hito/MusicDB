@@ -5,12 +5,15 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import {
-  PlayfairDisplay_700Bold,
-  PlayfairDisplay_800ExtraBold,
-  PlayfairDisplay_900Black,
-} from '@expo-google-fonts/playfair-display';
-import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+// Шрифти — по одному файлу з підшляху, а не з головного модуля пакета: той робить require() усіх 30
+// накреслень (кожне ~350 КБ), і Metro клав у кожне OTA-оновлення ~9 МБ шрифтів замість 7 потрібних.
+import { PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display/700Bold';
+import { PlayfairDisplay_800ExtraBold } from '@expo-google-fonts/playfair-display/800ExtraBold';
+import { PlayfairDisplay_900Black } from '@expo-google-fonts/playfair-display/900Black';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { SettingsProvider, useSettings } from '@/state/SettingsContext';
 import { ApiBridgeProvider } from '@/api/ApiBridge';
 import { FavoritesProvider } from '@/state/FavoritesContext';
