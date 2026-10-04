@@ -17,6 +17,9 @@ let wheelAllGenres = [];
 let wheelGenres = [];
 let wheelResultGenre = null;
 let wheelSpinning = false;
+// Поточний кут диска: новий спін крутить ВІД нього (як у застосунку). Раніше кут рахувався від нуля,
+// тож повторний спін проходив лише різницю з попереднім — часом пів оберту замість кількох.
+let _wheelAngle = 0;
 let currentWheelSongs = [];
 
 function _shuffledCopy(arr){
@@ -223,6 +226,7 @@ function _redrawWheel(){
   const disc = document.getElementById('wheel-disc');
   disc.style.transition = 'none';
   disc.style.transform = 'rotate(0deg)';
+  _wheelAngle = 0;
   requestAnimationFrame(()=>{ disc.style.transition = ''; });
 }
 
@@ -391,10 +395,12 @@ function spinWheel(){
   // Сегмент winnerIndex опиняється під нерухомою стрілкою, коли rotation == 360 - mid (+ повні оберти).
   const fullSpins = Math.max(4, Math.round(duration*1.4)) + Math.floor(Math.random()*2);
   const mid = winnerIndex*segAngle + segAngle/2;
-  const rotation = fullSpins*360 + (360 - mid);
+  const start = _wheelAngle;
+  const rotation = start + fullSpins*360 + (((360 - mid - start) % 360) + 360) % 360;
+  _wheelAngle = rotation;
   const disc = document.getElementById('wheel-disc');
   disc.classList.remove('revealed'); // прибрати розмиття з попереднього результату на час нового обертання
-  disc.style.transitionDuration = `${duration}s`;
+  disc.style.setProperty('--wheel-dur', `${duration}s`);
   disc.style.transform = `rotate(${rotation}deg)`;
   setTimeout(()=>{
     wheelSpinning = false;

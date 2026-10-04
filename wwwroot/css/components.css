@@ -171,7 +171,7 @@ tbody tr:last-child td { border-bottom: none; }
      "медальйона", а не наклейки на чорному тлі. */
   border: 5px solid var(--accent);
   box-shadow: 0 0 0 2px var(--surface2), 0 16px 46px rgba(var(--shadow-rgb), calc(0.55 * var(--shadow-k))), 0 0 70px color-mix(in srgb, var(--accent) 12%, transparent);
-  transition: transform 4s cubic-bezier(.17,.67,.32,1.01);
+  transition: transform var(--wheel-dur, 4s) cubic-bezier(.17,.67,.32,1.01);
 }
 /* Розмиття диска, поки в центрі показано результат — фокус переходить на
    напис жанру, а не на строкатий диск позаду нього. filter-transition
@@ -179,7 +179,11 @@ tbody tr:last-child td { border-bottom: none; }
    .wheel-disc: тоді ЗНЯТТЯ класу (закриття картки або новий спін) більше
    не має жодного transition для filter у застосованих правилах — розмиття
    зникає миттєво, а не програє 0.5s назад. Плавною лишається тільки поява. */
-.wheel-disc.revealed { filter: blur(5px); transition: transform 4s cubic-bezier(.17,.67,.32,1.01), filter 0.4s ease; }
+.wheel-disc.revealed { filter: blur(5px); transition: transform var(--wheel-dur, 4s) cubic-bezier(.17,.67,.32,1.01), filter 0.4s ease; }
+/* Обертання колеса — сама суть гри, а не прикраса: «Анімації: зменшені» (і prefers-reduced-motion)
+   його не вимикають, інакше колесо миттєво стрибало б на результат. #id — щоб перемогти глобальне правило. */
+#wheel-disc { transition-duration: var(--wheel-dur, 4s) !important; }
+#wheel-disc.revealed { transition-duration: var(--wheel-dur, 4s), 0.4s !important; }
 /* Стрілка — краплеподібний "пін" (SVG, не CSS-трикутник) із золотим
    градієнтом замість плоскої заливки. */
 .wheel-pointer { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); z-index: 5; filter: drop-shadow(0 3px 6px rgba(var(--shadow-rgb), calc(0.5 * var(--shadow-k)))); }
