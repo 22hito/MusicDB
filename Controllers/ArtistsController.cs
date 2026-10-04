@@ -78,25 +78,22 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ArtistDetailDto>> GetById(int id)
     {
-        var artist = await db.Artists.FindAsync(id);
-        if (artist is null) return NotFound();
-
-        var songCount = await db.MusicArtists.CountAsync(ma => ma.ArtistId == id);
-        var followerCount = await db.ArtistFollows.CountAsync(f => f.ArtistId == id);
-
-        var isFollowing = false;
-        if (IsAuthenticated)
+        // Один запит до бази замість чотирьох послідовних (виконавець, кількість пісень, підписники, чи стежу я).
+        int? userId = IsAuthenticated ? await CurrentUserIdAsync() : null;
+        var row = await db.Artists.AsNoTracking().Where(a => a.Id == id).Select(a => new
         {
-            var userId = await CurrentUserIdAsync();
-            isFollowing = await db.ArtistFollows.AnyAsync(f => f.ArtistId == id && f.UserId == userId);
-        }
+            a.Id, a.Name, a.Bio, a.BioEn, a.ImageUrl,
+            Songs = db.MusicArtists.Count(ma => ma.ArtistId == id),
+            Followers = db.ArtistFollows.Count(f => f.ArtistId == id),
+            Following = userId != null && db.ArtistFollows.Any(f => f.ArtistId == id && f.UserId == userId),
+        }).FirstOrDefaultAsync();
+        if (row is null) return NotFound();
 
-        return Ok(new ArtistDetailDto(artist.Id, artist.Name, artist.Bio, ImageLink(artist), songCount, followerCount, isFollowing, artist.BioEn));
+        return Ok(new ArtistDetailDto(row.Id, row.Name, row.Bio, ImageLink(row.Id, row.ImageUrl), row.Songs, row.Followers, row.Following, row.BioEn));
     }
 
     // Фото виконавця лежить у сховищі файлів (R2), у БД — лише ім'я файлу.
     // Назовні — адреса нашого ендпоінта з версією, щоб нове фото не бралось із кешу.
-    private static string? ImageLink(Artist a) => ImageLink(a.Id, a.ImageUrl);
     internal static string? ImageLink(int id, string? file) =>
         AudioFiles.IsSafeName(file) ? $"/api/artists/{id}/image?v={Path.GetFileNameWithoutExtension(file)![^8..]}" : null;
 
