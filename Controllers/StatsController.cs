@@ -39,14 +39,20 @@ public class StatsController(MusicDbContext db, MusicService musicService, Catal
     [HttpGet("top-songs")]
     public async Task<IEnumerable<Models.SongDto>> GetTopSongs([FromQuery] int limit = 100)
     {
-        var topIds = await db.ListeningHistory
-            .GroupBy(h => h.MusicId)
-            .OrderByDescending(g => g.Count())
-            .Select(g => g.Key)
-            .Take(limit)
-            .ToListAsync();
+        // Групування всієї історії + 6 запитів на картки пісень — на кожне відкриття «Топ 100». Кешуємо, як і
+        // каталог: зміни пісень/оцінок скидають кеш одразу, лічильники прослуховувань оновлюються раз на 2 хв.
+        limit = Math.Clamp(limit, 1, 200);
+        return await catalogCache.GetOrCreateAsync($"top-songs:{limit}", async () =>
+        {
+            var topIds = await db.ListeningHistory
+                .GroupBy(h => h.MusicId)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .Take(limit)
+                .ToListAsync();
 
-        var dtos = await musicService.GetSongDtosByIdsAsync(topIds);
-        return dtos.OrderByDescending(d => d.PlayCount).ToList();
+            var dtos = await musicService.GetSongDtosByIdsAsync(topIds);
+            return dtos.OrderByDescending(d => d.PlayCount).ToList();
+        }, TimeSpan.FromMinutes(2));
     }
 }

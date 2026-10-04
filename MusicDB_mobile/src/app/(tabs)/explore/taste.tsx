@@ -9,7 +9,7 @@ import { useMusicApi } from '@/api/endpoints';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { usePlayer } from '@/player/PlayerContext';
 import { Avatar, avatarColor, avatarInitials, Badge, Button, EmptyState, ErrorState, SectionTitle, SegmentedPicker } from '@/components/UI';
-import { ArtistAvatar } from '@/components/ArtistAvatar';
+import { ArtistAvatar, useAbsoluteUrl } from '@/components/ArtistAvatar';
 import { ForceGraph, type GraphEdge, type GraphNode } from '@/components/ForceGraph';
 import { MicIcon, PlayIcon, UsersIcon } from '@/components/Icons';
 import { FONT_MONO_MEDIUM, FONT_SANS_SEMIBOLD, RADIUS, SPACING, graphSeries } from '@/constants/theme';
@@ -68,6 +68,8 @@ export default function TasteScreen() {
   const { currentUser } = useApiBridge();
   const api = useMusicApi();
   const player = usePlayer();
+  // Свої аватарки приходять відносною адресою /api/users/{id}/avatar — SVG-картинці графа потрібна повна.
+  const absUrl = useAbsoluteUrl();
   const requireAuth = useRequireAuth();
   const authed = !!currentUser?.authenticated;
   const { width, height: winH } = useWindowDimensions();
@@ -120,7 +122,7 @@ export default function TasteScreen() {
       color: p.isMe ? ME_COLOR : avatarColor(p.displayName),
       ring: p.isMe,
       size: personSize(p),
-      image: p.avatarUrl,
+      image: absUrl(p.avatarUrl),
       initials: avatarInitials(p.displayName),
       mark: p.relationshipStatus === 'friends' ? FRIEND_COLOR : undefined,
     });
@@ -180,7 +182,7 @@ export default function TasteScreen() {
       rings: undefined,
       pin: meIdx >= 0 ? meIdx : undefined,
     };
-  }, [data, mode, t, ME_COLOR, FRIEND_COLOR, ARTIST_COLOR]);
+  }, [data, mode, t, ME_COLOR, FRIEND_COLOR, ARTIST_COLOR, absUrl]);
   const legend = mode === 'people'
     ? [{ color: ME_COLOR, label: t('graph.legend.you') }, { color: FRIEND_COLOR, label: t('graph.legend.friends'), ring: true }]
     : [

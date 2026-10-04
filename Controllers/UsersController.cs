@@ -27,8 +27,7 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
     [HttpGet("{id:int}/avatar")]
     public async Task<IActionResult> Avatar(int id)
     {
-        var card = (await userDirectory.GetUserCardsAsync([id])).GetValueOrDefault(id);
-        var avatar = card?.AvatarUrl;
+        var avatar = await userDirectory.GetAvatarSourceAsync(id);
         if (string.IsNullOrEmpty(avatar)) return NotFound();
         if (!avatar.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
             return Uri.TryCreate(avatar, UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps ? Redirect(avatar) : NotFound();
@@ -59,17 +58,23 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
             select new { u.Id, DisplayName = p != null ? p.DisplayName : null, u.GoogleName, AvatarUrl = p != null ? p.AvatarUrl : null, u.GooglePicture }
         ).Take(Math.Clamp(limit, 1, 50)).ToListAsync();
 
-        var results = new List<UserSearchResultDto>();
-        foreach (var r in rows)
+        // Стосунки з усіма знайденими — одним запитом, а не окремим на кожен рядок.
+        var ids = rows.Select(r => r.Id).ToList();
+        var requests = await db.FriendRequests
+            .Where(r => (r.RequesterId == myId && ids.Contains(r.AddresseeId)) || (r.AddresseeId == myId && ids.Contains(r.RequesterId)))
+            .ToListAsync();
+        string StatusWith(int otherId)
         {
-            var status = await RelationshipStatusAsync(myId, r.Id);
-            results.Add(new UserSearchResultDto(
-                r.Id,
-                r.DisplayName ?? r.GoogleName ?? $"Учасник спільноти #{r.Id}",
-                r.AvatarUrl ?? r.GooglePicture,
-                status));
+            var req = requests.FirstOrDefault(r => r.RequesterId == otherId || r.AddresseeId == otherId);
+            if (req is null) return "none";
+            if (req.Status == "accepted") return "friends";
+            return req.RequesterId == myId ? "pending_outgoing" : "pending_incoming";
         }
-        return Ok(results);
+        return Ok(rows.Select(r => new UserSearchResultDto(
+            r.Id,
+            r.DisplayName ?? r.GoogleName ?? $"Учасник спільноти #{r.Id}",
+            UserDirectoryService.AvatarLink(r.Id, r.AvatarUrl ?? r.GooglePicture),
+            StatusWith(r.Id))).ToList());
     }
 
     // Граф "Схожий смак": люди, ребра схожості й список найближчих до мене.
@@ -115,7 +120,7 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
         return Ok(new PublicProfileDto(
             user.Id,
             ownerLabel,
-            profile?.AvatarUrl ?? user.GooglePicture,
+            UserDirectoryService.AvatarLink(user.Id, profile?.AvatarUrl ?? user.GooglePicture),
             status,
             user.CreatedAt.ToString("yyyy-MM-dd"),
             totalListened,

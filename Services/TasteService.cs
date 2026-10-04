@@ -41,10 +41,15 @@ public class TasteService(MusicDbContext db)
         var favorites = await db.Favorites.Select(f => new { f.UserEmail, f.MusicId }).ToListAsync();
         foreach (var f in favorites) Add(f.UserEmail, f.MusicId, FavoriteWeight);
 
-        var artistRows = await db.MusicArtists.Select(ma => new { ma.MusicId, ma.ArtistId, ma.Artist.Name }).ToListAsync();
+        // Виконавці й жанри — лише пісень, які хтось слухав чи вподобав, а не всього каталогу
+        // (десятки тисяч зв'язків на кожне відкриття «Схожого смаку»).
+        var musicIds = weights.Values.SelectMany(m => m.Keys).Distinct().ToList();
+        var artistRows = await db.MusicArtists.Where(ma => musicIds.Contains(ma.MusicId))
+            .Select(ma => new { ma.MusicId, ma.ArtistId, ma.Artist.Name }).ToListAsync();
         var artistsByMusic = artistRows.ToLookup(r => r.MusicId, r => r.ArtistId);
         var artistNames = artistRows.GroupBy(r => r.ArtistId).ToDictionary(g => g.Key, g => g.First().Name);
-        var genreRows = await db.MusicGenres.Select(mg => new { mg.MusicId, mg.Genre.GenreName }).ToListAsync();
+        var genreRows = await db.MusicGenres.Where(mg => musicIds.Contains(mg.MusicId))
+            .Select(mg => new { mg.MusicId, mg.Genre.GenreName }).ToListAsync();
         var genresByMusic = genreRows.ToLookup(r => r.MusicId, r => GenreNames.Key(r.GenreName));
         // Ключ жанру -> назва для показу (перше написання з бази).
         var genreNames = genreRows.GroupBy(r => GenreNames.Key(r.GenreName)).ToDictionary(g => g.Key, g => g.First().GenreName.Trim());

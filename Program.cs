@@ -75,10 +75,15 @@ builder.Services.AddAuthentication(options =>
     // Виклик входу: для запиту з токеном — просто 401, для решти — як і раніше Google.
     options.DefaultChallengeScheme = "SmartChallenge";
 })
-.AddPolicyScheme("SmartChallenge", "Google або 401 для токена", o =>
+.AddPolicyScheme("SmartChallenge", "Google або 401 для токена й API", o =>
+    // /api і /hubs — cookie-схема, яка відповідає 401 (див. OnRedirectToLogin нижче). Раніше й вони йшли на
+    // Google: fetch() слухняно ходив за редиректом на accounts.google.com, CSP його блокувала, і замість 401
+    // (на який сайт показує «увійдіть») виходила мережева помилка — ще й після зайвого запиту.
     o.ForwardDefaultSelector = ctx => ctx.Request.Headers.ContainsKey(UploadTokenAuth.Header)
         ? UploadTokenAuth.Scheme
-        : GoogleDefaults.AuthenticationScheme)
+        : ctx.Request.Path.StartsWithSegments("/api") || ctx.Request.Path.StartsWithSegments("/hubs")
+            ? CookieAuthenticationDefaults.AuthenticationScheme
+            : GoogleDefaults.AuthenticationScheme)
 .AddPolicyScheme("Smart", "Cookie або токен завантаження", o =>
     o.ForwardDefaultSelector = ctx => ctx.Request.Headers.ContainsKey(UploadTokenAuth.Header)
         ? UploadTokenAuth.Scheme
@@ -92,10 +97,10 @@ builder.Services.AddAuthentication(options =>
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
 
-    // Повертаємо статус-коди замість редіректу для /api маршрутів
+    // Повертаємо статус-коди замість редіректу для /api і /hubs маршрутів
     options.Events.OnRedirectToLogin = ctx =>
     {
-        if (ctx.Request.Path.StartsWithSegments("/api"))
+        if (ctx.Request.Path.StartsWithSegments("/api") || ctx.Request.Path.StartsWithSegments("/hubs"))
             ctx.Response.StatusCode = 401;
         else
             ctx.Response.Redirect(ctx.RedirectUri);

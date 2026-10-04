@@ -52,7 +52,7 @@ public class UserDirectoryService(MusicDbContext db)
 
     public record UserCard(int UserId, string DisplayName, string? AvatarUrl)
     {
-        public UserRefDto ToRef() => new(UserId, DisplayName, AvatarLink(UserId, AvatarUrl));
+        public UserRefDto ToRef() => new(UserId, DisplayName, AvatarUrl);
     }
 
     // Своя аватарка зберігається data:-URI (base64, десятки КБ) — у посиланнях на автора (гілки, дописи,
@@ -83,11 +83,23 @@ public class UserDirectoryService(MusicDbContext db)
             select new { u.Id, DisplayName = p != null ? p.DisplayName : null, u.GoogleName, AvatarUrl = p != null ? p.AvatarUrl : null, u.GooglePicture }
         ).ToListAsync();
 
+        // Аватарка — посиланням (AvatarLink), а не вмістом: картки йдуть у списки (листування, кожне
+        // повідомлення, відгуки, граф смаку на 150 людей, «додав» у піснях ком'юніті), і своя аватарка
+        // data:-URI несла б десятки КБ на кожен рядок.
         return rows.ToDictionary(r => r.Id, r => new UserCard(
             r.Id,
             r.DisplayName ?? r.GoogleName ?? $"Учасник спільноти #{r.Id}",
-            r.AvatarUrl ?? r.GooglePicture));
+            AvatarLink(r.Id, r.AvatarUrl ?? r.GooglePicture)));
     }
+
+    // Сама картинка для /api/users/{id}/avatar: data:-URI своєї аватарки або адреса фото з Google.
+    public async Task<string?> GetAvatarSourceAsync(int userId) => await (
+        from u in db.Users
+        where u.Id == userId
+        join p in db.UserProfiles on u.Email equals p.UserEmail into profiles
+        from p in profiles.DefaultIfEmpty()
+        select p != null && p.AvatarUrl != null ? p.AvatarUrl : u.GooglePicture
+    ).FirstOrDefaultAsync();
 
     public Task<Dictionary<int, UserCard>> GetUserCardsAsync(IEnumerable<int> userIds) => GetUserCardsAsync(db, userIds);
 }

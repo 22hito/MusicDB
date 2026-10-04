@@ -32,27 +32,19 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
         User.FindFirstValue(ClaimTypes.Name),
         User.FindFirstValue("picture") ?? User.FindFirstValue("urn:google:picture"));
 
-    private async Task<PublicUserDto> ToPublicUserDtoAsync(int userId, string relationshipStatus)
+    // Імена й аватарки всіх людей списку — одним запитом (GetUserCardsAsync), а не двома на кожного.
+    private static FriendRequestDto ToFriendRequestDto(FriendRequest r, int otherUserId, Dictionary<int, UserDirectoryService.UserCard> cards)
     {
-        var user = await db.Users.FindAsync(userId);
-        var profile = user is null ? null : await db.UserProfiles.FindAsync(user.Email);
-        return new PublicUserDto(
-            userId,
-            profile?.DisplayName ?? user?.GoogleName ?? $"Учасник спільноти #{userId}",
-            profile?.AvatarUrl ?? user?.GooglePicture,
-            relationshipStatus);
-    }
-
-    private async Task<FriendRequestDto> ToFriendRequestDtoAsync(FriendRequest r, int otherUserId)
-    {
-        var user = await db.Users.FindAsync(otherUserId);
-        var profile = user is null ? null : await db.UserProfiles.FindAsync(user.Email);
+        var card = cards.GetValueOrDefault(otherUserId);
         return new FriendRequestDto(
             r.Id, otherUserId,
-            profile?.DisplayName ?? user?.GoogleName ?? $"Учасник спільноти #{otherUserId}",
-            profile?.AvatarUrl ?? user?.GooglePicture,
+            card?.DisplayName ?? $"Учасник спільноти #{otherUserId}",
+            card?.AvatarUrl,
             r.CreatedAt.ToString("yyyy-MM-dd HH:mm"));
     }
+
+    private async Task<FriendRequestDto> ToFriendRequestDtoAsync(FriendRequest r, int otherUserId) =>
+        ToFriendRequestDto(r, otherUserId, await userDirectory.GetUserCardsAsync([otherUserId]));
 
     [HttpGet]
     public async Task<ActionResult<List<PublicUserDto>>> GetFriends()
@@ -62,13 +54,10 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
             .Where(r => r.Status == "accepted" && (r.RequesterId == myId || r.AddresseeId == myId))
             .ToListAsync();
 
-        var result = new List<PublicUserDto>();
-        foreach (var r in rows)
-        {
-            var otherId = r.RequesterId == myId ? r.AddresseeId : r.RequesterId;
-            result.Add(await ToPublicUserDtoAsync(otherId, "friends"));
-        }
-        return Ok(result);
+        var otherIds = rows.Select(r => r.RequesterId == myId ? r.AddresseeId : r.RequesterId).ToList();
+        var cards = await userDirectory.GetUserCardsAsync(otherIds);
+        return Ok(otherIds.Select(id => new PublicUserDto(
+            id, cards.GetValueOrDefault(id)?.DisplayName ?? $"Учасник спільноти #{id}", cards.GetValueOrDefault(id)?.AvatarUrl, "friends")).ToList());
     }
 
     [HttpGet("requests/incoming")]
@@ -80,9 +69,8 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
 
-        var result = new List<FriendRequestDto>();
-        foreach (var r in rows) result.Add(await ToFriendRequestDtoAsync(r, r.RequesterId));
-        return Ok(result);
+        var cards = await userDirectory.GetUserCardsAsync(rows.Select(r => r.RequesterId));
+        return Ok(rows.Select(r => ToFriendRequestDto(r, r.RequesterId, cards)).ToList());
     }
 
     [HttpGet("requests/outgoing")]
@@ -94,9 +82,8 @@ public class FriendsController(MusicDbContext db, UserDirectoryService userDirec
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
 
-        var result = new List<FriendRequestDto>();
-        foreach (var r in rows) result.Add(await ToFriendRequestDtoAsync(r, r.AddresseeId));
-        return Ok(result);
+        var cards = await userDirectory.GetUserCardsAsync(rows.Select(r => r.AddresseeId));
+        return Ok(rows.Select(r => ToFriendRequestDto(r, r.AddresseeId, cards)).ToList());
     }
 
     // Якщо цільовий юзер уже надіслав pending-запит мені — одразу приймаємо,
