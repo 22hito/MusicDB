@@ -75,6 +75,9 @@ if(typeof MutationObserver === 'function'){
 }
 
 function showPage(n){
+  // Прокрутка старої сторінки — ДО будь-яких змін DOM (див. _routerOnShowPage).
+  const fromScrollY = window.scrollY;
+  let toTop = false;
   const doSwitch = () => {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-menu-item, #tab-home').forEach(b=>b.classList.remove('active'));
@@ -82,11 +85,12 @@ function showPage(n){
     // Таблиця_2 живе на тій самій сторінці "Головна" — підсвічуємо її пункт меню.
     const tab = document.getElementById(n==='home' && homeSource==='community' ? 'tab-community' : 'tab-'+n);
     if(tab) tab.classList.add('active');
+    if(toTop) window.scrollTo({ top: 0, behavior: 'instant' });
   };
   _hideNavSearch();
   document.body.classList.remove('m-search-open');
   document.documentElement.setAttribute('data-page', n);
-  _routerOnShowPage(n);
+  toTop = _routerOnShowPage(n, fromScrollY);
   // View Transitions API — нативний крос-фейд між сторінками (Chrome/Edge,
   // а отже й Electron). Без підтримки (Firefox/Safari) просто миттєво
   // перемикає, як і раніше — жодного regressions, лише бонус там, де є.
@@ -157,20 +161,24 @@ if('scrollRestoration' in history) history.scrollRestoration = 'manual';
 // сторінки — бо openPlaylist() тощо викликають showPage() асинхронно, після fetch.
 let _routeRestoring = null;
 let _routerReady = false;
-function _routerOnShowPage(n){
-  if(!_routerReady) return;
+// fromScrollY — прокрутка попередньої сторінки, прочитана showPage ДО перемикання: читання window.scrollY
+// після зміни DOM змушувало браузер синхронно розкладати сторінку (на телефоні — до ~100 мс на кожен перехід),
+// ще й давало вже обрізане висотою нової сторінки значення. Повертає true, якщо нову сторінку треба
+// показати з початку — прокручує сам виклик, уже після перемикання (тоді розкладка потрібна однаково).
+function _routerOnShowPage(n, fromScrollY = window.scrollY){
+  if(!_routerReady) return false;
   const path = _pathForPage(n);
   if(_routeRestoring === n){
     _routeRestoring = null;
     history.replaceState({ page: n, scrollY: history.state?.scrollY || 0 }, '', path + location.search);
     _restoreScroll(history.state?.scrollY || 0);
-    return;
+    return false;
   }
-  if(path === location.pathname) return; // та сама сторінка (напр. повторний клік "Головна")
+  if(path === location.pathname) return false; // та сама сторінка (напр. повторний клік "Головна")
   // Запам'ятовуємо, де користувач був на попередній сторінці — "назад" поверне туди ж.
-  history.replaceState({ ...(history.state || {}), scrollY: window.scrollY }, '');
+  history.replaceState({ ...(history.state || {}), scrollY: fromScrollY }, '');
   history.pushState({ page: n, scrollY: 0 }, '', path);
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  return true;
 }
 // Вміст (таблиця, плейлист) може домальовуватись асинхронно — пробуємо кілька
 // разів, поки сторінка не стане достатньо високою для збереженої позиції.

@@ -555,6 +555,14 @@ function _songsColspan(){
   document.querySelectorAll('#songs-table thead th').forEach(th => { if(getComputedStyle(th).display !== 'none') n++; });
   return n || 13;
 }
+// Рядок пошуку для пісні (виконавець, назва, альбом у нижньому регістрі) — раз на пісню, а не toLowerCase()
+// трьох полів у всіх 18 тис. пісень на кожне натискання. WeakMap — щоб не додавати полів самим пісням.
+const _songSearchKeys = new WeakMap();
+function _songSearchKey(s){
+  let k = _songSearchKeys.get(s);
+  if(k === undefined){ k = `${s.artist}\n${s.title}\n${s.album || ''}`.toLowerCase(); _songSearchKeys.set(s, k); }
+  return k;
+}
 function renderSongs(){
   const srch=document.getElementById('search').value.toLowerCase();
   const gf=document.getElementById('filter-genre').value;
@@ -562,7 +570,7 @@ function renderSongs(){
   _syncMobileSort();
   const isCommunity = homeSource === 'community';
   const filtered=activeSongs().filter(s=>{
-    const mt=!srch||s.artist.toLowerCase().includes(srch)||s.title.toLowerCase().includes(srch)||(s.album&&s.album.toLowerCase().includes(srch))
+    const mt=!srch||_songSearchKey(s).includes(srch)
       ||(isCommunity&&s.submittedBy&&s.submittedBy.displayName.toLowerCase().includes(srch));
     const mg=!gf||s.genres.includes(gf);
     const ma=!albumFilter||s.album===albumFilter;
@@ -620,8 +628,9 @@ function renderSongs(){
 
 // Тисячі пісень не малюємо разом: порціями по SONG_ROWS_CHUNK — наступна з'являється,
 // коли низ таблиці наближається до екрана (черга відтворення — усе відфільтроване, displayedSongs).
-// На телефоні картка важча за рядок, а на екрані їх 5–6 — тож порція менша: перший показ утричі швидший.
-const SONG_ROWS_CHUNK = 200, SONG_CARDS_CHUNK = 40;
+// На телефоні картка важча за рядок, а на екрані їх 5–6 — тож порція менша (20 карток — ~6000 px, утричі
+// більше за екран): перший показ і кожне натискання в пошуку малюють удвічі менше, ніж із 40.
+const SONG_ROWS_CHUNK = 200, SONG_CARDS_CHUNK = 20;
 // Телефон ↔ ПК (поворот планшета, зміна вікна): у картки й рядка різні комірки — перемальовуємо.
 window.matchMedia('(max-width: 768px)').addEventListener('change', () => { if(_songRows) renderSongs(); });
 // «Табло»: у рядку під курсором (чи з фокусом клавіатури) виконавець і назва, що не влазять у комірку,
@@ -646,6 +655,17 @@ document.addEventListener('mouseover', e => _tqSet(e.target.closest?.('tr') || n
 document.addEventListener('focusin', e => _tqSet(e.target.closest?.('tr') || null));
 
 let _songRows = null, _songRowsObserver = null;
+// Хто прокручує таблицю: на ПК — власний блок (.scroll-table), на телефоні — сторінка. Рахуємо раз і при зміні
+// ширини вікна: getComputedStyle одразу після вставки порції змушував браузер синхронно перераховувати стилі.
+let _songsScrollRootCache;
+function _songsScrollRoot(tbody){
+  if(_songsScrollRootCache === undefined){
+    const box = tbody.closest('.scroll-table');
+    _songsScrollRootCache = box && /auto|scroll/.test(getComputedStyle(box).overflowY) ? box : null;
+  }
+  return _songsScrollRootCache;
+}
+window.addEventListener('resize', () => { _songsScrollRootCache = undefined; });
 // Сторожовий елемент довантаження — ПІСЛЯ таблиці, а не рядком у ній: рядку був потрібен colspan на
 // кількість видимих колонок, а його підрахунок (getComputedStyle) на кожній порції змушував браузер
 // перераховувати стилі всієї сторінки ще до вставки нових рядків — і вдруге після.
@@ -668,11 +688,8 @@ function _appendSongRows(){
   _songRowsObserver?.disconnect();
   if(next >= list.length) return;
   if(!('IntersectionObserver' in window)){ _appendSongRows(); return; }
-  // На ПК таблиця прокручується у власному блоці (.scroll-table) — стежимо в ньому, на телефоні — сторінка.
   // Новий спостерігач на кожну порцію: observe() одразу повідомляє, чи сторож ще в зоні, — тоді наступна порція.
-  const box = tbody.closest('.scroll-table');
-  const root = box && /auto|scroll/.test(getComputedStyle(box).overflowY) ? box : null;
-  _songRowsObserver = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)) _appendSongRows(); }, { root, rootMargin: '1500px 0px' });
+  _songRowsObserver = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)) _appendSongRows(); }, { root: _songsScrollRoot(tbody), rootMargin: '1500px 0px' });
   _songRowsObserver.observe(sentinel);
 }
 

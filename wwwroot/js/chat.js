@@ -26,7 +26,7 @@ function switchChatTab(tab){
   document.getElementById('chat-dm-subtabs').style.display = authed && main==='dm' ? '' : 'none';
   document.getElementById('chat-sub-dm').classList.toggle('active', tab==='dm');
   document.getElementById('chat-sub-requests').classList.toggle('active', tab==='requests');
-  if(document.getElementById('page-chat').classList.contains('active')) _routerOnShowPage('chat');
+  if(document.getElementById('page-chat').classList.contains('active') && _routerOnShowPage('chat')) window.scrollTo({ top: 0, behavior: 'instant' });
   if(tab==='friends'){
     document.getElementById('chat-friends-login-hint').style.display = authed ? 'none' : '';
     document.getElementById('chat-friends-body').style.display = authed ? '' : 'none';
