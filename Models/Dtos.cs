@@ -31,6 +31,9 @@ public record SongDto(
 // AvatarUrl — фото (своє або з Google); без нього клієнт малює ініціали.
 public record UserRefDto(int UserId, string DisplayName, string? AvatarUrl = null);
 
+// GET /api/notifications/badge — усі лічильники бейджів сайту й застосунку одним запитом.
+public record BadgeCountsDto(int Artist, int Threads, int FriendRequests, int Admin, int Dm, int DmRequests);
+
 public record SetYoutubeVideoDto(string VideoId);
 
 // Текст пісні для режиму караоке — вводить вручну адмін, не з стороннього API.

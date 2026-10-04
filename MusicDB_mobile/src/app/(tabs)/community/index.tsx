@@ -37,6 +37,7 @@ export default function CommunityScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<DmRequest[]>([]);
   const [friendRequests, setFriendRequests] = useState(0);
+  const [dmRequestCount, setDmRequestCount] = useState(0);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -51,16 +52,23 @@ export default function CommunityScreen() {
       if (tab === 'threads') setThreads(await api.getThreads(search.trim()));
       else if (authed && tab === 'dm') setConversations(await api.getConversations());
       else if (authed && tab === 'requests') setRequests(await api.getDmRequests());
-      if (authed) api.getDmRequests().then(setRequests).catch(() => {});
-      if (authed) api.getIncomingFriendRequests().then((r) => setFriendRequests(r.length)).catch(() => {});
-      if (authed) api.getDmUnread().then((d) => setDmUnread(d.unread)).catch(() => {});
+      // Лічильники вкладок — одним запитом (сам список запитів на листування — лише на його вкладці, вище).
+      if (authed)
+        api
+          .getBadges(!!currentUser?.isAdmin)
+          .then((b) => {
+            setFriendRequests(b.friendRequests);
+            setDmUnread(b.dm);
+            setDmRequestCount(b.dmRequests);
+          })
+          .catch(() => {});
     } catch {
       // лишаємо попередні дані
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [api, tab, authed, search]);
+  }, [api, tab, authed, search, currentUser?.isAdmin]);
 
   useEffect(() => {
     setLoading(true);
@@ -113,11 +121,11 @@ export default function CommunityScreen() {
   const tabs: { value: MainTab; label: string; badge?: number }[] = [
     { value: 'threads', label: t('chat.tab.threads') },
     { value: 'friends', label: t('chat.tab.friends'), badge: friendRequests },
-    { value: 'dm', label: t('chat.tab.dm'), badge: dmUnread + requests.length },
+    { value: 'dm', label: t('chat.tab.dm'), badge: dmUnread + dmRequestCount },
   ];
   const subTabs: { value: Tab; label: string; badge?: number }[] = [
     { value: 'dm', label: t('chat.tab.chats'), badge: dmUnread },
-    { value: 'requests', label: t('chat.tab.requests'), badge: requests.length },
+    { value: 'requests', label: t('chat.tab.requests'), badge: dmRequestCount },
   ];
 
   return (

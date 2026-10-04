@@ -37,11 +37,11 @@ export default function TabsLayout() {
       setAdminBadge(0);
       return;
     }
-    // Спілкування: непрочитані ЛС + запити на листування + вхідні запити в друзі.
-    Promise.all([
-      api.getDmUnread().catch(() => ({ unread: 0, requests: 0 })),
-      api.getIncomingFriendRequests().catch(() => []),
-    ]).then(([d, fr]) => setCommunityBadge(d.unread + d.requests + fr.length));
+    // Спілкування: непрочитані ЛС + запити на листування + вхідні запити в друзі (усе — одним запитом).
+    api
+      .getBadges(isAdmin)
+      .then((b) => setCommunityBadge(b.dm + b.dmRequests + b.friendRequests))
+      .catch(() => {});
     if (isAdmin)
       Promise.all([
         api.getRequests().then((r) => r.length).catch(() => 0),

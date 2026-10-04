@@ -125,6 +125,16 @@ export interface Recommendation {
   reason: string | null;
 }
 
+// GET /api/notifications/badge — усі лічильники бейджів одним запитом.
+export interface BadgeCounts {
+  artist: number;
+  threads: number;
+  friendRequests: number;
+  admin: number;
+  dm: number;
+  dmRequests: number;
+}
+
 export interface AuthMe {
   authenticated: boolean;
   userId?: number;

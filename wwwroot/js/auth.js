@@ -119,18 +119,24 @@ function renderAuthArea() {
 
 // ================================================================
 // Бейдж/список — події виконавців + вхідні запити дружби; запити зникають зі списку при прийнятті/відхиленні.
+// Усі лічильники (дзвіночок і листування) — одним запитом /api/notifications/badge. Виклики в тому самому
+// завданні (на старті refreshNotifBadge і refreshDmBadge разом) ділять один запит; пізніші — завжди свіжий.
+let _badgesPromise = null;
+function _fetchBadges(){
+  if(!_badgesPromise){
+    _badgesPromise = fetch('/api/notifications/badge').then(r=>r.ok?r.json():null).catch(()=>null);
+    setTimeout(()=>{ _badgesPromise = null; }, 0);
+  }
+  return _badgesPromise;
+}
 function refreshNotifBadge(){
   const badge = document.getElementById('notif-badge');
   if(!badge) return;
-  Promise.all([
-    fetch('/api/notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null),
-    fetch('/api/friends/requests/incoming').then(r=>r.ok?r.json():[]).catch(()=>[]),
-    currentUser?.isAdmin ? fetch('/api/admin-notifications?limit=1').then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null),
-    fetch('/api/notifications/threads?limit=1').then(r=>r.ok?r.json():null).catch(()=>null)
-  ]).then(([notif, incoming, adminNotif, threadNotif])=>{
-    const count = (notif?.unreadCount || 0) + (incoming?.length || 0) + (adminNotif?.unreadCount || 0) + (threadNotif?.unreadCount || 0);
+  _fetchBadges().then(b=>{
+    if(!b) return;
+    const count = b.artist + b.friendRequests + b.admin + b.threads;
     const fb = document.getElementById('chat-tab-friends-badge');
-    if(fb){ fb.textContent = incoming?.length || ''; fb.style.display = incoming?.length ? '' : 'none'; }
+    if(fb){ fb.textContent = b.friendRequests || ''; fb.style.display = b.friendRequests ? '' : 'none'; }
     if(count > 0){ badge.textContent = count > 99 ? '99+' : count; badge.style.display = ''; }
     else { badge.style.display = 'none'; }
     _unreadCounts.notif = count;

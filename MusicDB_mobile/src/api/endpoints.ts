@@ -25,6 +25,7 @@ import type {
   DirectMessage,
   DmThread,
   DmUnread,
+  BadgeCounts,
   SongRatings,
   SongSource,
   ThreadDetail,
@@ -113,6 +114,10 @@ function decodeCatalog(c: CatalogColumns): Song[] {
 // копію (мегабайти кожна). Головна завжди бере свіже (сервер відповідає 304, якщо нічого не змінилось),
 // решта — те, що вже завантажено.
 const songsCache = new Map<'catalog' | 'community', Promise<Song[]>>();
+// Лічильники бейджів: дзвіночок у шапці й вкладка «Спілкування» просять їх одночасно — ділимо один запит,
+// якщо виклики майже збіглися (пізніші — завжди свіжий запит).
+let badgesInFlight: Promise<BadgeCounts> | null = null;
+let badgesStartedAt = 0;
 
 // Тонкі типізовані обгортки над ApiBridge.request(), що дзеркалять
 // ендпоінти MusicDB.Api.Controllers.* один в один.
@@ -306,6 +311,28 @@ export function useMusicApi() {
       // Особисті повідомлення (друзям — вільно, іншим — через запит)
       getConversations: () => request<Conversation[]>('/api/messages/conversations'),
       getDmUnread: () => request<DmUnread>('/api/messages/unread-count'),
+      // Усі лічильники бейджів одним запитом. Старий сервер такого маршруту не має (віддавав головну сторінку
+      // замість JSON) — тоді, як і раніше, окремими запитами.
+      getBadges: (isAdmin: boolean): Promise<BadgeCounts> => {
+        const now = Date.now();
+        if (badgesInFlight && now - badgesStartedAt < 150) return badgesInFlight;
+        badgesStartedAt = now;
+        badgesInFlight = request<BadgeCounts | string>('/api/notifications/badge')
+          .then((b) => (b && typeof b === 'object' && typeof b.dm === 'number' ? b : Promise.reject(new Error('no badge route'))))
+          .catch(async () => {
+            const [n, fr, th, adm, dm] = await Promise.all([
+              request<{ unreadCount: number }>('/api/notifications', { query: { limit: 1 } }).then((d) => d.unreadCount).catch(() => 0),
+              request<unknown[]>('/api/friends/requests/incoming').then((r) => r.length).catch(() => 0),
+              request<{ unreadCount: number }>('/api/notifications/threads', { query: { limit: 1 } }).then((d) => d.unreadCount).catch(() => 0),
+              isAdmin
+                ? request<{ unreadCount: number }>('/api/admin-notifications', { query: { limit: 1 } }).then((d) => d.unreadCount).catch(() => 0)
+                : Promise.resolve(0),
+              request<DmUnread>('/api/messages/unread-count').catch(() => ({ unread: 0, requests: 0 })),
+            ]);
+            return { artist: n, friendRequests: fr, threads: th, admin: adm, dm: dm.unread, dmRequests: dm.requests };
+          });
+        return badgesInFlight;
+      },
       getDmRequests: () => request<DmRequest[]>('/api/messages/requests'),
       respondDmRequest: (userId: number, accept: boolean) =>
         request<void>(`/api/messages/requests/${userId}/${accept ? 'accept' : 'decline'}`, { method: 'POST' }),

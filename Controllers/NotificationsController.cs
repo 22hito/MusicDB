@@ -18,6 +18,38 @@ public class NotificationsController(MusicDbContext db, UserDirectoryService use
     // Лише читання (і кеш у пам'яті) — не INSERT … ON CONFLICT DO UPDATE на кожен запит, як було.
     private Task<int> CurrentUserIdAsync() => userDirectory.GetCurrentUserIdAsync(User);
 
+    // Усі лічильники бейджів — одним запитом до бази: дзвіночок (події виконавців, обговорення, запити в друзі,
+    // адмін) і листування (непрочитані, запити). Раніше сайт і застосунок на кожному відкритті й на кожну подію
+    // реалтайму питали п'ять-шість окремих ендпоінтів, кожен зі своїми запитами. Умови — ті самі, що в
+    // Get / Threads тут, AdminNotificationsController.Get, FriendsController.GetIncoming і MessagesController.GetUnreadCount.
+    [HttpGet("badge")]
+    public async Task<ActionResult<BadgeCountsDto>> Badge()
+    {
+        var userId = await CurrentUserIdAsync();
+        var isAdmin = User.HasClaim("role", "admin");
+        var counts = await db.Users.Where(u => u.Id == userId).Select(u => new BadgeCountsDto(
+            (from e in db.ArtistEvents
+             join f in db.ArtistFollows on e.ArtistId equals f.ArtistId
+             where f.UserId == userId && e.CreatedAt > f.LastReadAt
+             select e.Id).Count(),
+            (from p in db.DiscussionPosts
+             join f in db.ThreadFollows on p.ThreadId equals f.ThreadId
+             where f.UserId == userId && p.AuthorId != userId && p.CreatedAt > f.FollowedAt && p.CreatedAt > f.LastReadAt
+             select p.Id).Count(),
+            db.FriendRequests.Count(r => r.Status == "pending" && r.AddresseeId == userId),
+            // Непрочитане адміна: новіше за його позначку «прочитано» (нема позначки — усе), крім власних дій.
+            isAdmin
+                ? db.AdminEvents.Count(e => (e.ActorUserId == null || e.ActorUserId != userId) &&
+                    !db.AdminNotificationReads.Any(r => r.UserId == userId && r.LastReadAt >= e.CreatedAt))
+                : 0,
+            // Особисті: без листів від тих, чий запит на листування ще не схвалено (вони — у «Запитах»).
+            db.DirectMessages.Count(m => m.RecipientId == userId && m.ReadAt == null &&
+                !db.DmRequests.Any(r => r.AddresseeId == userId && r.Status != "accepted" && r.RequesterId == m.SenderId)),
+            db.DmRequests.Count(r => r.AddresseeId == userId && r.Status == "pending")
+        )).FirstOrDefaultAsync();
+        return Ok(counts ?? new BadgeCountsDto(0, 0, 0, 0, 0, 0));
+    }
+
     // Непрочитане — без фан-ауту: один запис події на артиста, "прочитано" — ArtistFollow.LastReadAt.
     [HttpGet]
     public async Task<ActionResult<NotificationsSummaryDto>> Get([FromQuery] int limit = 30)

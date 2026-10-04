@@ -15,7 +15,7 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
   `immutable` на рік; на проді стилі `<head>` склеєні в `/css/bundle.css`, defer-скрипти — в `/js/bundle.js`,
   вимикається `StaticAssets__Bundle=false`; стискання — у фоні одразу після старту) → решта статики (з `?v=` —
   `immutable`, інакше no-cache + ETag) →
-  автентифікація → авторизація → rate limiter → контролери → SignalR (`/hubs/music`) → SPA fallback на ту саму
+  автентифікація → авторизація → rate limiter → контролери → SignalR (`/hubs/music`) → невідомий `/api/...` — 404 → SPA fallback на ту саму
   головну.
 - **Мінімальні ендпоінти:** `GET /auth/login`, `POST /auth/logout`, `GET /auth/me` (id, email, адмін, а також нік і аватарка
   посиланням — шапці сайту й застосунку не треба окремого `/api/profile`), `GET /config`
@@ -50,7 +50,7 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
 | Genres | `/api/genres` | Жанри; ШІ-об'єднання дублікатів (адмін) |
 | History | `/api/history` | Логування прослуховування (унікальність + rate limit; повторне — лише оновлює час), `GET` — нещодавно прослухані (`limit` ≤ 100, `offset` — наступні сторінки «Усієї історії») |
 | Messages | `/api/messages` | Розмови, непрочитані, запити на листування, діалог, надсилання (JSON; з файлом до 20 МБ і/або піснею — multipart `POST /{userId}/rich`), файл із повідомлення лише учасникам (`GET /attachment/{id}`, `/link`; `?download=true` — на збереження під назвою відправника, `?inline=true` — PDF і текст (`charset=utf-8`) для перегляду на сайті), «видалити чат у себе» |
-| Notifications | `/api/notifications` | Події підписок на виконавців; `GET /threads` — нові дописи в гілках, де я учасник (`unreadCount`, дописи з `toMe` / `unread`), `POST /threads/mark-read`, `POST /threads/{threadId}/mark-read` |
+| Notifications | `/api/notifications` | Події підписок на виконавців; `GET /badge` — усі лічильники бейджів сайту й застосунку одним запитом до бази (виконавці, обговорення, запити в друзі, адмін, непрочитані ЛС, запити на листування); `GET /threads` — нові дописи в гілках, де я учасник (`unreadCount`, дописи з `toMe` / `unread`), `POST /threads/mark-read`, `POST /threads/{threadId}/mark-read` |
 | Playlists | `/api/playlists` | Плейлисти, публічні плейлисти, пісні в плейлисті |
 | Profile | `/api/profile` | Власний профіль, ім'я й аватар |
 | Ratings | `/api/songs/{id}/ratings` | Оцінка 0–100 і рецензії |

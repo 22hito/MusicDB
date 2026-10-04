@@ -342,6 +342,8 @@ app.MapGet("/config", (IConfiguration config) =>
 app.MapControllers();
 // Реалтайм: контролери шлють події через IHubContext<MusicHub> після кожної мутації.
 app.MapHub<MusicHub>("/hubs/music");
+// Невідомий /api/... — 404, а не головна сторінка: раніше клієнт отримував HTML зі статусом 200 і падав на розборі JSON.
+app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallback("{*path:nonfile}", (HttpContext ctx, StaticAssetVersions assets) => assets.Index().ToHttpResult(ctx));
 
 app.Run();

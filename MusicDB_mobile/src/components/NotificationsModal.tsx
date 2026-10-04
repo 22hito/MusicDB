@@ -40,13 +40,8 @@ const ARTIST_EVENT_KEYS: Record<string, 'notif.event.songAdded' | 'notif.event.s
 // Скільки непрочитаного — для бейджа дзвіночка (та сама сума, що й на сайті):
 // події виконавців + вхідні запити в друзі + нові дописи в обговореннях + сповіщення адміна.
 export async function loadNotificationCount(api: ReturnType<typeof useMusicApi>, isAdmin: boolean) {
-  const [n, fr, th, adm] = await Promise.all([
-    api.getNotifications(1).then((d) => d.unreadCount).catch(() => 0),
-    api.getIncomingFriendRequests().then((r) => r.length).catch(() => 0),
-    api.getThreadNotifications(1).then((d) => d.unreadCount).catch(() => 0),
-    isAdmin ? api.getAdminNotifications(1).then((d) => d.unreadCount).catch(() => 0) : Promise.resolve(0),
-  ]);
-  return n + fr + th + adm;
+  const b = await api.getBadges(isAdmin);
+  return b.artist + b.friendRequests + b.threads + b.admin;
 }
 
 type Tab = 'general' | 'threads';

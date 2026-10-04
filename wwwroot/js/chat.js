@@ -61,15 +61,15 @@ function refreshDmBadge(){
     b.textContent = n > 99 ? '99+' : n;
     b.style.display = n > 0 ? '' : 'none';
   };
-  fetch('/api/messages/unread-count').then(r=>r.ok?r.json():null).then(d=>{
-    if(!d) return;
-    setBadge('dm-badge', d.unread + d.requests);
-    _unreadCounts.dm = d.unread + d.requests;
+  _fetchBadges().then(b=>{
+    if(!b) return;
+    setBadge('dm-badge', b.dm + b.dmRequests);
+    _unreadCounts.dm = b.dm + b.dmRequests;
     _updateTitleBadge();
-    setBadge('chat-tab-dm-badge', d.unread + d.requests);
-    setBadge('chat-sub-dm-badge', d.unread);
-    setBadge('chat-tab-requests-badge', d.requests);
-  }).catch(()=>{});
+    setBadge('chat-tab-dm-badge', b.dm + b.dmRequests);
+    setBadge('chat-sub-dm-badge', b.dm);
+    setBadge('chat-tab-requests-badge', b.dmRequests);
+  });
 }
 // SignalR: новий/схвалений/відхилений запит на листування.
 function onDmRequestsEvent(otherUserId, name){
