@@ -242,8 +242,26 @@ app.Use(async (ctx, next) =>
     }
     await next();
 });
+// css/js — з пам'яті, вже стиснуті Brotli 11 (див. StaticAssetVersions); склеєні bundle.css/bundle.js є лише тут.
+// Файл із ?v=<хеш> за цією адресою вже ніколи не зміниться — кешується назавжди.
+app.Use(async (ctx, next) =>
+{
+    if (HttpMethods.IsGet(ctx.Request.Method) &&
+        ctx.RequestServices.GetRequiredService<StaticAssetVersions>().Find(ctx.Request.Path.Value ?? "", ctx.Request.Query["v"]) is { } asset)
+    {
+        await asset.Body.ToHttpResult(ctx, asset.CacheControl).ExecuteAsync(ctx);
+        return;
+    }
+    await next();
+});
+// Стискання Brotli 11 займає секунду-дві — робимо одразу після старту, а не на першому відвідувачі.
+app.Lifetime.ApplicationStarted.Register(() => Task.Run(() =>
+{
+    try { app.Services.GetRequiredService<StaticAssetVersions>().Warm(); }
+    catch (Exception e) { app.Logger.LogWarning(e, "Static assets warm-up failed"); }
+}));
 app.UseDefaultFiles();
-// Файл із ?v=<хеш> (посилання з index.html) за цією адресою вже ніколи не зміниться — кешується назавжди.
+// Решта статики (шрифти, картинки): файл із ?v=<хеш> за цією адресою вже ніколи не зміниться — кешується назавжди.
 // Решта — no-cache (не no-store): вимагає ревалідації, щоб не показувати стару версію
 // після деплою, але ETag лишається — повторні візити швидкі (304).
 app.UseStaticFiles(new StaticFileOptions

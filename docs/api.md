@@ -11,7 +11,10 @@ ASP.NET Core 10, мінімальний hosting-model (`Program.cs`). Swagger �
   `LocalAudioStorage`); типізовані `HttpClient` — `TranslationService`, `ExternalMusicSearchService`,
   `GenreNormalizationService`, `RecommendationService`, `LastFmGenreService`.
 - **Конвеєр:** CORS → заголовки безпеки → (Dev: Swagger) → головна (`index.html` з `?v=<хеш вмісту>` у посиланнях
-  на css/js, стиснута раз, ETag) → статичні файли (з `?v=` — `immutable` на рік, решта — no-cache + ETag) →
+  на css/js, стиснута раз, ETag) → css/js з пам'яті (`StaticAssetVersions.Find`: стиснуті раз Brotli 11, з `?v=` —
+  `immutable` на рік; на проді стилі `<head>` склеєні в `/css/bundle.css`, defer-скрипти — в `/js/bundle.js`,
+  вимикається `StaticAssets__Bundle=false`; стискання — у фоні одразу після старту) → решта статики (з `?v=` —
+  `immutable`, інакше no-cache + ETag) →
   автентифікація → авторизація → rate limiter → контролери → SignalR (`/hubs/music`) → SPA fallback на ту саму
   головну.
 - **Мінімальні ендпоінти:** `GET /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /config`

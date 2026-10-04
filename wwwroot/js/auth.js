@@ -26,6 +26,9 @@ function _hideSplash(){
 
 let appVersion = ''; // версія N'Owl з /config — показується в налаштуваннях
 async function initApp() {
+  // Каталог — паралельно з усім іншим (браузер уже вантажить його з <link rel="preload"> в index.html),
+  // а не після /config, /auth/me і профілю.
+  const songsLoad = loadSongs().catch(e => console.error('loadSongs error:', e));
   const [cfgRes, meRes] = await Promise.all([
     fetch('/config').then(r=>r.ok?r.json():{}).catch(()=>({})),
     fetch('/auth/me').then(r=>r.ok?r.json():{authenticated:false}).catch(()=>({authenticated:false}))
@@ -39,11 +42,8 @@ async function initApp() {
       if(profile){ currentUser.displayName = profile.displayName; currentUser.avatarUrl = profile.avatarUrl; }
     } catch(e) {}
   }
-  try {
-    await loadSongs();
-  } catch(e) {
-    console.error('loadSongs error:', e);
-  }
+  await songsLoad;
+  appReady = true;
   renderAuthArea();
   renderSongs();
   await updateStats();

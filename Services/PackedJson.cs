@@ -20,42 +20,44 @@ public sealed record PackedJson(string ETag, string ContentType, byte[] Raw, byt
     public static PackedJson Create<T>(T value) =>
         FromBytes(JsonSerializer.SerializeToUtf8Bytes(value, Options), "application/json; charset=utf-8");
 
-    public static PackedJson FromBytes(byte[] raw, string contentType)
+    // brotliQuality: 6 — для даних, що перебудовуються (каталог раз на 2 хв); 11 — для статики, що стискається
+    // раз на деплой (css/js на ~30% менші, ніж стискання на льоту, див. StaticAssetVersions).
+    public static PackedJson FromBytes(byte[] raw, string contentType, int brotliQuality = 6)
     {
         var etag = $"\"{Convert.ToHexString(SHA256.HashData(raw))[..24]}\"";
-        return new PackedJson(etag, contentType, raw, Compress(raw, brotli: true), Compress(raw, brotli: false));
+        return new PackedJson(etag, contentType, raw, Compress(raw, brotliQuality), Compress(raw, null));
     }
 
-    private static byte[] Compress(byte[] data, bool brotli)
+    private static byte[] Compress(byte[] data, int? brotliQuality)
     {
         // Brotli якості 6 з вікном 4 МБ: каталог на третину менший, ніж з CompressionLevel.Optimal (це якість 4),
         // а стискається однаково швидко (~40 мс) — один раз на весь час кешу.
-        if (brotli)
+        if (brotliQuality is { } quality)
         {
             var buf = new byte[BrotliEncoder.GetMaxCompressedLength(data.Length)];
-            if (BrotliEncoder.TryCompress(data, buf, out var written, quality: 6, window: 22)) return buf[..written];
+            if (BrotliEncoder.TryCompress(data, buf, out var written, quality, window: 22)) return buf[..written];
         }
         using var ms = new MemoryStream();
-        using (Stream z = brotli ? new BrotliStream(ms, CompressionLevel.Optimal) : new GZipStream(ms, CompressionLevel.Optimal))
+        using (Stream z = brotliQuality is not null ? new BrotliStream(ms, CompressionLevel.Optimal) : new GZipStream(ms, CompressionLevel.Optimal))
             z.Write(data);
         return ms.ToArray();
     }
 
     // Уже стиснута відповідь: Content-Encoding виставлено, тож ResponseCompression її не чіпає.
     public IActionResult ToResult(HttpContext http) =>
-        Negotiate(http) is { } body ? new FileContentResult(body, ContentType) : new StatusCodeResult(StatusCodes.Status304NotModified);
+        Negotiate(http, "no-cache") is { } body ? new FileContentResult(body, ContentType) : new StatusCodeResult(StatusCodes.Status304NotModified);
 
-    // Те саме для minimal API / middleware.
-    public IResult ToHttpResult(HttpContext http) =>
-        Negotiate(http) is { } body ? Results.Bytes(body, ContentType) : Results.StatusCode(StatusCodes.Status304NotModified);
+    // Те саме для minimal API / middleware. cacheControl: за замовчуванням браузер кешує, але щоразу звіряє ETag.
+    public IResult ToHttpResult(HttpContext http, string cacheControl = "no-cache") =>
+        Negotiate(http, cacheControl) is { } body ? Results.Bytes(body, ContentType) : Results.StatusCode(StatusCodes.Status304NotModified);
 
     // Заголовки й вибір тіла під Accept-Encoding; null — у клієнта та сама версія (304).
-    private byte[]? Negotiate(HttpContext http)
+    private byte[]? Negotiate(HttpContext http, string cacheControl)
     {
         var request = http.Request;
         var headers = http.Response.Headers;
         headers[HeaderNames.ETag] = ETag;
-        headers[HeaderNames.CacheControl] = "no-cache"; // браузер кешує, але щоразу звіряє ETag
+        headers[HeaderNames.CacheControl] = cacheControl;
         headers.Append(HeaderNames.Vary, HeaderNames.AcceptEncoding);
         if (request.Headers[HeaderNames.IfNoneMatch].ToString().Contains(ETag, StringComparison.Ordinal))
             return null;

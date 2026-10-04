@@ -4,23 +4,9 @@
 // сповіщення), тож офлайн-кеш тут дав би застарілі дані замість користі.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch', (event) => {
-  // ЛИШЕ свій origin. fetch(), викликаний ЗСЕРЕДИНИ SW (як тут, у
-  // respondWith), підпадає під CSP connect-src, а не під img-src/style-src/
-  // script-src — тож крос-доменні ресурси (шрифти Google, мініатюри YouTube,
-  // signalr з jsdelivr), явно дозволені в img-src/style-src/script-src,
-  // однаково блокувались би вужчим connect-src, щойно SW їх перехоплював.
-  // Це й ламало відтворення музики та підвантаження шрифтів для будь-кого,
-  // чий SW уже встиг захопити контроль над сторінкою.
-  // Аудіо (…/audio) — повз SW: сервер відповідає редиректом на Cloudflare R2,
-  // і fetch() звідси підпав би під connect-src; до того ж <audio> робить
-  // Range-запити, які браузер сам обробляє краще без проміжного SW.
-  const url = new URL(event.request.url);
-  // Так само картинки (скріншоти баг-репортів теж редиректять на R2) — інакше
-  // браузер блокував їх за connect-src і показував "бите" зображення.
-  if (event.request.destination === 'audio' || url.pathname.endsWith('/audio')) return;
-  if (event.request.destination === 'image' || /\/screenshots\/\d+$/.test(url.pathname)) return;
-  // Раніше свої запити теж проганялись через respondWith(fetch(...)) — нічого не кешуючи, лише затримка
-  // на кожен запит (особливо на телефоні). Тепер обробник нічого не перехоплює: браузер іде в мережу сам.
-  void url;
-});
+// Обробник fetch — порожній, і саме ПОРОЖНІЙ: Chrome бачить це й узагалі не будить SW для запитів сторінки.
+// Раніше тут був код, що нічого не перехоплював (лише return для аудіо/картинок), але браузер цього не знає —
+// кожен із півсотні запитів при відкритті сайту спершу чекав на запуск SW і його обробник.
+// (Історія: перехоплення через respondWith(fetch(...)) ламало аудіо з R2, картинки й чужі ресурси —
+// fetch() зсередини SW підпадає під CSP connect-src, а не img-src/script-src.)
+self.addEventListener('fetch', () => {});

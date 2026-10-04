@@ -59,7 +59,7 @@ MusicDB (публічний бренд — **N'Owl**) — музична пла�
 |---|---|
 | `main_musicdb.yml` | Push у `main`: build → тести → перевірка міграцій EF → publish → деплой в Azure Web App |
 | `codeql.yml` | Статичний аналіз C# і JS/TS (push, PR, щотижня) |
-| `lint.yml` | ESLint для `wwwroot/js` і `wwwroot/sw.js` |
+| `lint.yml` | ESLint для `wwwroot/js` і `wwwroot/sw.js` + `tools/check-bundle.cjs` (чи можна склеїти скрипти в `/js/bundle.js`) |
 | `mobile-update.yml` | Зміни в `MusicDB_mobile/`: перевірка типів + публікація OTA-оновлення (секрет `EXPO_TOKEN`) |
 | `dependabot.yml` | Щотижневі оновлення NuGet, npm (desktop, mobile) і GitHub Actions |
 

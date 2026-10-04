@@ -15,6 +15,9 @@ document.addEventListener('click', (e)=>{
 });
 
 let songs = [];          // головна таблиця_1 (каталог)
+// initApp завершився: дані завантажені й намальовані. До того applyLang/applyTheme не перемальовують таблицю —
+// це однаково зробить initApp з даними (раніше таблиця й статистика малювались двічі, /api/stats — двічі).
+let appReady = false;
 let communitySongs = []; // головна таблиця_2 (пісні від ком'юніті)
 let homeSource = 'catalog';
 let requests = [];

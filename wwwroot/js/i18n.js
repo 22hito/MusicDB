@@ -1560,21 +1560,25 @@ function applyLang(lang){
   currentLang = lang;
   localStorage.setItem('lang', lang);
   document.documentElement.lang = lang;
-  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.getAttribute('data-i18n')); });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
-  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title = t(el.getAttribute('data-i18n-title')); });
-  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
+  // Пишемо лише те, що відрізняється: на старті розмітка вже українською, і ~500 однакових замін тексту
+  // лише змушували браузер перебудовувати сторінку.
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ const v = t(el.getAttribute('data-i18n')); if(el.textContent !== v) el.textContent = v; });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ const v = t(el.getAttribute('data-i18n-placeholder')); if(el.placeholder !== v) el.placeholder = v; });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ const v = t(el.getAttribute('data-i18n-title')); if(el.title !== v) el.title = v; });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ const v = t(el.getAttribute('data-i18n-aria')); if(el.getAttribute('aria-label') !== v) el.setAttribute('aria-label', v); });
   const label = document.getElementById('lang-toggle-label');
   if(label) label.textContent = lang === 'uk' ? 'UA' : 'EN';
   document.querySelectorAll('#lang-dropdown [data-lang-option]').forEach(b=>{
     b.classList.toggle('active', b.getAttribute('data-lang-option') === lang);
   });
   _updateTitleBadge(); // назва вкладки новою мовою + лічильник непрочитаного
-  // Динамічний контент без data-i18n треба перемалювати наново при зміні мови.
-  renderSongs();
-  updateStats();
-  renderAuthArea();
-  if(currentUser?.isAdmin) renderRequests();
+  // Динамічний контент без data-i18n треба перемалювати наново при зміні мови (на старті — див. appReady).
+  if(appReady){
+    renderSongs();
+    updateStats();
+    renderAuthArea();
+    if(currentUser?.isAdmin) renderRequests();
+  }
   // Рекомендації генерує ШІ мовою фронтенду — якщо сторінка відкрита, перезапитуємо новою мовою.
   if(document.getElementById('page-recommendations')?.classList.contains('active')) loadRecommendationsPage();
   if(document.getElementById('page-top')?.classList.contains('active')) loadTopSongsPage();

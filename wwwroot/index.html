@@ -50,6 +50,10 @@
 <!-- Шрифти — з нашого сервера (css/fonts.css); два основні файли Inter вантажимо наперед. -->
 <link rel="preload" href="/fonts/inter-cyrillic.woff2?v=1" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/inter-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
+<!-- Каталог — найбільша відповідь сайту (сотні КБ); initApp просить його лише після /config, /auth/me і профілю,
+     а браузер може почати вже зараз, паралельно зі скриптами. fetch() у loadSongs забирає саме цю відповідь. -->
+<link rel="preload" href="/api/songs?format=cols" as="fetch" crossorigin>
+<link rel="preload" href="/api/songs?source=community&amp;format=cols" as="fetch" crossorigin>
 <link rel="stylesheet" href="/css/fonts.css">
 <!-- YouTube API — async: не тримає першу відмальовку (main.js доганяє, якщо API готове раніше за скрипти). -->
 <script async src="https://www.youtube.com/iframe_api"></script>

@@ -631,22 +631,30 @@ document.addEventListener('mouseover', e => _tqSet(e.target.closest?.('tr') || n
 document.addEventListener('focusin', e => _tqSet(e.target.closest?.('tr') || null));
 
 let _songRows = null, _songRowsObserver = null;
+// Сторожовий елемент довантаження — ПІСЛЯ таблиці, а не рядком у ній: рядку був потрібен colspan на
+// кількість видимих колонок, а його підрахунок (getComputedStyle) на кожній порції змушував браузер
+// перераховувати стилі всієї сторінки ще до вставки нових рядків — і вдруге після.
+function _songRowsSentinel(){
+  const wrap = document.getElementById('songs-table').parentElement;
+  let el = wrap.querySelector(':scope > .rows-sentinel');
+  if(!el){ el = document.createElement('div'); el.className = 'rows-sentinel'; el.setAttribute('aria-hidden', 'true'); wrap.appendChild(el); }
+  return el;
+}
 function _appendSongRows(){
   const tbody = document.getElementById('songs-body');
   if(!_songRows) return;
-  tbody.querySelector('.rows-sentinel')?.remove();
   const { list, rowHtml } = _songRows;
   const next = Math.min(list.length, _songRows.shown + _songRows.chunk);
   let html = '';
   for(let i = _songRows.shown; i < next; i++) html += rowHtml(list[i], i);
   _songRows.shown = next;
-  if(next < list.length) html += `<tr class="rows-sentinel" aria-hidden="true"><td colspan="${_songsColspan()}"></td></tr>`;
   tbody.insertAdjacentHTML('beforeend', html);
+  const sentinel = _songRowsSentinel();
   _songRowsObserver?.disconnect();
-  const sentinel = tbody.querySelector('.rows-sentinel');
-  if(!sentinel) return;
+  if(next >= list.length) return;
   if(!('IntersectionObserver' in window)){ _appendSongRows(); return; }
   // На ПК таблиця прокручується у власному блоці (.scroll-table) — стежимо в ньому, на телефоні — сторінка.
+  // Новий спостерігач на кожну порцію: observe() одразу повідомляє, чи сторож ще в зоні, — тоді наступна порція.
   const box = tbody.closest('.scroll-table');
   const root = box && /auto|scroll/.test(getComputedStyle(box).overflowY) ? box : null;
   _songRowsObserver = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)) _appendSongRows(); }, { root, rootMargin: '1500px 0px' });

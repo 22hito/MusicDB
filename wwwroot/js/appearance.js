@@ -189,7 +189,10 @@ window.addEventListener('resize', () => {
   _autoScaleRaf = requestAnimationFrame(_applyAutoScale);
 });
 
-function applyPrefs(){
+// initial — перший виклик під час завантаження: --auto-scale уже виставив ранній скрипт index.html,
+// а window.innerWidth тут змусив би браузер синхронно розкласти всю сторінку ще до її наповнення
+// (на телефоні з повільним процесором — ~250 мс), щоб потім розкладати її вдруге.
+function applyPrefs(initial = false){
   const root = document.documentElement;
   const setAttr = (name, val) => val == null ? root.removeAttribute(name) : root.setAttribute(name, val);
   setAttr('data-motion', PREFS.motion === 'system' ? null : PREFS.motion);
@@ -197,12 +200,14 @@ function applyPrefs(){
   setAttr('data-contrast', PREFS.highContrast ? 'high' : null);
   setAttr('data-glow-follow', PREFS.glowFollow ? '' : null);
   setAttr('data-hide-cols', PREFS.hiddenCols?.length ? PREFS.hiddenCols.join(' ') : null);
-  // Службові рядки таблиці охоплюють лише видимі колонки (див. _songsColspan).
-  if(typeof _songsColspan === 'function'){ const n = _songsColspan(); document.querySelectorAll('#songs-table td[colspan]').forEach(td => { td.colSpan = n; }); }
+  // Службові рядки таблиці охоплюють лише видимі колонки (див. _songsColspan) — лише коли вони є:
+  // getComputedStyle заради порожньої таблиці змушував браузер перераховувати стилі завчасно.
+  const spanCells = document.querySelectorAll('#songs-table td[colspan]');
+  if(spanCells.length && typeof _songsColspan === 'function'){ const n = _songsColspan(); spanCells.forEach(td => { td.colSpan = n; }); }
   if(PREFS.uiScale !== 100) root.style.setProperty('--ui-scale', PREFS.uiScale / 100);
   else root.style.removeProperty('--ui-scale');
   setAttr('data-auto-scale', PREFS.autoScale ? null : 'off');
-  _applyAutoScale();
+  if(!initial) _applyAutoScale();
   root.style.setProperty('--ah', ACCENT_HUES[PREFS.accent] ?? ACCENT_HUES.amber);
   root.style.setProperty('--glow-k', PREFS.glow / 100);
   _paintArtworkColor();
@@ -233,7 +238,9 @@ function resetPrefs(){
 function syncSettingsUI(){
   const page = document.getElementById('page-settings');
   if(!page) return;
-  _renderAutoScaleStatus(PREFS.autoScale ? _autoScaleFactor() : 1);
+  // Лише на відкритій сторінці налаштувань: під час старту (applyTheme/applyLang) читання ширини вікна
+  // змушувало браузер завчасно розкладати всю сторінку.
+  if(page.classList.contains('active')) _renderAutoScaleStatus(PREFS.autoScale ? _autoScaleFactor() : 1);
   const values = { ...PREFS, theme: localStorage.getItem('theme') || 'dark', lang: currentLang };
   const preview = [`<span class="locked">${esc(t('table.artist'))}</span>`, `<span class="locked wide">${esc(t('table.title'))}</span>`];
   page.querySelectorAll('#pref-columns [data-col]').forEach(b => {
@@ -295,7 +302,7 @@ function loadSettingsPage(){
     if(el.type === 'range' && el.dataset.pref) setPref(el.dataset.pref, parseInt(el.value, 10));
   });
 })();
-applyPrefs();
+applyPrefs(true);
 
 // Нове особисте повідомлення: звук і (у фоновій вкладці) сповіщення системи — за налаштуваннями.
 let _pingCtx = null;

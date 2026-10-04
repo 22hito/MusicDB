@@ -11,7 +11,7 @@ let listenLogged=false;
 // userIntendedPlaying: чи музика МАЄ грати за наміром користувача — відрізняє реальний
 // play/pause від технічних onStateChange під час синхронізації відео-попапу.
 let userIntendedPlaying=true;
-let ticker=null,pendingVid=null;
+let ticker=null,pendingVid=null,pendingAt=0;
 let shuffle=false,seekDrag=false;
 // Повтор — три режими: 'off' (у кінці списку зупинитись), 'all' (список по колу), 'one' (одна пісня).
 let repeatMode = (() => { try { return ['all', 'one'].includes(localStorage.getItem('repeatMode')) ? localStorage.getItem('repeatMode') : 'off'; } catch(e){ return 'off'; } })();
@@ -57,7 +57,22 @@ fileAudio.addEventListener('error', ()=>{
   if(s) _setMarqueeText(document.getElementById('p-title'), s.title+t('audio.notFoundSuffix'));
 });
 
+// Сам плеєр YouTube створюємо лише перед першим відтворенням: вбудований плеєр — це ~1 МБ скриптів
+// YouTube (base.js, ytembeds…), які інакше вантажились і виконувались на КОЖНОМУ відкритті сайту,
+// навіть коли нічого не вмикали (на телефоні — більше, ніж увесь сайт). Відео до готовності чекає в pendingVid.
+let _ytApiReady=false;
 function onYouTubeIframeAPIReady(){
+  _ytApiReady=true;
+  if(pendingVid)_createYtPlayer();
+}
+// Відео для YouTube-плеєра: одразу, якщо готовий; інакше — створити плеєр і програти, щойно він буде готовий.
+function _ytLoad(vid, startSeconds = 0){
+  if(ytReady){ _load(vid, startSeconds); return; }
+  pendingVid=vid; pendingAt=startSeconds;
+  _createYtPlayer();
+}
+function _createYtPlayer(){
+  if(ytPlayer||!_ytApiReady)return;
   // Той самий плеєр і для звуку, і для відео в попапі (див. VIDEO POPUP) —
   // розмір задає контейнер (#video-popup-frame), тож 100%/100%. Закритий попап
   // лишає його 1px — YouTube тоді сам бере найнижчу якість (менше трафіку).
@@ -68,7 +83,7 @@ function onYouTubeIframeAPIReady(){
       onReady:()=>{
         ytReady=true;
         ytPlayer.setVolume(vol);
-        if(pendingVid){_load(pendingVid);pendingVid=null;}
+        if(pendingVid){_load(pendingVid, pendingAt);pendingVid=null;pendingAt=0;}
       },
       onStateChange:onState
     }
@@ -195,7 +210,7 @@ function _loadCurrent(){
     _applyArtworkColor(vid);
     document.getElementById('player-cover-ph').style.display='none';
     _updateMediaSessionMetadata(s, vid);
-    if(ytReady)_load(vid);else pendingVid=vid;
+    _ytLoad(vid);
     // Нативний попап (Electron) не підхоплює зміну пісні сам — без цього
     // лишалось би старе відео, а нове тим часом почало б грати ще й тут (два звуки одразу).
     if(_electronPopoutActive&&window.electronAPI?.openVideoPopout)window.electronAPI.openVideoPopout(vid,0,vol,false);
@@ -535,7 +550,7 @@ function _switchFileSongToVideo() {
   document.getElementById('player-cover-ph').style.display = 'none';
   _applyArtworkColor(vid);
   _updateMediaSessionMetadata(s, vid);
-  if (ytReady) _load(vid, at); else pendingVid = vid;
+  _ytLoad(vid, at);
   openVideoPopup();
 }
 

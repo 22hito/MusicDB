@@ -576,7 +576,7 @@
 @keyframes tq-slide { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--tq-shift, 0)); } }
 
 /* Маркер "домалювати ще" в кінці таблиці пісень (порції по 200 рядків) */
-tr.rows-sentinel, tr.rows-sentinel > td { height: 1px !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
+.rows-sentinel { height: 1px; margin-top: -1px; pointer-events: none; }
 
 /* Повтор однієї пісні — "1" на кнопці повтору */
 #btn-repeat { position: relative; }
