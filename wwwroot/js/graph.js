@@ -485,7 +485,14 @@ function _jaccard(setA, setB){
   const union = setA.size + setB.size - inter;
   return union ? inter/union : 0;
 }
-function _genreSet(song){ return new Set(song.genres.map(g=>g.toLowerCase())); }
+// Набір жанрів пісні (у нижньому регістрі) — раз на пісню: граф навколо пісні порівнює центральну з усіма
+// 18 тис. і раніше на кожне порівняння будував обидва набори заново. Набори лише читаються.
+const _genreSets = new WeakMap();
+function _genreSet(song){
+  let set = _genreSets.get(song);
+  if(!set){ set = new Set(song.genres.map(g=>g.toLowerCase())); _genreSets.set(song, set); }
+  return set;
+}
 
 // Розкладка й матриця схожості — O(n²): на весь каталог (тисячі пісень) це гігабайти й зависання,
 // тож у граф ідуть лише найпопулярніші вузли (за прослуховуваннями, порядок каталогу — при рівних).

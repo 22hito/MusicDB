@@ -19,13 +19,25 @@ const radiusFor = (v: number) => R_MIN + (1 - Math.max(0, Math.min(1, v))) * (R_
 function jaccard(a: Set<string>, b: Set<string>) {
   if (!a.size && !b.size) return 0;
   let inter = 0;
+  if (a.size > b.size) [a, b] = [b, a]; // перебираємо менший набір
   for (const x of a) if (b.has(x)) inter++;
   const union = a.size + b.size - inter;
   return union ? inter / union : 0;
 }
+// Набір жанрів пісні — раз на пісню: граф порівнює центральну з усім каталогом (18 тис.), і раніше на
+// кожне порівняння обидва набори будувались заново. Набори лише читаються.
+const genreSets = new WeakMap<Song, Set<string>>();
+function genreSet(s: Song) {
+  let set = genreSets.get(s);
+  if (!set) {
+    set = new Set(s.genres.map((g) => g.toLowerCase()));
+    genreSets.set(s, set);
+  }
+  return set;
+}
 function songSim(a: Song, b: Song) {
-  const ga = new Set(a.genres.map((g) => g.toLowerCase()));
-  const gb = new Set(b.genres.map((g) => g.toLowerCase()));
+  const ga = genreSet(a);
+  const gb = genreSet(b);
   const sameArtist = a.artist && (b.artist || '').toLowerCase() === a.artist.toLowerCase() ? 0.3 : 0;
   const sameAlbum = a.album && b.album === a.album ? 0.1 : 0;
   return Math.min(1, jaccard(ga, gb) * 0.8 + sameArtist + sameAlbum);
