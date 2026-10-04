@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.Extensions.Caching.Memory;
 using MusicDB.Api.Data;
 using MusicDB.Api.Services;
 
@@ -31,5 +33,20 @@ public class UserCardsTests
         Assert.Equal(DataAvatar, await directory.GetAvatarSourceAsync(1));
         Assert.Equal("https://lh3.googleusercontent.com/g", await directory.GetAvatarSourceAsync(2));
         Assert.Null(await directory.GetAvatarSourceAsync(3));
+    }
+
+    [Fact]
+    public async Task CurrentUserId_IsLookedUpOnce_ThenServedFromMemory()
+    {
+        await using var db = TestDb.Create();
+        db.Users.Add(new User { Id = 7, Email = "me@x" });
+        await db.SaveChangesAsync();
+        var directory = new UserDirectoryService(db, new MemoryCache(new MemoryCacheOptions()));
+        var me = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Email, "me@x")], "test"));
+
+        Assert.Equal(7, await directory.GetCurrentUserIdAsync(me));
+        db.Users.RemoveRange(db.Users); // бази більше не питаємо — id уже в пам'яті
+        await db.SaveChangesAsync();
+        Assert.Equal(7, await directory.GetCurrentUserIdAsync(me));
     }
 }

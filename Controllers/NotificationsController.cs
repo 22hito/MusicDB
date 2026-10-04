@@ -15,10 +15,8 @@ public class NotificationsController(MusicDbContext db, UserDirectoryService use
 {
     private string CurrentEmail => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
-    private async Task<int> CurrentUserIdAsync() => await userDirectory.GetOrCreateUserIdAsync(
-        CurrentEmail,
-        User.FindFirstValue(ClaimTypes.Name),
-        User.FindFirstValue("picture") ?? User.FindFirstValue("urn:google:picture"));
+    // Лише читання (і кеш у пам'яті) — не INSERT … ON CONFLICT DO UPDATE на кожен запит, як було.
+    private Task<int> CurrentUserIdAsync() => userDirectory.GetCurrentUserIdAsync(User);
 
     // Непрочитане — без фан-ауту: один запис події на артиста, "прочитано" — ArtistFollow.LastReadAt.
     [HttpGet]

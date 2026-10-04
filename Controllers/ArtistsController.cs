@@ -17,10 +17,8 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
     private string CurrentEmail => User.FindFirstValue(ClaimTypes.Email) ?? "";
     private bool IsAuthenticated => User.Identity?.IsAuthenticated ?? false;
 
-    private async Task<int> CurrentUserIdAsync() => await userDirectory.GetOrCreateUserIdAsync(
-        CurrentEmail,
-        User.FindFirstValue(ClaimTypes.Name),
-        User.FindFirstValue("picture") ?? User.FindFirstValue("urn:google:picture"));
+    // Лише читання (і кеш у пам'яті) — не INSERT … ON CONFLICT DO UPDATE на кожен запит, як було.
+    private Task<int> CurrentUserIdAsync() => userDirectory.GetCurrentUserIdAsync(User);
 
     // Імена різними абетками (латиниця, кирилиця) — в одному природному порядку, без огляду на регістр.
     private static readonly StringComparer NameOrder = StringComparer.Create(new System.Globalization.CultureInfo("uk-UA"), ignoreCase: true);

@@ -16,10 +16,8 @@ public class UsersController(MusicDbContext db, UserDirectoryService userDirecto
 {
     private string CurrentEmail => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
-    private async Task<int> CurrentUserIdAsync() => await userDirectory.GetOrCreateUserIdAsync(
-        CurrentEmail,
-        User.FindFirstValue(ClaimTypes.Name),
-        User.FindFirstValue("picture") ?? User.FindFirstValue("urn:google:picture"));
+    // Лише читання (і кеш у пам'яті) — не INSERT … ON CONFLICT DO UPDATE на кожен запит, як було.
+    private Task<int> CurrentUserIdAsync() => userDirectory.GetCurrentUserIdAsync(User);
 
     // Аватарка користувача (своя — з data:-URI профілю; з Google — редирект). Публічна, як і гілки,
     // де її показують; адреса версійована (UserDirectoryService.AvatarLink), тож кеш — назавжди.

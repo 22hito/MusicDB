@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MusicDB.Api.Data;
 using MusicDB.Api.Models;
 
@@ -7,8 +8,17 @@ namespace MusicDB.Api.Services;
 
 // Єдина точка "email -> opaque id" — викликається і з Program.cs (при кожному
 // Google-логіні), і з будь-якого контролера, якому потрібен стабільний id.
-public class UserDirectoryService(MusicDbContext db)
+// cache — email → id у пам'яті: id людини ніколи не змінюється (користувачів не видаляють), а потрібен
+// він майже кожному API-запиту — без кешу це окремий запит до бази щоразу.
+public class UserDirectoryService(MusicDbContext db, IMemoryCache? cache = null)
 {
+    private static string CacheKey(string email) => "uid:" + email;
+    private int Remember(string email, int id)
+    {
+        cache?.Set(CacheKey(email), id, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(1) });
+        return id;
+    }
+
     // INSERT ... ON CONFLICT — захист від гонки при одночасному першому запиті.
     public async Task<int> GetOrCreateUserIdAsync(string email, string? googleName, string? googlePicture)
     {
@@ -31,7 +41,7 @@ public class UserDirectoryService(MusicDbContext db)
                 google_picture = EXCLUDED.google_picture,
                 last_login_at = now()");
 
-        return await db.Users.Where(u => u.Email == email).Select(u => u.Id).FirstAsync();
+        return Remember(email, await db.Users.Where(u => u.Email == email).Select(u => u.Id).FirstAsync());
     }
 
     // Викликається на КОЖНОМУ API-запиті — тому спершу лише читаємо id. Раніше тут
@@ -42,8 +52,9 @@ public class UserDirectoryService(MusicDbContext db)
     public async Task<int> GetCurrentUserIdAsync(ClaimsPrincipal user)
     {
         var email = user.FindFirstValue(ClaimTypes.Email) ?? "";
+        if (cache is not null && cache.TryGetValue(CacheKey(email), out int cachedId)) return cachedId;
         var existingId = await db.Users.Where(u => u.Email == email).Select(u => (int?)u.Id).FirstOrDefaultAsync();
-        if (existingId is int id) return id;
+        if (existingId is int id) return Remember(email, id);
         return await GetOrCreateUserIdAsync(
             email,
             user.FindFirstValue(ClaimTypes.Name),
