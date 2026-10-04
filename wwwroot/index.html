@@ -52,8 +52,9 @@
 <link rel="preload" href="/fonts/inter-latin.woff2?v=2" as="font" type="font/woff2" crossorigin>
 <!-- Каталог — найбільша відповідь сайту (сотні КБ); initApp просить його лише після /config, /auth/me і профілю,
      а браузер може почати вже зараз, паралельно зі скриптами. fetch() у loadSongs забирає саме цю відповідь. -->
-<link rel="preload" href="/api/songs?format=cols" as="fetch" crossorigin>
-<link rel="preload" href="/api/songs?source=community&amp;format=cols" as="fetch" crossorigin>
+<link rel="preload" href="/api/songs?format=cols&amp;plays=0" as="fetch" crossorigin>
+<link rel="preload" href="/api/songs?source=community&amp;format=cols&amp;plays=0" as="fetch" crossorigin>
+<link rel="preload" href="/api/songs/plays" as="fetch" crossorigin>
 <link rel="stylesheet" href="/css/fonts.css">
 <!-- YouTube IFrame API підвантажує сам сайт (_loadYtApi у js/player.js): після старту або одразу, коли потрібен. -->
 <!-- Стилі — css/*.css, порядок важливий (каскад): база → компоненти → … → мобільний вигляд. -->

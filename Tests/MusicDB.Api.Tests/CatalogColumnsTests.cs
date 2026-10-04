@@ -49,6 +49,17 @@ public class CatalogColumnsTests
         Assert.False(c.Rating.ContainsKey(0));
     }
 
+    // plays=0: лічильників у каталозі немає зовсім (клієнт бере їх з /api/songs/plays), решта — як і була.
+    [Fact]
+    public void WithoutPlays_OmitsPlaysField_KeepsEverythingElse()
+    {
+        var with = System.Text.Encoding.UTF8.GetString(PackedJson.Create(CatalogColumns.From(Songs)).Raw);
+        var without = System.Text.Encoding.UTF8.GetString(PackedJson.Create(CatalogColumns.From(Songs, includePlays: false)).Raw);
+        Assert.Contains("\"plays\":", with);
+        Assert.DoesNotContain("\"plays\":", without);
+        Assert.Equal(System.Text.RegularExpressions.Regex.Replace(with, @"""plays"":\[[^\]]*\],?", ""), without);
+    }
+
     [Fact]
     public void SerializedJson_UsesCamelCaseKeys_ClientsDecodeBy()
     {

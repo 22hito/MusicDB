@@ -22,17 +22,23 @@ public class SongsController(
     // або "background" — пісні з файлом з обох таблиць (вкладка "У фоні").
     // format=cols — стовпчиками зі словниками (див. CatalogColumns): утричі менший JSON і швидший розбір
     // на телефоні; без параметра — як раніше (старі версії застосунку).
+    // plays=0 (лише з cols) — без лічильників прослуховувань (вони — окремо, GET plays): лічильники міняються
+    // щохвилини, і через них ETag усього каталогу (сотні КБ) змінювався раз на 2 хв — повторний візит
+    // завантажував його наново, навіть коли жодна пісня не змінилась. Без них каталог міняється лише з самими
+    // піснями й оцінками, тож браузер і застосунок зазвичай отримують 304.
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] string source = SongSources.Catalog, [FromQuery] string? format = null)
+    public async Task<IActionResult> GetAll([FromQuery] string source = SongSources.Catalog, [FromQuery] string? format = null, [FromQuery] int plays = 1)
     {
         var cols = format == "cols";
+        var withPlays = !cols || plays != 0;
         if (source != "all" && source != SongSources.Background && !SongSources.IsValid(source)) return BadRequest("Unknown source.");
 
         // Кеш: список — 6 послідовних запитів до БД, і після кожної зміни каталогу
         // його разом перезапитують усі відкриті вкладки (див. CatalogCache). Каталог — десятки
         // тисяч пісень, тож кешуємо вже стиснуту компактну відповідь з ETag (PackedJson).
         // Лічильники прослуховувань без мутації каталогу оновлюються раз на 2 хв.
-        var packed = await catalogCache.GetOrRefreshAsync(cols ? $"songs:{source}:cols" : $"songs:{source}", async sp =>
+        var key = !cols ? $"songs:{source}" : withPlays ? $"songs:{source}:cols" : $"songs:{source}:cols:np";
+        var packed = await catalogCache.GetOrRefreshAsync(key, async sp =>
         {
             // Свій scope: збір може йти у фоні, коли запит (і його DbContext) уже завершився — див. CatalogCache.
             var ctx = sp.GetRequiredService<MusicDbContext>();
@@ -47,7 +53,23 @@ public class SongsController(
                 .ToListAsync();
 
             var dtos = await music.BuildSongDtosAsync(songs);
-            return cols ? PackedJson.Create(CatalogColumns.From(dtos)) : PackedJson.Create(dtos.Select(CompactForList).ToList());
+            return cols ? PackedJson.Create(CatalogColumns.From(dtos, withPlays)) : PackedJson.Create(dtos.Select(CompactForList).ToList());
+        }, withPlays ? TimeSpan.FromMinutes(2) : TimeSpan.FromMinutes(30)); // без лічильників — лише мутації (Invalidate)
+        return packed.ToResult(HttpContext);
+    }
+
+    // Лічильники прослуховувань усіх пісень (обидві таблиці): { "id": слухачів }, лише ненульові. Крихітна
+    // відповідь (кілька КБ), що оновлюється раз на 2 хв, — до каталогу з plays=0.
+    [HttpGet("plays")]
+    public async Task<IActionResult> GetPlays()
+    {
+        var packed = await catalogCache.GetOrRefreshAsync("song-plays", async sp =>
+        {
+            var ctx = sp.GetRequiredService<MusicDbContext>();
+            var counts = await ctx.ListeningHistory.GroupBy(h => h.MusicId)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
+            return PackedJson.Create(counts);
         }, TimeSpan.FromMinutes(2));
         return packed.ToResult(HttpContext);
     }

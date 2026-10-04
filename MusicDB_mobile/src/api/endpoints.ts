@@ -68,7 +68,7 @@ interface CatalogColumns {
   dur: number[];
   track: number[];
   yt: (string | null)[];
-  plays: number[];
+  plays?: number[]; // без нього (plays=0) — лічильники окремо, /api/songs/plays
   artists?: Record<string, { id: number; name: string }[]>;
   source?: Record<string, SongSource>;
   audio?: Record<string, string>;
@@ -77,7 +77,8 @@ interface CatalogColumns {
   submittedBy?: Record<string, Song['submittedBy']>;
 }
 const pad2 = (n: number) => String(n).padStart(2, '0');
-function decodeCatalog(c: CatalogColumns): Song[] {
+// plays — { id: слухачів } з /api/songs/plays; без нього — з самого каталогу (старий сервер).
+function decodeCatalog(c: CatalogColumns, plays?: Record<string, number> | null): Song[] {
   const out: Song[] = new Array(c.id.length);
   for (let i = 0; i < c.id.length; i++) {
     const artist = c.artistDict[c.artist[i]];
@@ -98,7 +99,7 @@ function decodeCatalog(c: CatalogColumns): Song[] {
       album: c.album[i] >= 0 ? c.albumDict[c.album[i]] : null,
       trackNumber: c.track[i] || null,
       youtubeVideoId: c.yt[i] || null,
-      playCount: c.plays[i] || 0,
+      playCount: (plays ? plays[c.id[i]] : c.plays?.[i]) || 0,
       artists: refs ?? [],
       source: c.source?.[i] ?? 'catalog',
       audioUrl: c.audio?.[i] ?? null,
@@ -184,10 +185,21 @@ export function useMusicApi() {
       // 'background' — вкладка "У фоні": пісні з файлом з обох таблиць.
       // fresh — перезавантажити (головна, pull-to-refresh, songsChanged); інакше — спільний кеш.
       getSongs: (source: SongSource | 'all' | 'background' = 'catalog', fresh = false): Promise<Song[]> => {
+        // Каталог без лічильників (plays=0): його ETag міняється лише з піснями — WebView зазвичай бере його з
+        // кешу (304). Лічильники — окремо й маленькі; старий сервер plays=0 ігнорує, а /plays не має — тоді
+        // лічильники з самого каталогу.
+        // Один запит лічильників на виклик (каталог і ком'юніті разом) і лише тоді, коли каталог справді вантажиться.
+        let playsReq: Promise<Record<string, number> | null> | null = null;
+        const plays = () =>
+          (playsReq ??= request<Record<string, number> | string>('/api/songs/plays')
+            .then((m) => (m && typeof m === 'object' ? m : null))
+            .catch(() => null));
         const load = (src: 'catalog' | 'community') => {
           let p = fresh ? undefined : songsCache.get(src);
           if (!p) {
-            p = request<CatalogColumns>('/api/songs', { query: { source: src, format: 'cols' } }).then(decodeCatalog);
+            p = Promise.all([request<CatalogColumns>('/api/songs', { query: { source: src, format: 'cols', plays: 0 } }), plays()]).then(
+              ([c, plays]) => decodeCatalog(c, plays),
+            );
             p.catch(() => songsCache.delete(src));
             songsCache.set(src, p);
           }

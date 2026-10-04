@@ -21,7 +21,7 @@ public record CatalogColumns(
     int[] Dur,                               // секунди
     int[] Track,                             // номер у альбомі, 0 — немає
     string?[] Yt,
-    int[] Plays,
+    int[]? Plays,                            // null — без лічильників (plays=0, див. SongsController.GetAll)
     Dictionary<int, ArtistRefDto[]> Artists, // лише де імена не збігаються з полем Artist
     Dictionary<int, string> Source,          // лише не "catalog"
     Dictionary<int, string> Audio,
@@ -29,7 +29,7 @@ public record CatalogColumns(
     Dictionary<int, int> RatingCount,
     Dictionary<int, UserRefDto> SubmittedBy)
 {
-    public static CatalogColumns From(IReadOnlyList<SongDto> songs)
+    public static CatalogColumns From(IReadOnlyList<SongDto> songs, bool includePlays = true)
     {
         var n = songs.Count;
         var artistDict = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -40,7 +40,7 @@ public record CatalogColumns(
 
         var c = new CatalogColumns(
             new int[n], new string[n], [], new int[n], new int[]?[n], [], new int[n], [], new int[n][], new string[n],
-            new int[n], new int[n], new string?[n], new int[n], [], [], [], [], [], []);
+            new int[n], new int[n], new string?[n], includePlays ? new int[n] : null, [], [], [], [], [], []);
         for (var i = 0; i < n; i++)
         {
             var s = songs[i];
@@ -60,7 +60,7 @@ public record CatalogColumns(
             c.Dur[i] = TimeSpan.TryParse(s.Duration, out var d) ? (int)d.TotalSeconds : 0;
             c.Track[i] = s.TrackNumber ?? 0;
             c.Yt[i] = s.YoutubeVideoId;
-            c.Plays[i] = s.PlayCount;
+            if (c.Plays is not null) c.Plays[i] = s.PlayCount;
             if (s.Source != SongSources.Catalog) c.Source[i] = s.Source;
             if (s.AudioUrl is not null) c.Audio[i] = s.AudioUrl;
             if (s.AvgRating is { } r) c.Rating[i] = r;

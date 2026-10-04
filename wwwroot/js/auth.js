@@ -337,11 +337,16 @@ function login() { window.location.href = '/auth/login'; }
 
 // Обидві головні таблиці разом — будь-яка мутація (підтвердження заявки,
 // редагування) може зачепити будь-яку з них.
+// Каталог — без лічильників прослуховувань (plays=0): його ETag міняється лише разом із піснями, тож повторний
+// візит зазвичай отримує 304 замість сотень КБ. Лічильники — окремою крихітною відповіддю /api/songs/plays.
 async function loadSongs() {
-  const [res, communityRes] = await Promise.all([fetch('/api/songs?format=cols'), fetch('/api/songs?source=community&format=cols')]);
+  const [res, communityRes, playsRes] = await Promise.all([
+    fetch('/api/songs?format=cols&plays=0'), fetch('/api/songs?source=community&format=cols&plays=0'), fetch('/api/songs/plays'),
+  ]);
   if (!res.ok) throw new Error('songs fetch failed');
-  songs = _decodeCatalog(await res.json());
-  if (communityRes.ok) communitySongs = _decodeCatalog(await communityRes.json());
+  const plays = playsRes.ok ? await playsRes.json().catch(() => null) : null;
+  songs = _decodeCatalog(await res.json(), plays);
+  if (communityRes.ok) communitySongs = _decodeCatalog(await communityRes.json(), plays);
 }
 // Каталог «стовпчиками» (format=cols): по масиву на поле, виконавці/альбоми/жанри — словниками,
 // рідкісні поля — «індекс → значення». Утричі менший JSON і швидший розбір, ніж 18 000 об'єктів.
@@ -349,7 +354,8 @@ function _hms(sec){
   const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
-function _decodeCatalog(c){
+// plays — { id: слухачів } з /api/songs/plays; без нього — лічильники з самого каталогу (c.plays), якщо є.
+function _decodeCatalog(c, plays){
   const n = c.id.length, out = new Array(n);
   const artists = c.artists || {}, source = c.source || {}, audio = c.audio || {}, rating = c.rating || {}, ratingCount = c.ratingCount || {}, submittedBy = c.submittedBy || {};
   for(let i = 0; i < n; i++){
@@ -362,7 +368,8 @@ function _decodeCatalog(c){
     out[i] = {
       id: c.id[i], artist, title: c.title[i], release: c.release[i], duration: _hms(c.dur[i]),
       genres: c.genres[i].map(g => c.genreDict[g]), album: c.album[i] >= 0 ? c.albumDict[c.album[i]] : null,
-      trackNumber: c.track[i] || null, youtubeVideoId: c.yt[i] || null, playCount: c.plays[i] || 0,
+      trackNumber: c.track[i] || null, youtubeVideoId: c.yt[i] || null,
+      playCount: (plays ? plays[c.id[i]] : c.plays?.[i]) || 0,
       artists: refs || [], source: source[i] || 'catalog', audioUrl: audio[i] || null,
       avgRating: rating[i] ?? null, ratingCount: ratingCount[i] || 0, submittedBy: submittedBy[i] || null,
     };
