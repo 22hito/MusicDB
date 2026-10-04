@@ -57,13 +57,32 @@ fileAudio.addEventListener('error', ()=>{
   if(s) _setMarqueeText(document.getElementById('p-title'), s.title+t('audio.notFoundSuffix'));
 });
 
-// Сам плеєр YouTube створюємо лише перед першим відтворенням: вбудований плеєр — це ~1 МБ скриптів
-// YouTube (base.js, ytembeds…), які інакше вантажились і виконувались на КОЖНОМУ відкритті сайту,
-// навіть коли нічого не вмикали (на телефоні — більше, ніж увесь сайт). Відео до готовності чекає в pendingVid.
-let _ytApiReady=false;
+// Сам плеєр YouTube — не під час завантаження сайту: вбудований плеєр — це ~1 МБ скриптів YouTube (base.js,
+// ytembeds…), які вантажились і виконувались паралельно з самим сайтом (на телефоні — більше за весь сайт).
+// Тепер — коли сайт уже намальовано й браузер вільний (_warmYtPlayer з main.js), щоб перше відтворення не
+// чекало на плеєр ще ~2 с; з «Заощадженням трафіку» (Save-Data) — лише перед першим відтворенням.
+// Відео до готовності плеєра чекає в pendingVid.
+let _ytApiReady=false, _ytWarm=false;
+// Скрипт IFrame API — теж не з <head>: він тягне ще й www-widgetapi.js і з'єднання з youtube.com, поки сайт
+// сам іще вантажиться. Підвантажуємо, коли все вже намальовано (main.js), або одразу, щойно він потрібен
+// (перше відтворення, батл); готовність — через onYouTubeIframeAPIReady, як і раніше.
+let _ytApiRequested=false;
+function _loadYtApi(){
+  if(_ytApiRequested || (window.YT && window.YT.Player)) return;
+  _ytApiRequested=true;
+  const s=document.createElement('script');
+  s.src='https://www.youtube.com/iframe_api';
+  s.async=true;
+  document.head.appendChild(s);
+}
 function onYouTubeIframeAPIReady(){
   _ytApiReady=true;
-  if(pendingVid)_createYtPlayer();
+  if(pendingVid||_ytWarm)_createYtPlayer();
+}
+function _warmYtPlayer(){
+  if(navigator.connection?.saveData) return;
+  _ytWarm=true;
+  _createYtPlayer();
 }
 // Відео для YouTube-плеєра: одразу, якщо готовий; інакше — створити плеєр і програти, щойно він буде готовий.
 function _ytLoad(vid, startSeconds = 0){
@@ -72,7 +91,8 @@ function _ytLoad(vid, startSeconds = 0){
   _createYtPlayer();
 }
 function _createYtPlayer(){
-  if(ytPlayer||!_ytApiReady)return;
+  if(!_ytApiReady){ _loadYtApi(); return; } // створиться в onYouTubeIframeAPIReady (pendingVid)
+  if(ytPlayer)return;
   // Той самий плеєр і для звуку, і для відео в попапі (див. VIDEO POPUP) —
   // розмір задає контейнер (#video-popup-frame), тож 100%/100%. Закритий попап
   // лишає його 1px — YouTube тоді сам бере найнижчу якість (менше трафіку).

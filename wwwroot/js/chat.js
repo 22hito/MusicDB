@@ -85,7 +85,7 @@ function loadDmRequests(){
     document.getElementById('chat-requests-empty').style.display = list.length ? 'none' : '';
     document.getElementById('chat-requests-list').innerHTML = list.map(r=>`
       <div class="dm-request-card">
-        ${r.avatarUrl ? `<img src="${esc(r.avatarUrl)}" alt="">` : avatarHtml(null, r.displayName, 'chat-conv-ph')}
+        ${r.avatarUrl ? `<img src="${esc(r.avatarUrl)}" alt="" loading="lazy">` : avatarHtml(null, r.displayName, 'chat-conv-ph')}
         <div class="dm-request-main">
           <div><a href="#" class="artist-link" onclick="openUserProfilePage(${r.userId});return false;"><strong>${esc(r.displayName)}</strong></a> <span class="hint">· ${timeHtml(r.createdAt)}</span></div>
           <div class="dm-request-preview">${esc(r.preview)}</div>
@@ -127,7 +127,7 @@ function loadConversations(){
     document.getElementById('chat-conversations-empty').style.display = (list.length || showPending) ? 'none' : '';
     const item = c => `
       <div class="chat-conv${c.userId===currentChatUserId?' active':''}" onclick="selectConversation(${c.userId})">
-        ${c.avatarUrl ? `<img src="${esc(c.avatarUrl)}" alt="">` : avatarHtml(null, c.displayName, 'chat-conv-ph')}
+        ${c.avatarUrl ? `<img src="${esc(c.avatarUrl)}" alt="" loading="lazy">` : avatarHtml(null, c.displayName, 'chat-conv-ph')}
         <div class="chat-conv-main">
           <div class="chat-conv-top"><strong>${esc(c.displayName)}</strong>${c.unreadCount?`<span class="count-badge">${c.unreadCount}</span>`:''}</div>
           <div class="chat-conv-last">${c.state==='pending_outgoing'?`<span class="badge">${esc(t('chat.pendingLabel'))}</span> `:''}${c.lastFromMe?`${esc(t('chat.you'))}: `:''}${esc(c.lastMessage)}</div>
@@ -462,7 +462,7 @@ function _renderShareTargets(){
   const q = document.getElementById('share-song-search').value.trim().toLowerCase();
   const list = _shareTargets.filter(p => !q || p.name.toLowerCase().includes(q));
   document.getElementById('share-song-targets').innerHTML = list.length
-    ? list.map(p => `<button type="button" class="chat-pick" onclick="shareSongTo(${p.userId}, this)">${p.avatarUrl ? `<img class="round" src="${esc(p.avatarUrl)}" alt="">` : avatarHtml(null, p.name, 'chat-conv-ph')}<span class="chat-song-main"><strong>${esc(p.name)}</strong></span><svg class="icon chat-pick-go"><use href="#icon-arrow-right"/></svg></button>`).join('')
+    ? list.map(p => `<button type="button" class="chat-pick" onclick="shareSongTo(${p.userId}, this)">${p.avatarUrl ? `<img class="round" src="${esc(p.avatarUrl)}" alt="" loading="lazy">` : avatarHtml(null, p.name, 'chat-conv-ph')}<span class="chat-song-main"><strong>${esc(p.name)}</strong></span><svg class="icon chat-pick-go"><use href="#icon-arrow-right"/></svg></button>`).join('')
     : `<div class="hint" style="padding:0.6rem;">${esc(t('chat.shareNoTargets'))}</div>`;
 }
 function shareSongTo(userId, btn){

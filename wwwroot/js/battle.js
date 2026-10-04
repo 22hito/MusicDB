@@ -103,6 +103,7 @@ function startGenreBattle(){
 
 // Сторінка "Батл рояль" у навбарі: власні плейлисти (якщо залогінені) + публічні чужі.
 function openBattlePage(){
+  _loadYtApi(); // плеєрам турніру потрібен YouTube IFrame API — нехай вантажиться, поки обирають жанри
   _loadBattleGenres();
   const ownSection = document.getElementById('battle-page-own-login-hint');
   const ownEmpty = document.getElementById('battle-page-own-empty');
@@ -165,6 +166,7 @@ function closeBattleSetup(){
 function startBattleRoyale(size){
   if(typeof YT === 'undefined' || !YT.Player){
     // YouTube IFrame API міг ще не підвантажитись — пробуємо ще раз за секунду.
+    _loadYtApi();
     setTimeout(()=>startBattleRoyale(size), 1000);
     return;
   }

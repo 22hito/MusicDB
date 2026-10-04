@@ -10,7 +10,9 @@ setTimeout(_hideSplash, 8000);
 // window.onYouTubeIframeAPIReady, коли її ще не існувало, і більше не викличе:
 // без прапорця готовності плеєр не створився б при першому відтворенні. Доганяємо вручну.
 if (window.YT && window.YT.Player && !ytPlayer) onYouTubeIframeAPIReady();
-initApp().catch(err => { console.error('initApp error:', err); _hideSplash(); });
+initApp().catch(err => { console.error('initApp error:', err); _hideSplash(); })
+  // Плеєр YouTube — коли сайт уже намальовано й браузер вільний (див. _warmYtPlayer у js/player.js).
+  .finally(() => setTimeout(() => (window.requestIdleCallback || (cb => cb()))(_warmYtPlayer), 1000));
 applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 applyLang(currentLang);
 document.getElementById('vol-slider').value = vol;
