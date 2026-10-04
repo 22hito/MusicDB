@@ -80,6 +80,13 @@ const REALTIME_BRIDGE_SCRIPT = `(function(){
   function post(ev, args){
     try { window.ReactNativeWebView.postMessage(JSON.stringify({ __mdbRealtime: true, event: ev, args: args || [] })); } catch(e) {}
   }
+  // Сторінка мосту (bridge.html) порожня — клієнт SignalR підвантажуємо самі (той самий файл, що й на сайті).
+  if (!window.signalR && !document.getElementById('mdb-signalr')) {
+    var tag = document.createElement('script');
+    tag.id = 'mdb-signalr';
+    tag.src = '/js/vendor/signalr.min.js';
+    document.head.appendChild(tag);
+  }
   function start(attempt){
     if (!window.signalR) {
       if ((attempt || 0) > 20) return;
@@ -342,7 +349,10 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
       {apiBase ? (
         <WebView
           ref={bridgeRef}
-          source={{ uri: `${apiBase}/` }}
+          // Порожня сторінка того самого сайту, а не весь сайт: мосту потрібні лише origin і кука
+          // (див. wwwroot/bridge.html). Раніше на кожному запуску тут вантажився й працював увесь сайт,
+          // і перший запит застосунку чекав, поки він завантажиться.
+          source={{ uri: `${apiBase}/bridge.html` }}
           onLoadEnd={() => {
             setBridgeReady(true);
             bridgeRef.current?.injectJavaScript(REALTIME_BRIDGE_SCRIPT);
