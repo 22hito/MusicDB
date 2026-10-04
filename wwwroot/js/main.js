@@ -12,7 +12,8 @@ setTimeout(_hideSplash, 8000);
 if (window.YT && window.YT.Player && !ytPlayer) onYouTubeIframeAPIReady();
 initApp().catch(err => { console.error('initApp error:', err); _hideSplash(); })
   // Плеєр YouTube — коли сайт уже намальовано й браузер вільний (див. _warmYtPlayer у js/player.js).
-  .finally(() => setTimeout(() => (window.requestIdleCallback || (cb => cb()))(_warmYtPlayer), 1000));
+  // timeout — без нього анімації сторінки могли відкладати «вільну хвилину» скільки завгодно.
+  .finally(() => setTimeout(() => (window.requestIdleCallback || (cb => cb()))(_warmYtPlayer, { timeout: 3000 }), 1000));
 applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 applyLang(currentLang);
 document.getElementById('vol-slider').value = vol;
