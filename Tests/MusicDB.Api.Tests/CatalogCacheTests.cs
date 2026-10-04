@@ -20,6 +20,36 @@ public class CatalogCacheTests
         Assert.Equal(2, await cache.GetOrCreateAsync("songs:catalog", Load));
     }
 
+    // Після TTL — одразу попереднє значення, а нове збирається у фоні; після Invalidate — лише свіже.
+    [Fact]
+    public async Task Refresh_ServesStaleImmediately_ThenFresh_AndNeverStaleAfterInvalidate()
+    {
+        await using var db = TestDb.Create();
+        var cache = TestDb.CacheFor(db);
+        var calls = 0;
+        var slow = new TaskCompletionSource();
+        async Task<int> Load(IServiceProvider sp)
+        {
+            Assert.Same(db, sp.GetService(typeof(MusicDB.Api.Data.MusicDbContext))); // збір — зі своїх сервісів
+            var n = Interlocked.Increment(ref calls);
+            if (n == 2) await slow.Task; // фонове оновлення «повільне»
+            return n;
+        }
+        var ttl = TimeSpan.FromMilliseconds(50);
+
+        Assert.Equal(1, await cache.GetOrRefreshAsync("k", Load, ttl));
+        await Task.Delay(80); // TTL минув
+        Assert.Equal(1, await cache.GetOrRefreshAsync("k", Load, ttl)); // не чекає на збір — старе одразу
+        Assert.Equal(1, await cache.GetOrRefreshAsync("k", Load, ttl)); // збір уже йде — другий не запускається
+        slow.SetResult();
+        for (var i = 0; i < 50 && await cache.GetOrRefreshAsync("k", Load, TimeSpan.FromMinutes(1)) == 1; i++) await Task.Delay(10);
+        Assert.Equal(2, await cache.GetOrRefreshAsync("k", Load, ttl));
+        Assert.Equal(2, calls);
+
+        cache.Invalidate(); // мутація каталогу: старого більше не віддаємо
+        Assert.Equal(3, await cache.GetOrRefreshAsync("k", Load, ttl));
+    }
+
     [Fact]
     public async Task ConcurrentRequests_BuildOnce()
     {

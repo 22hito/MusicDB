@@ -7,7 +7,8 @@ namespace MusicDB.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class StatsController(MusicDbContext db, MusicService musicService, CatalogCache catalogCache) : ControllerBase
+// Обидві відповіді збираються в кеші, у власному scope (див. CatalogCache.GetOrRefreshAsync).
+public class StatsController(CatalogCache catalogCache) : ControllerBase
 {
     // source — яка головна таблиця: "catalog" (за замовчуванням), "community" або
     // "background" (пісні з файлом з обох таблиць — вкладка "У фоні").
@@ -15,12 +16,13 @@ public class StatsController(MusicDbContext db, MusicService musicService, Catal
     public async Task<object> Get([FromQuery] string source = SongSources.Catalog)
     {
         // Чотири COUNT-запити до БД — кешуємо разом зі списком пісень (CatalogCache).
-        return await catalogCache.GetOrCreateAsync<object>($"stats:{source}", async () =>
+        return await catalogCache.GetOrRefreshAsync<object>($"stats:{source}", async sp =>
         {
+            var ctx = sp.GetRequiredService<MusicDbContext>(); // свій scope — див. CatalogCache.GetOrRefreshAsync
             var background = source == SongSources.Background;
-            var songs = db.Songs.Where(m => background ? m.AudioFile != null : m.Source == source);
+            var songs = ctx.Songs.Where(m => background ? m.AudioFile != null : m.Source == source);
             var totalSongs = await songs.CountAsync();
-            var totalGenres = await db.MusicGenres.Where(mg => background ? mg.Music.AudioFile != null : mg.Music.Source == source)
+            var totalGenres = await ctx.MusicGenres.Where(mg => background ? mg.Music.AudioFile != null : mg.Music.Source == source)
                 .Select(mg => mg.GenreId).Distinct().CountAsync();
             var totalAlbums = await songs
                 .Where(m => m.AlbumIds != null && m.AlbumIds.Length > 0)
@@ -42,16 +44,17 @@ public class StatsController(MusicDbContext db, MusicService musicService, Catal
         // Групування всієї історії + 6 запитів на картки пісень — на кожне відкриття «Топ 100». Кешуємо, як і
         // каталог: зміни пісень/оцінок скидають кеш одразу, лічильники прослуховувань оновлюються раз на 2 хв.
         limit = Math.Clamp(limit, 1, 200);
-        return await catalogCache.GetOrCreateAsync($"top-songs:{limit}", async () =>
+        return await catalogCache.GetOrRefreshAsync($"top-songs:{limit}", async sp =>
         {
-            var topIds = await db.ListeningHistory
+            var ctx = sp.GetRequiredService<MusicDbContext>();
+            var topIds = await ctx.ListeningHistory
                 .GroupBy(h => h.MusicId)
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.Key)
                 .Take(limit)
                 .ToListAsync();
 
-            var dtos = await musicService.GetSongDtosByIdsAsync(topIds);
+            var dtos = await sp.GetRequiredService<MusicService>().GetSongDtosByIdsAsync(topIds);
             return dtos.OrderByDescending(d => d.PlayCount).ToList();
         }, TimeSpan.FromMinutes(2));
     }

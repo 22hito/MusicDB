@@ -32,9 +32,12 @@ public class SongsController(
         // його разом перезапитують усі відкриті вкладки (див. CatalogCache). Каталог — десятки
         // тисяч пісень, тож кешуємо вже стиснуту компактну відповідь з ETag (PackedJson).
         // Лічильники прослуховувань без мутації каталогу оновлюються раз на 2 хв.
-        var packed = await catalogCache.GetOrCreateAsync(cols ? $"songs:{source}:cols" : $"songs:{source}", async () =>
+        var packed = await catalogCache.GetOrRefreshAsync(cols ? $"songs:{source}:cols" : $"songs:{source}", async sp =>
         {
-            var query = db.Songs.AsNoTracking().Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
+            // Свій scope: збір може йти у фоні, коли запит (і його DbContext) уже завершився — див. CatalogCache.
+            var ctx = sp.GetRequiredService<MusicDbContext>();
+            var music = sp.GetRequiredService<MusicService>();
+            var query = ctx.Songs.AsNoTracking().Include(m => m.MusicGenres).ThenInclude(mg => mg.Genre).AsQueryable();
             if (source == SongSources.Background) query = query.Where(m => m.AudioFile != null);
             else if (source != "all") query = query.Where(m => m.Source == source);
 
@@ -43,7 +46,7 @@ public class SongsController(
                 .OrderBy(m => m.Artist.ToLower()).ThenBy(m => m.Title.ToLower())
                 .ToListAsync();
 
-            var dtos = await musicService.BuildSongDtosAsync(songs);
+            var dtos = await music.BuildSongDtosAsync(songs);
             return cols ? PackedJson.Create(CatalogColumns.From(dtos)) : PackedJson.Create(dtos.Select(CompactForList).ToList());
         }, TimeSpan.FromMinutes(2));
         return packed.ToResult(HttpContext);

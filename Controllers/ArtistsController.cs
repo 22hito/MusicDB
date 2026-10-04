@@ -30,19 +30,20 @@ public class ArtistsController(MusicDbContext db, MusicService musicService, Use
     // що сканував усю історію прослуховувань для кожного), і в кеші: пошук і сортування — у пам'яті.
     private sealed record ArtistRow(int Id, string Name, string? ImageUrl, DateTime CreatedAt, int SongCount, int Followers, int Plays);
 
-    private Task<List<ArtistRow>> ArtistRowsAsync() => catalogCache.GetOrCreateAsync("artists-all", async () =>
+    private Task<List<ArtistRow>> ArtistRowsAsync() => catalogCache.GetOrRefreshAsync("artists-all", async sp =>
     {
-        var songCounts = await db.MusicArtists.GroupBy(ma => ma.ArtistId)
+        var ctx = sp.GetRequiredService<MusicDbContext>(); // свій scope — див. CatalogCache.GetOrRefreshAsync
+        var songCounts = await ctx.MusicArtists.GroupBy(ma => ma.ArtistId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
-        var followers = await db.ArtistFollows.GroupBy(f => f.ArtistId)
+        var followers = await ctx.ArtistFollows.GroupBy(f => f.ArtistId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
         var plays = await (
-            from h in db.ListeningHistory
-            join ma in db.MusicArtists on h.MusicId equals ma.MusicId
+            from h in ctx.ListeningHistory
+            join ma in ctx.MusicArtists on h.MusicId equals ma.MusicId
             group h by ma.ArtistId into g
             select new { g.Key, Count = g.Count() }
         ).ToDictionaryAsync(x => x.Key, x => x.Count);
-        var artists = await db.Artists.AsNoTracking()
+        var artists = await ctx.Artists.AsNoTracking()
             .Select(a => new { a.Id, a.Name, a.ImageUrl, a.CreatedAt }).ToListAsync();
         return artists
             .Where(a => songCounts.ContainsKey(a.Id))

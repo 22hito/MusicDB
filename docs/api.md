@@ -73,7 +73,7 @@ DTO — назовні лише `UserId`.
 |---|---|
 | `MusicService` | Жанри, альбоми, виконавці, збірка `SongDto` (прослуховування, оцінки, автор) |
 | `AudioStorage` (`IAudioStorage`) | Файли: диск або R2; аудіо до 25 МБ, картинки (png/jpg/webp/gif) до 5 МБ |
-| `CatalogCache` | Кеш каталогу й статистики (30 с) з інвалідацією |
+| `CatalogCache` | Кеш каталогу, статистики, Топу й списку виконавців з інвалідацією. `GetOrRefreshAsync`: після TTL віддає попереднє значення одразу й збирає нове у фоні (у власному DI-scope); після `Invalidate` чи 30 хв тиші — лише свіже |
 | `AdminActivityService` | Стрічка дій адмінів + SignalR-сповіщення групи `admins` |
 | `ArtistActivityService` | Події для підписників на виконавця |
 | `CommunitySongInput` | Валідація форми пісні ком'юніті (файл або YouTube) |
