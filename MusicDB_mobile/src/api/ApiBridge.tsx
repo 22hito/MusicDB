@@ -159,7 +159,9 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
                 credentials: 'include'
               }).then(function(r){
                 return r.text().then(function(text){
-                  window.ReactNativeWebView.postMessage(JSON.stringify({ id: ${JSON.stringify(id)}, status: r.status, ok: r.ok, body: text }));
+                  // Сирий кадр, а не JSON у JSON: каталог (~1.4 МБ) інакше екранувався б у ще більший рядок,
+                  // а в RN розбирався б двічі. Формат: \\u0001 id \\n status \\n ok \\n тіло (див. onBridgeMessage).
+                  window.ReactNativeWebView.postMessage('\\u0001' + ${JSON.stringify(id)} + '\\n' + r.status + '\\n' + (r.ok ? 1 : 0) + '\\n' + text);
                 });
               }).catch(function(e){
                 window.ReactNativeWebView.postMessage(JSON.stringify({ id: ${JSON.stringify(id)}, status: 0, ok: false, error: String((e && e.message) || e) }));
@@ -250,8 +252,23 @@ export function ApiBridgeProvider({ children }: { children: React.ReactNode }) {
   }, [requestRaw]);
 
   const onBridgeMessage = useCallback((event: { nativeEvent: { data: string } }) => {
+    const raw = event.nativeEvent.data;
+    // Відповідь на запит — сирим кадром (див. requestRaw): \u0001 id \n status \n ok \n тіло.
+    if (raw.charCodeAt(0) === 1) {
+      const a = raw.indexOf('\n');
+      const b = raw.indexOf('\n', a + 1);
+      const c = raw.indexOf('\n', b + 1);
+      if (a < 0 || b < 0 || c < 0) return;
+      const id = raw.slice(1, a);
+      const p = pending.current.get(id);
+      if (!p) return;
+      pending.current.delete(id);
+      clearTimeout(p.timeout);
+      p.resolve({ status: Number(raw.slice(a + 1, b)) || 0, ok: raw.slice(b + 1, c) === '1', body: raw.slice(c + 1) });
+      return;
+    }
     try {
-      const data = JSON.parse(event.nativeEvent.data) as {
+      const data = JSON.parse(raw) as {
         id?: string;
         status?: number;
         ok?: boolean;

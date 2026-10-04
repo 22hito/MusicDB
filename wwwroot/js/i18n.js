@@ -774,7 +774,8 @@ const I18N = {
     'settings.autoScale.now': "Зараз: +{p}% · вікно {w} px",
     'settings.autoScale.none': "На цьому екрані без змін: вікно {w} px, збільшення — від {from} px",
     'settings.autoScale.off': "Вимкнено · вікно {w} px",
-    'count.rounds': "раунд|раунди|раундів"
+    'count.rounds': "раунд|раунди|раундів",
+    'list.showMore': "Показати ще {n} з {total}"
   },
   en: {
     'nav.home': 'Home',
@@ -1540,7 +1541,8 @@ const I18N = {
     'settings.autoScale.now': "Now: +{p}% · window {w} px",
     'settings.autoScale.none': "No change on this screen: the window is {w} px, enlarging starts at {from} px",
     'settings.autoScale.off': "Off · window {w} px",
-    'count.rounds': "round|rounds"
+    'count.rounds': "round|rounds",
+    'list.showMore': "Show {n} more of {total}"
   }
 };
 let currentLang = localStorage.getItem('lang') || 'uk';

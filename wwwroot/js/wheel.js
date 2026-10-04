@@ -428,14 +428,29 @@ function renderWheelPlaylist(){
   document.getElementById('wheel-playlist-empty').style.display = 'none';
   document.getElementById('wheel-playlist-wrap').style.display = '';
   document.getElementById('wheel-playlist-title').textContent = `${abbrGenre(wheelResultGenre)} — ${currentWheelSongs.length}`;
-  document.getElementById('wheel-playlist-body').innerHTML = currentWheelSongs.map(s=>`
+  document.getElementById('wheel-playlist-body').innerHTML = '';
+  _wheelPlaylistShown = 0;
+  showMoreWheelPlaylist();
+}
+// Плейлист колеса — порціями: великий жанр (hard rock — понад 2000 пісень) інакше одразу додавав тисячі
+// рядків. «Слухати» й перемикання пісень однаково йдуть по всьому списку.
+const WHEEL_PLAYLIST_PAGE = 50;
+let _wheelPlaylistShown = 0;
+function showMoreWheelPlaylist(){
+  const next = Math.min(currentWheelSongs.length, _wheelPlaylistShown + WHEEL_PLAYLIST_PAGE);
+  document.getElementById('wheel-playlist-body').insertAdjacentHTML('beforeend', currentWheelSongs.slice(_wheelPlaylistShown, next).map(s=>`
     <tr>
       <td class="td-icon-lead" data-label=""><button class="btn-icon-fav" onclick="toggleOrPlay(${s.id}, playFromWheel)" title="${t('profile.playBtn')}">
         <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
       </button></td>
       <td data-label="${t('table.artist')}"><strong>${esc(s.artist)}</strong></td>
       <td data-label="${t('table.title')}">${esc(s.title)}</td>
-    </tr>`).join('');
+    </tr>`).join(''));
+  _wheelPlaylistShown = next;
+  const more = document.getElementById('wheel-playlist-more');
+  const rest = currentWheelSongs.length - next;
+  more.hidden = rest <= 0;
+  if(rest > 0) more.textContent = t('list.showMore').replace('{n}', Math.min(WHEEL_PLAYLIST_PAGE, rest)).replace('{total}', currentWheelSongs.length);
 }
 function playFromWheel(id){
   if(!currentWheelSongs.length) return;

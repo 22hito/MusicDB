@@ -612,3 +612,7 @@ html.mv-open { overflow: hidden; }
   .battle-champ-more .battle-champ-secondary { display: none; }
   .battle-champ-cover-wrap { width: 100%; }
 }
+
+/* Колесо: «Показати ще N з M» під плейлистом (порції по 50 — див. showMoreWheelPlaylist). */
+.wheel-playlist-more { display: flex; margin: 12px auto 4px; }
+.wheel-playlist-more[hidden] { display: none; }

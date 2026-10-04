@@ -661,6 +661,7 @@ export const I18N = {
     'chat.preview': "Переглянути",
     'chat.watch': "Дивитись",
     'chat.previewFailed': "Не вдалося показати файл — його можна завантажити.",
+    'list.showMore': "Показати ще {n} з {total}",
   },
   en: {
     'nav.home': 'Home',
@@ -1322,6 +1323,7 @@ export const I18N = {
     'chat.preview': "Preview",
     'chat.watch': "Watch",
     'chat.previewFailed': "Couldn't show the file — you can download it.",
+    'list.showMore': "Show {n} more of {total}",
   },
 } as const;
 
