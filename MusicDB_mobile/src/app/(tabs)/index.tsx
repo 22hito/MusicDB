@@ -161,15 +161,18 @@ export default function LibraryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shuffleActive, shuffleSeed]);
 
+  // Рядок пошуку для кожної пісні — раз на завантаження каталогу, а не toLowerCase() чотирьох полів
+  // у всіх 18 тис. пісень на кожну літеру (на Hermes це помітно). Поля розділені переносом — збіг не
+  // «перескакує» з виконавця на назву.
+  const searchKeys = useMemo(
+    () => songs.map((s) => [s.artist, s.title, s.album ?? '', s.submittedBy?.displayName ?? ''].join('\n').toLowerCase()),
+    [songs],
+  );
+
   const filtered = useMemo(() => {
     const q = deferredSearch.toLowerCase();
-    let list = songs.filter((s) => {
-      const mt =
-        !q ||
-        s.artist.toLowerCase().includes(q) ||
-        s.title.toLowerCase().includes(q) ||
-        (s.album ? s.album.toLowerCase().includes(q) : false) ||
-        (s.submittedBy ? s.submittedBy.displayName.toLowerCase().includes(q) : false);
+    let list = songs.filter((s, i) => {
+      const mt = !q || searchKeys[i].includes(q);
       const mg = !genreFilter || s.genres.includes(genreFilter);
       const ma = !albumFilter || s.album === albumFilter;
       return mt && mg && ma;
@@ -192,7 +195,7 @@ export default function LibraryScreen() {
       list = [...list].sort(albumTrackOrder); // фільтр за альбомом — як в оригіналі
     }
     return list;
-  }, [songs, deferredSearch, genreFilter, albumFilter, shuffleOrder, sortKey, sortDir]);
+  }, [songs, searchKeys, deferredSearch, genreFilter, albumFilter, shuffleOrder, sortKey, sortDir]);
 
   const toggleShuffle = () => {
     setSortKey('default');
