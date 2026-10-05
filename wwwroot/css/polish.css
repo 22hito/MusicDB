@@ -616,3 +616,9 @@ html.mv-open { overflow: hidden; }
 /* Колесо: «Показати ще N з M» під плейлистом (порції по 50 — див. showMoreWheelPlaylist). */
 .wheel-playlist-more { display: flex; margin: 12px auto 4px; }
 .wheel-playlist-more[hidden] { display: none; }
+
+/* Ніхто не дивиться на сайт (вікно не у фокусі, вкладка прихована, 30 с без дій — див. _setUiIdle у
+   js/appearance.js): нескінченні анімації стоять, браузер перестає малювати 60 кадрів/с. Біжучі рядки
+   мають власні !important-правила вищої специфічності — для них окремо. */
+html[data-idle] *, html[data-idle] *::before, html[data-idle] *::after { animation-play-state: paused !important; }
+html[data-idle] .mq.mq-on > .mq-track, html[data-idle] #songs-table .tq-on > .tq { animation-play-state: paused !important; }

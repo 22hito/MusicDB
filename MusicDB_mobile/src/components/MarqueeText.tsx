@@ -2,12 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 const GAP = 48; // px між кінцем тексту і його копією
+const LOOPS = 3;
 
 // Біжучий рядок, як на табло: якщо текст не влазить у ширину — безперервно їде
 // вліво, а за ним через проміжок іде копія, тож рядок "іде по колу" без
 // повернення назад (коротка пауза лише на старті кожного кола). Якщо влазить —
 // звичайний статичний текст. Навмисно не залежить від системного "зменшити рух":
-// інакше довгу назву було б просто не прочитати.
+// інакше довгу назву було б просто не прочитати. Але не безкінечно: LOOPS кіл і стоп на початку
+// назви (нова назва — знову) — безперервна анімація в міні-плеєрі тримала б екран на 60 кадрах/с, поки
+// грає музика (як і на сайті, де біжучі рядки стають на паузу, коли на сторінку ніхто не дивиться).
 export function MarqueeText({
   children,
   style,
@@ -38,6 +41,8 @@ export function MarqueeText({
         Animated.delay(1200),
         Animated.timing(x, { toValue: -shift, duration: (shift / speed) * 1000, easing: Easing.linear, useNativeDriver: true }),
       ]),
+      // Після останнього кола на місці тексту стоїть його копія — виглядає так само, як початок.
+      { iterations: LOOPS },
     );
     loop.start();
     return () => loop.stop();

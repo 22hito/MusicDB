@@ -293,3 +293,7 @@ h2 span.hl {
   animation: shimmerText 5s linear 1;
 }
 @keyframes shimmerText { to { background-position: -200% center; } }
+/* Лише раз на заголовок: сторінки перемикаються display: none → block, і CSS-анімація при кожному показі
+   стартувала знову — кожен перехід на сторінку коштував ще 5 с перемальовування (до половини ядра).
+   Клас ставить js/appearance.js після першого проходу. */
+h2 span.hl.shimmered { animation: none; }

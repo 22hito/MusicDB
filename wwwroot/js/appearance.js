@@ -183,6 +183,36 @@ function _renderAutoScaleStatus(k){
     : t('settings.autoScale.none').replace('{w}', w).replace('{from}', AUTO_SCALE.from);
   el.classList.toggle('active', !!PREFS.autoScale && pct > 0);
 }
+// Економія ресурсів: нескінченні декоративні анімації (еквалайзер, пульс рядка, що грає, біжучі рядки…)
+// тримають браузер на 60 кадрах/с — під час відтворення це було ~половина ядра процесора й ще більше роботи
+// відеокарти, навіть коли сайт просто відкритий збоку (а музика грає й без них). Коли на сайт ніхто не
+// дивиться — вікно не у фокусі, вкладка прихована або UI_IDLE_MS без жодної дії, — ставимо їх на паузу
+// (data-idle на <html>, правила — у css/polish.css). Перша ж дія користувача — і все знову рухається.
+const UI_IDLE_MS = 30000;
+// Переливання заголовка (shimmerText, css/base.css) — один раз: після першого проходу клас .shimmered вимикає
+// анімацію, і повторний показ сторінки її вже не запускає.
+document.addEventListener('animationend', e => { if(e.animationName === 'shimmerText') e.target.classList.add('shimmered'); });
+let _uiIdleTimer = 0, _uiLastActivity = 0;
+function _setUiIdle(on){
+  const root = document.documentElement;
+  if(on !== root.hasAttribute('data-idle')) root.toggleAttribute('data-idle', on);
+}
+function _uiActivity(){
+  const now = performance.now();
+  // pointermove приходить десятками на секунду — таймер переставляємо не частіше разу на секунду.
+  if(now - _uiLastActivity < 1000 && !document.documentElement.hasAttribute('data-idle')) return;
+  _uiLastActivity = now;
+  _setUiIdle(false);
+  clearTimeout(_uiIdleTimer);
+  _uiIdleTimer = setTimeout(() => _setUiIdle(true), UI_IDLE_MS);
+}
+['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(ev =>
+  window.addEventListener(ev, _uiActivity, { passive: true, capture: true }));
+window.addEventListener('focus', _uiActivity);
+window.addEventListener('blur', () => _setUiIdle(true));
+document.addEventListener('visibilitychange', () => { if(document.hidden) _setUiIdle(true); else _uiActivity(); });
+if(document.hasFocus() && !document.hidden) _uiActivity(); else _setUiIdle(true);
+
 let _autoScaleRaf = 0;
 window.addEventListener('resize', () => {
   cancelAnimationFrame(_autoScaleRaf);

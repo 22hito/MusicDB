@@ -11,9 +11,9 @@ setTimeout(_hideSplash, 8000);
 // без прапорця готовності плеєр не створився б при першому відтворенні. Доганяємо вручну.
 if (window.YT && window.YT.Player && !ytPlayer) onYouTubeIframeAPIReady();
 initApp().catch(err => { console.error('initApp error:', err); _hideSplash(); })
-  // Плеєр YouTube — коли сайт уже намальовано й браузер вільний (див. _warmYtPlayer у js/player.js).
-  // timeout — без нього анімації сторінки могли відкладати «вільну хвилину» скільки завгодно.
-  .finally(() => setTimeout(() => (window.requestIdleCallback || (cb => cb()))(_warmYtPlayer, { timeout: 3000 }), 1000));
+  // Скрипт YouTube IFrame API (~13 КБ) — коли сайт уже намальовано й браузер вільний; сам плеєр — за наміром
+  // відтворити (див. _onPlayIntent у js/player.js). timeout — анімації не відкладуть «вільну хвилину» назавжди.
+  .finally(() => setTimeout(() => (window.requestIdleCallback || (cb => cb()))(_loadYtApi, { timeout: 3000 }), 1000));
 applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 applyLang(currentLang);
 document.getElementById('vol-slider').value = vol;

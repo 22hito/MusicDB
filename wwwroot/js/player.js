@@ -58,10 +58,10 @@ fileAudio.addEventListener('error', ()=>{
 });
 
 // Сам плеєр YouTube — не під час завантаження сайту: вбудований плеєр — це ~1 МБ скриптів YouTube (base.js,
-// ytembeds…), які вантажились і виконувались паралельно з самим сайтом (на телефоні — більше за весь сайт).
-// Тепер — коли сайт уже намальовано й браузер вільний (_warmYtPlayer з main.js), щоб перше відтворення не
-// чекало на плеєр ще ~2 с; з «Заощадженням трафіку» (Save-Data) — лише перед першим відтворенням.
-// Відео до готовності плеєра чекає в pendingVid.
+// ytembeds…) і ~70 МБ пам'яті, навіть коли нічого не вмикають. Скрипт API — коли сайт уже намальовано
+// (main.js), а сам плеєр — щойно людина тягнеться до відтворення: наводить на кнопку чи рядок пісні або на
+// плеєр (_onPlayIntent) — до кліку лишаються сотні мілісекунд, за які плеєр встигає підготуватись.
+// З «Заощадженням трафіку» (Save-Data) — лише при самому відтворенні. Відео до готовності чекає в pendingVid.
 let _ytApiReady=false, _ytWarm=false;
 // Скрипт IFrame API — теж не з <head>: він тягне ще й www-widgetapi.js і з'єднання з youtube.com, поки сайт
 // сам іще вантажиться. Підвантажуємо, коли все вже намальовано (main.js), або одразу, щойно він потрібен
@@ -84,6 +84,15 @@ function _warmYtPlayer(){
   _ytWarm=true;
   _createYtPlayer();
 }
+const _YT_INTENT='.play-row-btn, tr[data-id], #player-bar, [onclick*="play" i]';
+function _onPlayIntent(e){
+  if(!e.target.closest?.(_YT_INTENT)) return;
+  document.removeEventListener('pointerover', _onPlayIntent, true);
+  document.removeEventListener('focusin', _onPlayIntent, true);
+  _warmYtPlayer();
+}
+document.addEventListener('pointerover', _onPlayIntent, true);
+document.addEventListener('focusin', _onPlayIntent, true);
 // Відео для YouTube-плеєра: одразу, якщо готовий; інакше — створити плеєр і програти, щойно він буде готовий.
 function _ytLoad(vid, startSeconds = 0){
   if(ytReady){ _load(vid, startSeconds); return; }

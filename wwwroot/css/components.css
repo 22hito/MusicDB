@@ -620,6 +620,8 @@ tbody tr:last-child td { border-bottom: none; }
 .play-row-btn.is-playing::after {
   content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
-  animation: rowPulse 2s ease-in-out infinite; will-change: transform, opacity;
+  /* Три хвилі на старті пісні, далі — статичне кільце: нескінченна пульсація тримала відеокарту на 60 кадрах/с,
+     поки грає музика (рядок і так виділений кольором). */
+  animation: rowPulse 2s ease-in-out 3; will-change: transform, opacity;
 }
 @keyframes rowPulse { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.35); opacity: 0; } }
