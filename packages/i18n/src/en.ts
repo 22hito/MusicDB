@@ -439,7 +439,10 @@ export const en: Shape<Messages> = {
     priceStars: "{amount} ⭐ / month",
     subscribeTelegram: "Subscribe in Telegram",
     telegramNote:
-      "Paid with Telegram Stars in the N'Owl bot. Renews monthly, cancel any time here or in Telegram.",
+      "Paid with Telegram Stars in the N'Owl bot. Renews monthly; cancel any time here or in Telegram — Premium stays active until the end of the paid month. No refunds.",
+    cancelConfirm: "Stop renewing Premium?",
+    cancelConfirmText:
+      "Premium stays active until {date}, with no further charges. The current month is non-refundable.",
     waiting: "Telegram opened — the status will update here after payment",
     resume: "Renew again",
     hiddenPreview: "This page is hidden from users — only admins can see it",

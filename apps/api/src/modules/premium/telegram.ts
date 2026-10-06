@@ -3,8 +3,10 @@
  *
  * Шлях: сайт → POST /v1/premium/checkout → t.me/<бот>?start=<підписаний токен акаунта> → бот вітає й дає кнопку
  * з рахунком-підпискою (30 днів, Telegram сам продовжує щомісяця) → pre_checkout_query → successful_payment
- * (і далі щомісяця, is_recurring) → преміум до subscription_expiration_date. Повернення (refunded_payment) знімає
- * преміум. /paysupport і будь-який текст у бота — звернення в «Баг-репорти» адмінки.
+ * (і далі щомісяця, is_recurring) → преміум до subscription_expiration_date. Скасування — лише автопродовження:
+ * преміум діє до кінця оплаченого періоду, кошти не повертаємо. refunded_payment приходить, тільки якщо оплату
+ * скасував сам Telegram чи магазин (спір, чарджбек) — тоді гроші списано з балансу бота, і преміум знімається.
+ * /paysupport і будь-який текст у бота — звернення в «Баг-репорти» адмінки.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { bugReports, type DbOrTx, payments, subscriptions, users } from "@musicdb/db";
@@ -107,7 +109,7 @@ const TEXT = {
     offer: (name: string, price: number) =>
       `Привіт, ${name}! 🦉\n\nN'Owl Premium — офлайн-бібліотека й завантаження плейлистів у застосунку.\n\n` +
       `${price} ⭐ на місяць, продовжується автоматично. Скасувати можна будь-коли — на сайті або в Telegram ` +
-      "(Налаштування → Мої зірки).",
+      "(Налаштування → Мої зірки): Premium діятиме до кінця оплаченого місяця. Кошти не повертаються.",
     pay: (price: number) => `Оформити за ${price} ⭐`,
     title: "N'Owl Premium",
     description: "Офлайн-бібліотека й завантаження плейлистів у застосунку N'Owl. Місяць, автопродовження.",
@@ -120,7 +122,7 @@ const TEXT = {
     back: "Повернутися в N'Owl",
     paid: (date: string) => `Готово! Premium активний до ${date}. Дякуємо, що підтримуєте N'Owl 💛`,
     renewed: (date: string) => `Premium продовжено до ${date}.`,
-    refunded: "Кошти повернуто, Premium вимкнено.",
+    refunded: "Telegram скасував цю оплату — Premium вимкнено.",
     priceChanged: "Ціна змінилась — відкрийте посилання з сайту ще раз.",
     noUser: "Акаунт не знайдено — оформіть з сайту ще раз.",
     support:
@@ -128,13 +130,14 @@ const TEXT = {
     received: "Дякуємо! Звернення передано адміністратору.",
     terms:
       "Premium — підписка на місяць за Telegram Stars, продовжується автоматично, поки ви її не скасуєте. " +
-      "Після скасування діє до кінця оплаченого періоду. Повні умови — на сайті:",
+      "Після скасування діє до кінця оплаченого періоду, наступного списання не буде. " +
+      "Кошти за оплачений період не повертаються. Повні умови — на сайті:",
   },
   en: {
     offer: (name: string, price: number) =>
       `Hi, ${name}! 🦉\n\nN'Owl Premium — offline library and playlist downloads in the app.\n\n` +
       `${price} ⭐ per month, renews automatically. Cancel any time — on the website or in Telegram ` +
-      "(Settings → My Stars).",
+      "(Settings → My Stars): Premium stays active until the end of the paid month. No refunds.",
     pay: (price: number) => `Subscribe for ${price} ⭐`,
     title: "N'Owl Premium",
     description: "Offline library and playlist downloads in the N'Owl app. Monthly, auto-renewing.",
@@ -147,7 +150,7 @@ const TEXT = {
     back: "Back to N'Owl",
     paid: (date: string) => `Done! Premium is active until ${date}. Thanks for supporting N'Owl 💛`,
     renewed: (date: string) => `Premium renewed until ${date}.`,
-    refunded: "Refunded, Premium is off.",
+    refunded: "Telegram reversed this payment — Premium is off.",
     priceChanged: "The price has changed — open the link from the website again.",
     noUser: "Account not found — subscribe from the website again.",
     support:
@@ -155,7 +158,8 @@ const TEXT = {
     received: "Thanks! Your message was passed to an admin.",
     terms:
       "Premium is a monthly Telegram Stars subscription that renews until you cancel it. " +
-      "After cancelling it lasts until the end of the paid period. Full terms on the website:",
+      "After cancelling it lasts until the end of the paid period and you won't be charged again. " +
+      "Payments for a paid period are non-refundable. Full terms on the website:",
   },
 };
 

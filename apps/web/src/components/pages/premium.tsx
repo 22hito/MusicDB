@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/ui/confirm";
 import { useI18n } from "@/lib/i18n";
 
 /** preview — сторінку приховано від користувачів (FEATURES.premium), її відкрив адмін. */
@@ -68,6 +69,16 @@ export function PremiumView({ preview = false }: { preview?: boolean }) {
 
   /** Не продовжувати / продовжувати знову (для Telegram — і в самому Telegram). */
   const setRenewal = async (enabled: boolean) => {
+    if (
+      !enabled &&
+      sub.data?.until &&
+      !(await confirm({
+        title: t("premium.cancelConfirm"),
+        description: t("premium.cancelConfirmText", { date: fmt(sub.data.until) }),
+        confirmLabel: t("premium.cancel"),
+      }))
+    )
+      return;
     setBusy(true);
     try {
       await (enabled ? api.premium.resume() : api.premium.cancel());

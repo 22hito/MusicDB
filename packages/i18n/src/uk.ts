@@ -435,7 +435,10 @@ export const uk = {
     priceStars: "{amount} ⭐ / місяць",
     subscribeTelegram: "Оформити в Telegram",
     telegramNote:
-      "Оплата — Telegram Stars у боті N'Owl. Продовжується щомісяця, скасувати можна будь-коли тут або в Telegram.",
+      "Оплата — Telegram Stars у боті N'Owl. Продовжується щомісяця; скасувати можна будь-коли тут або в Telegram — Premium діятиме до кінця оплаченого місяця. Кошти не повертаються.",
+    cancelConfirm: "Не продовжувати Premium?",
+    cancelConfirmText:
+      "Premium діятиме до {date}, далі списань не буде. Кошти за поточний місяць не повертаються.",
     waiting: "Відкрили Telegram — після оплати статус оновиться тут",
     resume: "Продовжувати знову",
     hiddenPreview: "Сторінку приховано від користувачів — її бачать лише адміни",
