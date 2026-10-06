@@ -31,11 +31,19 @@ type DeezerAlbum = {
   genres?: { data: { name: string }[] };
 };
 type DeezerArtist = { id: number; name: string; picture_xl?: string };
+type DeezerAlbumHit = { id: number; title: string; cover_xl?: string; artist: { name: string } };
 
 export const deezer = {
   track: (id: string | number) => getJson<DeezerTrack>("deezer", `https://api.deezer.com/track/${id}`),
   album: (id: string | number) => getJson<DeezerAlbum>("deezer", `https://api.deezer.com/album/${id}`),
   artist: (id: string | number) => getJson<DeezerArtist>("deezer", `https://api.deezer.com/artist/${id}`),
+  async searchAlbums(q: string): Promise<DeezerAlbumHit[]> {
+    const res = await getJson<{ data?: DeezerAlbumHit[] }>(
+      "deezer",
+      `https://api.deezer.com/search/album?q=${encodeURIComponent(q.slice(0, 200))}&limit=25`,
+    );
+    return res?.data ?? [];
+  },
   /** Пошук пісні: збіг назви (без версій), основного виконавця й тривалості ±3 с. */
   async find(artist: string, title: string, durationMs: number): Promise<DeezerTrack | null> {
     // Розширений синтаксис працює лише на /search (на /search/track повертає порожньо); далі — звичайний запит.
@@ -126,13 +134,31 @@ export type ItunesSong = {
   trackName: string;
   artistName: string;
   collectionName?: string;
+  collectionId?: number;
+  artworkUrl100?: string;
+  trackNumber?: number;
+  discNumber?: number;
   releaseDate?: string;
   trackTimeMillis?: number;
   primaryGenreName?: string;
   trackExplicitness?: "explicit" | "notExplicit" | "cleaned";
 };
 
+type ItunesAlbum = {
+  collectionId: number;
+  collectionName: string;
+  artistName: string;
+  artworkUrl100?: string;
+};
+
 export const itunes = {
+  async searchAlbums(q: string): Promise<ItunesAlbum[]> {
+    const res = await getJson<{ results?: ItunesAlbum[] }>(
+      "itunes",
+      `https://itunes.apple.com/search?term=${encodeURIComponent(q.slice(0, 200))}&entity=album&limit=15&country=US`,
+    );
+    return res?.results ?? [];
+  },
   async find(artist: string, title: string, durationMs: number): Promise<ItunesSong | null> {
     const term = encodeURIComponent(`${artist} ${title}`.slice(0, 200));
     const res = await getJson<{ results?: ItunesSong[] }>(
