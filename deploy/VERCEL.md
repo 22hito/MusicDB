@@ -22,7 +22,7 @@ Vercel сам додасть `DATABASE_URL` і `DATABASE_URL_UNPOOLED`. Мігр
 | `NEXT_PUBLIC_REALTIME` | `off` |
 | `ENABLE_EXPERIMENTAL_COREPACK` | `1` (pnpm 12 з `packageManager`) |
 | `AUTH_SECRET` | випадковий рядок ≥ 32 символи (`openssl rand -base64 48`) |
-| `API_URL`, `WEB_ORIGINS` | `https://nowl.abrdns.com` |
+| `API_URL`, `WEB_ORIGINS` | `https://nowl.pp.ua` |
 | `ADMIN_EMAILS` | `dima1post1@gmail.com` |
 | `PAYMENTS_MODE` | `disabled` |
 | `STORAGE_DRIVER` | `s3` |
@@ -33,8 +33,9 @@ Vercel сам додасть `DATABASE_URL` і `DATABASE_URL_UNPOOLED`. Мігр
 Потім **Deployments → Redeploy**.
 
 ## 4. Домен
-**Settings → Domains → Add** `nowl.abrdns.com`. У ClouDNS — запис **A** (хост порожній) на адресу, яку
-покаже Vercel (зазвичай `76.76.21.21`), і **CNAME** `www` → `cname.vercel-dns.com`. HTTPS Vercel видасть сам.
+`nowl.pp.ua` (NIC.UA). У NIC.UA: **NS-servers → NIC.UA name servers**, записи **A** `@` → `76.76.21.21`
+і **CNAME** `www` → `cname.vercel-dns.com`. У Vercel: **Settings → Domains → Add** `nowl.pp.ua` (+ `www.nowl.pp.ua`
+з переадресацією). HTTPS Vercel видасть сам. Безкоштовний `.pp.ua` треба продовжувати щороку (до 6.10.2027).
 
 ## 5. Дані з v1 (після першої збірки — схема вже створена, база порожня)
 На своєму комп'ютері, у корені репозиторію:
@@ -46,8 +47,8 @@ LEGACY_DATABASE_URL='<база v1 (Neon)>' DATABASE_URL='<DATABASE_URL_UNPOOLED 
 (відповіді платформ уже в кеші — піде швидко).
 
 ## 6. Решта
-- Google Console → OAuth → redirect URI `https://nowl.abrdns.com/v1/auth/callback/google`.
-- Старий сайт (Azure) → переадресація на `https://nowl.abrdns.com`; API v1 лишити до виходу нового застосунку.
+- Google Console → OAuth → redirect URI `https://nowl.pp.ua/v1/auth/callback/google`.
+- Старий сайт (Azure) → переадресація на `https://nowl.pp.ua`; API v1 лишити до виходу нового застосунку.
 - Застосунок: `eas build --profile play` (адреса й вимкнений реалтайм уже в `apps/mobile/eas.json`).
 
 ## Обмеження Hobby
