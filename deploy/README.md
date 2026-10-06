@@ -8,7 +8,7 @@
 2. **Compute → Instances → Create**: образ **Ubuntu 24.04**, форма **VM.Standard.A1.Flex** (Ampere, 4 OCPU, 24 GB — у межах Always Free),
    завантажити свій публічний SSH-ключ. Записати публічний IP.
 3. **Networking → VCN → Security List**: додати Ingress-правила TCP 80 і 443 з 0.0.0.0/0.
-4. Домен: A-запис на IP сервера (свій домен або безкоштовний піддомен, напр. на duckdns.org).
+4. Домен: **nowl.abrdns.com** (безкоштовна зона ClouDNS). У ClouDNS → DNS Records додати запис **A** (хост порожній, значення — IP сервера, TTL 1h) і **CNAME** `www` → `nowl.abrdns.com`.
 
 ## 2. Підготовка сервера (по SSH)
 

@@ -8,12 +8,20 @@
     },
     "play": {
       "android": { "buildType": "app-bundle" },
-      "env": { "EXPO_PUBLIC_DISTRIBUTION": "play" },
+      "env": {
+        "EXPO_PUBLIC_DISTRIBUTION": "play",
+        "EXPO_PUBLIC_API_URL": "https://nowl.abrdns.com",
+        "EXPO_PUBLIC_WEB_URL": "https://nowl.abrdns.com"
+      },
       "channel": "play"
     },
     "direct": {
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_DISTRIBUTION": "direct" },
+      "env": {
+        "EXPO_PUBLIC_DISTRIBUTION": "direct",
+        "EXPO_PUBLIC_API_URL": "https://nowl.abrdns.com",
+        "EXPO_PUBLIC_WEB_URL": "https://nowl.abrdns.com"
+      },
       "channel": "direct"
     }
   },
