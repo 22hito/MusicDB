@@ -159,7 +159,16 @@ export const itunes = {
     );
     return res?.results ?? [];
   },
-  async find(artist: string, title: string, durationMs: number): Promise<ItunesSong | null> {
+  /**
+   * Пісня за назвою, виконавцем і тривалістю ±3 с. exactTolMs — допуск тривалості, коли назва збігається
+   * дослівно (та сама пісня з іншим тайм-кодом тиші, напр. «Choke Me (Eurovision 2026 - Romania)»).
+   */
+  async find(
+    artist: string,
+    title: string,
+    durationMs: number,
+    exactTolMs = 3000,
+  ): Promise<ItunesSong | null> {
     const term = encodeURIComponent(`${artist} ${title}`.slice(0, 200));
     const res = await getJson<{ results?: ItunesSong[] }>(
       "itunes",
@@ -170,7 +179,10 @@ export const itunes = {
         (s) =>
           sameTitle(s.trackName, title) &&
           sameArtist(s.artistName.split(/,|&| feat\.? /i)[0] ?? s.artistName, artist) &&
-          (!durationMs || !s.trackTimeMillis || Math.abs(s.trackTimeMillis - durationMs) <= 3000),
+          (!durationMs ||
+            !s.trackTimeMillis ||
+            Math.abs(s.trackTimeMillis - durationMs) <=
+              (s.trackName.trim().toLowerCase() === title.trim().toLowerCase() ? exactTolMs : 3000)),
       ) ?? null
     );
   },

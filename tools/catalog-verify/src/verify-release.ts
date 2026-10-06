@@ -99,7 +99,7 @@ async function findAlbum(row: OrphanRow, primary: string): Promise<Album | null>
         };
     }
   }
-  const ap = await itunes.find(primary, row.title, row.duration_ms);
+  const ap = await itunes.find(primary, row.title, row.duration_ms, 10_000);
   if (ap?.collectionName && ap.collectionId) {
     const { title, type } = appleAlbum(ap.collectionName);
     return {
