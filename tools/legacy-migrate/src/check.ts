@@ -21,6 +21,11 @@ for (let attempt = 1; attempt <= 3; attempt++) {
       select table_schema, count(*)::int as tables from information_schema.tables
       where table_schema not in ('pg_catalog', 'information_schema') group by 1 order by 2 desc`;
     console.log("схеми:", schemas.map((s) => `${s.table_schema} (${s.tables} табл.)`).join(", "));
+    if (!schemas.some((s) => s.table_schema === "lab")) {
+      console.log("УВАГА: схеми lab немає — це не стара база v1. Перевірте адресу (v1 — ep-lucky-fire…).");
+      await sql.end();
+      process.exit(2);
+    }
     await sql.end();
     process.exit(0);
   } catch (err) {

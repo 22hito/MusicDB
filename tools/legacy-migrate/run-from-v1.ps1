@@ -44,6 +44,10 @@ if ($Check) {
 $target = Read-Host "Вставте DATABASE_URL_UNPOOLED нової бази (Neon, v2)"
 if (-not ($target -match '^postgres(ql)?://')) { throw "Це не схоже на адресу postgres://" }
 
+function HostOf($u) { ([uri]($u -replace '^postgres(ql)?://', 'http://')).Host -replace '-pooler', '' }
+if ((HostOf $legacy) -eq (HostOf $target)) {
+  throw "Адреси старої (v1) і нової (v2) бази однакові — перевірте, що на перший запит вставлена база v1 (ep-lucky-fire…)."
+}
 $env:LEGACY_DATABASE_URL = $legacy
 $env:DATABASE_URL = $target
 Write-Host "Переношу дані з v1 (стара база лише читається)..."
