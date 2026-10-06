@@ -4,3 +4,4 @@
 *.webp binary
 *.ico binary
 *.mp3 binary
+*.ps1 text eol=crlf

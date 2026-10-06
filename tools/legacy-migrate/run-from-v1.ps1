@@ -1,4 +1,4 @@
-# Перенесення даних v1 → v2 (запускає власник; доступи не виводяться і нікуди не зберігаються).
+﻿# Перенесення даних v1 → v2 (запускає власник; доступи не виводяться і нікуди не зберігаються).
 #   cd E:\MusicDB\MusicDB-v2 ; powershell -ExecutionPolicy Bypass -File tools\legacy-migrate\run-from-v1.ps1
 # 1) рядок підключення v1 береться з appsettings.Local.json (формат Npgsql) і перетворюється на postgres://…
 # 2) адресу нової бази (DATABASE_URL_UNPOOLED з Vercel → Storage → Neon → .env.local) вводите вручну
