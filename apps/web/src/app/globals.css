@@ -1,0 +1,471 @@
+@import "tailwindcss";
+
+/* Сирі токени (--n-*) вставляються в <head> з @musicdb/tokens; тут — лише відображення в утиліти Tailwind. */
+@theme inline {
+  --color-bg: var(--n-bg);
+  --color-surface-1: var(--n-surface-1);
+  --color-surface-2: var(--n-surface-2);
+  --color-surface-3: var(--n-surface-3);
+  --color-elevated: var(--n-elevated);
+  --color-overlay: var(--n-overlay);
+  --color-line: var(--n-border);
+  --color-line-strong: var(--n-border-strong);
+  --color-fg: var(--n-text);
+  --color-fg-2: var(--n-text-2);
+  --color-muted: var(--n-text-muted);
+  --color-subtle: var(--n-text-subtle);
+  --color-danger: var(--n-danger);
+  --color-success: var(--n-success);
+  --color-warning: var(--n-warning);
+  --color-info: var(--n-info);
+  --color-accent: var(--n-accent);
+  --color-accent-strong: var(--n-accent-strong);
+  --color-on-accent: var(--n-on-accent);
+  --color-on-danger: var(--n-on-danger);
+  --color-accent-soft: var(--n-accent-soft);
+  --color-accent-lo: var(--n-accent-lo);
+  --color-accent-2: var(--n-accent-2);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+
+  /* Рух: короткі тривалості, «пружна» крива для появи, без нескінченних декоративних анімацій. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-fade-in: fade-in 220ms var(--ease-standard) both;
+  --animate-rise: rise 420ms var(--ease-out-expo) both;
+  --animate-page: page-in 360ms var(--ease-out-expo) both;
+  --animate-pop: pop 320ms var(--ease-spring) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes confetti-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) rotate(var(--rot, 360deg))
+      scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.75);
+    opacity: 0;
+  }
+}
+
+@keyframes bulb-chase {
+  0% {
+    fill: #fff6dc;
+  }
+  50% {
+    fill: color-mix(in srgb, var(--n-accent) 35%, var(--n-surface-3));
+  }
+}
+
+@keyframes bulb-win {
+  0%,
+  100% {
+    fill: color-mix(in srgb, var(--n-accent) 45%, var(--n-surface-3));
+  }
+  50% {
+    fill: #fff6dc;
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes vinyl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes blink {
+  0%,
+  95%,
+  100% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: var(--n-bg);
+    color: var(--n-text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    letter-spacing: -0.005em;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: var(--n-accent-soft);
+    color: var(--n-text);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--n-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  button,
+  [role="button"] {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+
+  img {
+    -webkit-user-drag: none;
+  }
+
+  /* Тонкі смуги прокрутки, що з'являються при наведенні — як у нативних застосунках. */
+  .scroll-area {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    scrollbar-gutter: stable;
+  }
+  .scroll-area:hover {
+    scrollbar-color: var(--n-border-strong) transparent;
+  }
+  .scroll-area::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  .scroll-area::-webkit-scrollbar-thumb {
+    background: transparent;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 999px;
+  }
+  .scroll-area:hover::-webkit-scrollbar-thumb {
+    background-color: var(--n-border-strong);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--n-surface-2) 0%,
+      var(--n-surface-3) 50%,
+      var(--n-surface-2) 100%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  /* Еквалайзер для треку, що грає. */
+  .eq {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+  }
+  .eq > span {
+    width: 3px;
+    height: 100%;
+    background: var(--n-accent);
+    border-radius: 1px;
+    transform-origin: bottom;
+    animation: eq 900ms ease-in-out infinite;
+  }
+  .eq > span:nth-child(2) {
+    animation-delay: -300ms;
+  }
+  .eq > span:nth-child(3) {
+    animation-delay: -600ms;
+  }
+  .eq[data-paused="true"] > span {
+    animation-play-state: paused;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* ── Стиль «Nocturne» з першої версії ─────────────────────────────── */
+
+  /* Серифний заголовок — один колір, без курсиву й градієнтів. */
+  .serif-title {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  /* Колишнє «виділене слово» — тепер без ефектів, як решта заголовка. */
+  .hl {
+    color: inherit;
+  }
+
+  /* Головна кнопка дії — бурштиновий градієнт; при наведенні по ній пробігає відблиск. */
+  .accent-grad {
+    position: relative;
+    isolation: isolate;
+    background: var(--n-accent-grad);
+    color: var(--n-on-accent);
+    box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--n-accent-lo) 70%, transparent);
+    transition:
+      transform 160ms var(--ease-standard),
+      box-shadow 240ms var(--ease-standard);
+  }
+  .accent-grad::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.38) 50%, transparent 65%);
+    background-size: 260% 100%;
+    background-position: 130% 0;
+    opacity: 0;
+    transition:
+      background-position 700ms var(--ease-out-expo),
+      opacity 200ms var(--ease-standard);
+    pointer-events: none;
+  }
+  .accent-grad:hover::after,
+  .group:hover .accent-grad::after {
+    opacity: 1;
+    background-position: -30% 0;
+  }
+  .accent-grad:hover {
+    box-shadow: 0 10px 26px -10px color-mix(in srgb, var(--n-accent-lo) 90%, transparent);
+  }
+
+  /* Великі числа статистики — серифні, акцентні. */
+  .stat-num {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--n-accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Сяйво за кольорами обкладинки: два шари радіальних градієнтів, що плавно перетікають при зміні треку.
+     Без розмиття й безперервних анімацій — нуль навантаження на прокрутку. */
+  .ambient {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 520px;
+    pointer-events: none;
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+  }
+  .ambient > i {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.4s var(--ease-standard);
+  }
+  .ambient > i[data-on="true"] {
+    opacity: 0.3;
+  }
+  .ambient[data-playing="true"] > i[data-on="true"] {
+    opacity: 0.42;
+  }
+  :root[data-theme="light"] .ambient > i[data-on="true"] {
+    opacity: 0.2;
+  }
+
+  /* Сторінка, що з'являється після переходу. */
+  .page-enter {
+    animation: var(--animate-page);
+  }
+
+  /* Обкладинка картки трохи піднімається при наведенні. */
+  .lift {
+    transition:
+      transform 300ms var(--ease-out-expo),
+      box-shadow 300ms var(--ease-out-expo);
+  }
+  .group:hover .lift {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: 0 18px 34px -16px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Лампочки обідка колеса фортуни. */
+  .wheel-bulb {
+    fill: color-mix(in srgb, var(--n-accent) 45%, var(--n-surface-3));
+    transition: fill 300ms var(--ease-standard);
+  }
+  .wheel-bulb.is-spinning {
+    animation: bulb-chase 260ms steps(1, end) infinite;
+  }
+  .wheel-bulb.is-won {
+    animation: bulb-win 520ms ease-in-out 5;
+  }
+  .group\/disc:not(:disabled):hover .wheel-bulb:not(.is-spinning) {
+    fill: color-mix(in srgb, var(--n-accent) 80%, #fff);
+  }
+
+  /* Платівка: борозенки й відблиск; обертається, лише коли грає. */
+  .vinyl {
+    background:
+      radial-gradient(
+        circle at 50% 50%,
+        transparent 0 21%,
+        rgba(255, 255, 255, 0.06) 21.5% 22.5%,
+        transparent 23%
+      ),
+      repeating-radial-gradient(circle at 50% 50%, #121218 0 1.4px, #1b1b23 1.4px 2.8px), #15151c;
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.45),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    animation: vinyl-spin 7s linear infinite;
+    animation-play-state: paused;
+  }
+  .vinyl::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: conic-gradient(
+      from 30deg,
+      transparent 0 18%,
+      rgba(255, 255, 255, 0.09) 24%,
+      transparent 32% 68%,
+      rgba(255, 255, 255, 0.07) 74%,
+      transparent 82%
+    );
+    pointer-events: none;
+  }
+  .vinyl[data-playing="true"] {
+    animation-play-state: running;
+  }
+
+  /* Сова в логотипі моргає раз на кілька секунд. */
+  .owl-logo .owl-eye {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: blink 7s infinite;
+  }
+
+  /* П'єдестал: медалі. */
+  .medal-1 {
+    color: #e9c46a;
+  }
+  .medal-2 {
+    color: #c9ced6;
+  }
+  .medal-3 {
+    color: #d08c5a;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* «Анімації: зменшені» у налаштуваннях або системне «зменшити рух» (якщо обрано «Як у системі»).
+   Колесо фортуни анімується з JS і працює завжди — обертання тут суть гри, а не прикраса. */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-motion="system"] *,
+  :root[data-motion="system"] *::before,
+  :root[data-motion="system"] *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@musicdb/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@musicdb/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5",
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@musicdb/config": "workspace:*",
+    "@tanstack/react-query": "5.104.1",
+    "@types/react": "^19.2.0",
+    "react": "19.2.3",
+    "zod": "4.6.5"
+  }
+}

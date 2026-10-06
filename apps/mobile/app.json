@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "N'Owl",
+    "slug": "nowl",
+    "scheme": "nowl",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "backgroundColor": "#09090D",
+    "icon": "./assets/icon.png",
+    "splash": { "backgroundColor": "#09090D", "resizeMode": "contain", "image": "./assets/icon.png" },
+    "ios": {
+      "bundleIdentifier": "com.nowl.mobile",
+      "supportsTablet": true,
+      "infoPlist": { "UIBackgroundModes": ["audio"] }
+    },
+    "android": {
+      "package": "com.nowl.mobile",
+      "adaptiveIcon": { "foregroundImage": "./assets/icon.png", "backgroundColor": "#09090D" },
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      ["expo-audio", { "enableBackgroundPlayback": true }]
+    ],
+    "experiments": { "typedRoutes": true }
+  }
+}

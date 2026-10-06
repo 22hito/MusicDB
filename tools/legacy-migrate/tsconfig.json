@@ -1,0 +1,4 @@
+{
+  "extends": "@musicdb/config/tsconfig.node.json",
+  "include": ["src", "test"]
+}

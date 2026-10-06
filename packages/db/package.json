@@ -1,0 +1,32 @@
+{
+  "name": "@musicdb/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./testing": "./src/testing.ts",
+    "./migrate": "./src/migrate.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "studio": "drizzle-kit studio",
+    "dev-db": "tsx scripts/dev-db.ts",
+    "migrate": "tsx scripts/migrate.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.3",
+    "postgres": "3.4.9",
+    "nanoid": "^5.1.6"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@musicdb/config": "workspace:*",
+    "@types/node": "^24.0.0",
+    "drizzle-kit": "0.31.11",
+    "embedded-postgres": "18.4.0-beta.17",
+    "tsx": "^4.20.0"
+  }
+}

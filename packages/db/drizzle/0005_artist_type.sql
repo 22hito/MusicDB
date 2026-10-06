@@ -1,0 +1,1 @@
+ALTER TABLE "artists" ADD COLUMN "artist_type" text;

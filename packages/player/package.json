@@ -1,0 +1,22 @@
+{
+  "name": "@musicdb/player",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@musicdb/contracts": "workspace:*",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@musicdb/config": "workspace:*",
+    "vitest": "5.0.3"
+  }
+}

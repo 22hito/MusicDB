@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/.expo
+.data
+.git
+deploy/backups
+deploy/.env
+**/.env
+**/.cache
+tools/catalog-verify/reports

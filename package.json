@@ -1,0 +1,26 @@
+{
+  "name": "musicdb",
+  "private": true,
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel --filter=@musicdb/api --filter=@musicdb/web",
+    "dev:mobile": "pnpm --filter @musicdb/mobile start",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "db:start": "pnpm --filter @musicdb/api db:start",
+    "db:migrate": "pnpm --filter @musicdb/api db:migrate",
+    "db:generate": "pnpm --filter @musicdb/db generate",
+    "sdk:generate": "pnpm --filter @musicdb/api openapi && pnpm --filter @musicdb/sdk generate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "turbo": "2.11.7",
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@musicdb/seed",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/seed-dev.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@musicdb/db": "workspace:*",
+    "drizzle-orm": "0.45.3"
+  },
+  "devDependencies": {
+    "@musicdb/config": "workspace:*",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0"
+  }
+}

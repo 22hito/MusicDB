@@ -1,0 +1,20 @@
+# HTTPS-сертифікат Caddy отримує й оновлює сам (Let's Encrypt). /v1 (API, WebSocket) — напряму в API, решта — сайт.
+{$DOMAIN} {
+	encode zstd gzip
+	@api path /v1/* /health /docs*
+	handle @api {
+		reverse_proxy api:8787
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}
+
+# www → основна адреса
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}

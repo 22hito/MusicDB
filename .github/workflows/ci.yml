@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [v2]
+  pull_request:
+    branches: [v2]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint (Biome)
+        run: pnpm lint
+      - name: Typecheck & tests
+        # Тести API — на справжньому Postgres у пам'яті (PGlite), сервер БД не потрібен.
+        run: pnpm turbo run typecheck test
+      - name: Міграції відповідають схемі
+        run: pnpm --filter @musicdb/db exec drizzle-kit check
+      - name: Build web
+        run: pnpm --filter @musicdb/web build
+        env:
+          API_INTERNAL_URL: http://localhost:8787
+      - name: Bundle mobile (Android)
+        working-directory: apps/mobile
+        run: npx expo export --platform android --output-dir .export-check

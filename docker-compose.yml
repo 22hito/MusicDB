@@ -1,0 +1,45 @@
+# Самостійне розгортання: PostgreSQL + API (з воркером) + сайт. Секрети — у .env поруч.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: nowl
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: nowl
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "nowl"]
+      interval: 5s
+    restart: unless-stopped
+
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment:
+      DATABASE_URL: postgres://nowl:${POSTGRES_PASSWORD}@db:5432/nowl
+      API_URL: ${PUBLIC_URL:?set PUBLIC_URL}
+      WEB_ORIGINS: ${PUBLIC_URL}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-s3}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+      YOUTUBE_API_KEYS: ${YOUTUBE_API_KEYS:-}
+    depends_on: { db: { condition: service_healthy } }
+    restart: unless-stopped
+
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    environment:
+      API_INTERNAL_URL: http://api:8787
+      PUBLIC_URL: ${PUBLIC_URL}
+    ports: ["3000:3000"]
+    depends_on: [api]
+    restart: unless-stopped
+
+volumes:
+  pgdata:

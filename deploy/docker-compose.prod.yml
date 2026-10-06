@@ -1,0 +1,64 @@
+# Продакшн N'Owl v2 на одному сервері: PostgreSQL + API (з воркером) + сайт + Caddy (HTTPS, Let's Encrypt).
+# Запуск: cd deploy && docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: nowl
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: nowl
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "nowl"]
+      interval: 5s
+    restart: unless-stopped
+
+  api:
+    build: { context: .., dockerfile: apps/api/Dockerfile }
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://nowl:${POSTGRES_PASSWORD}@db:5432/nowl
+      API_URL: https://${DOMAIN:?set DOMAIN}
+      WEB_ORIGINS: https://${DOMAIN}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      STORAGE_DRIVER: s3
+      S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT}
+      S3_BUCKET: ${S3_BUCKET:?set S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+      YOUTUBE_API_KEYS: ${YOUTUBE_API_KEYS:-}
+      PAYMENTS_MODE: disabled
+      LOG_LEVEL: info
+    depends_on: { db: { condition: service_healthy } }
+    restart: unless-stopped
+
+  web:
+    build: { context: .., dockerfile: apps/web/Dockerfile }
+    environment:
+      API_INTERNAL_URL: http://api:8787
+      PUBLIC_URL: https://${DOMAIN}
+    depends_on: [api]
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api, web]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

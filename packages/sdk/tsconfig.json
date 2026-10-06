@@ -1,0 +1,4 @@
+{
+  "extends": "@musicdb/config/tsconfig.react.json",
+  "include": ["src"]
+}
