@@ -1,8 +1,18 @@
 /**
- * Модерація й адміністрування: заявки, скарги, баг-репорти, журнал дій, підписки.
+ * Модерація й адміністрування: заявки, скарги, баг-репорти, журнал дій, підписки, платежі.
  */
 import { sql } from "drizzle-orm";
-import { bigint, boolean, index, integer, jsonb, pgEnum, pgTable, text } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { createdAt, id, ts, updatedAt } from "./_columns";
 import { users } from "./auth";
 import { assets } from "./catalog";
@@ -105,7 +115,10 @@ export const auditLog = pgTable(
   (t) => [index("audit_log_created_idx").on(t.createdAt.desc())],
 );
 
-/** Преміум-підписка. provider = stub — тестова оплата без грошей (до підключення справжнього провайдера). */
+/**
+ * Преміум-підписка. provider: stub — тестова оплата без грошей; telegram — Telegram Stars через бота
+ * (provider_ref = "<telegram user id>:<charge id>" — щоб скасувати продовження з сайту).
+ */
 export const subscriptions = pgTable(
   "subscriptions",
   {
@@ -124,4 +137,28 @@ export const subscriptions = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [index("subscriptions_user_idx").on(t.userId, t.currentPeriodEnd.desc())],
+);
+
+/**
+ * Кожна отримана оплата (облік доходу й захист від повторного зарахування, коли провайдер надсилає ту саму
+ * подію ще раз). amount — у валюті провайдера (для Telegram — кількість Stars, currency = XTR).
+ */
+export const payments = pgTable(
+  "payments",
+  {
+    id: id(),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+    provider: text("provider").notNull(),
+    providerChargeId: text("provider_charge_id").notNull(),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull(),
+    /** first — перша оплата підписки, renewal — автопродовження. */
+    kind: text("kind").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("payments_provider_charge_uq").on(t.provider, t.providerChargeId),
+    index("payments_user_idx").on(t.userId, t.createdAt.desc()),
+  ],
 );

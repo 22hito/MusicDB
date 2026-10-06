@@ -12,7 +12,8 @@
     "test": "vitest run",
     "db:start": "pnpm --filter @musicdb/db dev-db",
     "db:migrate": "pnpm --filter @musicdb/db migrate",
-    "openapi": "tsx scripts/openapi.ts"
+    "openapi": "tsx scripts/openapi.ts",
+    "telegram-setup": "tsx --env-file-if-exists=.env scripts/telegram-setup.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",

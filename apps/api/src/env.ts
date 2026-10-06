@@ -40,12 +40,24 @@ const EnvSchema = z.object({
   MOBILE_SCHEME: z.string().default("nowl"),
   /** inline — воркер фонових задач у процесі API; off — окремим процесом (src/worker.ts). */
   WORKER_MODE: z.enum(["inline", "off"]).default("inline"),
-  /** stub — тестова оплата без грошей (поки немає провайдера); disabled — оформлення вимкнене. */
-  PAYMENTS_MODE: z.enum(["stub", "disabled"]).optional(),
+  /**
+   * stub — тестова оплата без грошей; telegram — Telegram Stars через бота; disabled — оформлення вимкнене.
+   * Без значення: telegram, якщо задано бота, інакше stub у розробці й disabled у production.
+   */
+  PAYMENTS_MODE: z.enum(["stub", "telegram", "disabled"]).optional(),
+  /** Бот для оплати преміуму (токен від @BotFather), його @username без «@» і секрет вебхука (A–Z, a–z, 0–9, _ -). */
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_BOT_USERNAME: z.string().optional(),
+  TELEGRAM_WEBHOOK_SECRET: z
+    .string()
+    .regex(/^[\w-]{16,256}$/)
+    .optional(),
+  /** Ціна преміуму на місяць у Telegram Stars. */
+  PREMIUM_PRICE_STARS: z.coerce.number().int().min(1).max(10000).default(150),
 });
 
 export type Env = Omit<z.infer<typeof EnvSchema>, "PAYMENTS_MODE"> & {
-  PAYMENTS_MODE: "stub" | "disabled";
+  PAYMENTS_MODE: "stub" | "telegram" | "disabled";
   webOrigins: string[];
   adminEmails: Set<string>;
   youtubeKeys: string[];
@@ -63,7 +75,14 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
     throw new Error("AUTH_SECRET має бути заданий у production");
   }
   // Тестова оплата (преміум без списання) — лише в розробці; у production без явного налаштування вимкнена.
-  const paymentsMode = env.PAYMENTS_MODE ?? (env.NODE_ENV === "production" ? "disabled" : "stub");
+  const hasBot = !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_BOT_USERNAME && env.TELEGRAM_WEBHOOK_SECRET);
+  const paymentsMode =
+    env.PAYMENTS_MODE ?? (hasBot ? "telegram" : env.NODE_ENV === "production" ? "disabled" : "stub");
+  if (paymentsMode === "telegram" && !hasBot) {
+    throw new Error(
+      "PAYMENTS_MODE=telegram потребує TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_USERNAME і TELEGRAM_WEBHOOK_SECRET",
+    );
+  }
   const list = (s: string) =>
     s
       .split(",")

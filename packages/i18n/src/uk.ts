@@ -432,6 +432,13 @@ export const uk = {
     activated: "Преміум активовано",
     onWebsite: "Оформити преміум можна на сайті N'Owl",
     disabled: "Оформлення тимчасово недоступне",
+    priceStars: "{amount} ⭐ / місяць",
+    subscribeTelegram: "Оформити в Telegram",
+    telegramNote:
+      "Оплата — Telegram Stars у боті N'Owl. Продовжується щомісяця, скасувати можна будь-коли тут або в Telegram.",
+    waiting: "Відкрили Telegram — після оплати статус оновиться тут",
+    resume: "Продовжувати знову",
+    hiddenPreview: "Сторінку приховано від користувачів — її бачать лише адміни",
   },
   report: {
     title: "Поскаржитися",

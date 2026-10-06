@@ -32,7 +32,7 @@ import { noYoutube } from "../src/services/youtube";
 
 export const ORIGIN = "http://localhost:3000";
 
-export async function createTestApp() {
+export async function createTestApp(envOverrides: Record<string, string> = {}) {
   const { db, close } = await createTestDb();
   const env = loadEnv({
     NODE_ENV: "test",
@@ -41,6 +41,7 @@ export async function createTestApp() {
     AUTH_SECRET: "test-secret-test-secret-test-secret-123",
     ADMIN_EMAILS: "admin@test.dev",
     LOG_LEVEL: "silent",
+    ...envOverrides,
   });
   const realtime = new RecordingRealtime();
   const jobs = new RecordingJobs();

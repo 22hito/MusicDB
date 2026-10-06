@@ -436,6 +436,13 @@ export const en: Shape<Messages> = {
     activated: "Premium activated",
     onWebsite: "You can get Premium on the N'Owl website",
     disabled: "Subscriptions are temporarily unavailable",
+    priceStars: "{amount} ⭐ / month",
+    subscribeTelegram: "Subscribe in Telegram",
+    telegramNote:
+      "Paid with Telegram Stars in the N'Owl bot. Renews monthly, cancel any time here or in Telegram.",
+    waiting: "Telegram opened — the status will update here after payment",
+    resume: "Renew again",
+    hiddenPreview: "This page is hidden from users — only admins can see it",
   },
   report: {
     title: "Report",

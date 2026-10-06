@@ -15,6 +15,7 @@ import { clearMemo } from "./http/memo";
 import { buildOpenApi } from "./http/openapi";
 import { youtubeSearch } from "./modules/catalog/hydrate";
 import { allRoutes } from "./modules/index";
+import { telegramWebhook } from "./modules/premium/telegram";
 import { LocalStorage } from "./services/storage";
 import { storageRoutes } from "./services/storage-routes";
 
@@ -75,7 +76,7 @@ export function createApp(deps: Deps) {
 
   app.use("/v1/*", async (c, next) => {
     c.set("user", null);
-    if (c.req.path.startsWith("/v1/storage/")) return next();
+    if (c.req.path.startsWith("/v1/storage/") || c.req.path.startsWith("/v1/telegram/")) return next();
     const session = await deps.auth.api.getSession({ headers: c.req.raw.headers }).catch(() => null);
     if (session?.user && !session.user.banned) {
       const user: SessionUser = {
@@ -92,6 +93,9 @@ export function createApp(deps: Deps) {
   });
 
   register(app, deps, allRoutes);
+
+  // Вебхук Telegram-бота (оплата преміуму Stars); справжність — за секретом у заголовку.
+  app.post("/v1/telegram/webhook", telegramWebhook(deps));
 
   if (deps.storage instanceof LocalStorage) app.route("/v1/storage", storageRoutes(deps.storage));
 

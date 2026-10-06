@@ -173,7 +173,7 @@ export default function SettingsScreen() {
                 />
               </Row>
             </Section>
-            {FEATURES.premium ? (
+            {FEATURES.premium || me.role === "admin" ? (
               <Section title={t("nav.premium")}>
                 <PremiumStatus />
               </Section>
@@ -208,7 +208,11 @@ function PremiumStatus() {
       day: "numeric",
       month: "long",
     });
-    return <Text accent>{t("premium.active", { date })}</Text>;
+    return (
+      <Text accent>
+        {sub.data.cancelAtPeriodEnd ? t("premium.canceled", { date }) : t("premium.active", { date })}
+      </Text>
+    );
   }
   if (DISTRIBUTION === "direct") {
     return (

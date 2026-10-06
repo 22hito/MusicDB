@@ -1,19 +1,26 @@
 /**
  * Преміум (офлайн-бібліотека й завантаження плейлистів — у застосунку).
- * Оплата зараз — заглушка (PAYMENTS_MODE=stub): «1 грн, тест» видає 30 днів без списання. Справжній провайдер
- * (LiqPay чи посередник) підключиться сюди ж: checkout поверне { type: "redirect", url }, а вебхук продовжить підписку.
+ * PAYMENTS_MODE=telegram — оплата Telegram Stars через бота (checkout повертає посилання на бота, підписку
+ * продовжує вебхук, див. telegram.ts); stub — «1 грн, тест» видає 30 днів без списання; disabled — вимкнено.
  */
 import { endpoints } from "@musicdb/contracts";
 import { type DbOrTx, newSecret, subscriptions } from "@musicdb/db";
 import { and, desc, eq, gt } from "drizzle-orm";
+import type { Deps } from "../../context";
 import { implement } from "../../http/endpoint";
 import { ApiError, badRequest } from "../../http/errors";
 import { iso } from "../catalog/hydrate";
 import { audit } from "../moderation/audit";
+import { checkoutUrl, setTelegramRenewal } from "./telegram";
 
-export const PLANS = [
-  { id: "premium_month", amount: 1, currency: "UAH", periodDays: 30, test: true },
-] as const;
+const STUB_PLAN = { id: "premium_month", amount: 1, currency: "UAH", periodDays: 30, test: true };
+
+/** Тарифи для поточного режиму оплати: у Telegram — ціна в Stars. */
+function plans(env: Deps["env"]) {
+  return env.PAYMENTS_MODE === "telegram"
+    ? [{ id: "premium_month", amount: env.PREMIUM_PRICE_STARS, currency: "XTR", periodDays: 30, test: false }]
+    : [STUB_PLAN];
+}
 const DAY = 86400_000;
 
 export async function currentSubscription(db: DbOrTx, userId: string) {
@@ -88,7 +95,8 @@ export async function revokePremium(db: DbOrTx, userId: string) {
 export const premiumRoutes = [
   implement(endpoints.premium.plans, async ({ deps }) => ({
     paymentsEnabled: deps.env.PAYMENTS_MODE !== "disabled",
-    plans: PLANS.map((p) => ({ ...p })),
+    provider: deps.env.PAYMENTS_MODE === "disabled" ? null : deps.env.PAYMENTS_MODE,
+    plans: plans(deps.env),
   })),
 
   implement(endpoints.premium.subscription, async ({ deps, user }) =>
@@ -96,10 +104,13 @@ export const premiumRoutes = [
   ),
 
   implement(endpoints.premium.checkout, async ({ deps, user, body }) => {
-    const plan = PLANS.find((p) => p.id === body.planId);
+    const plan = plans(deps.env).find((p) => p.id === body.planId);
     if (!plan) throw badRequest("unknown_plan", "Невідомий тариф");
     if (deps.env.PAYMENTS_MODE === "disabled")
       throw new ApiError(503, "payments_disabled", "Оформлення тимчасово недоступне");
+    if (deps.env.PAYMENTS_MODE === "telegram") {
+      return { type: "redirect" as const, url: checkoutUrl(deps, user.id) };
+    }
     const sub = await deps.db.transaction(async (tx) => {
       const s = await grantPremium(tx, user.id, plan.periodDays, "stub", `stub_${newSecret().slice(0, 12)}`);
       await audit(tx, {
@@ -114,14 +125,31 @@ export const premiumRoutes = [
     return { type: "activated" as const, subscription: info(sub) };
   }),
 
-  implement(endpoints.premium.cancel, async ({ deps, user }) => {
-    const sub = await currentSubscription(deps.db, user.id);
-    if (!sub) return info(null);
-    const [updated] = await deps.db
-      .update(subscriptions)
-      .set({ cancelAtPeriodEnd: true })
-      .where(eq(subscriptions.id, sub.id))
-      .returning();
-    return info(updated ?? null);
-  }),
+  implement(endpoints.premium.cancel, async ({ deps, user }) => setRenewal(deps, user.id, false)),
+
+  implement(endpoints.premium.resume, async ({ deps, user }) => setRenewal(deps, user.id, true)),
 ];
+
+/** Не продовжувати після поточного періоду (або знову продовжувати); для Telegram — і в самому Telegram. */
+async function setRenewal(deps: Deps, userId: string, enabled: boolean) {
+  const sub = await currentSubscription(deps.db, userId);
+  if (!sub) return info(null);
+  if (sub.provider === "telegram") {
+    try {
+      await setTelegramRenewal(deps, sub, enabled);
+    } catch (err) {
+      deps.log.warn({ err, subscriptionId: sub.id }, "telegram renewal change failed");
+      throw new ApiError(
+        502,
+        "telegram_unavailable",
+        "Не вдалося змінити підписку в Telegram — спробуйте пізніше або в Telegram: Налаштування → Мої зірки",
+      );
+    }
+  }
+  const [updated] = await deps.db
+    .update(subscriptions)
+    .set({ cancelAtPeriodEnd: !enabled })
+    .where(eq(subscriptions.id, sub.id))
+    .returning();
+  return info(updated ?? null);
+}

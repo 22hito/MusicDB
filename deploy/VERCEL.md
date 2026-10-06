@@ -24,7 +24,7 @@ Vercel сам додасть `DATABASE_URL` і `DATABASE_URL_UNPOOLED`. Мігр
 | `AUTH_SECRET` | випадковий рядок ≥ 32 символи (`openssl rand -base64 48`) |
 | `API_URL`, `WEB_ORIGINS` | `https://nowl.pp.ua` |
 | `ADMIN_EMAILS` | `dima1post1@gmail.com` |
-| `PAYMENTS_MODE` | `disabled` |
+| `PAYMENTS_MODE` | `disabled` (з ботом оплати — `telegram`, див. «Преміум через Telegram») |
 | `STORAGE_DRIVER` | `s3` |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_URL` | Cloudflare R2 (як у v1) |
 | `YOUTUBE_API_KEYS` | ключі YouTube Data API через кому |
@@ -50,6 +50,18 @@ LEGACY_DATABASE_URL='<база v1 (Neon)>' DATABASE_URL='<DATABASE_URL_UNPOOLED 
 - Google Console → OAuth → redirect URI `https://nowl.pp.ua/v1/auth/callback/google`.
 - Старий сайт (Azure) → переадресація на `https://nowl.pp.ua`; API v1 лишити до виходу нового застосунку.
 - Застосунок: `eas build --profile play` (адреса й вимкнений реалтайм уже в `apps/mobile/eas.json`).
+
+## Преміум через Telegram (Stars)
+1. @BotFather → `/newbot` → токен. У налаштуваннях бота нічого платіжного вмикати не треба (Stars — без провайдера).
+2. Vercel → Environment Variables (Production):
+   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` (без «@»), `TELEGRAM_WEBHOOK_SECRET` (випадковий рядок
+   з A–Z a–z 0–9, 16+ символів), `PAYMENTS_MODE=telegram`, за потреби `PREMIUM_PRICE_STARS` (типово 150). Redeploy.
+3. Один раз: `TELEGRAM_BOT_TOKEN=… TELEGRAM_WEBHOOK_SECRET=… pnpm --filter @musicdb/api telegram-setup https://nowl.pp.ua`
+   — вебхук, команди (/start, /paysupport, /terms) і опис бота.
+4. Перевірка: адмін відкриває `/premium` (для інших сторінка прихована, поки `FEATURES.premium = false`).
+
+Гроші: баланс бота в Telegram → вивід через Fragment у TON (від 1000 ⭐, кожна оплата «дозріває» до 21 дня).
+Усі оплати — в таблиці `payments` (для обліку доходу).
 
 ## Обмеження Hobby
 Фонові задачі (обробка аудіо, сповіщення) — після запиту, до 60 с; без WebSocket; некомерційно.

@@ -144,6 +144,7 @@ export const routes = {
     subscription: { method: "GET", path: "/v1/me/subscription" },
     checkout: { method: "POST", path: "/v1/premium/checkout" },
     cancel: { method: "POST", path: "/v1/premium/cancel" },
+    resume: { method: "POST", path: "/v1/premium/resume" },
   },
   legacy: {
     resolve: { method: "GET", path: "/v1/legacy/:kind/:id" },

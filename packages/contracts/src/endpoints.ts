@@ -1297,6 +1297,8 @@ const premium = {
     auth: "public",
     response: z.object({
       paymentsEnabled: z.boolean(),
+      /** Як оплачується: telegram — Telegram Stars у боті (currency XTR), stub — тестова оплата. */
+      provider: z.enum(["stub", "telegram"]).nullable(),
       plans: z.array(
         z.object({
           id: z.string(),
@@ -1319,7 +1321,7 @@ const premium = {
   checkout: endpoint({
     method: "POST",
     path: "/v1/premium/checkout",
-    summary: "Оформити преміум (зараз — тестова оплата без списання)",
+    summary: "Оформити преміум: посилання на Telegram-бота (Stars) або тестова оплата без списання",
     tag: "premium",
     auth: "user",
     body: z.object({ planId: z.string().max(40) }),
@@ -1332,6 +1334,14 @@ const premium = {
     method: "POST",
     path: "/v1/premium/cancel",
     summary: "Не продовжувати після поточного періоду",
+    tag: "premium",
+    auth: "user",
+    response: SubscriptionInfo,
+  }),
+  resume: endpoint({
+    method: "POST",
+    path: "/v1/premium/resume",
+    summary: "Знову продовжувати підписку (після скасування, до кінця періоду)",
     tag: "premium",
     auth: "user",
     response: SubscriptionInfo,

@@ -27,7 +27,9 @@ function lookup(dict: unknown, path: string): string | undefined {
   return typeof node === "string" ? node : undefined;
 }
 
-export function createTranslator(locale: Locale): Translate {
+export function createTranslator(requested: Locale): Translate {
+  // Сторінка 404 всередині оболонки сайту отримує порожню мову — Intl.PluralRules("") падає.
+  const locale: Locale = requested in dictionaries ? requested : "uk";
   const dict = dictionaries[locale];
   const plural = new Intl.PluralRules(locale);
   const number = new Intl.NumberFormat(locale);
