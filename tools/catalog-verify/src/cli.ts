@@ -8,6 +8,8 @@
  *   backfill   — id треків Deezer зі знімка імпорту (db/jobs/out/import.json), щоб не шукати заново
  *   tracks     — пісні: Deezer → ISRC → MusicBrainz (+ Apple як третій голос)
  *   artists    — виконавці: MusicBrainz (посилання, країна, рік), фото Deezer, біографія з Вікіпедії
+ *   releases   — альбоми для пісень без альбому (альбом Deezer цього ISRC, назву підтверджує Apple/MusicBrainz)
+ *   covers     — обкладинки Deezer для альбомів без обкладинки
  *
  * Можна переривати й запускати знову: звірені позиції пропускаються (поки не мине --recheck днів),
  * відповіді джерел кешуються в .cache/. Звіт — reports/run-<час>.jsonl.
@@ -20,6 +22,7 @@ import { applyTrack, countPending, loadTracks, rows, saveCheck } from "./db";
 import { stats } from "./http";
 import { artistKey, titleKey } from "./rules";
 import { loadArtists, verifyArtist } from "./verify-artist";
+import { fillCovers, linkRelease, loadOrphans } from "./verify-release";
 import { verifyTrack } from "./verify-track";
 
 const args = process.argv.slice(2);
@@ -276,11 +279,57 @@ async function artistsPhase(db: Database) {
   log("виконавці готово:", JSON.stringify(counts), "змінено:", JSON.stringify(appliedCounts));
 }
 
+// ─── releases / covers ────────────────────────────────────────────────────
+
+async function releasesPhase(db: Database) {
+  const list = await loadOrphans(db, limit, onlyIds);
+  log(`альбоми: пісень без альбому ${list.length}${dry ? " (пробний запуск, без запису)" : ""}`);
+  const counts: Record<string, number> = {};
+  const created = new Set<string>();
+  const linked: string[] = [];
+  let done = 0;
+  let i = 0;
+  const worker = async () => {
+    while (i < list.length) {
+      const row = list[i++]!;
+      try {
+        const res = await linkRelease(db, row, dry);
+        counts[res.outcome] = (counts[res.outcome] ?? 0) + 1;
+        if (res.outcome === "created" && res.releaseId) created.add(res.releaseId);
+        if (res.releaseId) linked.push(row.id);
+        await report({ type: "release", trackId: row.id, title: row.title, ...res });
+      } catch (err) {
+        counts.error = (counts.error ?? 0) + 1;
+        await report({ type: "release", trackId: row.id, error: String(err) });
+      }
+      done++;
+      if (done % 25 === 0 || done === list.length)
+        log(`альбоми ${done}/${list.length}`, JSON.stringify(counts));
+    }
+  };
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  if (!dry && linked.length) {
+    log("оновлюю лічильники й пошук…");
+    await recomputeCounters(db);
+    if (created.size) await indexEntities(db, "release", [...created]);
+    for (let k = 0; k < linked.length; k += 500) await indexEntities(db, "track", linked.slice(k, k + 500));
+  }
+  log("альбоми готово:", JSON.stringify(counts), `нових альбомів: ${created.size}`);
+}
+
+async function coversPhase(db: Database) {
+  const res = await fillCovers(db, dry);
+  for (const f of res.filled) await report({ type: "cover", ...f });
+  log(`обкладинки: альбомів без обкладинки ${res.checked}, додано ${res.filled.length}`);
+}
+
 try {
   if (run("genres-fix")) await genresFix(db);
   if (run("backfill")) await backfill(db);
   if (run("tracks")) await tracksPhase(db);
   if (run("artists")) await artistsPhase(db);
+  if (run("releases")) await releasesPhase(db);
+  if (run("covers")) await coversPhase(db);
   log("запити до джерел:", JSON.stringify(stats));
   log("звіт:", reportFile);
 } finally {

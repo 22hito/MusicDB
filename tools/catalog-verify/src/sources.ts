@@ -17,6 +17,8 @@ export type DeezerTrack = {
   contributors?: { id: number; name: string; role: string }[];
   artist: { id: number; name: string };
   album: { id: number; title: string };
+  track_position?: number;
+  disk_number?: number;
 };
 type DeezerAlbum = {
   id: number;
@@ -105,6 +107,14 @@ export const musicbrainz = {
       .map((g) => g.name);
   },
   artist: (mbid: string) => getJson<MbArtist>("musicbrainz", `${MB}/artist/${mbid}?inc=url-rels&fmt=json`),
+  /** Назви релізів, у яких є цей запис. */
+  async releaseTitles(recordingId: string): Promise<string[]> {
+    const r = await getJson<{ releases?: { title: string }[] }>(
+      "musicbrainz",
+      `${MB}/recording/${recordingId}?inc=releases&fmt=json`,
+    );
+    return [...new Set((r?.releases ?? []).map((x) => x.title))];
+  },
 };
 
 export const mbFirstDate = (r: MbRecording) => fullDate(r["first-release-date"]);
