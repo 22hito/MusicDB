@@ -133,18 +133,25 @@ async function backfill(db: Database) {
       where ta.track_id = t.id order by ta.position limit 1) as artist
       from tracks t where not (coalesce(t.external_ids, '{}'::jsonb) ? 'deezer')`),
   );
-  let n = 0;
+  const pairs: [string, string][] = [];
   for (const t of tracks) {
     const ids = byKey.get(`${artistKey(t.artist ?? "")}|${titleKey(t.title)}`);
     if (ids?.length !== 1) continue; // неоднозначно — знайде пошук із тривалістю
-    if (!dry)
-      await db.execute(
-        sql`update tracks set external_ids = coalesce(external_ids, '{}'::jsonb) || ${JSON.stringify({
-          deezer: String(ids[0]),
-        })}::jsonb where id = ${t.id}`,
-      );
-    n++;
+    pairs.push([t.id, String(ids[0])]);
   }
+  // Пакетами по 500 — один запит замість сотень (база може бути далеко, кожен запит — це мережа).
+  if (!dry) {
+    for (let i = 0; i < pairs.length; i += 500) {
+      const chunk = pairs.slice(i, i + 500);
+      await db.execute(sql`update tracks t set external_ids = coalesce(t.external_ids, '{}'::jsonb)
+        || jsonb_build_object('deezer', v.deezer)
+        from (values ${sql.join(
+          chunk.map(([id, dz]) => sql`(${id}, ${dz})`),
+          sql`, `,
+        )}) as v(id, deezer) where t.id = v.id`);
+    }
+  }
+  const n = pairs.length;
   log(`backfill: id Deezer для ${n} із ${tracks.length} пісень`);
 }
 
