@@ -6,7 +6,8 @@
   "scripts": {
     "migrate": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check": "tsx src/check.ts"
   },
   "dependencies": {
     "@musicdb/db": "workspace:*",

@@ -19,9 +19,17 @@ if ($cs -match '^postgres(ql)?://') {
     if ($kv -match '^\s*([^=]+?)\s*=\s*(.*)$') { $parts[$Matches[1].ToLower().Replace(' ', '')] = $Matches[2] }
   }
   $host_ = $parts['host']; if (-not $host_) { $host_ = $parts['server'] }
+  if ($host_ -match '^(.+):(\d+)$') { $host_ = $Matches[1]; if (-not $parts['port']) { $parts['port'] = $Matches[2] } }
   $db = $parts['database']; $user = $parts['username']; if (-not $user) { $user = $parts['userid'] }
   $pass = $parts['password']; $port = $parts['port']; if (-not $port) { $port = '5432' }
-  $legacy = "postgres://$([uri]::EscapeDataString($user)):$([uri]::EscapeDataString($pass))@${host_}:$port/${db}?sslmode=require"
+  $legacy = "postgres://$([uri]::EscapeDataString($user)):$([uri]::EscapeDataString($pass))@${host_}:$port/$([uri]::EscapeDataString($db))?sslmode=require"
+}
+
+if ($Check) {
+  $env:LEGACY_DATABASE_URL = $legacy
+  pnpm --filter @musicdb/legacy-migrate check
+  Remove-Item Env:LEGACY_DATABASE_URL
+  exit
 }
 
 $target = Read-Host "Вставте DATABASE_URL_UNPOOLED нової бази (Neon, v2)"
