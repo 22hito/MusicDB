@@ -69,7 +69,7 @@ export async function listAdminTracks(
     status: "all" | "published" | "hidden";
     source: "all" | "catalog" | "community";
     missing?: "video" | "genres" | "duration" | "lyrics" | "release" | "date" | undefined;
-    check?: "conflict" | "unchecked" | "unmatched" | undefined;
+    check?: "conflict" | "unchecked" | "unmatched" | "resolved" | undefined;
     sort: "recent" | "popular" | "title";
     limit: number;
   },
@@ -136,6 +136,7 @@ type CheckRow = {
   applied: Record<string, { from: unknown; to: unknown; sources: string[] }>;
   conflicts: Record<string, Record<string, unknown>>;
   external_ids: Record<string, string> | null;
+  resolved_by: string | null;
 };
 
 export async function loadAdminTrack(db: DbOrTx, id: string): Promise<AdminTrackDetail | null> {
@@ -146,8 +147,10 @@ export async function loadAdminTrack(db: DbOrTx, id: string): Promise<AdminTrack
   const r = rowsOf<Row>(res)[0];
   if (!r) return null;
   const chk = rowsOf<CheckRow>(
-    await db.execute(sql`select c.status, c.checked_at, c.applied, c.conflicts, t.external_ids
+    await db.execute(sql`select c.status, c.checked_at, c.applied, c.conflicts, t.external_ids,
+        case when c.status = 'resolved' then coalesce(u.display_username, u.name) end as resolved_by
       from catalog_checks c join tracks t on t.id = c.entity_id
+        left join users u on u.id = c.sources->'manual'->>'by'
       where c.entity_type = 'track' and c.entity_id = ${id}`),
   )[0];
   return {
@@ -161,7 +164,27 @@ export async function loadAdminTrack(db: DbOrTx, id: string): Promise<AdminTrack
           ids: chk.external_ids ?? {},
           applied: chk.applied ?? {},
           conflicts: chk.conflicts ?? {},
+          resolvedBy: chk.resolved_by,
         }
       : null,
   };
+}
+
+/**
+ * Адмін виправив дані вручну — пісня зникає зі списку розбіжностей (статус resolved, звірка її більше
+ * не чіпає). Попередній статус зберігається в sources.manual, щоб можна було повернути.
+ * false — що було до позначки. Повертає false, якщо пісню ще не звіряли.
+ */
+export async function setTrackCheckResolved(db: DbOrTx, id: string, userId: string, resolved: boolean) {
+  const res = resolved
+    ? await db.execute(sql`update catalog_checks set status = 'resolved', checked_at = now(),
+        sources = sources || jsonb_build_object('manual',
+          jsonb_build_object('prev', status, 'by', ${userId}::text, 'at', now()))
+        where entity_type = 'track' and entity_id = ${id} and status <> 'verified'
+        returning entity_id`)
+    : await db.execute(sql`update catalog_checks
+        set status = coalesce(sources->'manual'->>'prev', 'conflict'), sources = sources - 'manual'
+        where entity_type = 'track' and entity_id = ${id} and status = 'resolved'
+        returning entity_id`);
+  return rowsOf(res).length > 0;
 }

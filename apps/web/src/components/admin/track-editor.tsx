@@ -8,7 +8,16 @@
 import { type AdminTrackDetail, type CatalogCheck, endpoints } from "@musicdb/contracts/client";
 import { invalidate, useApi } from "@musicdb/sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, ExternalLink, ShieldQuestion, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  CheckCircle2,
+  ExternalLink,
+  RotateCcw,
+  ShieldQuestion,
+  Trash2,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -219,6 +228,20 @@ export function TrackEditorHost() {
     }
   };
 
+  /** Позначити звірку перевіреною вручну (пісня зникає з розбіжностей) або повернути як було. */
+  const resolveCheck = async (resolved: boolean) => {
+    if (!trackId) return;
+    try {
+      const d = await api.admin.resolveTrackCheck({ params: { id: trackId }, body: { resolved } });
+      setInitial((cur) => (cur ? { ...cur, check: d.check } : d));
+      toast(t(resolved ? "admin.check.resolvedToast" : "admin.check.reopenedToast"));
+      await invalidate(qc, endpoints.admin.tracks);
+      onSaved?.();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("errors.generic"));
+    }
+  };
+
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
@@ -243,7 +266,7 @@ export function TrackEditorHost() {
             void save();
           }}
         >
-          {trackId ? <CheckPanel check={initial?.check ?? null} /> : null}
+          {trackId ? <CheckPanel check={initial?.check ?? null} onResolve={resolveCheck} /> : null}
           <Field label={t("admin.f.title")}>
             <input
               value={form.title}
@@ -499,8 +522,20 @@ const show = (v: unknown): string =>
         : String(v);
 
 /** Що показала звірка з офіційними платформами: де знайдено, що змінено, де джерела розходяться. */
-function CheckPanel({ check }: { check: CatalogCheck | null }) {
+function CheckPanel({
+  check,
+  onResolve,
+}: {
+  check: CatalogCheck | null;
+  onResolve: (resolved: boolean) => Promise<void>;
+}) {
   const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const run = async (resolved: boolean) => {
+    setBusy(true);
+    await onResolve(resolved);
+    setBusy(false);
+  };
   const fieldLabel = (f: string) => t(`admin.check.field.${f}` as "admin.check.field.isrc") || f;
   if (!check) {
     return (
@@ -509,7 +544,7 @@ function CheckPanel({ check }: { check: CatalogCheck | null }) {
       </div>
     );
   }
-  const ok = check.status === "verified";
+  const ok = check.status === "verified" || check.status === "resolved";
   const applied = Object.entries(check.applied);
   const conflicts = Object.entries(check.conflicts);
   return (
@@ -520,7 +555,9 @@ function CheckPanel({ check }: { check: CatalogCheck | null }) {
       )}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {ok ? (
+        {check.status === "resolved" ? (
+          <BadgeCheck className="size-4 text-accent" />
+        ) : ok ? (
           <CheckCircle2 className="size-4 text-accent" />
         ) : (
           <AlertTriangle className="size-4 text-accent" />
@@ -528,7 +565,10 @@ function CheckPanel({ check }: { check: CatalogCheck | null }) {
         <span className="font-semibold">
           {t("admin.check.title")}: {t(`admin.check.${check.status}` as "admin.check.verified")}
         </span>
-        <span className="text-xs text-subtle">{new Date(check.checkedAt).toLocaleString("uk-UA")}</span>
+        <span className="text-xs text-subtle">
+          {new Date(check.checkedAt).toLocaleString("uk-UA")}
+          {check.resolvedBy ? ` · ${t("admin.check.resolvedBy", { name: check.resolvedBy })}` : ""}
+        </span>
         <span className="ml-auto flex flex-wrap gap-2">
           {Object.entries(check.ids)
             .filter(([k]) => PLATFORM[k])
@@ -561,7 +601,9 @@ function CheckPanel({ check }: { check: CatalogCheck | null }) {
       ) : null}
       {conflicts.length ? (
         <div>
-          <div className="mb-1 text-xs font-bold text-muted">{t("admin.check.conflicts")}</div>
+          <div className="mb-1 text-xs font-bold text-muted">
+            {t(check.status === "resolved" ? "admin.check.conflictsResolved" : "admin.check.conflicts")}
+          </div>
           <ul className="space-y-0.5 text-[13px]">
             {conflicts.map(([f, c]) => (
               <li key={f}>
@@ -579,6 +621,25 @@ function CheckPanel({ check }: { check: CatalogCheck | null }) {
               </li>
             ))}
           </ul>
+        </div>
+      ) : null}
+      {check.status === "resolved" ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="-ml-3"
+          disabled={busy}
+          onClick={() => void run(false)}
+        >
+          <RotateCcw className="size-4" /> {t("admin.check.reopen")}
+        </Button>
+      ) : check.status !== "verified" ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-accent/20 pt-2.5">
+          <Button type="button" size="sm" disabled={busy} onClick={() => void run(true)}>
+            <BadgeCheck className="size-4" /> {t("admin.check.resolve")}
+          </Button>
+          <span className="min-w-[200px] flex-1 text-xs text-muted">{t("admin.check.resolveHint")}</span>
         </div>
       ) : null}
     </div>

@@ -537,6 +537,16 @@ export const en: Shape<Messages> = {
       fConflict: "conflicts",
       fUnchecked: "unchecked",
       fUnmatched: "not found",
+      fResolved: "reviewed manually",
+      conflictsResolved: "Had conflicts — reviewed manually",
+      resolved: "Reviewed manually",
+      resolvedBy: "marked by {name}",
+      resolve: "Mark as reviewed",
+      resolveHint:
+        "Data fixed by hand — remove from the conflicts list. The checker won't change this song anymore.",
+      reopen: "Back to checking",
+      resolvedToast: "Song marked as reviewed",
+      reopenedToast: "Previous check state restored",
       field: {
         durationMs: "Duration",
         releaseDate: "Release date",

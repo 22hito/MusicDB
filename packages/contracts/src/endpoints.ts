@@ -1061,6 +1061,8 @@ export const CatalogCheck = z.object({
     z.object({ from: z.unknown(), to: z.unknown(), sources: z.array(z.string()) }),
   ),
   conflicts: z.record(z.string(), z.record(z.string(), z.unknown())),
+  /** Хто з адмінів позначив пісню перевіреною вручну (статус resolved). */
+  resolvedBy: z.string().nullable(),
 });
 export type CatalogCheck = z.infer<typeof CatalogCheck>;
 export const AdminTrackDetail = AdminTrackRow.extend({
@@ -1166,7 +1168,7 @@ const admin = {
       source: z.enum(["all", "catalog", "community"]).default("all"),
       missing: AdminTrackMissing.optional(),
       /** Стан звірки з платформами. */
-      check: z.enum(["conflict", "unchecked", "unmatched"]).optional(),
+      check: z.enum(["conflict", "unchecked", "unmatched", "resolved"]).optional(),
       sort: z.enum(["recent", "popular", "title"]).default("recent"),
     }),
     response: page(AdminTrackRow).extend({ total: z.number().int() }),
@@ -1202,6 +1204,16 @@ const admin = {
       status: z.enum(["published", "hidden"]).optional(),
       lyricsSynced: z.string().max(40_000).nullable().optional(),
     }),
+    response: AdminTrackDetail,
+  }),
+  resolveTrackCheck: endpoint({
+    method: "POST",
+    path: "/v1/admin/tracks/:id/check",
+    summary: "Позначити звірку перевіреною вручну (або повернути попередній стан)",
+    tag: "admin",
+    auth: "admin",
+    params: IdParam,
+    body: z.object({ resolved: z.boolean() }),
     response: AdminTrackDetail,
   }),
   deleteTrack: endpoint({

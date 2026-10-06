@@ -1,4 +1,5 @@
 import type { AdminTrackDetail, AdminTrackRow, Page } from "@musicdb/contracts";
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestApp, seedCatalog, type TestApp } from "./harness";
 
@@ -110,5 +111,51 @@ describe("адмінка: редагування пісень", () => {
     });
     expect(back.body.status).toBe("published");
     expect((await t.request("GET", `/v1/tracks/${id}`)).status).toBe(200);
+  });
+
+  it("розбіжність звірки: позначити перевіреною вручну й повернути", async () => {
+    const id = s.tracks.faint.id;
+    await t.db.execute(sql`insert into catalog_checks (entity_type, entity_id, status, conflicts)
+      values ('track', ${id}, 'conflict', '{"releaseDate":{"db":"2003-03-25","deezer":"2003-06-09"}}'::jsonb)`);
+    const ids = async (check: string) =>
+      (
+        await t.request<Page<AdminTrackRow>>("GET", `/v1/admin/tracks?check=${check}`, {
+          cookie: admin.cookie,
+        })
+      ).body.items.map((x) => x.id);
+    expect(await ids("conflict")).toContain(id);
+
+    const denied = await t.request("POST", `/v1/admin/tracks/${id}/check`, {
+      cookie: alice.cookie,
+      body: { resolved: true },
+    });
+    expect(denied.status).toBe(403);
+
+    const done = await t.request<AdminTrackDetail>("POST", `/v1/admin/tracks/${id}/check`, {
+      cookie: admin.cookie,
+      body: { resolved: true },
+    });
+    expect(done.body.check).toMatchObject({ status: "resolved", resolvedBy: "Admin" });
+    expect(await ids("conflict")).not.toContain(id);
+    expect(await ids("resolved")).toContain(id);
+
+    const back = await t.request<AdminTrackDetail>("POST", `/v1/admin/tracks/${id}/check`, {
+      cookie: admin.cookie,
+      body: { resolved: false },
+    });
+    expect(back.body.check).toMatchObject({ status: "conflict", resolvedBy: null });
+    expect(back.body.check?.conflicts).toHaveProperty("releaseDate");
+    expect(await ids("conflict")).toContain(id);
+
+    // Ще не звірену пісню позначити не можна — нічого не змінюється.
+    const unchecked = await t.request<AdminTrackDetail>(
+      "POST",
+      `/v1/admin/tracks/${s.tracks.numb.id}/check`,
+      {
+        cookie: admin.cookie,
+        body: { resolved: true },
+      },
+    );
+    expect(unchecked.body.check).toBeNull();
   });
 });

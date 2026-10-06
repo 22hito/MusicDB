@@ -6,7 +6,7 @@ import { type AdminTrackDetail, endpoints } from "@musicdb/contracts/client";
 import { invalidate, useApi } from "@musicdb/sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Trash2, X } from "lucide-react-native";
+import { AlertTriangle, BadgeCheck, CheckCircle2, RotateCcw, Trash2, X } from "lucide-react-native";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -142,6 +142,21 @@ export default function AdminTrackScreen() {
     }
   };
 
+  /** Позначити звірку перевіреною вручну (пісня зникає з розбіжностей) або повернути як було. */
+  const resolveCheck = async (resolved: boolean) => {
+    setBusy(true);
+    try {
+      const d = await api.admin.resolveTrackCheck({ params: { id }, body: { resolved } });
+      setInitial((cur) => (cur ? { ...cur, check: d.check } : d));
+      await invalidate(qc, endpoints.admin.tracks);
+      Alert.alert(t(resolved ? "admin.check.resolvedToast" : "admin.check.reopenedToast"));
+    } catch (err) {
+      Alert.alert(err instanceof Error ? err.message : t("errors.generic"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const remove = () =>
     Alert.alert(t("admin.deleteSong"), t("admin.deleteConfirm", { title: initial?.title ?? "" }), [
       { text: t("common.cancel"), style: "cancel" },
@@ -179,6 +194,9 @@ export default function AdminTrackScreen() {
           contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: insets.bottom + 32 }}
           keyboardShouldPersistTaps="handled"
         >
+          {initial?.check ? (
+            <CheckBlock check={initial.check} busy={busy} onResolve={(r) => void resolveCheck(r)} />
+          ) : null}
           <Field label={t("admin.f.title")}>
             <TextInput value={form.title} onChangeText={(v) => set("title", v)} style={input} />
           </Field>
@@ -282,6 +300,68 @@ export default function AdminTrackScreen() {
   );
 }
 
+/** Стан звірки з платформами: що розходиться і кнопка «Позначити перевіреною» (як на сайті). */
+function CheckBlock({
+  check,
+  busy,
+  onResolve,
+}: {
+  check: NonNullable<AdminTrackDetail["check"]>;
+  busy: boolean;
+  onResolve: (resolved: boolean) => void;
+}) {
+  const t = useT();
+  const c = useColors();
+  const ok = check.status === "verified" || check.status === "resolved";
+  const fields = Object.keys(check.conflicts)
+    .map((f) => t(`admin.check.field.${f}` as "admin.check.field.isrc") || f)
+    .join(", ");
+  const Icon = check.status === "resolved" ? BadgeCheck : ok ? CheckCircle2 : AlertTriangle;
+  return (
+    <View
+      style={[
+        styles.check,
+        { borderColor: ok ? c.border : c.accent, backgroundColor: ok ? "transparent" : c.accentSoft },
+      ]}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Icon size={18} color={c.accent} />
+        <Text style={{ flex: 1, fontFamily: fonts.bold }}>
+          {t("admin.check.title")}: {t(`admin.check.${check.status}` as "admin.check.verified")}
+        </Text>
+      </View>
+      {check.resolvedBy ? (
+        <Text variant="caption" muted>
+          {t("admin.check.resolvedBy", { name: check.resolvedBy })}
+        </Text>
+      ) : null}
+      {fields ? (
+        <Text variant="caption" muted>
+          {t(check.status === "resolved" ? "admin.check.conflictsResolved" : "admin.check.conflicts")}:{" "}
+          {fields}
+        </Text>
+      ) : null}
+      {check.status === "resolved" ? (
+        <Button
+          title={t("admin.check.reopen")}
+          variant="ghost"
+          size="sm"
+          icon={<RotateCcw size={16} color={c.textMuted} />}
+          onPress={() => onResolve(false)}
+          disabled={busy}
+        />
+      ) : check.status !== "verified" ? (
+        <>
+          <Button title={t("admin.check.resolve")} size="sm" onPress={() => onResolve(true)} loading={busy} />
+          <Text variant="caption" muted>
+            {t("admin.check.resolveHint")}
+          </Text>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 function Field({
   label,
   hint,
@@ -313,4 +393,5 @@ const styles = StyleSheet.create({
   input: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
   area: { minHeight: 140, textAlignVertical: "top" },
   switchRow: { flexDirection: "row", alignItems: "center" },
+  check: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 8 },
 });

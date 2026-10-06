@@ -22,6 +22,10 @@ export type TrackRow = {
   genres: string[] | null;
 };
 
+/** Позначені адміном вручну (resolved) не звіряємо взагалі — інакше виправлене вручну перепишеться. */
+const notResolved = sql`not exists (select 1 from catalog_checks c
+  where c.entity_type = 'track' and c.entity_id = t.id and c.status = 'resolved')`;
+
 /** Пісні каталогу, які ще не звіряли (або звіряли давніше за `recheckDays`), спершу популярні. */
 export async function loadTracks(
   db: Database,
@@ -31,8 +35,8 @@ export async function loadTracks(
     ? sql`t.id in (${sql.join(
         opts.ids.map((i) => sql`${i}`),
         sql`, `,
-      )})`
-    : sql`t.status = 'published' and t.source = 'catalog' and not exists (
+      )}) and ${notResolved}`
+    : sql`t.status = 'published' and t.source = 'catalog' and ${notResolved} and not exists (
         select 1 from catalog_checks c where c.entity_type = 'track' and c.entity_id = t.id
           and c.checked_at > now() - make_interval(days => ${opts.recheckDays})
           ${recheckStatuses(opts.statuses)})`;
@@ -67,7 +71,7 @@ function recheckStatuses(statuses: string[] | undefined): SQL {
 export async function countPending(db: Database, recheckDays: number, statuses?: string[]) {
   const [r] = rows<{ n: number }>(
     await db.execute(sql`select count(*)::int as n from tracks t where t.status = 'published' and t.source = 'catalog'
-      and not exists (select 1 from catalog_checks c where c.entity_type = 'track' and c.entity_id = t.id
+      and ${notResolved} and not exists (select 1 from catalog_checks c where c.entity_type = 'track' and c.entity_id = t.id
         and c.checked_at > now() - make_interval(days => ${recheckDays}) ${recheckStatuses(statuses)})`),
   );
   return r?.n ?? 0;
@@ -202,5 +206,6 @@ export async function saveCheck(
     values (${entityType}, ${entityId}, ${check.status}, ${JSON.stringify(check.sources)}::jsonb,
       ${JSON.stringify(check.applied)}::jsonb, ${JSON.stringify(check.conflicts)}::jsonb, now())
     on conflict (entity_type, entity_id) do update set status = excluded.status, sources = excluded.sources,
-      applied = excluded.applied, conflicts = excluded.conflicts, checked_at = now()`);
+      applied = excluded.applied, conflicts = excluded.conflicts, checked_at = now()
+    where catalog_checks.status <> 'resolved'`);
 }

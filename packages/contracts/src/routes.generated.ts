@@ -132,6 +132,7 @@ export const routes = {
     track: { method: "GET", path: "/v1/admin/tracks/:id" },
     createTrack: { method: "POST", path: "/v1/admin/tracks" },
     updateTrack: { method: "PATCH", path: "/v1/admin/tracks/:id" },
+    resolveTrackCheck: { method: "POST", path: "/v1/admin/tracks/:id/check" },
     deleteTrack: { method: "DELETE", path: "/v1/admin/tracks/:id" },
     updateArtist: { method: "PATCH", path: "/v1/admin/artists/:id" },
     users: { method: "GET", path: "/v1/admin/users" },

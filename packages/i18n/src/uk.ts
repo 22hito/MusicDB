@@ -533,6 +533,16 @@ export const uk = {
       fConflict: "розбіжності",
       fUnchecked: "не звірені",
       fUnmatched: "не знайдені",
+      fResolved: "перевірені вручну",
+      conflictsResolved: "Були розбіжності — перевірено вручну",
+      resolved: "Перевірено вручну",
+      resolvedBy: "позначка: {name}",
+      resolve: "Позначити перевіреною",
+      resolveHint:
+        "Дані виправлено вручну — прибрати зі списку розбіжностей. Звірка більше не змінюватиме цю пісню.",
+      reopen: "Повернути до звірки",
+      resolvedToast: "Пісню позначено перевіреною",
+      reopenedToast: "Повернуто попередній стан звірки",
       field: {
         durationMs: "Тривалість",
         releaseDate: "Дата релізу",

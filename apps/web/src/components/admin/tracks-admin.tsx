@@ -24,7 +24,7 @@ export function TracksAdmin() {
   const [status, setStatus] = useState<"all" | "published" | "hidden">("all");
   const [source, setSource] = useState<"all" | "catalog" | "community">("all");
   const [missing, setMissing] = useState<Missing | null>(null);
-  const [check, setCheck] = useState<"conflict" | "unchecked" | "unmatched" | null>(null);
+  const [check, setCheck] = useState<"conflict" | "unchecked" | "unmatched" | "resolved" | null>(null);
   const [sort, setSort] = useState<"recent" | "popular" | "title">("recent");
 
   // Пошук — після паузи в наборі.
@@ -115,6 +115,7 @@ export function TracksAdmin() {
             ["conflict", t("admin.check.fConflict")],
             ["unmatched", t("admin.check.fUnmatched")],
             ["unchecked", t("admin.check.fUnchecked")],
+            ["resolved", t("admin.check.fResolved")],
           ] as const
         ).map(([k, label]) => (
           <button

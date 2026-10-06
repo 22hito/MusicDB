@@ -39,7 +39,7 @@ import { createTrack, removeTrack, updateTrack } from "../catalog/write";
 import { imageUrlFromUpload } from "../me/routes";
 import { grantPremium, revokePremium } from "../premium/routes";
 import { notify } from "../social/notify";
-import { listAdminTracks, loadAdminTrack } from "./admin-tracks";
+import { listAdminTracks, loadAdminTrack, setTrackCheckResolved } from "./admin-tracks";
 import { audit } from "./audit";
 
 type SubmissionRow = typeof submissions.$inferSelect;
@@ -664,6 +664,21 @@ export const moderationRoutes = [
     const updated = await loadAdminTrack(deps.db, params.id);
     if (!updated) throw notFound("track");
     return updated;
+  }),
+
+  implement(endpoints.admin.resolveTrackCheck, async ({ deps, user, params, body }) => {
+    await deps.db.transaction(async (tx) => {
+      if (!(await setTrackCheckResolved(tx, params.id, user.id, body.resolved))) return;
+      await audit(tx, {
+        actorId: user.id,
+        action: body.resolved ? "track.check.resolve" : "track.check.reopen",
+        entityType: "track",
+        entityId: params.id,
+      });
+    });
+    const t = await loadAdminTrack(deps.db, params.id);
+    if (!t) throw notFound("track");
+    return t;
   }),
 
   implement(endpoints.admin.deleteTrack, async ({ deps, user, params }) => {
