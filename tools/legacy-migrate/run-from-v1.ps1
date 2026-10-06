@@ -27,6 +27,13 @@ if ($cs -match '^postgres(ql)?://') {
   $legacy = "postgres://$([uri]::EscapeDataString($user)):$([uri]::EscapeDataString($pass))@${host_}:$port/$([uri]::EscapeDataString($db))?sslmode=require"
 }
 
+# У appsettings.Local.json зазвичай локальна база розробки — тоді просимо адресу продакшн-бази v1.
+if ($legacy -match '@(localhost|127\.0\.0\.1)[:/]') {
+  Write-Host "У налаштуваннях — локальна база розробки, а не продакшн v1."
+  $legacy = Read-Host "Вставте адресу продакшн-бази v1 (Neon → проєкт v1 → Connect, без pooling; postgresql://...)"
+  if (-not ($legacy -match '^postgres(ql)?://')) { throw "Це не схоже на адресу postgres://" }
+}
+
 if ($Check) {
   $env:LEGACY_DATABASE_URL = $legacy
   pnpm --filter @musicdb/legacy-migrate check
