@@ -426,7 +426,7 @@ export function QuickTile({
   return (
     <Link
       href={href}
-      className="group flex h-12 max-w-[300px] min-w-0 items-center gap-2.5 rounded-full border border-line/70 bg-surface-1/60 py-1 pr-4 pl-1 backdrop-blur transition-colors hover:border-accent/50 hover:bg-surface-2/70"
+      className="group flex h-12 min-w-0 sm:max-w-[300px] items-center gap-2.5 rounded-full border border-line/70 bg-surface-1/60 py-1 pr-4 pl-1 backdrop-blur transition-colors hover:border-accent/50 hover:bg-surface-2/70"
     >
       <span className="relative size-10 shrink-0 overflow-hidden rounded-full">
         {cover}

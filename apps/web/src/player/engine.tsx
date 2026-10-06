@@ -270,11 +270,13 @@ function VideoHost({
           // Сховане: плеєр лишається відмальованим (звук грає), але поза екраном.
           place(host, -10000, 0, 200, 200, false);
         } else {
-          // Плаваюча картка над плеєром (мін. 200 px).
-          const w = Math.min(400, window.innerWidth - 32);
+          // Плаваюча картка над плеєром (YouTube вимагає щонайменше 200×200). На телефоні — компактний
+          // квадрат у куті над міні-плеєром, щоб не закривати пів екрана.
+          const phone = window.innerWidth < 768;
+          const w = phone ? 200 : Math.min(400, window.innerWidth - 32);
           const h = Math.max(200, Math.round((w * 9) / 16));
-          const bottom = window.innerWidth < 768 ? 140 : 100;
-          place(host, window.innerWidth - w - 16, window.innerHeight - h - bottom, w, h, true);
+          const bottom = phone ? 148 : 100;
+          place(host, window.innerWidth - w - (phone ? 12 : 16), window.innerHeight - h - bottom, w, h, true);
         }
       }
       frame = requestAnimationFrame(tick);

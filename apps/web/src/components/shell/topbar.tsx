@@ -13,6 +13,7 @@ import { DropdownMenu } from "@/components/ui/menu";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/cn";
 import { useT } from "@/lib/i18n";
+import { useTouchDevice } from "@/lib/use-touch-device";
 import { Logo } from "./logo";
 
 export function TopBar({ scrolled }: { scrolled: boolean }) {
@@ -24,6 +25,7 @@ export function TopBar({ scrolled }: { scrolled: boolean }) {
   const badges = useBadges().data;
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
+  const touch = useTouchDevice();
   const [q, setQ] = useState(pathname === "/search" ? (params.get("q") ?? "") : "");
 
   useEffect(() => {
@@ -82,9 +84,9 @@ export function TopBar({ scrolled }: { scrolled: boolean }) {
             value={q}
             onChange={(e) => onChange(e.target.value)}
             onFocus={() => pathname !== "/search" && router.prefetch("/search")}
-            placeholder={t("search.placeholder")}
+            placeholder={touch ? t("common.search") : t("search.placeholder")}
             aria-label={t("common.search")}
-            className="h-11 w-full rounded-xl border border-line/80 bg-surface-1/70 pr-16 pl-11 text-[14.5px] text-fg backdrop-blur transition-colors outline-none placeholder:text-subtle hover:border-line-strong focus:border-accent focus:bg-surface-1"
+            className="h-11 w-full rounded-xl border border-line/80 bg-surface-1/70 pr-16 pl-11 text-[14.5px] text-fg backdrop-blur transition-colors outline-none placeholder:text-subtle max-sm:pr-10 hover:border-line-strong focus:border-accent focus:bg-surface-1"
           />
           {!q ? (
             <kbd className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md border border-line px-1.5 py-0.5 font-sans text-[10px] text-subtle sm:block">

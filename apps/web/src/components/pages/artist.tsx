@@ -138,14 +138,17 @@ export function ArtistView({ id, initial }: { id: string; initial: ArtistDetail 
           </span>
         </ActionBar>
         {data.links.length ? (
-          <nav aria-label={t("artist.links")} className="-mt-1 flex flex-wrap gap-2 px-4 pb-4 sm:px-6">
+          <nav
+            aria-label={t("artist.links")}
+            className="-mt-1 flex gap-2 overflow-x-auto px-4 pb-4 [scrollbar-width:none] sm:flex-wrap sm:px-6"
+          >
             {data.links.map((l) => (
               <a
                 key={l.kind}
                 href={l.url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line px-3 text-[12.5px] font-semibold text-muted transition-colors hover:border-accent/50 hover:text-fg"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line px-3 text-[12.5px] font-semibold text-muted transition-colors hover:border-accent/50 hover:text-fg"
               >
                 {l.kind === "website" ? <Globe className="size-3.5" /> : null}
                 {t(`artist.link.${l.kind}` as "artist.link.website")}

@@ -90,7 +90,7 @@ export function HomeView() {
         )}
 
         {me.data ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <QuickTile
               href="/collection/tracks"
               title={t("nav.likedSongs")}

@@ -17,6 +17,8 @@ import {
   Play,
   Search,
   Users,
+  Video,
+  VideoOff,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
@@ -459,6 +461,32 @@ function NowInfo({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
+/**
+ * Показати/сховати плаваюче відео YouTube, коли плеєр згорнуто (на телефоні в міні-плеєрі місця немає,
+ * тож перемикач — тут). Лише коли грає відео.
+ */
+function VideoToggle() {
+  const t = useT();
+  const source = usePlayingSource((s) => s.kind);
+  const hidden = useUi((s) => s.videoHidden);
+  if (source !== "youtube") return null;
+  return (
+    <button
+      type="button"
+      onClick={() => useUi.getState().setVideoHidden(!hidden)}
+      aria-label={hidden ? t("player.showVideo") : t("player.hideVideo")}
+      title={hidden ? t("player.showVideo") : t("player.hideVideo")}
+      aria-pressed={!hidden}
+      className={cn(
+        "inline-flex size-9 items-center justify-center rounded-full transition-colors hover:text-fg",
+        hidden ? "text-muted" : "text-accent",
+      )}
+    >
+      {hidden ? <VideoOff className="size-5" /> : <Video className="size-5" />}
+    </button>
+  );
+}
+
 /** Шкала, кнопки й другорядний рядок: гучність, черга, таймер сну. */
 function Transport({ onNavigate, compact }: { onNavigate: () => void; compact?: boolean }) {
   const t = useT();
@@ -472,6 +500,7 @@ function Transport({ onNavigate, compact }: { onNavigate: () => void; compact?: 
         <div className="flex items-center gap-2">
           <Volume className="hidden w-auto flex-1 md:flex" />
           <div className="ml-auto flex items-center gap-1">
+            <VideoToggle />
             <SleepTimerButton />
             <Link
               href="/queue"

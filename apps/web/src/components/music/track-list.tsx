@@ -279,8 +279,9 @@ const TrackRow = memo(function TrackRow({
             <Link
               href={`/track/${track.id}`}
               onClick={(e) => e.stopPropagation()}
+              // На сенсорному екрані тап по рядку запускає пісню; сторінка пісні — через «⋯».
               className={cn(
-                "block truncate text-[15px] font-medium text-fg hover:underline",
+                "block truncate text-[15px] font-medium text-fg hover:underline [@media(pointer:coarse)]:pointer-events-none",
                 isCurrent && "text-accent",
               )}
             >
@@ -289,7 +290,10 @@ const TrackRow = memo(function TrackRow({
             {showArtists ? (
               <div className="flex min-w-0 items-center gap-1.5 text-[13px]">
                 {track.explicit ? <ExplicitBadge /> : null}
-                <ArtistLinks artists={track.artists} className="group-hover:text-fg/80" />
+                <ArtistLinks
+                  artists={track.artists}
+                  className="group-hover:text-fg/80 [@media(pointer:coarse)]:pointer-events-none"
+                />
               </div>
             ) : null}
           </div>
@@ -335,7 +339,7 @@ const TrackRow = memo(function TrackRow({
                 type="button"
                 aria-label={t("common.more")}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex size-7 items-center justify-center rounded-full text-muted opacity-0 group-hover:opacity-100 hover:text-fg focus-visible:opacity-100 data-[state=open]:opacity-100"
+                className="inline-flex size-7 items-center justify-center rounded-full text-muted opacity-0 group-hover:opacity-100 hover:text-fg focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
               >
                 <MoreHorizontal className="size-5" />
               </button>
