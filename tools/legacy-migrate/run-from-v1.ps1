@@ -3,7 +3,9 @@
 # 1) рядок підключення v1 береться з appsettings.Local.json (формат Npgsql) і перетворюється на postgres://…
 # 2) адресу нової бази (DATABASE_URL_UNPOOLED з Vercel → Storage → Neon → .env.local) вводите вручну
 param(
-  [string]$SettingsPath = "E:\MusicDB\MusicDB-repo\appsettings.Local.json"
+  [string]$SettingsPath = "E:\MusicDB\MusicDB-repo\appsettings.Local.json",
+  # -Check: лише перевірити підключення до v1, без перенесення
+  [switch]$Check
 )
 $ErrorActionPreference = "Stop"
 
@@ -39,5 +41,6 @@ $env:LEGACY_DATABASE_URL = $legacy
 $env:DATABASE_URL = $target
 Write-Host "Переношу дані з v1 (стара база лише читається)..."
 pnpm --filter @musicdb/legacy-migrate migrate
+$ok = $LASTEXITCODE -eq 0
 Remove-Item Env:LEGACY_DATABASE_URL, Env:DATABASE_URL
-Write-Host "Готово. Далі — звірка каталогу: tools\catalog-verify\run-prod.ps1"
+if ($ok) { Write-Host "Готово." } else { Write-Host "Перенесення не вдалося: надішліть текст помилки вище (без паролів)." -ForegroundColor Red }
