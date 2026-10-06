@@ -1,5 +1,6 @@
 "use client";
 import { useBadges, useMe } from "@musicdb/sdk/react";
+import { FEATURES } from "@musicdb/tokens";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, Crown, LogOut, MessageCircle, Search, Settings, Shield, Upload, User, X } from "lucide-react";
 import Link from "next/link";
@@ -135,7 +136,9 @@ export function TopBar({ scrolled }: { scrolled: boolean }) {
                   onSelect: () => router.push(`/user/${me.username ?? me.id}`),
                 },
                 { label: t("nav.upload"), icon: <Upload />, onSelect: () => router.push("/upload") },
-                { label: t("nav.premium"), icon: <Crown />, onSelect: () => router.push("/premium") },
+                ...(FEATURES.premium
+                  ? [{ label: t("nav.premium"), icon: <Crown />, onSelect: () => router.push("/premium") }]
+                  : []),
                 ...(me.role === "admin" || me.role === "moderator"
                   ? [{ label: t("nav.admin"), icon: <Shield />, onSelect: () => router.push("/admin") }]
                   : []),

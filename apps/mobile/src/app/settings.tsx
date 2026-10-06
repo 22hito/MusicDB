@@ -1,7 +1,7 @@
 import { endpoints } from "@musicdb/contracts/client";
 import type { Locale } from "@musicdb/i18n";
 import { invalidate, useApi, useEndpoint, useMe } from "@musicdb/sdk/react";
-import { type AccentName, accentNames, palette } from "@musicdb/tokens";
+import { type AccentName, accentNames, FEATURES, palette } from "@musicdb/tokens";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -173,9 +173,11 @@ export default function SettingsScreen() {
                 />
               </Row>
             </Section>
-            <Section title={t("nav.premium")}>
-              <PremiumStatus />
-            </Section>
+            {FEATURES.premium ? (
+              <Section title={t("nav.premium")}>
+                <PremiumStatus />
+              </Section>
+            ) : null}
             <Section title={t("settings.account")}>
               <Text muted>{me.email}</Text>
               <Button title={t("common.signOut")} variant="outline" onPress={signOut} />

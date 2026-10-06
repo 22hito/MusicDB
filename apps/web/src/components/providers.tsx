@@ -1,7 +1,7 @@
 "use client";
 import type { Locale } from "@musicdb/i18n";
 import { connectRealtime } from "@musicdb/sdk";
-import { ApiProvider, applyRealtimeEvent, useMe } from "@musicdb/sdk/react";
+import { ApiProvider, applyRealtimeEvent, startPolling, useMe } from "@musicdb/sdk/react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { MotionConfig } from "motion/react";
 import { Tooltip } from "radix-ui";
@@ -60,12 +60,22 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
 }
 
 /** WebSocket для залогінених: події сервера оновлюють кеш запитів; нове повідомлення — тост. */
+/** На Vercel WebSocket немає (NEXT_PUBLIC_REALTIME=off) — тоді опитування. */
+const REALTIME_ON = process.env.NEXT_PUBLIC_REALTIME !== "off";
+
 function RealtimeSync() {
   const me = useMe().data;
   const qc = useQueryClient();
   const t = useT();
   useEffect(() => {
-    if (!me) return;
+    if (!me || REALTIME_ON) return;
+    return startPolling(qc, {
+      isVisible: () => document.visibilityState === "visible",
+      inMessages: () => location.pathname.startsWith("/messages"),
+    });
+  }, [me, qc]);
+  useEffect(() => {
+    if (!me || !REALTIME_ON) return;
     const conn = connectRealtime({
       url: realtimeUrl(),
       onEvent: (event) => {

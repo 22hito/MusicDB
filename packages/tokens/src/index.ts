@@ -285,5 +285,6 @@ export function placeholderGradient(seed: string): [string, string] {
  * Перемикачі можливостей продукту (спільні для сайту й застосунку).
  * lyrics — перегляд текстів пісень: сховано, доки немає легального джерела текстів (ліцензія);
  * код і дані лишаються, адмін і далі може вносити текст.
+ * premium — підписка: сховано, поки немає платіжного провайдера (і на безкоштовному хостингу).
  */
-export const FEATURES = { lyrics: false } as const;
+export const FEATURES = { lyrics: false, premium: false } as const;

@@ -22,7 +22,9 @@ const ffmpegPath = process.env.FFMPEG_PATH || (ffmpegStatic as unknown as string
 
 function run(args: string[], opts: { collectStdout?: boolean } = {}) {
   return new Promise<{ stderr: string; stdout: Buffer }>((resolve, reject) => {
-    const proc = spawn(ffmpegPath, ["-hide_banner", "-nostdin", ...args], { windowsHide: true });
+    const proc = spawn(/* turbopackIgnore: true */ ffmpegPath, ["-hide_banner", "-nostdin", ...args], {
+      windowsHide: true,
+    });
     const err: Buffer[] = [];
     const out: Buffer[] = [];
     proc.stderr.on("data", (d: Buffer) => err.push(d));

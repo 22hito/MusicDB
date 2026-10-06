@@ -9,14 +9,14 @@ import { PlayfairDisplay_600SemiBold } from "@expo-google-fonts/playfair-display
 import { PlayfairDisplay_600SemiBold_Italic } from "@expo-google-fonts/playfair-display/600SemiBold_Italic";
 import { PlayfairDisplay_700Bold } from "@expo-google-fonts/playfair-display/700Bold";
 import { connectRealtime } from "@musicdb/sdk";
-import { ApiProvider, applyRealtimeEvent, useMe } from "@musicdb/sdk/react";
+import { ApiProvider, applyRealtimeEvent, startPolling, useMe } from "@musicdb/sdk/react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppState, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ReducedMotionConfig, ReduceMotion } from "react-native-reanimated";
@@ -110,11 +110,24 @@ function Root() {
 }
 
 /** WebSocket з cookie сесії: події сервера оновлюють кеш запитів; повернення в застосунок — перепідключення. */
+/** Сервер на Vercel без WebSocket (EXPO_PUBLIC_REALTIME=off) — тоді опитування. */
+const REALTIME_ON = process.env.EXPO_PUBLIC_REALTIME !== "off";
+
 function RealtimeSync() {
   const me = useMe().data;
   const qc = useQueryClient();
+  const pathname = usePathname();
+  const path = useRef(pathname);
+  path.current = pathname;
   useEffect(() => {
-    if (!me) return;
+    if (!me || REALTIME_ON) return;
+    return startPolling(qc, {
+      isVisible: () => AppState.currentState === "active",
+      inMessages: () => path.current.startsWith("/messages"),
+    });
+  }, [me, qc]);
+  useEffect(() => {
+    if (!me || !REALTIME_ON) return;
     const conn = connectRealtime({
       url: REALTIME_URL,
       headers: async () => ({ cookie: await sessionCookie() }),

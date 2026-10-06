@@ -272,6 +272,29 @@ export function usePlaylistActions() {
 // ─── Реалтайм → кеш ───────────────────────────────────────────────────────
 
 /** Оновлює кеш запитів за подіями сервера — відкриті екрани змінюються без перезавантаження. */
+/**
+ * Замість WebSocket (serverless-хостинг без реалтайму): періодично оновлює лічильники й сповіщення,
+ * а відкриту переписку — частіше. Лише поки застосунок на екрані. Повертає функцію зупинки.
+ */
+export function startPolling(qc: QueryClient, opts: { isVisible: () => boolean; inMessages: () => boolean }) {
+  const slow = setInterval(() => {
+    if (opts.isVisible()) void invalidate(qc, endpoints.me.badges, endpoints.notifications.list);
+  }, 30_000);
+  const fast = setInterval(() => {
+    if (opts.isVisible() && opts.inMessages())
+      void invalidate(
+        qc,
+        endpoints.conversations.list,
+        endpoints.conversations.messages,
+        endpoints.me.badges,
+      );
+  }, 8_000);
+  return () => {
+    clearInterval(slow);
+    clearInterval(fast);
+  };
+}
+
 export function applyRealtimeEvent(qc: QueryClient, event: RealtimeEvent) {
   switch (event.type) {
     case "notification":

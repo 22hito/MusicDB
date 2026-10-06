@@ -2,6 +2,8 @@ import { resolve } from "node:path";
 import type { NextConfig } from "next";
 
 const apiOrigin = process.env.API_INTERNAL_URL ?? "http://localhost:8787";
+/** На Vercel API працює всередині сайту (app/v1/[...path]/route.ts), без окремого сервера. */
+const embeddedApi = !!process.env.EMBEDDED_API;
 
 const config: NextConfig = {
   reactStrictMode: true,
@@ -11,12 +13,19 @@ const config: NextConfig = {
   agentRules: false,
   poweredByHeader: false,
   transpilePackages: [
+    "@musicdb/api",
+    "@musicdb/db",
     "@musicdb/contracts",
     "@musicdb/sdk",
     "@musicdb/player",
     "@musicdb/tokens",
     "@musicdb/i18n",
   ],
+  // Пакети API з нативними файлами чи воркерами — не бандлити (ffmpeg-static — бінарник, pino — потоки).
+  serverExternalPackages: ["ffmpeg-static", "pino", "thread-stream", "pino-pretty"],
+  outputFileTracingIncludes: {
+    "/v1/[...path]": ["../../node_modules/.pnpm/ffmpeg-static@*/node_modules/ffmpeg-static/ffmpeg*"],
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "radix-ui"],
   },
@@ -30,7 +39,13 @@ const config: NextConfig = {
   },
   // Один origin для сайту й API: cookie-сесія, OAuth-колбеки й підписані посилання без CORS.
   async rewrites() {
-    return [{ source: "/v1/:path*", destination: `${apiOrigin}/v1/:path*` }];
+    if (embeddedApi) return [];
+    // beforeFiles — щоб проксі мав пріоритет над вбудованим маршрутом app/v1 у розробці й Docker.
+    return {
+      beforeFiles: [{ source: "/v1/:path*", destination: `${apiOrigin}/v1/:path*` }],
+      afterFiles: [],
+      fallback: [],
+    };
   },
   // Сторінки v1 → відповідники v2 (старі закладки й посилання не ламаються).
   async redirects() {

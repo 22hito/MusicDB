@@ -2,7 +2,11 @@ import { resolve } from "node:path";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { createDb } from "../src/client";
 
-const url = process.env.DATABASE_URL ?? "postgres://postgres:postgres@127.0.0.1:54329/musicdb";
+// Neon: міграції — через пряме підключення (DATABASE_URL_UNPOOLED), а не через пул PgBouncer.
+const url =
+  process.env.DATABASE_URL_UNPOOLED ??
+  process.env.DATABASE_URL ??
+  "postgres://postgres:postgres@127.0.0.1:54329/musicdb";
 const { db, close } = createDb(url, { max: 1 });
 const started = Date.now();
 // biome-ignore lint/suspicious/noExplicitAny: мігратор postgres-js приймає власний тип бази
