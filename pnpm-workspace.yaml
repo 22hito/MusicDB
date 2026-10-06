@@ -4,5 +4,10 @@ packages:
   - tools/*
 allowBuilds:
   '@embedded-postgres/windows-x64': true
+  # Вбудований Postgres потрібен лише для локальної розробки на Windows; на Vercel/CI його скрипти не запускаються.
+  '@embedded-postgres/linux-x64': false
+  '@embedded-postgres/linux-arm64': false
+  '@embedded-postgres/darwin-x64': false
+  '@embedded-postgres/darwin-arm64': false
   esbuild: true
   ffmpeg-static: true
