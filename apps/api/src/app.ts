@@ -14,6 +14,7 @@ import { ApiError } from "./http/errors";
 import { clearMemo } from "./http/memo";
 import { buildOpenApi } from "./http/openapi";
 import { youtubeSearch } from "./modules/catalog/hydrate";
+import { desktopCode, desktopExchange } from "./modules/desktop/login";
 import { allRoutes } from "./modules/index";
 import { telegramWebhook } from "./modules/premium/telegram";
 import { LocalStorage } from "./services/storage";
@@ -96,6 +97,10 @@ export function createApp(deps: Deps) {
 
   // Вебхук Telegram-бота (оплата преміуму Stars); справжність — за секретом у заголовку.
   app.post("/v1/telegram/webhook", telegramWebhook(deps));
+
+  // Вхід у застосунок для Windows через системний браузер: одноразовий код → cookie сесії.
+  app.post("/v1/desktop/code", desktopCode(deps));
+  app.post("/v1/desktop/exchange", desktopExchange(deps));
 
   if (deps.storage instanceof LocalStorage) app.route("/v1/storage", storageRoutes(deps.storage));
 

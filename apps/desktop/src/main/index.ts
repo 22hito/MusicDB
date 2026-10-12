@@ -25,10 +25,13 @@ import {
 } from "electron";
 import { autoUpdater } from "electron-updater";
 import { type PlayerState, registerIpc } from "./ipc";
+import { activeUiDir, currentBuild, fetchUiUpdate } from "./ui-update";
 
 const API = (process.env.NOWL_API ?? "https://nowl.pp.ua").replace(/\/$/, "");
 const APP_ORIGIN = "app://nowl";
-const RENDERER = join(__dirname, "renderer");
+const BUNDLED_UI = join(__dirname, "renderer");
+/** Звідки показуємо інтерфейс: вбудований або завантажений оновленням (див. ui-update.ts). */
+let uiDir = BUNDLED_UI;
 const ASSETS = app.isPackaged
   ? join(process.resourcesPath, "app.asar", "assets")
   : join(__dirname, "..", "assets");
@@ -90,9 +93,9 @@ async function proxy(req: Request, url: URL): Promise<Response> {
 
 function serveStatic(url: URL): Promise<Response> {
   const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "");
-  const file = normalize(join(RENDERER, rel));
+  const file = normalize(join(uiDir, rel));
   // Поза текою інтерфейсу — ні; невідомий шлях — index.html (маршрути інтерфейсу).
-  const target = file.startsWith(RENDERER) && rel && existsSync(file) ? file : join(RENDERER, "index.html");
+  const target = file.startsWith(uiDir) && rel && existsSync(file) ? file : join(uiDir, "index.html");
   return net.fetch(pathToFileURL(target).toString());
 }
 
@@ -181,22 +184,36 @@ function createWindow(path = "/") {
   win.once("ready-to-show", () => win?.show());
   win.loadURL(`${APP_ORIGIN}${path}`);
 
-  // Зовнішні посилання — у браузері; вхід через Google — у цьому ж вікні (cookie лягають у сесію застосунку).
+  // Вікно показує лише застосунок. Зовнішні посилання — у браузері. Вхід через Google — теж у браузері
+  // (Google не пускає вбудовані вікна): сайт поверне в застосунок посиланням nowl://auth?code=….
   win.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
     return { action: "deny" };
   });
   win.webContents.on("will-navigate", (e, url) => {
-    if (url.startsWith(APP_ORIGIN) || isAuthFlow(url)) return;
+    if (url.startsWith(APP_ORIGIN)) return;
     e.preventDefault();
-    void shell.openExternal(url);
+    void shell.openExternal(isGoogleLogin(url) ? `${API}/desktop-login` : url);
   });
-  // Після входу через Google API повертає на сайт — показуємо ту саму сторінку в застосунку.
+  // Якщо вікно все ж опинилось поза застосунком — повертаємо на ту саму сторінку в застосунку або на головну.
   win.webContents.on("did-navigate", (_e, url) => {
-    if (url.startsWith(`${API}/`) && !url.startsWith(`${API}/v1/`)) {
-      const u = new URL(url);
-      win?.loadURL(`${APP_ORIGIN}${u.pathname}${u.search}`);
-    }
+    if (url.startsWith(APP_ORIGIN)) return;
+    const u = new URL(url);
+    win?.loadURL(
+      `${APP_ORIGIN}${u.origin === API && !u.pathname.startsWith("/v1/") ? u.pathname + u.search : "/"}`,
+    );
+  });
+  // «Назад» / «Вперед»: бічні кнопки миші й Alt+←/→.
+  win.on("app-command", (_e, cmd) => {
+    if (cmd === "browser-backward") back();
+    if (cmd === "browser-forward") forward();
+  });
+  win.webContents.on("before-input-event", (e, input) => {
+    if (input.type !== "keyDown" || !input.alt) return;
+    if (input.key === "ArrowLeft") back();
+    else if (input.key === "ArrowRight") forward();
+    else return;
+    e.preventDefault();
   });
 
   win.on("close", (e) => {
@@ -222,12 +239,48 @@ function notifyOnce() {
   }).show();
 }
 
-function isAuthFlow(url: string) {
-  return (
-    url.startsWith(`${API}/v1/auth/`) ||
-    url.startsWith("https://accounts.google.com/") ||
-    url.startsWith("https://accounts.youtube.com/")
-  );
+function isGoogleLogin(url: string) {
+  return url.startsWith("https://accounts.google.com/") || url.startsWith(`${API}/v1/auth/`);
+}
+
+function back() {
+  const h = win?.webContents.navigationHistory;
+  if (h?.canGoBack()) h.goBack();
+}
+function forward() {
+  const h = win?.webContents.navigationHistory;
+  if (h?.canGoForward()) h.goForward();
+}
+
+/** Вхід із браузера: одноразовий код → cookie сесії в профілі застосунку → оновити вікно. */
+async function finishLogin(code: string) {
+  try {
+    const res = await net.fetch(`${API}/v1/desktop/exchange`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { name, value } = (await res.json()) as { name: string; value: string };
+    await session.defaultSession.cookies.set({
+      url: API,
+      name,
+      value,
+      secure: true,
+      httpOnly: true,
+      sameSite: "lax",
+      expirationDate: Math.floor(Date.now() / 1000) + 30 * 86400,
+    });
+    show("/");
+    win?.webContents.reload();
+  } catch {
+    if (Notification.isSupported())
+      new Notification({
+        title: "Не вдалося увійти",
+        body: "Спробуйте ще раз «Продовжити з Google».",
+        icon: icon("icon.png"),
+      }).show();
+  }
 }
 
 function show(path?: string) {
@@ -258,6 +311,8 @@ function trayMenu(): MenuItemConstructorOptions[] {
     { label: "Попередня", enabled: state.hasTrack, click: () => command("prev") },
     { type: "separator" },
     { label: "Відкрити N'Owl", click: () => show() },
+    { label: "На головну", click: () => show("/") },
+    { label: "Відкрити сайт nowl.pp.ua", click: () => void shell.openExternal(API) },
     {
       label: "Вийти",
       click: () => {
@@ -298,12 +353,30 @@ function createTray() {
 
 // ─── Запуск ────────────────────────────────────────────────────────────────────────────────
 
-/** nowl://track/abc → /track/abc */
+/** nowl://track/abc → /track/abc; nowl://auth?code=… — завершення входу з браузера. */
 function deepLinkPath(argv: string[]) {
   const link = argv.find((a) => a.startsWith("nowl://"));
   if (!link) return undefined;
   const u = new URL(link);
+  if (u.host === "auth") {
+    const code = u.searchParams.get("code");
+    if (code) void finishLogin(code);
+    return undefined;
+  }
   return `/${u.host}${u.pathname}`.replace(/\/+$/, "") || "/";
+}
+
+/** Нова збірка інтерфейсу з сайту: якщо нічого не грає — одразу, інакше з наступним запуском. */
+async function checkUi() {
+  try {
+    if (!(await fetchUiUpdate(API, currentBuild(uiDir)))) return;
+    if (!state.playing && win) {
+      uiDir = activeUiDir(BUNDLED_UI);
+      win.webContents.reload();
+    }
+  } catch (err) {
+    console.warn("оновлення інтерфейсу:", err);
+  }
 }
 
 app.on("second-instance", (_e, argv) => show(deepLinkPath(argv)));
@@ -316,7 +389,7 @@ app.on("window-all-closed", () => {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
-  // Google не пускає вхід у вбудованих вікнах із «Electron» у User-Agent — представляємося звичайним Chrome.
+  // Без «Electron» у User-Agent — деякі сервіси (YouTube) поводяться з ним інакше.
   app.userAgentFallback = app.userAgentFallback.replace(
     /\s(Electron|N'Owl|nowl-desktop|@musicdb\/desktop)\/\S+/gi,
     "",
@@ -330,8 +403,11 @@ app.whenReady().then(() => {
     },
     window: () => win,
   });
+  uiDir = activeUiDir(BUNDLED_UI);
   createWindow(deepLinkPath(process.argv));
   createTray();
+  void checkUi();
+  setInterval(() => void checkUi(), 30 * 60_000);
   if (app.isPackaged) {
     autoUpdater.autoDownload = true;
     void autoUpdater.checkForUpdatesAndNotify().catch(() => {});

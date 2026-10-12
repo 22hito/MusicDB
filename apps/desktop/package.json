@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node scripts/build.mjs --dev && electron .",
     "build": "node scripts/build.mjs",
+    "build:ui": "node scripts/build-ui.mjs",
     "dist": "node scripts/build.mjs && electron-builder --win --publish never",
     "release": "node scripts/build.mjs && electron-builder --win --publish always",
     "typecheck": "tsc --noEmit -p tsconfig.json"

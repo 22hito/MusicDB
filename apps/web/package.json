@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build:vercel": "pnpm --filter @musicdb/db migrate && next build"
+    "build:vercel": "pnpm --filter @musicdb/db migrate && (pnpm --filter @musicdb/desktop build:ui --out ../web/public/desktop-ui || echo desktop-ui-skipped) && next build"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",
