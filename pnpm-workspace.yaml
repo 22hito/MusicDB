@@ -10,4 +10,6 @@ allowBuilds:
   '@embedded-postgres/darwin-x64': false
   '@embedded-postgres/darwin-arm64': false
   esbuild: true
+  electron: true
+  electron-winstaller: false
   ffmpeg-static: true

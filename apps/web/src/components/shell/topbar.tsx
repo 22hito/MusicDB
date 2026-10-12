@@ -67,7 +67,7 @@ export function TopBar({ scrolled }: { scrolled: boolean }) {
   return (
     <div
       className={cn(
-        "flex h-16 items-center gap-3 px-4 transition-colors duration-300 sm:px-6",
+        "app-topbar flex h-16 items-center gap-3 px-4 transition-colors duration-300 sm:px-6",
         scrolled && "bg-bg/80 backdrop-blur-md",
       )}
     >

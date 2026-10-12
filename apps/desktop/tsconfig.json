@@ -1,0 +1,15 @@
+{
+  "extends": "@musicdb/config/tsconfig.react.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noUncheckedIndexedAccess": true,
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["../web/src/*"],
+      "next/link": ["./src/renderer/shims/next-link.tsx"],
+      "next/navigation": ["./src/renderer/shims/next-navigation.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"],
+  "exclude": ["node_modules", "out", "dist"]
+}

@@ -1,0 +1,28 @@
+/* Стилі сайту як є; Tailwind шукає класи в коді сайту й застосунку. */
+@import "../../../web/src/app/globals.css";
+@source "../../../web/src";
+@source "./";
+
+:root {
+  --font-inter: "Inter Variable";
+  --font-playfair: "Playfair Display";
+}
+
+/* Вікно без системної рамки: верхня панель тягне вікно, кнопки Windows — праворуч поверх неї. */
+.desktop-drag,
+.app-topbar {
+  -webkit-app-region: drag;
+}
+:is(.desktop-drag, .app-topbar)
+  :is(a, button, input, select, textarea, kbd, [role="button"], [role="menuitem"], form) {
+  -webkit-app-region: no-drag;
+}
+/* Місце під кнопки вікна Windows праворуч (≈ 138 px). */
+.app-topbar {
+  padding-right: calc(
+    100vw -
+    env(titlebar-area-x, 0px) -
+    env(titlebar-area-width, calc(100vw - 150px)) +
+    16px
+  ) !important;
+}
