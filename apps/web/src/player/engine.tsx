@@ -210,14 +210,45 @@ export function PlayerEngine() {
     return () => clearInterval(id);
   }, [kind]);
 
+  // «Показати відео» для пісні, що грає з файлу: перемикаємось на YouTube з того самого місця.
+  const videoHidden = useUi((s) => s.videoHidden);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: реагуємо лише на перемикач відео
+  useEffect(() => {
+    const track = current?.track;
+    const active = activeRef.current;
+    const audio = audioRef.current;
+    if (!track || active?.kind !== "audio" || !wantsVideo(track) || !track.playback.youtubeVideoId) return;
+    const videoId = track.playback.youtubeVideoId;
+    const at = audio?.currentTime ?? 0;
+    const wantPlay = playerStore.getState().status !== "paused";
+    const token = ++loadToken.current;
+    audio?.pause();
+    activeRef.current = { kind: "youtube", videoId };
+    setKind("youtube");
+    void ensureYouTube().then((yt) => {
+      if (token !== loadToken.current) return;
+      applyVolume();
+      yt.loadVideoById(videoId, at);
+      if (!wantPlay) yt.pauseVideo();
+    });
+  }, [videoHidden]);
+
   useMediaSession(current?.track ?? null);
   useHotkeys();
 
   return <VideoHost hostRef={hostRef} mountRef={ytMount} visible={kind === "youtube"} />;
 }
 
+/** Телефон/планшет: там важливіше фонове відтворення (файл), ніж картинка. */
+const isTouch = () =>
+  typeof window !== "undefined" && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+/** Відео YouTube замість файлу: на комп'ютері, коли відео не сховане (на телефоні файл грає у фоні). */
+export const wantsVideo = (track: Track) =>
+  !!track.playback.youtubeVideoId && !isTouch() && !useUi.getState().videoHidden;
+
 async function resolveSource(track: Track): Promise<PlaybackSource> {
-  if (!track.playback.audio && track.playback.youtubeVideoId)
+  if (track.playback.youtubeVideoId && (!track.playback.audio || wantsVideo(track)))
     return { type: "youtube", videoId: track.playback.youtubeVideoId };
   return api.tracks.playback({ params: { id: track.id }, query: { prefer: "audio" } });
 }

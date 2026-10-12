@@ -32,4 +32,20 @@ describe("вхід у застосунок через браузер", () => {
     expect(again.status).toBe(410);
     expect((await t.request("POST", "/v1/desktop/exchange", { body: { code: "x" } })).status).toBe(400);
   });
+
+  it("пара: застосунок чекає ключ, сайт прив'язує вхід, ключ спрацьовує один раз", async () => {
+    const pair = "P".repeat(32);
+    expect((await t.request("POST", "/v1/desktop/claim", { body: { pair } })).status).toBe(404);
+    const linked = await t.request("POST", "/v1/desktop/code", { cookie: user.cookie, body: { pair } });
+    expect(linked.status).toBe(200);
+    const got = await t.request<{ name: string; value: string }>("POST", "/v1/desktop/claim", {
+      body: { pair },
+    });
+    expect(got.status).toBe(200);
+    const me = await t.request<{ id: string }>("GET", "/v1/me", {
+      cookie: `${got.body.name}=${got.body.value}`,
+    });
+    expect(me.body.id).toBe(user.id);
+    expect((await t.request("POST", "/v1/desktop/claim", { body: { pair } })).status).toBe(404);
+  });
 });

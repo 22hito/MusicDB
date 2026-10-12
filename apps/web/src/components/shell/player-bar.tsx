@@ -48,6 +48,8 @@ export function PlayerDock() {
   const source = usePlayingSource((s) => s.kind);
   const isVideo = source === "youtube";
   const videoHidden = useUi((s) => s.videoHidden);
+  // Перемикач відео — і для пісні з відео, що зараз грає з файлу (увімкнення перемкне на відео).
+  const hasVideo = isVideo || !!track?.playback.youtubeVideoId;
   const setVideoHidden = useUi((s) => s.setVideoHidden);
 
   return (
@@ -136,14 +138,18 @@ export function PlayerDock() {
             </IconButton>
             <SleepTimerButton />
             <Volume />
-            {isVideo ? (
+            {hasVideo ? (
               <IconButton
-                label={videoHidden ? t("player.showVideo") : t("player.hideVideo")}
+                label={videoHidden || !isVideo ? t("player.showVideo") : t("player.hideVideo")}
                 size="sm"
-                active={!videoHidden}
-                onClick={() => setVideoHidden(!videoHidden)}
+                active={isVideo && !videoHidden}
+                onClick={() => setVideoHidden(isVideo ? !videoHidden : false)}
               >
-                {videoHidden ? <VideoOff className="size-[18px]" /> : <Video className="size-[18px]" />}
+                {videoHidden || !isVideo ? (
+                  <VideoOff className="size-[18px]" />
+                ) : (
+                  <Video className="size-[18px]" />
+                )}
               </IconButton>
             ) : null}
             {isVideo ? (

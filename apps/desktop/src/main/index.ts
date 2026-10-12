@@ -6,6 +6,7 @@
  * зберігаються в профілі застосунку. Плюс те, чого немає в браузері: трей, кнопки на панелі завдань,
  * згортання в трей зі звуком, посилання nowl://, автооновлення з релізів GitHub.
  */
+import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, normalize } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -29,6 +30,8 @@ import { activeUiDir, currentBuild, fetchUiUpdate } from "./ui-update";
 
 const API = (process.env.NOWL_API ?? "https://nowl.pp.ua").replace(/\/$/, "");
 const APP_ORIGIN = "app://nowl";
+/** Висота смуги заголовка (кнопки Windows); інтерфейс починається під нею (styles.css: --desktop-titlebar). */
+const TITLEBAR_H = 32;
 const BUNDLED_UI = join(__dirname, "renderer");
 /** Звідки показуємо інтерфейс: вбудований або завантажений оновленням (див. ui-update.ts). */
 let uiDir = BUNDLED_UI;
@@ -183,7 +186,7 @@ function createWindow(path = "/") {
     backgroundColor: "#090c14",
     autoHideMenuBar: true,
     titleBarStyle: "hidden",
-    titleBarOverlay: { color: "#00000000", symbolColor: "#c9cbd6", height: 40 },
+    titleBarOverlay: { color: "#00000000", symbolColor: "#c9cbd6", height: TITLEBAR_H },
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -205,7 +208,8 @@ function createWindow(path = "/") {
   win.webContents.on("will-navigate", (e, url) => {
     if (url.startsWith(APP_ORIGIN)) return;
     e.preventDefault();
-    void shell.openExternal(isGoogleLogin(url) ? `${API}/desktop-login` : url);
+    if (isGoogleLogin(url)) void startBrowserLogin();
+    else void shell.openExternal(url);
   });
   // Якщо вікно все ж опинилось поза застосунком — повертаємо на ту саму сторінку в застосунку або на головну.
   win.webContents.on("did-navigate", (_e, url) => {
@@ -264,7 +268,61 @@ function forward() {
   if (h?.canGoForward()) h.goForward();
 }
 
-/** Вхід із браузера: одноразовий код → cookie сесії в профілі застосунку → оновити вікно. */
+/**
+ * Вхід через браузер без діалогу «Відкрити застосунок?»: відкриваємо сайт із випадковим ключем пари й
+ * перевіряємо ключ кожні 2 с (до 10 хв). Щойно в браузері виконано вхід — забираємо сесію.
+ */
+let pairing: { key: string; timer: NodeJS.Timeout } | null = null;
+async function startBrowserLogin() {
+  if (pairing) clearInterval(pairing.timer);
+  const key = randomBytes(24)
+    .toString("base64")
+    .replace(/[^A-Za-z0-9]/g, "")
+    .slice(0, 32)
+    .padEnd(32, "x");
+  await shell.openExternal(`${API}/desktop-login?pair=${key}`);
+  const until = Date.now() + 10 * 60_000;
+  const timer = setInterval(async () => {
+    if (Date.now() > until || pairing?.key !== key) {
+      clearInterval(timer);
+      return;
+    }
+    try {
+      const res = await net.fetch(`${API}/v1/desktop/claim`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pair: key }),
+      });
+      if (res.status === 404) return;
+      clearInterval(timer);
+      pairing = null;
+      log("вхід (пара):", res.status);
+      if (res.ok) await applySession((await res.json()) as { name: string; value: string });
+    } catch (err) {
+      log("вхід (пара): помилка", err);
+    }
+  }, 2000);
+  pairing = { key, timer };
+}
+
+/** Cookie сесії в профіль застосунку → показати вікно з акаунтом. */
+async function applySession({ name, value }: { name: string; value: string }) {
+  await session.defaultSession.cookies.set({
+    url: API,
+    name,
+    value,
+    secure: true,
+    httpOnly: true,
+    sameSite: "lax",
+    expirationDate: Math.floor(Date.now() / 1000) + 30 * 86400,
+  });
+  log("вхід: cookie збережено", name);
+  show("/");
+  win?.webContents.reload();
+  win?.focus();
+}
+
+/** Вхід із браузера (запасний шлях, посилання nowl://auth): одноразовий код → сесія. */
 async function finishLogin(code: string) {
   try {
     const res = await net.fetch(`${API}/v1/desktop/exchange`, {
@@ -283,19 +341,7 @@ async function finishLogin(code: string) {
       }
       throw new Error(`HTTP ${res.status}`);
     }
-    const { name, value } = (await res.json()) as { name: string; value: string };
-    await session.defaultSession.cookies.set({
-      url: API,
-      name,
-      value,
-      secure: true,
-      httpOnly: true,
-      sameSite: "lax",
-      expirationDate: Math.floor(Date.now() / 1000) + 30 * 86400,
-    });
-    log("вхід: cookie збережено", name);
-    show("/");
-    win?.webContents.reload();
+    await applySession((await res.json()) as { name: string; value: string });
   } catch (err) {
     log("вхід: помилка", err);
     if (Notification.isSupported())
@@ -440,8 +486,11 @@ app.whenReady().then(() => {
   uiDir = activeUiDir(BUNDLED_UI);
   createWindow(deepLinkPath(process.argv));
   createTray();
-  void checkUi();
-  setInterval(() => void checkUi(), 30 * 60_000);
+  // Оновлення інтерфейсу з сайту — лише в зібраному застосунку (у розробці показуємо свій код).
+  if (app.isPackaged) {
+    void checkUi();
+    setInterval(() => void checkUi(), 30 * 60_000);
+  }
   if (app.isPackaged) {
     autoUpdater.autoDownload = true;
     void autoUpdater.checkForUpdatesAndNotify().catch(() => {});

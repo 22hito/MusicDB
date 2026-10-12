@@ -6,23 +6,19 @@
 :root {
   --font-inter: "Inter Variable";
   --font-playfair: "Playfair Display";
+  /* Висота власної смуги заголовка вікна (кнопки Windows) — інтерфейс починається під нею. */
+  --desktop-titlebar: 32px;
 }
 
-/* Вікно без системної рамки: верхня панель тягне вікно, кнопки Windows — праворуч поверх неї. */
-.desktop-drag,
-.app-topbar {
+/* Шари на весь екран (оболонка, повноекранний плеєр, діалоги) — під смугою заголовка. */
+html .fixed.inset-0 {
+  top: var(--desktop-titlebar);
+}
+
+/* За смугу заголовка тягнуть вікно; кнопки в ній — клікаються. */
+.desktop-drag {
   -webkit-app-region: drag;
 }
-:is(.desktop-drag, .app-topbar)
-  :is(a, button, input, select, textarea, kbd, [role="button"], [role="menuitem"], form) {
+.desktop-drag :is(a, button, input, [role="button"]) {
   -webkit-app-region: no-drag;
-}
-/* Місце під кнопки вікна Windows праворуч (≈ 138 px). */
-.app-topbar {
-  padding-right: calc(
-    100vw -
-    env(titlebar-area-x, 0px) -
-    env(titlebar-area-width, calc(100vw - 150px)) +
-    16px
-  ) !important;
 }

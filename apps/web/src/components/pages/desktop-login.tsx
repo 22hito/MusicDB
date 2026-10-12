@@ -5,7 +5,7 @@
  * в застосунок посиланням nowl://auth?code=….
  */
 import { useMe } from "@musicdb/sdk/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,26 @@ export function DesktopLogin() {
   const uk = locale === "uk";
   const me = useMe();
   const router = useRouter();
+  const pair = useSearchParams().get("pair");
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
+  const [paired, setPaired] = useState(false);
+
+  /** Застосунок чекає на ключ пари — прив'язуємо сесію, і він увійде сам (без діалогу «Відкрити застосунок?»). */
+  const pairApp = async (key: string) => {
+    try {
+      const r = await fetch("/v1/desktop/code", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pair: key }),
+      });
+      if (!r.ok) throw new Error(String(r.status));
+      setPaired(true);
+    } catch {
+      setError(true);
+    }
+  };
 
   /** Кожне відкриття — новий одноразовий код (повторне натискання не має «згорілого» коду). */
   const openApp = async () => {
@@ -37,34 +55,44 @@ export function DesktopLogin() {
   useEffect(() => {
     if (me.isLoading) return;
     if (!me.data) {
-      router.replace("/login?next=/desktop-login");
+      const back = pair ? `/desktop-login?pair=${pair}` : "/desktop-login";
+      router.replace(`/login?next=${encodeURIComponent(back)}`);
       return;
     }
-    void openApp();
+    if (pair) void pairApp(pair);
+    else void openApp();
   }, [me.isLoading, me.data, router]);
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-bg p-6 text-center">
       <Logo className="h-12" withText={false} />
       <h1 className="serif-title text-3xl">
-        {error
+        {paired
           ? uk
-            ? "Не вдалося увійти в застосунок"
-            : "Couldn't sign in to the app"
-          : uk
-            ? "Повертаємось у застосунок N'Owl…"
-            : "Returning to the N'Owl app…"}
+            ? "Готово! Ви увійшли в застосунок N'Owl"
+            : "Done! You're signed in to the N'Owl app"
+          : error
+            ? uk
+              ? "Не вдалося увійти в застосунок"
+              : "Couldn't sign in to the app"
+            : uk
+              ? "Повертаємось у застосунок N'Owl…"
+              : "Returning to the N'Owl app…"}
       </h1>
       <p className="max-w-md text-muted">
-        {error
+        {paired
           ? uk
-            ? "Оновіть сторінку або натисніть «Продовжити з Google» у застосунку ще раз."
-            : "Reload the page or tap “Continue with Google” in the app again."
-          : uk
-            ? "Якщо браузер спитає, дозвольте відкрити N'Owl. Цю вкладку потім можна закрити."
-            : "If the browser asks, allow it to open N'Owl. You can close this tab afterwards."}
+            ? "Поверніться в застосунок — він уже оновився з вашим акаунтом. Цю вкладку можна закрити."
+            : "Go back to the app — it has already signed you in. You can close this tab."
+          : error
+            ? uk
+              ? "Оновіть сторінку або натисніть «Продовжити з Google» у застосунку ще раз."
+              : "Reload the page or tap “Continue with Google” in the app again."
+            : uk
+              ? "Якщо браузер спитає, дозвольте відкрити N'Owl. Цю вкладку потім можна закрити."
+              : "If the browser asks, allow it to open N'Owl. You can close this tab afterwards."}
       </p>
-      {ready || error ? (
+      {!pair && (ready || error) ? (
         <Button variant="accent" size="lg" onClick={() => void openApp()}>
           {uk ? "Відкрити застосунок" : "Open the app"}
         </Button>

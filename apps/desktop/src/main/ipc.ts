@@ -12,7 +12,7 @@ export function registerIpc(opts: { onState(s: PlayerState): void; window(): Bro
   ipcMain.on("player:state", (_e, s: PlayerState) => opts.onState(s));
   ipcMain.on("window:titlebar", (_e, colors: { color: string; symbolColor: string }) => {
     try {
-      opts.window()?.setTitleBarOverlay({ ...colors, height: 40 });
+      opts.window()?.setTitleBarOverlay({ ...colors, height: 32 });
     } catch {}
   });
 }

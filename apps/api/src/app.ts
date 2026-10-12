@@ -14,7 +14,7 @@ import { ApiError } from "./http/errors";
 import { clearMemo } from "./http/memo";
 import { buildOpenApi } from "./http/openapi";
 import { youtubeSearch } from "./modules/catalog/hydrate";
-import { desktopCode, desktopExchange } from "./modules/desktop/login";
+import { desktopClaim, desktopCode, desktopExchange } from "./modules/desktop/login";
 import { allRoutes } from "./modules/index";
 import { telegramWebhook } from "./modules/premium/telegram";
 import { LocalStorage } from "./services/storage";
@@ -101,6 +101,7 @@ export function createApp(deps: Deps) {
   // Вхід у застосунок для Windows через системний браузер: одноразовий код → cookie сесії.
   app.post("/v1/desktop/code", desktopCode(deps));
   app.post("/v1/desktop/exchange", desktopExchange(deps));
+  app.post("/v1/desktop/claim", desktopClaim(deps));
 
   if (deps.storage instanceof LocalStorage) app.route("/v1/storage", storageRoutes(deps.storage));
 
