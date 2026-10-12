@@ -16,8 +16,15 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
+/** Адреса сайту для посилань у превʼю (Open Graph): PUBLIC_URL, на Vercel — продакшн-домен (nowl.pp.ua). */
+const siteUrl =
+  process.env.PUBLIC_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.PUBLIC_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(siteUrl),
   title: { default: "N'Owl", template: "%s · N'Owl" },
   description: "Слухайте музику, відкривайте незалежних артистів, оцінюйте й обговорюйте.",
   applicationName: "N'Owl",
