@@ -317,9 +317,14 @@ async function applySession({ name, value }: { name: string; value: string }) {
     expirationDate: Math.floor(Date.now() / 1000) + 30 * 86400,
   });
   log("вхід: cookie збережено", name);
-  show("/");
-  win?.webContents.reload();
-  win?.focus();
+  // Свіже завантаження головної (без reload — він повертав сторінку входу, на якій був користувач).
+  if (!win) createWindow("/");
+  else {
+    await win.loadURL(`${APP_ORIGIN}/`);
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+  }
 }
 
 /** Вхід із браузера (запасний шлях, посилання nowl://auth): одноразовий код → сесія. */
