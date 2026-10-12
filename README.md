@@ -7,7 +7,7 @@
 
 > Основна версія (v2) — переписана з нуля на TypeScript; працює на Vercel з базою Neon, дані перенесено з v1.
 > Попередня версія (ASP.NET Core, Azure) — у гілці [`v1`](../../tree/v1) і тезі `v1-final`.
-> Архітектура й рішення — [docs/architecture.md](docs/architecture.md), деплой — [deploy/VERCEL.md](deploy/VERCEL.md).
+> Архітектура й рішення — [docs/architecture.md](docs/architecture.md).
 
 ## Що всередині
 
