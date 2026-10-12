@@ -16,23 +16,31 @@ export function DesktopLogin() {
   const uk = locale === "uk";
   const me = useMe();
   const router = useRouter();
-  const [link, setLink] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
 
+  /** Кожне відкриття — новий одноразовий код (повторне натискання не має «згорілого» коду). */
+  const openApp = async () => {
+    try {
+      const r = await fetch("/v1/desktop/code", { method: "POST", credentials: "same-origin" });
+      if (!r.ok) throw new Error(String(r.status));
+      const { code } = (await r.json()) as { code: string };
+      setError(false);
+      setReady(true);
+      location.href = `nowl://auth?code=${code}`;
+    } catch {
+      setError(true);
+    }
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: код запитуємо один раз — після того, як стало відомо про вхід
   useEffect(() => {
     if (me.isLoading) return;
     if (!me.data) {
       router.replace("/login?next=/desktop-login");
       return;
     }
-    fetch("/v1/desktop/code", { method: "POST", credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(({ code }: { code: string }) => {
-        const url = `nowl://auth?code=${code}`;
-        setLink(url);
-        location.href = url;
-      })
-      .catch(() => setError(true));
+    void openApp();
   }, [me.isLoading, me.data, router]);
 
   return (
@@ -56,9 +64,9 @@ export function DesktopLogin() {
             ? "Якщо браузер спитає, дозвольте відкрити N'Owl. Цю вкладку потім можна закрити."
             : "If the browser asks, allow it to open N'Owl. You can close this tab afterwards."}
       </p>
-      {link ? (
-        <Button variant="accent" size="lg" asChild>
-          <a href={link}>{uk ? "Відкрити застосунок" : "Open the app"}</a>
+      {ready || error ? (
+        <Button variant="accent" size="lg" onClick={() => void openApp()}>
+          {uk ? "Відкрити застосунок" : "Open the app"}
         </Button>
       ) : null}
     </main>

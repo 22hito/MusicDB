@@ -43,8 +43,20 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 app.setAppUserModelId("com.nowl.desktop");
-if (!app.requestSingleInstanceLock()) app.quit();
+// Друга копія (наприклад, з посилання nowl://) лише передає адресу першій і одразу завершується — без вікна.
+const primary = app.requestSingleInstanceLock();
+if (!primary) app.exit(0);
 app.setAsDefaultProtocolClient("nowl");
+
+/** Журнал входу й оновлень: %APPDATA%/@musicdb/desktop/desktop.log (останні ~200 КБ). */
+function log(...parts: unknown[]) {
+  try {
+    const file = join(app.getPath("userData"), "desktop.log");
+    const line = `${new Date().toISOString()} ${parts.map((p) => (p instanceof Error ? p.message : String(p))).join(" ")}\n`;
+    const prev = existsSync(file) ? readFileSync(file, "utf8").slice(-200_000) : "";
+    writeFileSync(file, prev + line);
+  } catch {}
+}
 
 let win: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -260,7 +272,17 @@ async function finishLogin(code: string) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ code }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    log("вхід: обмін коду", res.status);
+    if (!res.ok) {
+      // Код уже використано (наприклад, повторне натискання) — можливо, вхід уже відбувся.
+      const me = await net.fetch(`${API}/v1/me`, { credentials: "include" });
+      log("вхід: перевірка сесії", me.status);
+      if (me.ok) {
+        show("/");
+        return;
+      }
+      throw new Error(`HTTP ${res.status}`);
+    }
     const { name, value } = (await res.json()) as { name: string; value: string };
     await session.defaultSession.cookies.set({
       url: API,
@@ -271,9 +293,11 @@ async function finishLogin(code: string) {
       sameSite: "lax",
       expirationDate: Math.floor(Date.now() / 1000) + 30 * 86400,
     });
+    log("вхід: cookie збережено", name);
     show("/");
     win?.webContents.reload();
-  } catch {
+  } catch (err) {
+    log("вхід: помилка", err);
     if (Notification.isSupported())
       new Notification({
         title: "Не вдалося увійти",
@@ -375,11 +399,20 @@ async function checkUi() {
       win.webContents.reload();
     }
   } catch (err) {
-    console.warn("оновлення інтерфейсу:", err);
+    log("оновлення інтерфейсу: помилка", err);
   }
 }
 
-app.on("second-instance", (_e, argv) => show(deepLinkPath(argv)));
+app.on("second-instance", (_e, argv) => {
+  log(
+    "друга копія:",
+    argv
+      .filter((a) => a.startsWith("nowl://"))
+      .map((a) => a.replace(/code=\w+/, "code=…"))
+      .join(" ") || "—",
+  );
+  show(deepLinkPath(argv));
+});
 app.on("before-quit", () => {
   quitting = true;
 });
@@ -388,6 +421,7 @@ app.on("window-all-closed", () => {
 });
 
 app.whenReady().then(() => {
+  if (!primary) return;
   Menu.setApplicationMenu(null);
   // Без «Electron» у User-Agent — деякі сервіси (YouTube) поводяться з ним інакше.
   app.userAgentFallback = app.userAgentFallback.replace(
