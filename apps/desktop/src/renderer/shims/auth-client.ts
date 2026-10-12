@@ -12,7 +12,10 @@ export const authClient = createAuthClient({
   fetchOptions: {
     customFetchImpl: (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      return fetch(url.startsWith(SITE) ? url.slice(SITE.length) : url, init);
+      // Адреси повернення після входу (Google) — сайт, а не app://: API приймає лише свої адреси, а головний
+      // процес, побачивши повернення на сайт, відкриває ту саму сторінку в застосунку.
+      const body = typeof init?.body === "string" ? init.body.replaceAll(location.origin, SITE) : init?.body;
+      return fetch(url.startsWith(SITE) ? url.slice(SITE.length) : url, { ...init, body });
     },
   },
 });
