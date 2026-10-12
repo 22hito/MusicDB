@@ -26,7 +26,7 @@ import {
 } from "electron";
 import { autoUpdater } from "electron-updater";
 import { type PlayerState, registerIpc } from "./ipc";
-import { activeUiDir, currentBuild, fetchUiUpdate } from "./ui-update";
+import { activeUiDir, currentManifest, fetchUiUpdate } from "./ui-update";
 
 const API = (process.env.NOWL_API ?? "https://nowl.pp.ua").replace(/\/$/, "");
 const APP_ORIGIN = "app://nowl";
@@ -439,7 +439,7 @@ function deepLinkPath(argv: string[]) {
 /** Нова збірка інтерфейсу з сайту: якщо нічого не грає — одразу, інакше з наступним запуском. */
 async function checkUi() {
   try {
-    if (!(await fetchUiUpdate(API, currentBuild(uiDir)))) return;
+    if (!(await fetchUiUpdate(API, currentManifest(uiDir)))) return;
     if (!state.playing && win) {
       uiDir = activeUiDir(BUNDLED_UI);
       win.webContents.reload();

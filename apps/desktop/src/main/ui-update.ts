@@ -21,30 +21,43 @@ function readManifest(dir: string): UiManifest | null {
   }
 }
 
-/** Тека інтерфейсу: завантажене оновлення (якщо сумісне й ціле) або вбудоване в інсталятор. */
+const newer = (a: UiManifest | null, b: UiManifest | null) => !!a && (!b || a.builtAt > b.builtAt);
+
+/**
+ * Тека інтерфейсу: завантажене оновлення, якщо воно сумісне, ціле й НОВІШЕ за вбудоване в інсталятор
+ * (після встановлення нової версії старе завантаження не має перекривати свіжий інтерфейс).
+ */
 export function activeUiDir(bundled: string): string {
   try {
     const { build } = JSON.parse(readFileSync(pointer(), "utf8")) as { build: string };
     const dir = join(root(), build);
     const m = readManifest(dir);
-    if (m && m.bridge === BRIDGE_VERSION && existsSync(join(dir, "index.html"))) return dir;
+    if (
+      m &&
+      m.bridge === BRIDGE_VERSION &&
+      existsSync(join(dir, "index.html")) &&
+      newer(m, readManifest(bundled))
+    )
+      return dir;
   } catch {}
   return bundled;
 }
 
-export function currentBuild(dir: string) {
-  return readManifest(dir)?.build ?? null;
+export function currentManifest(dir: string) {
+  return readManifest(dir);
 }
 
 /**
  * Перевірити й завантажити нову збірку. true — завантажено нову (застосувати: перезавантажити вікно
  * або наступний запуск).
  */
-export async function fetchUiUpdate(api: string, current: string | null): Promise<boolean> {
+export async function fetchUiUpdate(api: string, current: UiManifest | null): Promise<boolean> {
   const res = await net.fetch(`${api}/desktop-ui/manifest.json`, { cache: "no-store" });
   if (!res.ok) return false;
   const m = (await res.json()) as UiManifest;
-  if (!m.build || m.build === current || m.bridge !== BRIDGE_VERSION) return false;
+  // Лише новіша збірка (не повертаємось до старішої, навіть якщо сайт ще не перезібрався).
+  if (!m.build || m.build === current?.build || m.bridge !== BRIDGE_VERSION || !newer(m, current))
+    return false;
   const final = join(root(), m.build);
   if (existsSync(join(final, "manifest.json"))) {
     writeFileSync(pointer(), JSON.stringify({ build: m.build }));
@@ -67,7 +80,7 @@ export async function fetchUiUpdate(api: string, current: string | null): Promis
   rmSync(final, { recursive: true, force: true });
   renameSync(tmp, final);
   writeFileSync(pointer(), JSON.stringify({ build: m.build }));
-  cleanup(m.build, current);
+  cleanup(m.build, current?.build ?? null);
   return true;
 }
 
