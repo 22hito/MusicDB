@@ -455,7 +455,7 @@ export const uk = {
     avatar: "Анімований аватар",
     avatarHint: "Показується на сторінці профілю",
     banner: "Банер",
-    bannerHint: "Широка смуга вгорі профілю",
+    bannerHint: "Фон шапки профілю — під аватаром та ім'ям",
     background: "Фон профілю",
     backgroundHint: "Його бачать усі, хто відкриває ваш профіль",
     siteBackground: "Фон сайту",

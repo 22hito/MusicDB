@@ -26,7 +26,7 @@ const MAX_SECONDS = 6;
 /** Розміри й ліміти для кожного слоту. */
 export const VARIANTS: Record<CosmeticSlot, { main: Variant; portrait?: Variant }> = {
   avatar: { main: { suffix: "", w: 320, h: 320, fps: 20, maxBytes: 1.5 * MB } },
-  banner: { main: { suffix: "", w: 1200, h: 400, fps: 15, maxBytes: 4 * MB } },
+  banner: { main: { suffix: "", w: 1600, h: 400, fps: 15, maxBytes: 4 * MB } },
   background: { main: { suffix: "", w: 1280, h: 720, fps: 15, maxBytes: 5 * MB } },
   siteBackground: {
     main: { suffix: "", w: 1280, h: 720, fps: 15, maxBytes: 5 * MB },

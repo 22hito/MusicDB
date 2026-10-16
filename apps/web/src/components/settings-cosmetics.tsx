@@ -20,7 +20,7 @@ import { uploadFile } from "@/lib/upload";
 const PRESETS: CosmeticPreset[] = ["aurora", "nebula", "sunset", "ocean", "ember"];
 const SLOTS: { slot: CosmeticSlot; preview: string }[] = [
   { slot: "avatar", preview: "size-16 rounded-full" },
-  { slot: "banner", preview: "h-16 w-48 rounded-md" },
+  { slot: "banner", preview: "h-16 w-64 rounded-md" },
   { slot: "background", preview: "h-16 w-28 rounded-md" },
   { slot: "siteBackground", preview: "h-16 w-28 rounded-md" },
 ];

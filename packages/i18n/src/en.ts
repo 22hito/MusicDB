@@ -459,7 +459,7 @@ export const en: Shape<Messages> = {
     avatar: "Animated avatar",
     avatarHint: "Shown on your profile page",
     banner: "Banner",
-    bannerHint: "Wide strip at the top of your profile",
+    bannerHint: "Background of your profile header, behind the avatar and name",
     background: "Profile background",
     backgroundHint: "Everyone who opens your profile sees it",
     siteBackground: "Site background",

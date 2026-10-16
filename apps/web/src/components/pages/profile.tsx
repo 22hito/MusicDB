@@ -70,11 +70,6 @@ export function ProfileView({ id, initial }: { id: string; initial: Profile }) {
           <div className="absolute inset-0 bg-gradient-to-b from-bg/30 to-bg/70" />
         </div>
       ) : null}
-      {look?.banner ? (
-        <div className="relative mx-4 mt-2 h-32 overflow-hidden rounded-xl sm:mx-6 sm:h-52">
-          <CosmeticView media={look.banner} />
-        </div>
-      ) : null}
       <div className="relative">
         {look?.background ? null : (
           <div
@@ -84,15 +79,25 @@ export function ProfileView({ id, initial }: { id: string; initial: Profile }) {
             }}
           />
         )}
+        {look?.banner ? (
+          // Банер (Premium) — фон усієї шапки: під аватаром, ім'ям і лічильниками; знизу затемнення для тексту.
+          <div
+            className="pointer-events-none absolute inset-x-4 top-2 bottom-0 overflow-hidden rounded-xl sm:inset-x-6"
+            aria-hidden
+          >
+            <CosmeticView media={look.banner} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+          </div>
+        ) : null}
         <header
           className={
             look?.banner
-              ? "relative -mt-16 flex flex-col items-center gap-6 px-4 pb-6 sm:-mt-20 sm:flex-row sm:items-end sm:px-10"
+              ? "relative mx-4 mt-2 flex flex-col items-center justify-end gap-6 px-4 pt-24 pb-6 sm:mx-6 sm:justify-start sm:min-h-[clamp(18rem,24vw,24rem)] sm:flex-row sm:items-end sm:px-8 sm:pt-10"
               : "relative flex flex-col items-center gap-6 px-4 pt-8 pb-6 sm:flex-row sm:items-end sm:px-6 sm:pt-12"
           }
         >
           {look?.avatar ? (
-            <div className="relative size-40 shrink-0 overflow-hidden rounded-full shadow-[0_8px_40px_rgba(0,0,0,0.55)] ring-4 ring-bg sm:size-[200px]">
+            <div className="relative size-40 shrink-0 overflow-hidden rounded-full shadow-[0_8px_40px_rgba(0,0,0,0.55)] sm:size-[200px]">
               <CosmeticView media={look.avatar} />
             </div>
           ) : (

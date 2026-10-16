@@ -39,17 +39,22 @@ export default function UserScreen() {
           />
         </View>
       ) : null}
-      {look?.banner ? (
-        <View style={{ width, height: width / 3, overflow: "hidden" }}>
-          <CosmeticLayer media={look.banner} />
-        </View>
-      ) : null}
       <LinearGradient
-        colors={look?.background ? ["transparent", "transparent"] : [a, c.bg]}
-        style={[styles.hero, look?.banner ? { paddingTop: 0, marginTop: -56 } : null]}
+        colors={look?.background || look?.banner ? ["transparent", "transparent"] : [a, c.bg]}
+        style={styles.hero}
       >
+        {look?.banner ? (
+          // Банер (Premium) — фон усієї шапки: під аватаром та ім'ям; знизу затемнення для тексту.
+          <View style={styles.banner} pointerEvents="none">
+            <CosmeticLayer media={look.banner} />
+            <LinearGradient
+              colors={["rgba(0,0,0,0.05)", "rgba(0,0,0,0.3)", "rgba(0,0,0,0.75)"]}
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+        ) : null}
         {look?.avatar ? (
-          <View style={[styles.cosmeticAvatar, { borderColor: c.bg }]}>
+          <View style={styles.cosmeticAvatar}>
             <CosmeticLayer media={look.avatar} />
           </View>
         ) : (
@@ -172,5 +177,6 @@ export default function UserScreen() {
 const styles = StyleSheet.create({
   hero: { alignItems: "center", paddingTop: 80, paddingBottom: 16, paddingHorizontal: 20 },
   background: { position: "absolute", top: 0, left: 0, right: 0 },
-  cosmeticAvatar: { width: 132, height: 132, borderRadius: 66, overflow: "hidden", borderWidth: 4 },
+  cosmeticAvatar: { width: 132, height: 132, borderRadius: 66, overflow: "hidden" },
+  banner: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, overflow: "hidden" },
 });
