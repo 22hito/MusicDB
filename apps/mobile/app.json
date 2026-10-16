@@ -3,7 +3,7 @@
     "name": "N'Owl",
     "slug": "nowl",
     "scheme": "nowl",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
