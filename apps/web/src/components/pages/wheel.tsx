@@ -367,7 +367,7 @@ export function WheelView() {
           </IconButton>
         }
       />
-      <div className="grid gap-4 px-4 sm:px-6 lg:h-[clamp(500px,calc(100dvh-290px),740px)] lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 px-4 sm:px-6 lg:h-[clamp(500px,calc(100dvh-290px),740px)] lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Сцена: колесо вписується в доступну висоту */}
         <section className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-[radial-gradient(ellipse_at_50%_40%,color-mix(in_srgb,var(--n-accent)_12%,transparent),transparent_65%)] p-4">
           {settings.eliminate && roster ? (
@@ -479,7 +479,7 @@ export function WheelView() {
         </section>
 
         {/* Бічна панель: компактні параметри + вкладки */}
-        <aside className="flex min-h-0 flex-col gap-3">
+        <aside className="flex min-h-0 min-w-0 flex-col gap-3">
           <div
             className={cn(
               "shrink-0 space-y-3 rounded-2xl border border-line bg-surface-2/60 p-3.5 transition-opacity",
@@ -577,7 +577,7 @@ export function WheelView() {
                   disabled={id === "playlist" && !winner}
                   onClick={() => setTab(id)}
                   className={cn(
-                    "h-8 flex-1 truncate rounded-lg px-2 text-[13px] font-semibold transition-colors disabled:opacity-40",
+                    "h-8 min-w-0 flex-auto truncate rounded-lg px-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors disabled:opacity-40",
                     tab === id ? "bg-accent-soft text-accent" : "text-muted hover:text-fg",
                   )}
                 >

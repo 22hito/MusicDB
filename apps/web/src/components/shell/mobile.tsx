@@ -86,7 +86,7 @@ export function MobileNav() {
   ];
   return (
     <nav
-      className="safe-bottom grid bg-gradient-to-t from-bg via-bg/95 to-bg/0 pt-3"
+      className="safe-bottom grid border-t border-line/60 bg-bg/85 pt-1.5 backdrop-blur-xl backdrop-saturate-150"
       style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}
     >
       {items.map((item) => (
@@ -94,14 +94,22 @@ export function MobileNav() {
           key={item.href}
           href={item.href}
           className={cn(
-            "relative flex flex-col items-center gap-1 pb-2 text-[10px] font-medium",
+            "relative flex flex-col items-center gap-0.5 pb-1.5 text-[10px] font-medium transition-colors",
             item.active ? "text-fg" : "text-muted",
           )}
         >
-          <item.icon className="size-6" strokeWidth={item.active ? 2.4 : 1.8} />
+          {/* Активний розділ — капсула під іконкою, як у системних навігаціях телефонів. */}
+          <span
+            className={cn(
+              "flex h-8 w-14 items-center justify-center rounded-full transition-colors",
+              item.active && "bg-accent/15 text-accent",
+            )}
+          >
+            <item.icon className="size-[22px]" strokeWidth={item.active ? 2.4 : 1.8} />
+          </span>
           {item.label}
           {item.badge ? (
-            <span className="absolute top-0 left-1/2 ml-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-on-accent">
+            <span className="absolute top-0.5 left-1/2 ml-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-on-accent">
               {item.badge}
             </span>
           ) : null}

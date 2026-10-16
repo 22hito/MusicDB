@@ -38,10 +38,10 @@ export function MessagesView({ conversationId }: { conversationId?: string }) {
     );
   }
   return (
-    <div className="grid h-[calc(100dvh-16px-64px-84px-16px)] min-h-[480px] grid-cols-1 gap-0 px-2 pb-2 md:grid-cols-[340px_minmax(0,1fr)] max-md:h-[calc(100dvh-64px-150px)]">
+    <div className="grid h-[calc(100dvh-16px-64px-84px-16px)] min-h-[480px] grid-cols-1 gap-0 px-3 pb-2 md:px-2 md:grid-cols-[340px_minmax(0,1fr)] max-md:h-[calc(100dvh-64px-150px)]">
       <div
         className={cn(
-          "min-h-0 overflow-hidden rounded-l-xl border-r border-line bg-surface-2/40",
+          "min-h-0 overflow-hidden rounded-l-xl border-r border-line bg-surface-2/40 max-md:rounded-xl max-md:border-r-0",
           conversationId && "max-md:hidden",
         )}
       >
@@ -49,7 +49,7 @@ export function MessagesView({ conversationId }: { conversationId?: string }) {
       </div>
       <div
         className={cn(
-          "min-h-0 overflow-hidden rounded-r-xl bg-surface-2/20",
+          "min-h-0 overflow-hidden rounded-r-xl bg-surface-2/20 max-md:rounded-xl max-md:bg-surface-2/40",
           !conversationId && "max-md:hidden",
         )}
       >

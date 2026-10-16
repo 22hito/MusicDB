@@ -37,15 +37,17 @@ export function UploadView() {
         </h1>
         <p className="mt-1 text-muted">{t("upload.subtitle")}</p>
       </div>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-1 rounded-2xl border border-line bg-surface-2/70 p-1 sm:inline-grid">
         {(["community", "catalog"] as Mode[]).map((m) => (
           <button
             key={m}
             type="button"
+            role="tab"
+            aria-selected={mode === m}
             onClick={() => setMode(m)}
             className={cn(
-              "h-8 rounded-full px-3 text-sm font-semibold",
-              mode === m ? "bg-accent text-on-accent" : "bg-surface-2 hover:bg-surface-3",
+              "min-h-9 rounded-xl px-3 py-1.5 text-[13px] leading-tight font-semibold transition-colors",
+              mode === m ? "bg-accent text-on-accent" : "text-muted hover:text-fg",
             )}
           >
             {m === "community" ? t("upload.title") : t("upload.catalogRequest")}

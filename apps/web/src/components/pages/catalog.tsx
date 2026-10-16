@@ -233,7 +233,7 @@ export function CatalogView() {
       />
 
       <div className="flex flex-wrap items-center gap-2 px-4 pb-3 sm:px-6">
-        <label className="relative min-w-[240px] flex-[2]">
+        <label className="relative basis-full sm:min-w-[240px] sm:flex-[2] sm:basis-auto">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
           <input
             value={q}
@@ -256,7 +256,7 @@ export function CatalogView() {
           value={genre}
           onChange={(e) => setGenre(e.target.value)}
           aria-label={t("catalog.genres")}
-          className="h-10 max-w-[220px] flex-1 rounded-full border border-line bg-surface-2/70 px-3 text-sm outline-none focus:border-accent"
+          className="h-10 min-w-0 flex-1 rounded-full sm:max-w-[220px] border border-line bg-surface-2/70 px-3 text-sm outline-none focus:border-accent"
         >
           <option value="">{t("catalog.allGenres")}</option>
           {genreOptions.map((g) => (
@@ -269,7 +269,7 @@ export function CatalogView() {
           value={decade ?? ""}
           onChange={(e) => setParams({ decade: e.target.value || null })}
           aria-label={t("catalog.decade")}
-          className="h-10 max-w-[160px] flex-1 rounded-full border border-line bg-surface-2/70 px-3 text-sm outline-none focus:border-accent"
+          className="h-10 min-w-0 flex-1 rounded-full sm:max-w-[160px] border border-line bg-surface-2/70 px-3 text-sm outline-none focus:border-accent"
         >
           <option value="">{t("catalog.allDecades")}</option>
           {(timeline.data?.decades ?? [])
@@ -281,10 +281,15 @@ export function CatalogView() {
               </option>
             ))}
         </select>
-        <Button variant="outline" onClick={shuffle}>
-          <Shuffle className="size-4" /> {t("common.shuffle")}
+        <Button
+          variant="outline"
+          onClick={shuffle}
+          aria-label={t("common.shuffle")}
+          className="max-sm:w-10 max-sm:px-0"
+        >
+          <Shuffle className="size-4" /> <span className="max-sm:hidden">{t("common.shuffle")}</span>
         </Button>
-        <Button asChild className="ml-auto">
+        <Button asChild className="max-sm:order-last max-sm:w-full sm:ml-auto">
           <Link href="/upload">
             <Plus className="size-4" /> {source === "community" ? t("catalog.addOwn") : t("catalog.request")}
           </Link>
@@ -316,10 +321,10 @@ export function CatalogView() {
 
       <div className="px-2 sm:px-4">
         <div className="overflow-x-auto rounded-lg border border-line bg-surface-1/60">
-          <table className="w-full min-w-[640px] table-fixed border-collapse text-sm">
+          <table className="w-full table-fixed border-collapse text-sm sm:min-w-[640px]">
             <thead className="sticky top-0 z-10 bg-surface-1/95 backdrop-blur">
               <tr className="border-b border-line text-left text-[12px] font-semibold tracking-wide text-muted uppercase">
-                <th className="w-12 px-3 py-2.5 text-center">{t("catalog.number")}</th>
+                <th className="w-10 px-2 py-2.5 text-center sm:w-12 sm:px-3">{t("catalog.number")}</th>
                 <SortTh
                   label={t("catalog.title")}
                   column="title"
@@ -373,10 +378,10 @@ export function CatalogView() {
                   column="duration"
                   sort={sort}
                   onSort={toggleSort}
-                  className="w-24"
+                  className="hidden w-24 sm:table-cell"
                   align="right"
                 />
-                <th className="w-20 px-2" />
+                <th className="w-[76px] px-1 sm:w-20 sm:px-2" />
               </tr>
             </thead>
             <tbody>
@@ -513,7 +518,7 @@ function CatalogRow({
         className="group border-b border-line/60 transition-colors last:border-0 hover:bg-surface-2/70"
         onDoubleClick={onPlay}
       >
-        <td className="px-3 py-1.5 text-center text-muted tabular-nums">
+        <td className="px-2 py-1.5 text-center text-muted tabular-nums sm:px-3">
           <span className="group-hover:hidden">{current && playing ? <Equalizer /> : index + 1}</span>
           <button
             type="button"
@@ -524,7 +529,7 @@ function CatalogRow({
             ▶
           </button>
         </td>
-        <td className="max-w-0 px-3 py-1.5">
+        <td className="max-w-0 px-2 py-1.5 sm:px-3">
           <div className="flex min-w-0 items-center gap-3">
             <Cover src={track.release?.coverUrl} alt="" size={40} seed={track.id} className="w-10 shrink-0" />
             <div className="min-w-0">
@@ -603,8 +608,10 @@ function CatalogRow({
             ) : null}
           </td>
         ) : null}
-        <td className="px-3 py-1.5 text-right text-muted tabular-nums">{formatDuration(track.durationMs)}</td>
-        <td className="px-2 py-1.5">
+        <td className="hidden px-3 py-1.5 text-right text-muted tabular-nums sm:table-cell">
+          {formatDuration(track.durationMs)}
+        </td>
+        <td className="px-1 py-1.5 sm:px-2">
           <div className="flex items-center justify-end gap-1">
             <LikeButton track={track} size="sm" />
             <DropdownMenu
