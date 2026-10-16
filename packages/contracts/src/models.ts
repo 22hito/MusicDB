@@ -222,6 +222,46 @@ export type PlaylistDetail = z.infer<typeof PlaylistDetail>;
 export const Role = z.enum(["user", "artist", "moderator", "admin"]);
 export type Role = z.infer<typeof Role>;
 
+/** Готові анімовані фони (CSS, без файлу): легкі, однаково виглядають на сайті й у застосунку. */
+export const CosmeticPreset = z.enum(["aurora", "nebula", "sunset", "ocean", "ember"]);
+export type CosmeticPreset = z.infer<typeof CosmeticPreset>;
+
+/** Слот оформлення Premium: анімований аватар, банер і фон профілю (бачать усі) та фон сайту (лише власник). */
+export const CosmeticSlot = z.enum(["avatar", "banner", "background", "siteBackground"]);
+export type CosmeticSlot = z.infer<typeof CosmeticSlot>;
+
+/**
+ * Оформлення одного слоту: або готовий фон (preset), або власна анімація — анімований WebP (anim) і статичний
+ * перший кадр (poster). poster показується, поки анімація не видна, при «зменшеному русі» чи економії трафіку.
+ * Для фону сайту є ще вертикальний варіант для телефонів (animPortrait / posterPortrait).
+ */
+export const CosmeticMedia = z
+  .object({
+    preset: CosmeticPreset.nullable(),
+    anim: z.string().nullable(),
+    poster: z.string().nullable(),
+    animPortrait: z.string().nullable(),
+    posterPortrait: z.string().nullable(),
+    status: z.enum(["ready", "processing", "failed"]),
+  })
+  .meta({ id: "CosmeticMedia" });
+export type CosmeticMedia = z.infer<typeof CosmeticMedia>;
+
+/** Публічне оформлення профілю (лише поки активна підписка Premium). */
+export const ProfileCosmetics = z
+  .object({
+    avatar: CosmeticMedia.nullable(),
+    banner: CosmeticMedia.nullable(),
+    background: CosmeticMedia.nullable(),
+  })
+  .meta({ id: "ProfileCosmetics" });
+export type ProfileCosmetics = z.infer<typeof ProfileCosmetics>;
+
+export const MyCosmetics = ProfileCosmetics.extend({ siteBackground: CosmeticMedia.nullable() }).meta({
+  id: "MyCosmetics",
+});
+export type MyCosmetics = z.infer<typeof MyCosmetics>;
+
 export const Me = z
   .object({
     id: Id,
@@ -234,6 +274,8 @@ export const Me = z
     locale: z.enum(["uk", "en"]),
     isPrivate: z.boolean(),
     premium: z.object({ active: z.boolean(), until: IsoDateTime.nullable() }),
+    /** Збережене оформлення (зберігається й після закінчення підписки, але показується лише з Premium). */
+    cosmetics: MyCosmetics,
     createdAt: IsoDateTime,
   })
   .meta({ id: "Me" });
@@ -249,6 +291,8 @@ export const Profile = z
     isPrivate: z.boolean(),
     followerCount: z.number().int(),
     followingCount: z.number().int(),
+    /** Анімовані аватар, банер і фон профілю (null — без Premium або нічого не обрано). */
+    cosmetics: ProfileCosmetics.nullable(),
     publicPlaylists: z.array(Playlist),
     topArtists: z.array(Artist),
     recentlyPlayed: z.array(Track),

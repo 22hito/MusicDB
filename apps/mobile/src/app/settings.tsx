@@ -1,14 +1,20 @@
-import { endpoints } from "@musicdb/contracts/client";
+import {
+  type CosmeticMedia,
+  type CosmeticPreset,
+  type CosmeticSlot,
+  endpoints,
+} from "@musicdb/contracts/client";
 import type { Locale } from "@musicdb/i18n";
 import { invalidate, useApi, useEndpoint, useMe } from "@musicdb/sdk/react";
 import { type AccentName, accentNames, FEATURES, palette } from "@musicdb/tokens";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { Check, ChevronLeft } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { Check, ChevronLeft, Trash2 } from "lucide-react-native";
+import { type ReactNode, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CosmeticLayer, PRESETS, ScreenBackground } from "@/components/cosmetics";
 import { Button, Chip, IconButton, Text } from "@/components/ui";
 import { authClient } from "@/lib/auth";
 import { DISTRIBUTION, WEB_URL } from "@/lib/config";
@@ -73,6 +79,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 4 }}>
+      <ScreenBackground />
       <View style={styles.header}>
         <IconButton label={t("common.back")} onPress={() => router.back()}>
           <ChevronLeft size={26} color={c.text} />
@@ -178,6 +185,11 @@ export default function SettingsScreen() {
                 <PremiumStatus />
               </Section>
             ) : null}
+            {me.premium.active ? (
+              <Section title={t("cosmetics.title")}>
+                <CosmeticsSettings />
+              </Section>
+            ) : null}
             <Section title={t("settings.account")}>
               <Text muted>{me.email}</Text>
               <Button title={t("common.signOut")} variant="outline" onPress={signOut} />
@@ -194,6 +206,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 40 },
   swatch: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  preset: { width: 44, height: 30, borderRadius: 8, overflow: "hidden", borderWidth: 2 },
 });
 
 /**
@@ -224,4 +237,123 @@ function PremiumStatus() {
     );
   }
   return <Text muted>{t("premium.onWebsite")}</Text>;
+}
+
+const COSMETIC_SLOTS: { slot: CosmeticSlot; w: number; h: number; round?: boolean }[] = [
+  { slot: "avatar", w: 56, h: 56, round: true },
+  { slot: "banner", w: 120, h: 40 },
+  { slot: "background", w: 72, h: 48 },
+  { slot: "siteBackground", w: 36, h: 64 },
+];
+
+/**
+ * Оформлення профілю (Premium). Тут — готові фони й «прибрати»; свій GIF чи відео завантажується на сайті
+ * (у застосунку немає вибору файлів без нативного модуля). Посилання на оплату тут немає — лише для власників Premium.
+ */
+function CosmeticsSettings() {
+  const prefs = usePrefs();
+  const { t, colors: c } = prefs;
+  const api = useApi();
+  const qc = useQueryClient();
+  const me = useMe().data;
+  const [busy, setBusy] = useState<CosmeticSlot | null>(null);
+  const processing = me ? Object.values(me.cosmetics).some((m) => m?.status === "processing") : false;
+
+  useEffect(() => {
+    if (!processing) return;
+    const timer = setInterval(() => void invalidate(qc, endpoints.me.get), 2500);
+    return () => clearInterval(timer);
+  }, [processing, qc]);
+
+  if (!me) return null;
+  const apply = async (slot: CosmeticSlot, preset: CosmeticPreset | null) => {
+    setBusy(slot);
+    try {
+      await api.me.setCosmetic({ body: { slot, preset, ...(preset ? {} : { uploadId: null }) } });
+      await invalidate(qc, endpoints.me.get, endpoints.users.get);
+    } catch {
+      Alert.alert(t("errors.generic"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <View style={{ gap: 18 }}>
+      {COSMETIC_SLOTS.map(({ slot, w, h, round }) => {
+        const media = me.cosmetics[slot] as CosmeticMedia | null;
+        const working = busy === slot || media?.status === "processing";
+        return (
+          <View key={slot} style={{ gap: 8 }}>
+            <View style={styles.row}>
+              <View
+                style={{
+                  width: w,
+                  height: h,
+                  borderRadius: round ? w / 2 : 8,
+                  overflow: "hidden",
+                  backgroundColor: c.surface2,
+                }}
+              >
+                {media && (media.preset || media.poster) ? <CosmeticLayer media={media} /> : null}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text>{t(`cosmetics.${slot}`)}</Text>
+                <Text variant="caption" muted>
+                  {media?.status === "failed"
+                    ? t("cosmetics.failed")
+                    : working
+                      ? t("cosmetics.processing")
+                      : t(`cosmetics.${slot}Hint`)}
+                </Text>
+              </View>
+              {media ? (
+                <IconButton label={t("cosmetics.remove")} onPress={() => !working && void apply(slot, null)}>
+                  <Trash2 size={20} color={c.textMuted} />
+                </IconButton>
+              ) : null}
+            </View>
+            {slot !== "avatar" ? (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {(Object.keys(PRESETS) as CosmeticPreset[]).map((p) => (
+                  <Pressable
+                    key={p}
+                    accessibilityLabel={t(`cosmetics.presetNames.${p}`)}
+                    accessibilityState={{ selected: media?.preset === p }}
+                    disabled={working}
+                    onPress={() => void apply(slot, p)}
+                    style={[styles.preset, { borderColor: media?.preset === p ? c.accent : "transparent" }]}
+                  >
+                    <View style={[StyleSheet.absoluteFill, { backgroundColor: PRESETS[p].base }]} />
+                    <View
+                      style={[
+                        StyleSheet.absoluteFill,
+                        { backgroundColor: PRESETS[p].colors[0], opacity: 0.6 },
+                      ]}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+      <Text variant="caption" muted>
+        {t("cosmetics.uploadOnWebsite")}
+      </Text>
+      <View style={{ gap: 10 }}>
+        <Text>{t("cosmetics.motion")}</Text>
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          {(["auto", "static"] as const).map((m) => (
+            <Chip
+              key={m}
+              label={t(m === "auto" ? "cosmetics.motionAuto" : "cosmetics.motionStatic")}
+              active={prefs.bgMotion === m}
+              onPress={() => prefs.setPrefs({ bgMotion: m })}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
 }

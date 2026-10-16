@@ -5,6 +5,7 @@ import { discoverRoutes } from "./discover/routes";
 import { legacyRoutes } from "./legacy/routes";
 import { libraryRoutes } from "./library/routes";
 import { meRoutes } from "./me/routes";
+import { lookupRoutes } from "./moderation/lookup";
 import { moderationRoutes } from "./moderation/routes";
 import { playlistRoutes } from "./playlists/routes";
 import { premiumRoutes } from "./premium/routes";
@@ -27,6 +28,7 @@ export const allRoutes: Implementation[] = [
   ...notificationRoutes,
   ...uploadRoutes,
   ...moderationRoutes,
+  ...lookupRoutes,
   ...legacyRoutes,
   ...premiumRoutes,
   ...battleRoutes,

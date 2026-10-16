@@ -1,9 +1,25 @@
+/** Слот оформлення Premium у БД; assetId — джерело, що зараз обробляється (щоб пізніший вибір не перезаписати старим). */
+export type StoredCosmetic = {
+  preset: string | null;
+  anim: string | null;
+  poster: string | null;
+  animPortrait: string | null;
+  posterPortrait: string | null;
+  status: "ready" | "processing" | "failed";
+  assetId: string | null;
+  /** Записи assets з готовими файлами (WebP) — щоб прибрати старі при заміні. */
+  outputs: string[];
+};
+export type StoredCosmetics = Partial<
+  Record<"avatar" | "banner" | "background" | "siteBackground", StoredCosmetic>
+>;
+
 /**
  * Таблиці автентифікації у форматі better-auth (назви властивостей — як очікує адаптер),
  * доповнені полями профілю. Сесія = пристрій: список сесій — це «Мої пристрої».
  */
 import { sql } from "drizzle-orm";
-import { boolean, index, integer, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 import { createdAt, id, ts, updatedAt } from "./_columns";
 
 export const users = pgTable(
@@ -30,6 +46,8 @@ export const users = pgTable(
     isPrivate: boolean("is_private").notNull().default(false),
     followerCount: integer("follower_count").notNull().default(0),
     followingCount: integer("following_count").notNull().default(0),
+    /** Оформлення Premium (анімовані аватар, банер, фон профілю й фон сайту). */
+    cosmetics: jsonb("cosmetics").$type<StoredCosmetics>(),
     deletedAt: ts("deleted_at"),
     legacyId: integer("legacy_id"),
   },

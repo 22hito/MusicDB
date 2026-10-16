@@ -2,7 +2,7 @@
 import { endpoints } from "@musicdb/contracts/client";
 import { invalidate, useApi, useEndpoint, useMe } from "@musicdb/sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Download, EyeOff, Heart, MonitorSmartphone, WifiOff } from "lucide-react";
+import { Check, EyeOff, Heart, ImagePlay, MonitorPlay, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -91,9 +91,9 @@ export function PremiumView({ preview = false }: { preview?: boolean }) {
   };
 
   const benefits = [
-    { icon: <WifiOff className="size-5" />, text: t("premium.benefitOffline") },
-    { icon: <Download className="size-5" />, text: t("premium.benefitPlaylists") },
-    { icon: <MonitorSmartphone className="size-5" />, text: t("premium.benefitDevices") },
+    { icon: <ImagePlay className="size-5" />, text: t("premium.benefitBackground") },
+    { icon: <UserRound className="size-5" />, text: t("premium.benefitAvatar") },
+    { icon: <MonitorPlay className="size-5" />, text: t("premium.benefitSiteBackground") },
     { icon: <Heart className="size-5" />, text: t("premium.benefitSupport") },
   ];
 
@@ -138,7 +138,7 @@ export function PremiumView({ preview = false }: { preview?: boolean }) {
               <div className="mt-1 text-xs font-semibold text-warning">{t("premium.test")}</div>
             ) : null}
             <ul className="mt-5 space-y-2 text-sm">
-              {benefits.slice(0, 3).map((b) => (
+              {benefits.map((b) => (
                 <li key={b.text} className="flex items-center gap-2">
                   <Check className="size-4 text-accent" /> {b.text}
                 </li>
@@ -156,6 +156,9 @@ export function PremiumView({ preview = false }: { preview?: boolean }) {
                       ? t("premium.canceled", { date: fmt(sub.data.until!) })
                       : t("premium.active", { date: fmt(sub.data.until!) })}
                   </p>
+                  <Button variant="accent" className="w-full" asChild>
+                    <Link href="/settings">{t("premium.customize")}</Link>
+                  </Button>
                   <Button
                     variant="ghost"
                     className="w-full"

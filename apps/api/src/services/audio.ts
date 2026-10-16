@@ -20,7 +20,7 @@ import type { Storage } from "./storage";
 
 const ffmpegPath = process.env.FFMPEG_PATH || (ffmpegStatic as unknown as string | null) || "ffmpeg";
 
-function run(args: string[], opts: { collectStdout?: boolean } = {}) {
+export function runFfmpeg(args: string[], opts: { collectStdout?: boolean } = {}) {
   return new Promise<{ stderr: string; stdout: Buffer }>((resolve, reject) => {
     const proc = spawn(/* turbopackIgnore: true */ ffmpegPath, ["-hide_banner", "-nostdin", ...args], {
       windowsHide: true,
@@ -103,17 +103,17 @@ export async function processAudioAsset(
     const output = join(dir, "audio.m4a");
     await pipeline(await deps.storage.get(asset.storageKey), createWriteStream(input));
 
-    const analysis = await run(["-i", input, "-vn", "-af", "ebur128=peak=true", "-f", "null", "-"]);
+    const analysis = await runFfmpeg(["-i", input, "-vn", "-af", "ebur128=peak=true", "-f", "null", "-"]);
     const durationMs = parseDuration(analysis.stderr);
     if (!durationMs) throw new Error("Файл не схожий на аудіо");
     const { lufs, peak } = parseLoudness(analysis.stderr);
 
-    const pcm = await run(["-i", input, "-vn", "-ac", "1", "-ar", "4000", "-f", "s16le", "-"], {
+    const pcm = await runFfmpeg(["-i", input, "-vn", "-ac", "1", "-ar", "4000", "-f", "s16le", "-"], {
       collectStdout: true,
     });
     const waveform = computeWaveform(pcm.stdout);
 
-    await run([
+    await runFfmpeg([
       "-y",
       "-i",
       input,

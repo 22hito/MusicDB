@@ -1,5 +1,5 @@
 "use client";
-import { endpoints, type Submission } from "@musicdb/contracts/client";
+import { endpoints, type Submission, type TrackLookupItem } from "@musicdb/contracts/client";
 import { formatRelative } from "@musicdb/i18n";
 import { ApiError } from "@musicdb/sdk";
 import { invalidate, useApi, useEndpoint, useInfiniteEndpoint, useMe } from "@musicdb/sdk/react";
@@ -8,6 +8,7 @@ import { CheckCircle2, CloudUpload, Loader2, Music, XCircle } from "lucide-react
 import Link from "next/link";
 import { type DragEvent, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { SubmissionSuggestions } from "@/components/submission-suggestions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/lib/i18n";
@@ -78,6 +79,22 @@ function SubmissionForm({ mode }: { mode: Mode }) {
     rights: false,
   });
   const [busy, setBusy] = useState(false);
+  // Після вибору підказки панель ховається, доки людина знову не змінить назву чи виконавця.
+  const lookupQuery = `${form.artists} ${form.title}`.trim();
+  const [picked, setPicked] = useState<string | null>(null);
+  const pickSuggestion = (it: TrackLookupItem) => {
+    const next = {
+      ...form,
+      title: it.title,
+      artists: it.artists.join(", "),
+      album: it.album ?? form.album,
+      date: it.releaseDate ?? form.date,
+      genres: it.genres.length ? it.genres.join(", ") : form.genres,
+      explicit: it.explicit,
+    };
+    setForm(next);
+    setPicked(`${next.artists} ${next.title}`.trim());
+  };
   const status = useEndpoint(
     endpoints.uploads.status,
     { params: { id: uploadId ?? "" } },
@@ -246,6 +263,9 @@ function SubmissionForm({ mode }: { mode: Mode }) {
             className={input}
           />
         </label>
+        {picked !== lookupQuery ? (
+          <SubmissionSuggestions query={lookupQuery} onPick={pickSuggestion} />
+        ) : null}
         <label className="block">
           <span className="mb-1.5 block text-xs font-bold text-muted">{t("upload.albumLabel")}</span>
           <input

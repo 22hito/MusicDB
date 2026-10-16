@@ -10,6 +10,8 @@ import {
   ArtistDetail,
   CatalogStats,
   ChartEntry,
+  CosmeticPreset,
+  CosmeticSlot,
   Era,
   Genre,
   HistoryEntry,
@@ -50,6 +52,7 @@ import {
   SubmissionStatus,
   TrackDraft,
   TrackDraftPatch,
+  TrackLookupItem,
   UploadStatus,
   UploadTicket,
 } from "./moderation";
@@ -155,6 +158,20 @@ const me = {
     tag: "me",
     auth: "user",
     params: IdParam,
+  }),
+  setCosmetic: endpoint({
+    method: "PUT",
+    path: "/v1/me/cosmetics",
+    summary:
+      "Оформлення профілю Premium: власна анімація (uploadId), готовий фон (preset) або прибрати (обидва null)",
+    tag: "me",
+    auth: "user",
+    body: z.object({
+      slot: CosmeticSlot,
+      uploadId: Id.nullable().optional(),
+      preset: CosmeticPreset.nullable().optional(),
+    }),
+    response: Me,
   }),
 };
 
@@ -969,6 +986,15 @@ const uploads = {
 };
 
 const submissions = {
+  lookup: endpoint({
+    method: "GET",
+    path: "/v1/lookup/tracks",
+    summary: "Підказки для заявки: пісні з iTunes/Deezer і схожі пісні, що вже є в каталозі",
+    tag: "submissions",
+    auth: "user",
+    query: z.object({ q: z.string().trim().min(2).max(200) }),
+    response: z.object({ items: z.array(TrackLookupItem), existing: z.array(Track) }),
+  }),
   create: endpoint({
     method: "POST",
     path: "/v1/submissions",

@@ -4,7 +4,8 @@ import { placeholderGradient } from "@musicdb/tokens";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { MoreHorizontal } from "lucide-react-native";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, useWindowDimensions, View } from "react-native";
+import { CosmeticLayer } from "@/components/cosmetics";
 import { ArtistCard, PlaylistCard, playList, Shelf, TrackRow } from "@/components/music";
 import { ActionRow, DetailScreen } from "@/components/screen";
 import { Avatar, Button, IconButton, Text } from "@/components/ui";
@@ -18,15 +19,42 @@ export default function UserScreen() {
   const api = useApi();
   const me = useMe().data;
   const follow = useFollowUser();
+  const { width } = useWindowDimensions();
   const { data, isLoading, error, refetch } = useEndpoint(endpoints.users.get, { params: { id } });
   if (!data) return <DetailScreen loading={isLoading} error={error ? t("common.notFound") : null} />;
   const viewer = data.viewer;
   const [a] = placeholderGradient(data.id);
   const context = { type: "profile" as const, id: data.id, name: data.name };
+  const look = data.cosmetics;
   return (
     <DetailScreen>
-      <LinearGradient colors={[a, c.bg]} style={styles.hero}>
-        <Avatar src={data.image} name={data.name} size={132} />
+      {look?.background ? (
+        // Фон профілю (Premium): його бачать усі; донизу плавно переходить у фон теми.
+        <View style={[styles.background, { height: Math.max(520, width * 1.4) }]} pointerEvents="none">
+          <CosmeticLayer media={look.background} />
+          <LinearGradient
+            colors={[`${c.bg}4d`, `${c.bg}a6`, c.bg]}
+            locations={[0, 0.55, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      ) : null}
+      {look?.banner ? (
+        <View style={{ width, height: width / 3, overflow: "hidden" }}>
+          <CosmeticLayer media={look.banner} />
+        </View>
+      ) : null}
+      <LinearGradient
+        colors={look?.background ? ["transparent", "transparent"] : [a, c.bg]}
+        style={[styles.hero, look?.banner ? { paddingTop: 0, marginTop: -56 } : null]}
+      >
+        {look?.avatar ? (
+          <View style={[styles.cosmeticAvatar, { borderColor: c.bg }]}>
+            <CosmeticLayer media={look.avatar} />
+          </View>
+        ) : (
+          <Avatar src={data.image} name={data.name} size={132} />
+        )}
         <Text variant="display" style={{ marginTop: 14 }}>
           {data.name}
         </Text>
@@ -143,4 +171,6 @@ export default function UserScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: "center", paddingTop: 80, paddingBottom: 16, paddingHorizontal: 20 },
+  background: { position: "absolute", top: 0, left: 0, right: 0 },
+  cosmeticAvatar: { width: 132, height: 132, borderRadius: 66, overflow: "hidden", borderWidth: 4 },
 });

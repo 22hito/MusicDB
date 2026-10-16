@@ -7,6 +7,7 @@
  */
 import { usePathname } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useState } from "react";
+import { SiteBackground, useHasSiteBackground } from "@/components/cosmetics";
 import { cn } from "@/lib/cn";
 import { ScrollProvider } from "@/lib/scroll";
 import { useUi } from "@/lib/ui-store";
@@ -27,6 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const rightPanel = useUi((s) => s.rightPanel);
   const hasTrack = usePlayer((s) => !!s.current);
   const showRight = !!rightPanel && (hasTrack || rightPanel === "queue");
+  const siteBg = useHasSiteBackground();
 
   useEffect(() => {
     if (!scrollEl) return;
@@ -55,7 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Sidebar />
       </div>
       <main className="relative isolate min-w-0 flex-1 overflow-hidden">
-        <Aurora />
+        {siteBg ? <SiteBackground /> : <Aurora />}
         <div className="absolute inset-x-0 top-0 z-20">
           <Suspense>
             <TopBar scrolled={scrolled} />

@@ -5,6 +5,7 @@ import { Flag, Lock, MessageCircle, MoreHorizontal, Pencil, ShieldBan } from "lu
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { CosmeticView } from "@/components/cosmetics";
 import { ArtistCard, PlaylistCard, Shelf } from "@/components/music/cards";
 import { Dot } from "@/components/music/page-header";
 import { PlayCommonButton } from "@/components/music/play-common";
@@ -33,6 +34,7 @@ export function ProfileView({ id, initial }: { id: string; initial: Profile }) {
   const report = useReportDialog();
   const color = useDominantColor(data.image, data.id);
   const viewer = data.viewer;
+  const look = data.cosmetics;
 
   const message = gate(async () => {
     const conv = await api.conversations.open({ body: { userId: data.id } });
@@ -57,21 +59,50 @@ export function ProfileView({ id, initial }: { id: string; initial: Profile }) {
   };
 
   return (
-    <div>
-      <div className="relative">
+    <div className="relative isolate min-h-full">
+      {look?.background ? (
+        // Фон профілю (Premium): його бачать усі; затемнення внизу — щоб списки лишались читабельними.
         <div
-          className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+200px)]"
-          style={{
-            background: `linear-gradient(180deg, ${color}, color-mix(in srgb, ${color} 30%, transparent) 60%, transparent)`,
-          }}
-        />
-        <header className="relative flex flex-col items-center gap-6 px-4 pt-8 pb-6 sm:flex-row sm:items-end sm:px-6 sm:pt-12">
-          <Avatar
-            src={data.image}
-            name={data.name}
-            size={200}
-            className="shadow-[0_8px_40px_rgba(0,0,0,0.55)] max-sm:!size-40"
+          className="pointer-events-none absolute inset-x-0 -top-16 -z-10 h-[max(100%,100vh)] overflow-hidden [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+          aria-hidden
+        >
+          <CosmeticView media={look.background} />
+          <div className="absolute inset-0 bg-gradient-to-b from-bg/30 to-bg/70" />
+        </div>
+      ) : null}
+      {look?.banner ? (
+        <div className="relative mx-4 mt-2 h-32 overflow-hidden rounded-xl sm:mx-6 sm:h-52">
+          <CosmeticView media={look.banner} />
+        </div>
+      ) : null}
+      <div className="relative">
+        {look?.background ? null : (
+          <div
+            className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+200px)]"
+            style={{
+              background: `linear-gradient(180deg, ${color}, color-mix(in srgb, ${color} 30%, transparent) 60%, transparent)`,
+            }}
           />
+        )}
+        <header
+          className={
+            look?.banner
+              ? "relative -mt-16 flex flex-col items-center gap-6 px-4 pb-6 sm:-mt-20 sm:flex-row sm:items-end sm:px-10"
+              : "relative flex flex-col items-center gap-6 px-4 pt-8 pb-6 sm:flex-row sm:items-end sm:px-6 sm:pt-12"
+          }
+        >
+          {look?.avatar ? (
+            <div className="relative size-40 shrink-0 overflow-hidden rounded-full shadow-[0_8px_40px_rgba(0,0,0,0.55)] ring-4 ring-bg sm:size-[200px]">
+              <CosmeticView media={look.avatar} />
+            </div>
+          ) : (
+            <Avatar
+              src={data.image}
+              name={data.name}
+              size={200}
+              className="shadow-[0_8px_40px_rgba(0,0,0,0.55)] max-sm:!size-40"
+            />
+          )}
           <div className="flex flex-col items-center gap-2 text-center sm:items-start sm:text-left">
             <span className="text-[13px] font-semibold">{t("nav.profile")}</span>
             <h1

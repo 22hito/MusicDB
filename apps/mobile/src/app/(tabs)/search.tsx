@@ -6,6 +6,7 @@ import { Search as SearchIcon, X } from "lucide-react-native";
 import { useDeferredValue, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenBackground } from "@/components/cosmetics";
 import {
   ArtistCard,
   GenreTile,
@@ -36,6 +37,7 @@ export default function SearchScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 8 }}>
+      <ScreenBackground />
       <Text variant="display" style={{ paddingHorizontal: 16, marginBottom: 12 }}>
         {t("nav.search")}
       </Text>

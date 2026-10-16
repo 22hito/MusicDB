@@ -5,6 +5,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MiniPlayer } from "@/components/player-ui";
 import { useColors } from "@/lib/theme";
+import { ScreenBackground } from "./cosmetics";
 import { HlText, IconButton, Text } from "./ui";
 
 /** Екран деталей: прокрутка, плаваюча кнопка «Назад», міні-плеєр унизу. */
@@ -21,6 +22,7 @@ export function DetailScreen({
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <ScreenBackground />
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={c.accent} />
@@ -100,6 +102,7 @@ export function TitledScreen({
   );
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <ScreenBackground />
       {noScroll ? (
         <View style={{ flex: 1 }}>
           {header}

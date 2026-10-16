@@ -10,6 +10,12 @@ export type JobMap = {
   /** reprocess — перерахувати гучність/хвилю для файлу, що вже грає (перенесені з v1). */
   "audio.process": { assetId: string; reprocess?: boolean };
   "notify.new_track": { trackId: string };
+  /** Оформлення Premium: завантажений файл → анімований WebP і перший кадр. */
+  "media.cosmetic": {
+    userId: string;
+    slot: "avatar" | "banner" | "background" | "siteBackground";
+    assetId: string;
+  };
 };
 export type QueueName = keyof JobMap;
 

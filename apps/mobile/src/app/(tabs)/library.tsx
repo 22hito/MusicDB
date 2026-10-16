@@ -4,6 +4,7 @@ import { Heart, Plus } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenBackground } from "@/components/cosmetics";
 import { Button, Chip, Cover, IconButton, Text } from "@/components/ui";
 import { useColors, useT } from "@/lib/theme";
 
@@ -66,6 +67,7 @@ export default function LibraryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 8 }}>
+      <ScreenBackground />
       <View style={styles.header}>
         <Text variant="display" style={{ flex: 1 }}>
           {t("library.title")}

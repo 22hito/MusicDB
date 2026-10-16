@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenBackground } from "@/components/cosmetics";
 import { Avatar, Chip, IconButton, Text } from "@/components/ui";
 import { usePrefs } from "@/lib/theme";
 
@@ -17,6 +18,7 @@ export default function MessagesScreen() {
   const items = useMemo(() => list.data?.pages.flatMap((p) => p.items as Conversation[]) ?? [], [list.data]);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 4 }}>
+      <ScreenBackground />
       <View style={styles.header}>
         <IconButton label={t("common.back")} onPress={() => router.back()}>
           <ChevronLeft size={26} color={c.text} />

@@ -5,6 +5,7 @@ import type { Deps, SessionUser } from "../../context";
 import { offsetPage, readOffset } from "../../http/cursor";
 import { implement } from "../../http/endpoint";
 import { badRequest, notFound } from "../../http/errors";
+import { publicCosmetics } from "../../services/cosmetics";
 import {
   artistColumns,
   hydratePlaylists,
@@ -14,6 +15,7 @@ import {
   toArtist,
   toUserRef,
 } from "../catalog/hydrate";
+import { currentSubscription } from "../premium/routes";
 import { isBlockedBetween, notify } from "../social/notify";
 
 async function findUser(db: DbOrTx, idOrUsername: string) {
@@ -208,6 +210,7 @@ export const userRoutes = [
       image: target.image,
       bio: target.bio,
       isPrivate: target.isPrivate,
+      cosmetics: publicCosmetics(target.cosmetics, !!(await currentSubscription(db, target.id))),
       followerCount: target.followerCount,
       followingCount: target.followingCount,
       publicPlaylists: await hydratePlaylists(db, ownPlaylists),

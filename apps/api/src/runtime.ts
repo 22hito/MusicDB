@@ -1,4 +1,5 @@
 /** Збирання залежностей процесу — спільне для API-сервера й окремого воркера. */
+
 import { createDb } from "@musicdb/db";
 import pino from "pino";
 import { createAuth } from "./auth";
@@ -6,6 +7,7 @@ import type { Deps } from "./context";
 import type { Env } from "./env";
 import { notifyNewTrack } from "./modules/moderation/routes";
 import { processAudioAsset } from "./services/audio";
+import { processCosmetic } from "./services/cosmetics";
 import { type JobHandlers, PgJobs } from "./services/jobs";
 import { RealtimeHub } from "./services/realtime";
 import { createStorage } from "./services/storage";
@@ -37,5 +39,6 @@ export function jobHandlers(deps: Deps): JobHandlers {
   return {
     "audio.process": ({ assetId, reprocess }) => processAudioAsset(deps, assetId, { reprocess: !!reprocess }),
     "notify.new_track": ({ trackId }) => notifyNewTrack(deps, trackId),
+    "media.cosmetic": (job) => processCosmetic(deps, job),
   };
 }

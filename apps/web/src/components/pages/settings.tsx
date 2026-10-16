@@ -10,6 +10,7 @@ import { Camera, Check, Laptop, LogOut, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { CosmeticsSection } from "@/components/settings-cosmetics";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/ui/confirm";
 import { Avatar } from "@/components/ui/cover";
@@ -195,6 +196,8 @@ export function SettingsView() {
           {t("common.save")}
         </Button>
       </Section>
+
+      <CosmeticsSection />
 
       <Section title={t("settings.appearance")}>
         <Row label={t("settings.theme")}>

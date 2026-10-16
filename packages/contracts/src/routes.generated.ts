@@ -8,6 +8,7 @@ export const routes = {
     sessions: { method: "GET", path: "/v1/me/sessions" },
     stats: { method: "GET", path: "/v1/me/stats" },
     revokeSession: { method: "DELETE", path: "/v1/me/sessions/:id" },
+    setCosmetic: { method: "PUT", path: "/v1/me/cosmetics" },
   },
   tracks: {
     browse: { method: "GET", path: "/v1/tracks" },
@@ -112,6 +113,7 @@ export const routes = {
     status: { method: "GET", path: "/v1/uploads/:id" },
   },
   submissions: {
+    lookup: { method: "GET", path: "/v1/lookup/tracks" },
     create: { method: "POST", path: "/v1/submissions" },
     mine: { method: "GET", path: "/v1/me/submissions" },
     withdraw: { method: "DELETE", path: "/v1/submissions/:id" },

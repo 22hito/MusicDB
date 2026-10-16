@@ -18,7 +18,15 @@ import { setLocaleValue } from "./locale";
 export type ThemeSetting = ThemeName | "system";
 
 export type MotionSetting = "system" | "full" | "reduced";
-type Prefs = { theme: ThemeSetting; accent: AccentName; locale: Locale; motion: MotionSetting };
+/** Анімація фону з Premium: «авто» — грає на активному екрані, «статичний» — лише перший кадр. */
+export type BgMotion = "auto" | "static";
+type Prefs = {
+  theme: ThemeSetting;
+  accent: AccentName;
+  locale: Locale;
+  motion: MotionSetting;
+  bgMotion: BgMotion;
+};
 
 type Ctx = Prefs & {
   t: Translate;
@@ -37,6 +45,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
     accent: "amber",
     locale: "uk",
     motion: "system",
+    bgMotion: "auto",
   });
 
   useEffect(() => {

@@ -19,9 +19,11 @@ import {
 import { and, count, desc, eq, gt, isNull, ne, or, sql } from "drizzle-orm";
 import type { Deps, SessionUser } from "../../context";
 import { implement } from "../../http/endpoint";
-import { conflict, notFound } from "../../http/errors";
+import { ApiError, conflict, notFound } from "../../http/errors";
+import { myCosmetics, setPresetOrClear, startProcessing } from "../../services/cosmetics";
 import { iso, rowsOf } from "../catalog/hydrate";
 import { audit } from "../moderation/audit";
+import { uploadRules } from "../uploads/routes";
 import { myStats } from "./stats";
 
 export async function loadMe(db: DbOrTx, userId: string): Promise<Me> {
@@ -50,6 +52,7 @@ export async function loadMe(db: DbOrTx, userId: string): Promise<Me> {
     locale: u.locale === "en" ? "en" : "uk",
     isPrivate: u.isPrivate,
     premium: { active: !!sub, until: sub ? iso(sub.end) : null },
+    cosmetics: myCosmetics(u.cosmetics),
     createdAt: iso(u.createdAt),
   };
 }
@@ -89,6 +92,29 @@ export const meRoutes = [
       patch.image = body.avatarUploadId ? await imageUrlFromUpload(deps, user, body.avatarUploadId) : null;
     }
     if (Object.keys(patch).length) await deps.db.update(users).set(patch).where(eq(users.id, user.id));
+    return loadMe(deps.db, user.id);
+  }),
+
+  implement(endpoints.me.setCosmetic, async ({ deps, user, body }) => {
+    const me = await loadMe(deps.db, user.id);
+    if (!me.premium.active)
+      throw new ApiError(403, "premium_required", "Оформлення профілю доступне з Premium");
+    if (body.slot === "avatar" && body.preset) {
+      throw new ApiError(400, "bad_request", "Для аватара можна обрати лише власний файл");
+    }
+    if (body.uploadId) {
+      const [asset] = await deps.db
+        .select()
+        .from(assets)
+        .where(and(eq(assets.id, body.uploadId), eq(assets.ownerId, user.id)));
+      if (asset?.status !== "uploaded" || !asset.storageKey.startsWith(`${uploadRules.cosmetic.prefix}/`)) {
+        throw notFound("upload");
+      }
+      await startProcessing(deps.db, user.id, body.slot, asset.id);
+      await deps.jobs.enqueue("media.cosmetic", { userId: user.id, slot: body.slot, assetId: asset.id });
+    } else {
+      await setPresetOrClear(deps, user.id, body.slot, body.preset ?? null);
+    }
     return loadMe(deps.db, user.id);
   }),
 

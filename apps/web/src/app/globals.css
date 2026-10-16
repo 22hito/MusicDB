@@ -469,3 +469,72 @@
     transition-duration: 1ms !important;
   }
 }
+
+/*
+ * Готові анімовані фони Premium (профіль, банер, фон сайту). Лише градієнти на великому шарі, що повільно
+ * зсувається transform-ом: це робить відеокарта, без перемальовування сторінки — тож не гальмує й на телефоні.
+ * «Зменшений рух» вимикає анімацію правилами вище (data-motion), фон лишається статичним.
+ */
+.cosmetic-preset {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--cp-base);
+}
+.cosmetic-preset::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: var(--cp-layers);
+  animation: cosmetic-drift 36s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.cosmetic-preset[data-paused="true"]::before {
+  animation-play-state: paused;
+}
+@keyframes cosmetic-drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate3d(5%, 3%, 0) rotate(8deg) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-3%, 6%, 0) rotate(-6deg) scale(1.04);
+  }
+}
+.cosmetic-aurora {
+  --cp-base: #0b1020;
+  --cp-layers:
+    radial-gradient(40% 35% at 30% 40%, #2ee6a6aa, transparent 70%),
+    radial-gradient(35% 30% at 70% 35%, #7c5cffaa, transparent 70%),
+    radial-gradient(45% 40% at 50% 70%, #1fb6ff88, transparent 70%);
+}
+.cosmetic-nebula {
+  --cp-base: #120a1f;
+  --cp-layers:
+    radial-gradient(38% 34% at 35% 38%, #c04bffaa, transparent 70%),
+    radial-gradient(30% 28% at 68% 60%, #ff4f9a99, transparent 70%),
+    radial-gradient(44% 40% at 55% 30%, #3b2bff88, transparent 70%);
+}
+.cosmetic-sunset {
+  --cp-base: #1a0d0a;
+  --cp-layers:
+    radial-gradient(42% 36% at 30% 60%, #ff7a3dbb, transparent 70%),
+    radial-gradient(34% 30% at 70% 40%, #ffbf3d99, transparent 70%),
+    radial-gradient(40% 38% at 50% 25%, #ff3d6e88, transparent 70%);
+}
+.cosmetic-ocean {
+  --cp-base: #06131c;
+  --cp-layers:
+    radial-gradient(40% 36% at 30% 45%, #00b4d8aa, transparent 70%),
+    radial-gradient(34% 30% at 70% 60%, #0077b6aa, transparent 70%),
+    radial-gradient(44% 40% at 55% 25%, #48cae488, transparent 70%);
+}
+.cosmetic-ember {
+  --cp-base: #140a06;
+  --cp-layers:
+    radial-gradient(36% 32% at 40% 55%, #ff5e1fbb, transparent 70%),
+    radial-gradient(30% 28% at 65% 40%, #ffb02e99, transparent 70%),
+    radial-gradient(40% 36% at 30% 30%, #b3122a88, transparent 70%);
+}

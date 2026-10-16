@@ -7,6 +7,7 @@ import { Bell, ChevronLeft } from "lucide-react-native";
 import { useEffect, useMemo } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenBackground } from "@/components/cosmetics";
 import { Avatar, IconButton, Text } from "@/components/ui";
 import { usePrefs } from "@/lib/theme";
 
@@ -37,6 +38,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 4 }}>
+      <ScreenBackground />
       <View style={styles.header}>
         <IconButton label={t("common.back")} onPress={() => router.back()}>
           <ChevronLeft size={26} color={c.text} />

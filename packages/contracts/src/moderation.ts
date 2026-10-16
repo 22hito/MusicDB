@@ -23,6 +23,22 @@ export const TrackDraft = z.object({
 });
 export type TrackDraft = z.infer<typeof TrackDraft>;
 
+/** Підказка для заявки: офіційні дані пісні з iTunes або Deezer — вибір заповнює форму. */
+export const TrackLookupItem = z
+  .object({
+    title: z.string(),
+    artists: z.array(z.string()),
+    album: z.string().nullable(),
+    releaseDate: IsoDate.nullable(),
+    genres: z.array(z.string()),
+    coverUrl: z.string().nullable(),
+    durationMs: z.number().int().nullable(),
+    explicit: z.boolean(),
+    source: z.enum(["itunes", "deezer"]),
+  })
+  .meta({ id: "TrackLookupItem" });
+export type TrackLookupItem = z.infer<typeof TrackLookupItem>;
+
 /**
  * Часткові зміни треку — без значень за замовчуванням: у Zod 4 вони спрацьовують і всередині `.partial()`,
  * тож PATCH лише з назвою затер би жанри й позначку explicit.
@@ -162,6 +178,8 @@ export const UploadPurpose = z.enum([
   "playlist_cover",
   "attachment",
   "screenshot",
+  /** Анімація для оформлення Premium (GIF, MP4, WebM, MOV або картинка) — сервер перетворює на WebP. */
+  "cosmetic",
 ]);
 export type UploadPurpose = z.infer<typeof UploadPurpose>;
 

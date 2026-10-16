@@ -26,6 +26,13 @@ export const uploadRules: Record<UploadPurpose, Rule> = {
     prefix: "attachments",
   },
   screenshot: { kind: "image", maxBytes: 5 * MB, mime: IMAGE, prefix: "images/screenshots" },
+  // Джерело для оформлення Premium: не віддається назовні, після обробки видаляється.
+  cosmetic: {
+    kind: "attachment",
+    maxBytes: 25 * MB,
+    mime: /^image\/(gif|png|jpeg|webp)$|^video\/(mp4|webm|quicktime)$/,
+    prefix: "cosmetics/sources",
+  },
 };
 
 function extension(fileName: string) {
