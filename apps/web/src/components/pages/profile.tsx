@@ -70,7 +70,8 @@ export function ProfileView({ id, initial }: { id: string; initial: Profile }) {
           <div className="absolute inset-0 bg-gradient-to-b from-bg/30 to-bg/70" />
         </div>
       ) : null}
-      <div className="relative">
+      {/* Відступ над банером — padding, а не margin шапки: margin «протікав» назовні й зсував градієнт на 8 px. */}
+      <div className={look?.banner ? "relative pt-2" : "relative"}>
         {look?.background ? null : (
           <div
             className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+200px)]"
@@ -92,7 +93,7 @@ export function ProfileView({ id, initial }: { id: string; initial: Profile }) {
         <header
           className={
             look?.banner
-              ? "relative mx-4 mt-2 flex flex-col items-center justify-end gap-6 px-4 pt-24 pb-6 sm:mx-6 sm:justify-start sm:min-h-[clamp(18rem,24vw,24rem)] sm:flex-row sm:items-end sm:px-8 sm:pt-10"
+              ? "relative mx-4 flex flex-col items-center justify-end gap-6 px-4 pt-24 pb-6 sm:mx-6 sm:justify-start sm:min-h-[clamp(18rem,24vw,24rem)] sm:flex-row sm:items-end sm:px-8 sm:pt-10"
               : "relative flex flex-col items-center gap-6 px-4 pt-8 pb-6 sm:flex-row sm:items-end sm:px-6 sm:pt-12"
           }
         >
